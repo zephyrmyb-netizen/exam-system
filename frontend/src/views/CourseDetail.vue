@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
 import { useAuth } from "../stores/auth";
 import {
-  BookOpen, Layers, Play, Globe, Lock, Upload, Trash2, ArrowLeft,
+  BookOpen, Layers, Play, Globe, Lock, Upload, Trash2,
 } from "@lucide/vue";
 import QuestionList from "./QuestionList.vue";
 
@@ -23,8 +23,6 @@ const isOwner = computed(() => {
   if (!course.value || !user.value) return false;
   return course.value.owner_id === user.value.id;
 });
-
-const isFromPublicLibrary = computed(() => route.query.from === "public-library");
 
 async function fetchCourse() {
   if (!courseId.value) return;
@@ -75,10 +73,6 @@ async function deleteCourse() {
   } finally {
     deleteLoading.value = false;
   }
-}
-
-function goBackToPublicLibrary() {
-  router.push({ name: "public-library" });
 }
 
 onMounted(fetchCourse);
@@ -146,17 +140,6 @@ watch(
           <Trash2 :size="16" :stroke-width="2.5" />
         </button>
       </div>
-
-      <!-- From public library: back link -->
-      <button
-        v-if="isFromPublicLibrary"
-        class="ghost-button back-to-lib"
-        type="button"
-        @click="goBackToPublicLibrary"
-      >
-        <ArrowLeft :size="16" :stroke-width="2.5" style="margin-right:4px" />
-        返回公共题库
-      </button>
     </div>
 
     <QuestionList :courseId="courseId" />
@@ -243,13 +226,6 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.back-to-lib {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-sm);
 }
 
 .delete-btn-subtle {

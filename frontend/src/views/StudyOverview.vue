@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { typeLabel } from "../utils/question";
 import {
-  TrendingUp, Target, Zap, BookMarked, RefreshCw, Clock, AlertTriangle,
+  TrendingUp, Target, Zap, BookMarked, RefreshCw, Clock,
   BookOpen,
 } from "@lucide/vue";
 

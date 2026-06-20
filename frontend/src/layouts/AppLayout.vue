@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Sparkles,
   CheckCircle,
-  MessageCircle,
 } from "@lucide/vue";
 
 const route = useRoute();
@@ -57,29 +56,57 @@ const navItems = [
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
-const activeNavKey = computed(() => route.meta?.navKey || "");
+const activeNavKey = computed(() => {
+  const nav = route.meta?.navKey;
+  if (route.name === "study-overview") {
+    if (route.query.from === "home") return "home";
+    if (route.query.from === "mine") return "mine";
+    return nav || "";
+  }
+  if (route.name === "announcements") {
+    if (route.query.from === "home") return "home";
+    if (route.query.from === "mine") return "mine";
+    return nav || "";
+  }
+  if (route.name === "practice-history") {
+    if (route.query.from === "mine") return "mine";
+    return "";
+  }
+  return nav || "";
+});
 const showHeader = computed(() => route.name !== "home");
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
-  // If we came from public-library, return there
-  if (route.query.from === "public-library") {
-    router.push({ name: "public-library" });
+  const allowedFromRoutes = ["home", "mine", "courses", "practice", "public-library"];
+  const from = route.query.from;
+
+  // 1. query.from takes priority
+  if (from && allowedFromRoutes.includes(from)) {
+    router.replace({ name: from });
     return;
   }
+
+  // 2. meta.parent fallback
   const parent = route.meta?.parent;
   if (parent) {
-    // Pass dynamic params (e.g., courseId) so parent routes like course-detail resolve correctly
-    router.push({ name: parent, params: { ...route.params } });
-  } else {
-    router.push({ name: "home" });
+    router.replace({ name: parent, params: { ...route.params } });
+    return;
   }
+
+  // 3. final fallback
+  router.replace({ name: "home" });
 }
 
 function handleAuthChange() {
   if (!getToken()) {
     router.push({ name: "login" });
   }
+}
+
+function handleTabClick(item) {
+  if (route.path === item.to) return;
+  router.replace(item.to);
 }
 
 onMounted(() => {
@@ -153,7 +180,7 @@ onUnmounted(() => {
           'nav-button--ai': item.emphasis,
         }"
         type="button"
-        @click="activeNavKey !== item.key && router.replace(item.to)"
+        @click="handleTabClick(item)"
       >
         <span
           class="nav-icon"
@@ -180,6 +207,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 2px;
   white-space: nowrap;
+}
+
+/* ── Bottom Nav touch optimisation ── */
+.nav-button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 /* ── AI Task Banner ── */

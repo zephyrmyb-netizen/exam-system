@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import request from "../api/request";
 import { getPracticeHistory } from "../api/practice";
 import { getErrorMessage } from "../api/request";
 import {
