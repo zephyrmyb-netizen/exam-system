@@ -1,0 +1,47 @@
+﻿# Environment files
+.env
+*.env
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+backend/.venv/
+.pytest_cache/
+
+# Node / frontend build
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Database and local uploaded data
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+backend/uploads/
+uploads/
+
+# Local tool and test output
+*.log
+test-results/
+playwright-report/
+.playwright-cli/
+.reasonix/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local scratch files
+prompt.docx
