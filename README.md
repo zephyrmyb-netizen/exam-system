@@ -1,6 +1,6 @@
 ﻿# 考前刷题复习系统
 
-基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、AI 对话、Word/PPT 导入等功能。
+基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PPT 预览导入等功能。
 
 ## 题库逻辑
 
@@ -19,15 +19,17 @@
              ▼                             ▼
       ┌──────────────┐            ┌──────────────────┐
       │  创建课程      │            │   浏览 / 刷题     │
-      │  导入题目      │            │   (只读)          │
-      │  刷题 / 错题本 │            │                   │
+      │  手动/导入题目  │            │   (只读)          │
+      │  刷题 / 错题本  │            │                   │
+      │  间隔复习       │            │                   │
       │  发布 → 公开   │            │                   │
+      │  撤回 → 私有   │            │                   │
       └──────────────┘            └──────────────────┘
 ```
 
 - **我的题库**：用户自己创建的课程和导入的题目，默认**私有**，只有自己能看
 - **公共题库**（`/library/public`）：用户主动发布课程或题目后，所有人可见
-- **发布**：在课程详情页或题目操作中点击"发布"，课程 + 其下所有题目变为公开
+- **发布与撤回**：课程或单道题目均可发布为公开，也可随时撤回为私有
 - **先选课程，再看题和刷题**：所有题目归属于某个课程，刷题时必须指定课程
 
 ## 项目结构
@@ -36,23 +38,19 @@
 exam-system/
 ├── backend/             # FastAPI 后端
 │   ├── main.py          # 应用入口
-│   ├── config.py        # 环境配置
-│   ├── models.py        # SQLAlchemy 数据模型（User / QuestionBank / Question / WrongRecord）
+│   ├── config.py        # 环境配置（含生产环境安全校验）
+│   ├── models.py        # SQLAlchemy 数据模型
 │   ├── schemas.py       # Pydantic 校验模型
 │   ├── crud.py          # 数据库操作
 │   ├── auth.py          # JWT 认证
-│   ├── utils.py         # 工具函数
+│   ├── utils.py         # 答案归一化、填空/简答判分规则
 │   ├── routers/         # API 路由
-│   │   ├── auth.py      # 注册 / 登录 / 个人信息
-│   │   ├── courses.py   # 课程 CRUD + 课程内刷题
-│   │   ├── questions.py # 题目列表 / 批量导入 / 发布 / 删除
-│   │   ├── practice.py  # 随机刷题 / 提交答案
-│   │   ├── wrongbook.py # 错题本
-│   │   ├── library.py   # 公共题库（浏览公开课程）
-│   │   ├── imports.py   # Word/PPT 文件上传 + AI 自动导入
-│   │   ├── chat.py      # AI 对话
-│   │   └── health.py    # 健康检查
 │   └── tests/           # pytest 测试
+├── docs/                # 文档
+│   └── acceptance-checklist.md  # 验收清单
+├── scripts/             # 工具脚本
+│   ├── security_check.py        # 安全检查
+│   └── smoke_test.ps1           # 冒烟测试
 ├── frontend/            # Vue 3 前端
 │   └── src/
 │       ├── views/       # 页面组件
@@ -72,26 +70,28 @@ exam-system/
 
 ## 快速启动
 
-### 1. 后端
+### 1. 后端（从项目根目录启动）
 
-```bash
-cd backend
+```powershell
+cd D:\File\exam system
 
 # 创建虚拟环境（首次）
-python -m venv .venv
+python -m venv backend\.venv
 
 # 激活虚拟环境
-.venv\Scripts\activate
+backend\.venv\Scripts\activate
 
 # 安装依赖
-pip install -r requirements.txt
+pip install -r backend\requirements.txt
 
 # 配置环境变量
-copy .env.example .env
+copy backend\.env.example backend\.env
 
 # 启动服务（监听 0.0.0.0:8000 以支持手机访问）
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+backend\.venv\Scripts\uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+> ⚠️ **必须从项目根目录启动**，因为 Python 模块路径 `backend.main` 依赖于项目根目录在 `sys.path` 中。如果从 `backend/` 目录下直接 `uvicorn main:app` 会报导入错误。
 
 API 文档自动生成于：
 
@@ -100,7 +100,7 @@ API 文档自动生成于：
 
 ### 2. 前端
 
-```bash
+```powershell
 cd frontend
 
 # 安装依赖
@@ -110,7 +110,7 @@ npm.cmd install
 npm.cmd run dev -- --host 0.0.0.0
 ```
 
-> **Windows PowerShell 提示**：如果 `npm` 提示执行策略错误，请使用 `npm.cmd` 代替 `npm`，避免 npm.ps1 的执行策略问题。例如：`npm.cmd install`、`npm.cmd run dev`。
+> **Windows PowerShell 提示**：如果 `npm` 提示执行策略错误，请使用 `npm.cmd` 代替 `npm`，避免 npm.ps1 的执行策略问题。
 
 浏览器打开 http://127.0.0.1:5173
 
@@ -120,7 +120,7 @@ npm.cmd run dev -- --host 0.0.0.0
 
 复制 `backend/.env.example` 为 `backend/.env` 并修改：
 
-```bash
+```powershell
 copy backend\.env.example backend\.env
 ```
 
@@ -144,7 +144,7 @@ copy backend\.env.example backend\.env
 
 **生产环境（`APP_ENV=production`）：**
 - 必须设置随机 `SECRET_KEY`，否则启动时报错并拒绝运行
-- 使用以下命令生成一个安全的随机密钥：
+- 生成安全的随机密钥：
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(48))"
@@ -166,33 +166,116 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 | ------------------- | -------------------------- | ---------------------------------- |
 | `VITE_API_BASE_URL` | `http://127.0.0.1:8000`    | 后端 API 地址（手机访问时改为局域网 IP）|
 
+## 常用功能说明
+
+### 课程与题目管理
+
+- **创建课程**：进入"我的课程"，填写名称、描述、科目
+- **编辑课程**：课程所有者可修改名称、描述、科目
+- **删除课程**：课程所有者可删除课程及其下所有题目
+- **手动添加题目**：进入课程后可以逐道添加题目（支持单选题、多选题、判断题、填空题、简答题）
+- **批量导入**：通过 JSON 数组或 Word/PPT 文件批量导入
+
+### Word/PPT 预览导入流程
+
+文件上传采用**预览→修改→确认**三步流程，不是直接写入数据库：
+
+1. **上传文件**：调用 `POST /imports/file/preview`，后端提取文本后调用 AI 解析为题目数组
+2. **预览与修改**：前端展示 AI 解析结果，用户可以编辑题目字段（题干、选项、答案、解析等）
+3. **确认导入**：用户确认后调用 `POST /imports/confirm`，后端校验所有题目后统一写入数据库
+
+这种方式确保用户对导入内容有完全控制权，避免 AI 解析错误直接入库。
+
+### 发布与撤回公开
+
+**发布范围：**
+- **整门课程发布**：`POST /courses/{course_id}/publish` → 课程 + 其下所有题目变为公开
+- **单道题目发布**：`POST /questions/{question_id}/publish` → 仅该题目公开
+
+**撤回范围：**
+- **整门课程撤回**：`POST /courses/{course_id}/unpublish` → 课程 + 其下所有题目回到私有
+- **单道题目撤回**：`POST /questions/{question_id}/unpublish` → 仅该题目回到私有
+
+> 只有题目/课程的所有者可以执行发布和撤回操作。
+
+### 间隔复习机制
+
+每次提交答案后，系统自动更新该题的间隔复习状态：
+
+| review_level | 下次复习间隔 | 说明 |
+|---|---|---|
+| 0 | 未开始 | 初次创建，或重置后 |
+| 1 | 1 天 | 第一次答对 |
+| 2 | 3 天 | 连续第二次答对 |
+| 3 | 7 天 | 连续第三次答对 |
+| 4 | 14 天 | 持续稳定的掌握 |
+| 5 | 30 天 | 完全掌握，低频复习 |
+
+答错时降级（review_level 减 1，最低 0），连续答错积累到错题本。
+
+**复习入口：**
+- `GET /practice/review/due` — 到期需复习的题目列表
+- `GET /practice/review/wrong` — 错题复习（按错题数权重抽取）
+- `GET /practice/review/today` — 今日复习建议摘要
+
+### 填空 `||` 与简答 `&&` 答案规则
+
+**填空题（fill_blank）：**
+
+使用 `||` 分隔多个可接受答案。用户答对其一即判对：
+
+```
+# 标准答案中任意一个匹配即可
+answer = "TCP||传输控制协议"
+→ "TCP" ✓
+→ "传输控制协议" ✓
+→ "UDP" ✗
+```
+
+**简答题（short_answer）：**
+
+- `||` 表示**多选一**：匹配任一即正确（同填空题）
+- `&&` 表示**所有关键词必须出现**：用户答案中需包含所有关键词，顺序无关
+
+```
+# && 要求全部关键词都出现在用户答案中
+answer = "冒泡排序&&交换&&相邻"
+→ "冒泡排序通过交换相邻元素实现排序" ✓
+→ "通过相邻元素交换完成排序" ✓（顺序不限）
+→ "冒泡排序是一种排序算法" ✗（缺少"交换"和"相邻"）
+```
+
+> 比较时会忽略：首尾空格、全角/半角标点、大小写（英文）、多余空白。
+
 ## 配置 Mimo API（或其他兼容 OpenAI 的接口）
 
-AI 对话（`/chat/`）和文件自动导入（`/imports/file/auto`）需要配置 API 密钥。
+AI 对话（`/chat/`）、文件预览导入（`/imports/file/preview`）和文件自动导入（`/imports/file/auto`）需要配置 API 密钥。
 
 编辑 `backend/.env`：
 
 ```env
-# Mimo（推荐，免费额度）
-OPENAI_API_KEY=sk-your-mimo-key-here
+# Mimo 示例
+OPENAI_API_KEY=<your-api-key>
 OPENAI_BASE_URL=https://api.xiaomimimo.com/v1
 OPENAI_MODEL=mimo-v2.5
 
-# 或者 OpenAI
-# OPENAI_API_KEY=sk-your-key-here
+# OpenAI 示例
+# OPENAI_API_KEY=<your-api-key>
 # OPENAI_BASE_URL=https://api.openai.com/v1
 # OPENAI_MODEL=gpt-4o-mini
 
-# 或者 DeepSeek
-# OPENAI_API_KEY=sk-your-key-here
+# DeepSeek 示例
+# OPENAI_API_KEY=<your-api-key>
 # OPENAI_BASE_URL=https://api.deepseek.com/v1
 # OPENAI_MODEL=deepseek-chat
 ```
 
-> ⚠️ **安全警告**：
-> - **不要提交 `backend/.env` 到 Git**（已写入 `.gitignore`）
-> - **不要截图或分享你的 API Key**
-> - 后端启动时会检查 `SECRET_KEY` 是否仍为默认值，若是则打印警告
+> ⚠️ **安全警告**（提交公开仓库前必读）：
+> - ✅ **`backend/.env` 不要提交** — 已在 `.gitignore` 中忽略，提交前请确认 `git status` 中没有 `.env`
+> - ✅ **`backend/exam_system.db` 不要提交** — 包含真实数据，已在 `.gitignore` 中忽略
+> - ✅ **`uploads/` 不要提交** — 用户上传的文件不应进入仓库
+> - ✅ **不要在日志、截图或视频中暴露 API Key / SECRET_KEY**
+> - ✅ **不要在任何公开渠道分享 `.env` 内容**
 
 ## 数据库说明
 
@@ -221,8 +304,6 @@ pip install psycopg2-binary
 
 ### 重置开发数据库
 
-如需清空所有数据重新开始，只需删除 SQLite 文件：
-
 ```bash
 del backend\exam_system.db
 ```
@@ -246,39 +327,58 @@ del backend\exam_system.db
 | `/auth/login`      | POST   | 用户登录，返回 JWT Token      |
 | `/auth/me`         | GET    | 获取当前用户信息（需认证）    |
 
-### 课程（我的题库 + 公共浏览）
+### 课程
 
-| 端点                                     | 方法   | 说明                                |
-| ---------------------------------------- | ------ | ----------------------------------- |
-| `/courses/`                              | POST   | 创建课程（默认私有）                |
-| `/courses/`                              | GET    | 获取当前用户可见的所有课程          |
-| `/courses/mine`                          | GET    | 只获取我创建的课程                  |
-| `/courses/{course_id}`                   | GET    | 课程详情                            |
-| `/courses/{course_id}`                   | DELETE | 删除课程（只能删自己的）            |
-| `/courses/{course_id}/questions`         | GET    | 课程下的题目列表                    |
-| `/courses/{course_id}/practice/random`   | GET    | 在指定课程内随机刷题                |
-| `/courses/{course_id}/publish`           | POST   | 发布课程（课程 + 所有题目变为公开） |
-| `/library/public`                        | GET    | 公共题库：浏览所有公开课程          |
-| `/library/public/{course_id}/questions`  | GET    | 查看公开课程下的题目                |
+| 端点                                     | 方法     | 说明                                |
+| ---------------------------------------- | -------- | ----------------------------------- |
+| `/courses/`                              | POST     | 创建课程（默认私有）                |
+| `/courses/`                              | GET      | 获取用户可见的所有课程              |
+| `/courses/mine`                          | GET      | 只获取我创建的课程                  |
+| `/courses/{course_id}`                   | GET      | 课程详情                            |
+| `/courses/{course_id}`                   | PATCH    | 编辑课程名称/描述/科目              |
+| `/courses/{course_id}`                   | DELETE   | 删除课程（只能删自己的）            |
+| `/courses/{course_id}/questions`         | GET      | 课程下的题目列表                    |
+| `/courses/{course_id}/practice/random`   | GET      | 在指定课程内随机刷题                |
+| `/courses/{course_id}/publish`           | POST     | 发布课程（课程 + 所有题目变公开）   |
+| `/courses/{course_id}/unpublish`         | POST     | 撤回课程（课程 + 所有题目回私有）   |
+
+### 公共题库
+
+| 端点                                     | 方法   | 说明                            |
+| ---------------------------------------- | ------ | ------------------------------- |
+| `/library/public`                        | GET    | 浏览所有公开课程                |
+| `/library/public/{course_id}/questions`  | GET    | 查看公开课程下的题目            |
 
 ### 题目
 
-| 端点                             | 方法   | 说明                            |
-| -------------------------------- | ------ | ------------------------------- |
-| `/questions/`                    | GET    | 题目列表（可见范围，支持筛选）  |
-| `/questions/my`                  | GET    | 只看我自己的题目                |
-| `/questions/public`              | GET    | 只看公开的题目                  |
-| `/questions/batch`               | POST   | 批量导入题目                    |
-| `/questions/{question_id}`       | DELETE | 删除自己的题目                  |
-| `/questions/{question_id}/publish` | POST | 发布单道题目到公共题库          |
-| `/questions/meta`                | GET    | 题目科目/章节元数据             |
+| 端点                                 | 方法     | 说明                            |
+| ------------------------------------ | -------- | ------------------------------- |
+| `/questions/`                        | GET      | 题目列表（可见范围，支持筛选）  |
+| `/questions/my`                      | GET      | 只看我自己的题目                |
+| `/questions/public`                  | GET      | 只看公开的题目                  |
+| `/questions/batch`                   | POST     | 批量导入题目                    |
+| `/questions/{question_id}`           | DELETE   | 删除自己的题目                  |
+| `/questions/{question_id}/publish`   | POST     | 发布单道题目到公共题库          |
+| `/questions/{question_id}/unpublish` | POST     | 撤回单道题目回私有              |
+| `/questions/meta`                    | GET      | 题目科目/章节元数据             |
 
-### 刷题
+### 刷题与判分
 
 | 端点                  | 方法   | 说明                    |
 | --------------------- | ------ | ----------------------- |
-| `/practice/random`    | GET    | 从全局可见题目中随机刷题 |
+| `/practice/random`    | GET    | 从可见题目中随机抽题（支持 course_id 指定课程） |
 | `/practice/submit`    | POST   | 提交答案并判分          |
+| `/practice/stats`     | GET    | 练习统计（今日题数、正确率等）|
+| `/practice/history`   | GET    | 练习历史（分页）        |
+
+### 间隔复习
+
+| 端点                              | 方法   | 说明                            |
+| --------------------------------- | ------ | ------------------------------- |
+| `/practice/review/wrong`          | GET    | 错题复习（按错题数权重抽取）    |
+| `/practice/review/today`          | GET    | 今日复习建议摘要                |
+| `/practice/review/due`            | GET    | 到期需复习的题目列表            |
+| `/practice/insights/weak-types`   | GET    | 薄弱题型分析                    |
 
 ### 错题本
 
@@ -290,10 +390,12 @@ del backend\exam_system.db
 
 ### 文件导入
 
-| 端点                  | 方法   | 说明                                    |
-| --------------------- | ------ | --------------------------------------- |
+| 端点                  | 方法   | 说明                                        |
+| --------------------- | ------ | ------------------------------------------- |
 | `/imports/file`       | POST   | 上传 .docx/.pptx 文件，提取文本（最大 10MB）|
-| `/imports/file/auto`  | POST   | 上传文件并用 AI 自动解析为题目并导入     |
+| `/imports/file/preview`| POST   | 上传文件并用 AI 解析为题目，返回预览（不入库）|
+| `/imports/confirm`    | POST   | 确认预览后的题目并写入数据库                |
+| `/imports/file/auto`  | POST   | 上传文件并用 AI 直接解析并导入              |
 
 ### AI 对话
 
@@ -324,42 +426,45 @@ del backend\exam_system.db
 
 ```powershell
 # 启动后端（新窗口）
-Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd\backend'; .venv\Scripts\activate; uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
+Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd'; backend\.venv\Scripts\activate; uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
 
 # 启动前端（新窗口）
 Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd\frontend'; npm.cmd run dev -- --host 0.0.0.0"
 ```
 
-> 前端命令使用 `npm.cmd` 而非 `npm`，以避免 PowerShell 执行策略阻止 npm.ps1。
-
 ## 验收命令
 
-快速验证项目各模块正常：
-
 ```bash
-# 1. 后端测试
+# 后端测试
 cd "D:\File\exam system"
 backend\.venv\Scripts\python.exe -m pytest backend/tests -v
 
-# 2. 前端构建
+# 前端构建
 cd frontend
 npm.cmd run build
 
-# 3. 后端健康检查（需先启动后端）
+# 后端健康检查（需先启动后端）
 curl http://127.0.0.1:8000/health
-# 预期返回：{"status":"ok"}
+
+# 安全检查
+python scripts/security_check.py
+
+# 冒烟测试（需先启动后端）
+powershell -ExecutionPolicy Bypass -File scripts\smoke_test.ps1
 ```
 
-后端测试覆盖：注册/登录、题目 CRUD、批量导入、刷题提交、错题本，共 58+ 个测试用例，使用 SQLite 内存数据库隔离测试数据。
+## 公开仓库前检查清单
 
-## Git 初始化
-
-本项目尚未初始化 Git 仓库。如需版本管理，请在根目录执行：
-
-```bash
-git init
-git add .
-git commit -m "初始提交"
+```markdown
+- [ ] 已确认 `.env` 文件未被 Git 跟踪（运行 `git status` 检查）
+- [ ] 已确认 `backend/exam_system.db` 未被跟踪
+- [ ] 已确认 `uploads/` 未被跟踪
+- [ ] 已确认 `.env.example` 中不含真实 API Key（使用 `<your-api-key>` 占位）
+- [ ] 生产环境已设置 `SECRET_KEY` 为随机字符串
+- [ ] 生产环境已修改 `INVITE_CODE` 为自定义值
+- [ ] 生产环境已配置 `CORS_ORIGINS` 为前端实际域名
+- [ ] 生产环境已设置 `APP_ENV=production`
+- [ ] 已运行 `git grep -n "sk-"` 确认无 API Key 硬编码
 ```
 
-> 请确保 `.env` 文件未被提交——`.gitignore` 已配置忽略 `.env`，提交前务必确认。
+> 更多验收细节请参见 [docs/acceptance-checklist.md](docs/acceptance-checklist.md)。

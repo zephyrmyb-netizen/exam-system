@@ -14,6 +14,7 @@ import RegisterView from "./views/auth/RegisterView.vue";
 import PracticeHub from "./views/PracticeHub.vue";
 import PracticeHistory from "./views/PracticeHistory.vue";
 import WrongPractice from "./views/WrongPractice.vue";
+import DuePractice from "./views/DuePractice.vue";
 import CourseList from "./views/CourseList.vue";
 import CourseDetail from "./views/CourseDetail.vue";
 import CoursePractice from "./views/CoursePractice.vue";
@@ -108,6 +109,17 @@ const routes = [
         meta: {
           title: "错题强化",
           description: "集中攻克薄弱环节，逐题复盘。",
+          navKey: "",
+          parent: "practice",
+        },
+      },
+      {
+        path: "practice/due",
+        name: "practice-due",
+        component: DuePractice,
+        meta: {
+          title: "到期复习",
+          description: "今日到期题目，逐题巩固。",
           navKey: "",
           parent: "practice",
         },
@@ -219,10 +231,18 @@ router.beforeEach((to, from) => {
   const token = getToken();
 
   if (to.matched.some((r) => r.meta.requiresAuth) && !token) {
-    return { name: "login" };
+    return {
+      name: "login",
+      query: { redirect: to.fullPath },
+    };
   }
 
   if (to.matched.some((r) => r.meta.guest) && token) {
+    const redirect = to.query.redirect;
+    // 仅允许跳转到相对路径的非游客页面，避免重定向循环
+    if (redirect && typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("/login") && !redirect.startsWith("/register")) {
+      return { path: redirect };
+    }
     return { name: "home" };
   }
 });

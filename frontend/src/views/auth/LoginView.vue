@@ -1,10 +1,11 @@
 <script setup>
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../../stores/auth";
 import { Eye, EyeOff, User, Lock } from "@lucide/vue";
 
 const router = useRouter();
+const route = useRoute();
 const { login, loading, authMessage, authError, resetFeedback } = useAuth();
 
 const form = ref({
@@ -17,7 +18,13 @@ async function handleLogin() {
   resetFeedback();
   const ok = await login(form.value.username, form.value.password);
   if (ok) {
-    router.push({ name: "home" });
+    const redirect = route.query.redirect;
+    // 安全校验：仅接受相对路径，且不跳转到游客页面
+    if (redirect && typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("/login") && !redirect.startsWith("/register")) {
+      router.push(redirect);
+    } else {
+      router.push({ name: "home" });
+    }
   }
 }
 </script>
@@ -71,8 +78,7 @@ async function handleLogin() {
 
     <!-- 邀请码提示 -->
     <p class="invite-hint">
-      💡 首次使用？<router-link :to="{ name: 'register' }">去注册</router-link>，
-      开发邀请码：<code>dev-invite</code>
+      💡 首次使用？请向管理员获取邀请码，然后<router-link :to="{ name: 'register' }">去注册</router-link>。
     </p>
 
     <p class="auth-switch">

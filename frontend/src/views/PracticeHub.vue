@@ -25,6 +25,10 @@ const hasWrongQuestions = computed(() => {
   return w !== null && w > 0;
 });
 
+const hasDueQuestions = computed(() => {
+  return review.value.dueCount !== null && review.value.dueCount > 0;
+});
+
 const hasRecentCourses = computed(() => recentCourses.value.length > 0);
 
 async function fetchStatsReview() {
@@ -88,6 +92,10 @@ onMounted(() => {
           <span class="hub-stat-val">{{ hasWrongQuestions ? (review.wrongCount ?? stats.wrongCount) : "0" }}</span>
           <span class="hub-stat-lbl">错题</span>
         </div>
+        <div class="hub-stat">
+          <span class="hub-stat-val" :class="{ 'stat-accent': hasDueQuestions }">{{ review.dueCount !== null ? review.dueCount : "--" }}</span>
+          <span class="hub-stat-lbl">到期</span>
+        </div>
       </div>
       <div v-if="review.weakTypes.length > 0" class="hub-weak">
         <span class="hub-weak-lbl">薄弱</span>
@@ -118,6 +126,19 @@ onMounted(() => {
         <span class="mode-text">
           <span class="mode-title">错题强化</span>
           <span class="mode-desc">{{ hasWrongQuestions ? `${review.wrongCount ?? stats.wrongCount} 道待复习` : "暂无错题" }}</span>
+        </span>
+      </button>
+      <button
+        class="mode"
+        :class="{ 'mode--dim': !hasDueQuestions }"
+        type="button"
+        :disabled="!hasDueQuestions"
+        @click="router.push('/practice/due')"
+      >
+        <BookMarked :size="18" :stroke-width="2.5" class="mode-icon" style="color:var(--teal)" />
+        <span class="mode-text">
+          <span class="mode-title">到期复习</span>
+          <span class="mode-desc">{{ hasDueQuestions ? `${review.dueCount} 道今日到期` : "暂无到期题目" }}</span>
         </span>
       </button>
       <button class="mode" type="button" @click="router.push('/practice/history')">
@@ -192,6 +213,7 @@ onMounted(() => {
 .hub-stat { display: grid; gap: 1px; }
 .hub-stat-val { font-size: 18px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
 .hub-stat-lbl { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.stat-accent { color: var(--teal); }
 .hub-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .hub-weak-lbl { font-size: 10px; font-weight: 700; color: var(--text-muted); }
 .hub-weak-chip { padding: 2px 7px; border-radius: 999px; background: var(--rose-soft); color: var(--rose); font-size: 10px; font-weight: 700; }

@@ -100,7 +100,10 @@ function goBack() {
 
 function handleAuthChange() {
   if (!getToken()) {
-    router.push({ name: "login" });
+    // 仅在当前不在登录页时跳转，避免重定向循环
+    if (route.name !== "login" && route.name !== "register") {
+      router.push({ name: "login", query: { redirect: route.fullPath } });
+    }
   }
 }
 

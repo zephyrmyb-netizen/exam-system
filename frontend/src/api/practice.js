@@ -1,10 +1,10 @@
 /**
- * Practice-related API calls.
+ * Practice-related API calls — /practice/*
  *
- * Encapsulates all /practice/* endpoints so views don't
+ * Encapsulates all /practice/ endpoints so views don't
  * hard-code request paths or response shapes.
  */
-import request, { getErrorMessage } from "./request";
+import request from "./request";
 
 /**
  * Fetch practice stats (today_count, total_count, accuracy_rate, etc.).
@@ -70,5 +70,25 @@ export async function getWeakTypes() {
  */
 export async function getReviewWrongQuestion(params) {
   const { data } = await request.get("/practice/review/wrong", { params });
+  return data;
+}
+
+/**
+ * Fetch a due review question (spaced repetition / overdue practice).
+ * @param {Object} [params] - { course_id, type }
+ * @returns {Promise<Object>} The question object.
+ */
+export async function getReviewDueQuestion(params) {
+  const { data } = await request.get("/practice/review/due", { params });
+  return data;
+}
+
+/**
+ * Fetch comprehensive learning statistics.
+ * @returns {Promise<Object>} Statistical data (may include today_count, total_count,
+ *   accuracy_rate, correct_count, wrong_count, recent_count_7d, etc.)
+ */
+export async function getLearningStats() {
+  const { data } = await request.get("/practice/stats");
   return data;
 }

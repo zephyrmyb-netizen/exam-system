@@ -72,6 +72,10 @@ onMounted(() => { if (stats.value.todayCount === null) fetchAll(); });
         <span class="review-lbl">今日待复习</span>
         <span class="review-val">{{ review.dueCount !== null ? review.dueCount : "--" }} 题</span>
       </div>
+      <div v-if="review.wrongCount !== null" class="review-row">
+        <span class="review-lbl">错题数</span>
+        <span class="review-val">{{ review.wrongCount }} 题</span>
+      </div>
       <div v-if="review.weakTypes.length > 0" class="review-row">
         <span class="review-lbl">薄弱题型</span>
         <span class="review-tags">
@@ -82,7 +86,16 @@ onMounted(() => { if (stats.value.todayCount === null) fetchAll(); });
         </span>
       </div>
       <div class="review-actions">
-        <button class="primary-button" type="button" @click="router.push('/practice/wrong')">
+        <button
+          v-if="review.dueCount !== null && review.dueCount > 0"
+          class="primary-button"
+          type="button"
+          @click="router.push('/practice/due')"
+        >
+          <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:4px" />
+          到期复习
+        </button>
+        <button class="ghost-button" type="button" @click="router.push('/practice/wrong')">
           <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:4px" />
           错题强化
         </button>

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { getErrorMessage } from "../api/request";
-import { getRandomPracticeQuestion, submitPracticeAnswer, getReviewWrongQuestion } from "../api/practice";
+import { getRandomPracticeQuestion, submitPracticeAnswer, getReviewWrongQuestion, getReviewDueQuestion } from "../api/practice";
 import { typeLabel, formatOptions } from "../utils/question";
 import {
   Send, ArrowRight, CheckCircle, XCircle, BookMarked,
@@ -58,6 +58,7 @@ const streakText = computed(() => {
 
 const modeLabel = computed(() => {
   if (props.mode === "wrong_review") return "错题强化";
+  if (props.mode === "due_review") return "到期复习";
   if (props.mode === "type_practice") return `题型·${typeLabel(props.modeParam)}`;
   if (props.mode === "chapter_practice") return `章节·${props.modeParam}`;
   return "";
@@ -88,10 +89,14 @@ const answerOptions = computed(() => {
   return options.length > 0 ? options : ["A", "B", "C", "D"].map(k => ({ key: k, value: k }));
 });
 
-const canStartWithoutCourse = computed(() => props.mode === "wrong_review");
+const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
 const isWrongReviewEmpty = computed(() =>
   props.mode === "wrong_review" && !loading.value && !errorMessage.value && question.value === null && sessionStats.value.answeredCount === 0
+);
+
+const isDueReviewEmpty = computed(() =>
+  props.mode === "due_review" && !loading.value && !errorMessage.value && question.value === null && sessionStats.value.answeredCount === 0
 );
 
 const isCourseEmpty = computed(() =>
@@ -138,6 +143,8 @@ async function fetchRandomQuestion() {
     let data;
     if (props.mode === "wrong_review") {
       data = await getReviewWrongQuestion(params);
+    } else if (props.mode === "due_review") {
+      data = await getReviewDueQuestion(params);
     } else {
       if (props.mode === "type_practice") params.type = props.modeParam;
       if (props.mode === "chapter_practice") params.chapter = props.modeParam;
@@ -227,7 +234,7 @@ function confirmAndSkip() {
 function goBack() {
   if (props.courseId) {
     router.push(`/courses/${props.courseId}`);
-  } else if (props.mode === "wrong_review") {
+  } else if (props.mode === "wrong_review" || props.mode === "due_review") {
     router.push({ name: "practice" });
   } else {
     router.push("/courses");
@@ -299,6 +306,17 @@ onMounted(() => {
       <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color:var(--emerald)" /></div>
       <p class="state-title">暂无错题</p>
       <p class="state-hint">继续练习积累后再来强化。</p>
+      <button class="primary-button" type="button" @click="goBack">
+        <ArrowRight :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        去练习
+      </button>
+    </div>
+
+    <!-- Due review empty -->
+    <div v-else-if="isDueReviewEmpty" class="state-block">
+      <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color:var(--emerald)" /></div>
+      <p class="state-title">暂无到期题目</p>
+      <p class="state-hint">你已清空今日到期复习，继续保持！</p>
       <button class="primary-button" type="button" @click="goBack">
         <ArrowRight :size="16" :stroke-width="2.5" style="margin-right:4px" />
         去练习

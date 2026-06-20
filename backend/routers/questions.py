@@ -8,6 +8,16 @@ from ..database import get_db
 router = APIRouter(prefix="/questions", tags=["questions"])
 
 
+def _get_owned_question(db: Session, question_id: int, user_id: int):
+    """Return a question if it exists and the current user owns it."""
+    question = crud.get_question_by_id(db, question_id)
+    if not question:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    if question.owner_id is None or question.owner_id != user_id:
+        raise HTTPException(status_code=403, detail="只能操作自己的题目")
+    return question
+
+
 @router.post("/batch")
 def batch_import(
     questions: list[schemas.QuestionCreate],
@@ -159,6 +169,76 @@ def delete_question(
     return {"message": "题目已删除"}
 
 
+# ── Manual create single question ──────────────────────────────────────────
+@router.post("/", status_code=201)
+def create_question(
+    body: schemas.QuestionManualCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Manually create a single question. Must belong to a course the user owns."""
+    # Verify the course belongs to the user
+    bank = crud.get_question_bank_by_id(db, body.course_id)
+    if not bank:
+        raise HTTPException(status_code=404, detail="课程不存在")
+    if bank.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="只能在自己的课程下创建题目")
+
+    question = crud.create_single_question(db, body, current_user.id)
+    return question.to_dict()
+
+
+# ── Edit question ──────────────────────────────────────────────────────────
+@router.patch("/{question_id}")
+def update_question(
+    question_id: int,
+    body: schemas.QuestionUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Edit a question's fields. Only the owner can do this."""
+    question = _get_owned_question(db, question_id, current_user.id)
+
+    # If changing course_id, verify the target course belongs to the user
+    if body.course_id is not None:
+        bank = crud.get_question_bank_by_id(db, body.course_id)
+        if not bank:
+            raise HTTPException(status_code=404, detail="目标课程不存在")
+        if bank.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="只能移动到自己的课程")
+
+    # Validate options if type is being changed to a choice type
+    new_type = body.type if body.type is not None else question.type
+    if new_type in ("single_choice", "multiple_choice"):
+        has_options = body.options is not None or question.options is not None
+        if not has_options:
+            raise HTTPException(status_code=400, detail="选择题必须提供 options")
+
+    try:
+        updated = crud.update_question(db, question_id, body)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not updated:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    return updated.to_dict()
+
+
+# ── Unpublish question ─────────────────────────────────────────────────────
+@router.post("/{question_id}/unpublish")
+def unpublish_question(
+    question_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Unpublish a question (set back to private). Only the owner can do this."""
+    question = _get_owned_question(db, question_id, current_user.id)
+    if question.visibility == "private":
+        raise HTTPException(status_code=400, detail="该题目已为私有")
+    updated = crud.update_question_visibility(db, question_id, "private")
+    return updated.to_dict()
+
+
+# ── Publish question ───────────────────────────────────────────────────────
 @router.post("/{question_id}/publish")
 def publish_question(
     question_id: int,

@@ -8,7 +8,33 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .utils import normalize_answer
+from .config import APP_TIMEZONE
+from .utils import normalize_answer, check_fill_blank_answer, check_short_answer_answer
+
+
+# ── Timezone ────────────────────────────────────────────────────────────────
+
+def _local_now() -> datetime:
+    """Return current datetime in the configured timezone (naive, for comparison)."""
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo(APP_TIMEZONE)
+    return datetime.now(tz).replace(tzinfo=None)
+
+
+def _local_today_start() -> datetime:
+    """Return the start of today in the configured timezone (naive)."""
+    return _local_now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _utc_to_local(dt: datetime) -> datetime:
+    """Convert a timezone-aware UTC datetime to the configured timezone (naive)."""
+    from zoneinfo import ZoneInfo
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    tz = ZoneInfo(APP_TIMEZONE)
+    return dt.astimezone(tz).replace(tzinfo=None)
 
 
 # ── User ────────────────────────────────────────────────────────────────────
@@ -323,6 +349,26 @@ def update_question_bank_visibility(
     return bank
 
 
+def update_question_bank(
+    db: Session, bank_id: int, data: schemas.CourseUpdate,
+) -> Optional[models.QuestionBank]:
+    """Update a course's name, description, and/or subject."""
+    bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == bank_id).first()
+    if not bank:
+        return None
+    if data.name is not None:
+        if not data.name.strip():
+            raise ValueError("课程名称不能为空")
+        bank.name = data.name.strip()
+    if data.description is not None:
+        bank.description = data.description
+    if data.subject is not None:
+        bank.subject = data.subject
+    db.commit()
+    db.refresh(bank)
+    return bank
+
+
 # ── Question ────────────────────────────────────────────────────────────────
 
 def get_questions(
@@ -421,6 +467,74 @@ def delete_question(db: Session, question_id: int) -> bool:
     return True
 
 
+def create_single_question(
+    db: Session, data: schemas.QuestionManualCreate, owner_id: int,
+) -> models.Question:
+    """Create a single question manually (source=manual)."""
+    normalized_answer = normalize_answer(data.answer, data.type)
+    question = models.Question(
+        owner_id=owner_id,
+        course_id=data.course_id,
+        visibility="private",
+        source="manual",
+        created_at=datetime.now(timezone.utc),
+        subject=data.subject,
+        chapter=data.chapter,
+        type=data.type,
+        question=data.question,
+        answer=normalized_answer,
+        analysis=data.analysis or "",
+        difficulty=data.difficulty or "normal",
+    )
+    question.set_options_dict(data.options)
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+def update_question(
+    db: Session, question_id: int, data: schemas.QuestionUpdate,
+) -> Optional[models.Question]:
+    """Update a question's fields. Only sets fields that are not None."""
+    question = db.query(models.Question).filter(models.Question.id == question_id).first()
+    if not question:
+        return None
+
+    if data.subject is not None:
+        question.subject = data.subject
+    if data.chapter is not None:
+        question.chapter = data.chapter
+    if data.type is not None:
+        question.type = data.type
+    if data.question is not None:
+        if not data.question.strip():
+            raise ValueError("题目题干不能为空")
+        question.question = data.question.strip()
+    if data.options is not None:
+        question.set_options_dict(data.options)
+    if data.answer is not None:
+        question.answer = data.answer  # already normalized by schema validator
+    if data.analysis is not None:
+        question.analysis = data.analysis
+    if data.difficulty is not None:
+        question.difficulty = data.difficulty
+    if data.course_id is not None:
+        question.course_id = data.course_id
+
+    # Validate consistency: if type changed to choice, must have options
+    q_type = question.type
+    if q_type in ("single_choice", "multiple_choice") and not question.options:
+        raise ValueError("选择题（single_choice / multiple_choice）必须提供 options")
+    # Re-normalize answer if type was changed
+    if data.type is not None and data.answer is not None:
+        question.answer = normalize_answer(question.answer, question.type)
+
+    db.commit()
+    db.refresh(question)
+    return question
+
+
 def update_question_visibility(
     db: Session, question_id: int, visibility: str
 ) -> Optional[models.Question]:
@@ -516,7 +630,12 @@ def create_practice_record(
     user_answer: str,
     correct_answer: str,
 ) -> models.PracticeRecord:
-    """Record every answer attempt (correct or incorrect)."""
+    """Record every answer attempt (correct or incorrect).
+    
+    Note: does NOT call db.commit() — the caller is responsible for
+    committing the transaction so that practice record, wrong record,
+    and review state are all written atomically.
+    """
     record = models.PracticeRecord(
         user_id=user_id,
         question_id=question_id,
@@ -528,19 +647,23 @@ def create_practice_record(
         answered_at=datetime.now(timezone.utc),
     )
     db.add(record)
-    db.commit()
-    db.refresh(record)
+    db.flush()
     return record
 
 
 def get_practice_stats(db: Session, user_id: int) -> dict:
     """Return practice statistics for the given user.
 
-    today_count uses UTC date boundary: records where answered_at >= start of today UTC.
-    accuracy_rate is 0.0 when there are no records.
+    today_count uses the configured APP_TIMEZONE (default Asia/Shanghai),
+    not UTC.
     """
+    from zoneinfo import ZoneInfo
+
     now_utc = datetime.now(timezone.utc)
-    today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    local_tz = ZoneInfo(APP_TIMEZONE)
+    local_midnight = datetime.now(local_tz).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert local midnight to UTC for comparison with answered_at (UTC)
+    today_start = local_midnight.astimezone(timezone.utc)
     seven_days_ago = now_utc - timedelta(days=7)
 
     base = db.query(models.PracticeRecord).filter(models.PracticeRecord.user_id == user_id)
@@ -628,17 +751,29 @@ def get_practice_stats_by_course(
     return result
 
 def get_today_review_summary(db: Session, user_id: int) -> dict:
-    """Return today's review suggestion based on wrong records and practice history.
+    """Return today's review suggestion based on due reviews, wrong records, and practice history.
 
-    due_count: number of distinct wrong questions (wrong_records).
+    due_count: count of actually due review records (next_review_at <= now).
     wrong_count: total wrong records count.
     weak_types: question types with >50% error rate in recent practice.
     recommended_modes: practice modes suggested based on available data.
     """
+    now = datetime.now(timezone.utc)
+
+    # Due count from UserQuestionReview (spaced repetition)
+    due_count = (
+        db.query(models.UserQuestionReview)
+        .filter(models.UserQuestionReview.user_id == user_id)
+        .filter(
+            (models.UserQuestionReview.next_review_at <= now)
+            | (models.UserQuestionReview.next_review_at.is_(None))
+        )
+        .count()
+    )
+
     # Wrong record counts
     wrong_base = db.query(models.WrongRecord).filter(models.WrongRecord.user_id == user_id)
-    due_count = wrong_base.count()
-    wrong_count = due_count
+    wrong_count = wrong_base.count()
 
     # Weak types from recent practice (last 50 records)
     recent = (
@@ -676,11 +811,13 @@ def get_today_review_summary(db: Session, user_id: int) -> dict:
 
     # Recommended modes
     modes = []
-    if due_count > 0:
+    if wrong_count > 0:
         modes.append("wrong_review")
+    if due_count > 0:
+        modes.append("spaced_repeat")
     if weak_types:
         modes.append("type_practice")
-    if due_count == 0 and not weak_types:
+    if due_count == 0 and wrong_count == 0 and not weak_types:
         modes.append("random_practice")
 
     return {
@@ -801,8 +938,164 @@ def get_random_wrong_question(
 
 
 def check_answer(question: models.Question, user_answer: str) -> bool:
-    """Compare user answer with question.answer using type-aware normalization."""
+    """Compare user answer with question.answer using type-aware normalization.
+
+    fill_blank: supports || for multiple acceptable answers
+    short_answer: supports && (all keywords) and || (any alternative)
+    """
+    if question.type == "fill_blank":
+        return check_fill_blank_answer(question.answer, user_answer)
+    if question.type == "short_answer":
+        return check_short_answer_answer(question.answer, user_answer)
     return normalize_answer(user_answer, question.type) == normalize_answer(question.answer, question.type)
+
+
+# ── Spaced Repetition Review ──────────────────────────────────────────────
+
+_REVIEW_INTERVALS = [1, 3, 7, 14, 30]  # days at each level
+
+
+def _compute_review_state(
+    is_correct: bool,
+    current: Optional[models.UserQuestionReview],
+    now: datetime,
+) -> dict:
+    """Compute the next review state for a user-question pair.
+
+    Returns a dict with keys matching UserQuestionReview columns.
+    """
+    if current is None:
+        # First time seeing this question
+        if is_correct:
+            return {
+                "review_level": 1,
+                "consecutive_correct": 1,
+                "consecutive_wrong": 0,
+                "next_review_at": now + timedelta(days=_REVIEW_INTERVALS[0]),
+                "review_mode": "spaced_repeat",
+                "last_reviewed_at": now,
+            }
+        else:
+            return {
+                "review_level": 0,
+                "consecutive_correct": 0,
+                "consecutive_wrong": 1,
+                "next_review_at": now + timedelta(minutes=10),
+                "review_mode": "wrong_review",
+                "last_reviewed_at": now,
+            }
+
+    if not is_correct:
+        # Wrong answer: reset
+        return {
+            "review_level": 0,
+            "consecutive_correct": 0,
+            "consecutive_wrong": (current.consecutive_wrong or 0) + 1,
+            "next_review_at": now + timedelta(minutes=10),
+            "review_mode": "wrong_review",
+            "last_reviewed_at": now,
+        }
+
+    # Correct answer
+    new_level = min((current.review_level or 0) + 1, 5)
+    new_cc = (current.consecutive_correct or 0) + 1
+    interval = _REVIEW_INTERVALS[min(new_level - 1, len(_REVIEW_INTERVALS) - 1)]
+    return {
+        "review_level": new_level,
+        "consecutive_correct": new_cc,
+        "consecutive_wrong": 0,
+        "next_review_at": now + timedelta(days=interval),
+        "review_mode": "spaced_repeat",
+        "last_reviewed_at": now,
+    }
+
+
+def upsert_user_question_review(
+    db: Session,
+    user_id: int,
+    question_id: int,
+    course_id: int | None,
+    is_correct: bool,
+) -> models.UserQuestionReview:
+    """Create or update the review state for a user-question pair after answering."""
+    now = datetime.now(timezone.utc)
+
+    current = (
+        db.query(models.UserQuestionReview)
+        .filter(
+            models.UserQuestionReview.user_id == user_id,
+            models.UserQuestionReview.question_id == question_id,
+        )
+        .first()
+    )
+
+    state = _compute_review_state(is_correct, current, now)
+
+    if current:
+        for key, value in state.items():
+            setattr(current, key, value)
+        current.updated_at = now
+        current.course_id = course_id
+        record = current
+    else:
+        record = models.UserQuestionReview(
+            user_id=user_id,
+            question_id=question_id,
+            course_id=course_id,
+            **state,
+            updated_at=now,
+        )
+        db.add(record)
+
+    db.flush()
+    return record
+
+
+def get_due_reviews(
+    db: Session,
+    user_id: int,
+    course_id: int | None = None,
+    limit: int = 20,
+) -> list[models.UserQuestionReview]:
+    """Return review records that are due for the user.
+
+    A record is due when next_review_at is NULL or in the past.
+    Ordered by next_review_at ASC (earliest first), then review_level ASC (low level first).
+    """
+    now = datetime.now(timezone.utc)
+
+    query = (
+        db.query(models.UserQuestionReview)
+        .filter(models.UserQuestionReview.user_id == user_id)
+        .filter(
+            (models.UserQuestionReview.next_review_at <= now)
+            | (models.UserQuestionReview.next_review_at.is_(None))
+        )
+    )
+
+    if course_id is not None:
+        query = query.filter(models.UserQuestionReview.course_id == course_id)
+
+    query = query.order_by(
+        models.UserQuestionReview.next_review_at.asc().nulls_first(),
+        models.UserQuestionReview.review_level.asc(),
+    )
+
+    return query.limit(limit).all()
+
+
+def get_user_question_review(
+    db: Session, user_id: int, question_id: int,
+) -> Optional[models.UserQuestionReview]:
+    """Get the review state for a single user-question pair."""
+    return (
+        db.query(models.UserQuestionReview)
+        .filter(
+            models.UserQuestionReview.user_id == user_id,
+            models.UserQuestionReview.question_id == question_id,
+        )
+        .first()
+    )
 
 
 # ── Wrong Record ────────────────────────────────────────────────────────────

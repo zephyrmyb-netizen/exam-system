@@ -173,6 +173,48 @@ def publish_course(
     return updated.to_dict()
 
 
+# ── Unpublish entire course ──────────────────────────────────────────────────
+@router.post("/{course_id}/unpublish")
+def unpublish_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Unpublish an entire course and all its questions. Only the owner can do this."""
+    bank = _get_owned_course(db, course_id, current_user.id)
+    if bank.visibility == "private":
+        raise HTTPException(status_code=400, detail="该课程已为私有")
+    crud.update_question_bank_visibility(db, course_id, "private")
+    # Also unpublish all questions in the course (that belong to the user)
+    db.query(models.Question).filter(
+        models.Question.course_id == course_id,
+        models.Question.owner_id == current_user.id,
+        models.Question.visibility != "private",
+    ).update({"visibility": "private"}, synchronize_session=False)
+    db.commit()
+    updated = crud.get_question_bank_by_id(db, course_id)
+    return updated.to_dict()
+
+
+# ── Edit course ──────────────────────────────────────────────────────────────
+@router.patch("/{course_id}")
+def update_course(
+    course_id: int,
+    body: schemas.CourseUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Edit a course's name, description, or subject. Only the owner can do this."""
+    _get_owned_course(db, course_id, current_user.id)
+    try:
+        bank = crud.update_question_bank(db, course_id, body)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not bank:
+        raise HTTPException(status_code=404, detail="课程不存在")
+    return bank.to_dict()
+
+
 # ── Delete course ───────────────────────────────────────────────────────────
 @router.delete("/{course_id}")
 def delete_course(

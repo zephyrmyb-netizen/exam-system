@@ -320,3 +320,282 @@ class TestCourseNameUserIsolation:
         # Alice sees 1 course, Bob sees 1 course (their own)
         assert len(client.get("/courses/mine", headers=alice).json()) == 1
         assert len(client.get("/courses/mine", headers=bob).json()) == 1
+
+
+class TestPreviewImport:
+    """Tests for /imports/file/preview — parse only, no DB writes."""
+
+    PREVIEW_URL = "/imports/file/preview"
+
+    def _mock_openai_response(self, questions_data=None):
+        """Return a mock OpenAI response for preview."""
+        import json
+        if questions_data is None:
+            questions_data = [{"type": "fill_blank", "question": "Preview Q?", "answer": "Ans"}]
+        mock = patch("openai.OpenAI")
+        mc = mock.start()
+        inst = mc.return_value
+        inst.chat.completions.create.return_value.choices = [
+            type("obj", (), {"message": type("obj", (), {"content": json.dumps({
+                "questions": questions_data
+            })})()})()
+        ]
+        return mock
+
+    def _make_docx(self, text="Content."):
+        return _make_docx_bytes(text)
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_returns_questions_no_db_write(self, client, auth_headers):
+        """Preview should return parsed questions and NOT create any DB records."""
+        mock = self._mock_openai_response()
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["questions"]) == 1
+            assert data["total_parsed"] == 1
+            assert data["total_valid"] == 1
+            assert data["suggested_course_name"] == "test"
+            # Verify no questions were created in DB
+            q_resp = client.get("/questions/", headers=auth_headers)
+            assert len(q_resp.json()) == 0
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_returns_validation_warnings(self, client, auth_headers):
+        """Preview should flag invalid questions without crashing."""
+        data = [
+            {"type": "invalid_type", "question": "Bad?", "answer": "X"},
+            {"type": "fill_blank", "question": "Good?", "answer": "Y"},
+        ]
+        mock = self._mock_openai_response(data)
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            d = resp.json()
+            # Only valid question returned
+            assert len(d["questions"]) == 1
+            assert d["questions"][0]["question"] == "Good?"
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_no_questions_returns_empty(self, client, auth_headers):
+        """When AI returns no questions, preview returns empty list."""
+        mock = self._mock_openai_response([])
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["questions"]) == 0
+            assert data["total_parsed"] == 0
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "")
+    def test_preview_no_openai_key(self, client, auth_headers):
+        """Without key, preview returns 400."""
+        resp = client.post(
+            self.PREVIEW_URL, headers=auth_headers,
+            files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+        )
+        assert resp.status_code == 400
+        assert "OPENAI_API_KEY" in resp.json()["detail"]
+
+    def test_preview_unsupported_format(self, client, auth_headers):
+        resp = client.post(
+            self.PREVIEW_URL, headers=auth_headers,
+            files={"file": ("test.txt", b"hello", "text/plain")},
+        )
+        assert resp.status_code == 400
+        assert "不支持" in resp.json()["detail"]
+
+
+class TestConfirmImport:
+    """Tests for /imports/confirm — single-transaction import."""
+
+    CONFIRM_URL = "/imports/confirm"
+
+    def test_confirm_creates_questions(self, client, auth_headers):
+        """Confirm with valid questions should create questions and a course."""
+        resp = client.post(self.CONFIRM_URL, json={
+            "questions": [
+                {"type": "fill_blank", "question": "Confirm Q?", "answer": "Ans"},
+                {"type": "single_choice", "question": "Choice?",
+                 "options": {"A": "a", "B": "b"}, "answer": "A"},
+            ],
+            "course_name": "ConfirmCourse",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["imported_count"] == 2
+        assert data["course_name"] == "ConfirmCourse"
+        assert data["course_id"] is not None
+
+        # Verify DB has them
+        qs = client.get("/questions/", headers=auth_headers).json()
+        assert len(qs) == 2
+
+    def test_confirm_existing_course(self, client, auth_headers):
+        """Confirm with existing course_id should add to that course."""
+        bank = client.post("/courses/", json={"name": "Existing"}, headers=auth_headers).json()
+        cid = bank["id"]
+        resp = client.post(self.CONFIRM_URL, json={
+            "questions": [
+                {"type": "fill_blank", "question": "Add to existing?", "answer": "Yes"},
+            ],
+            "course_id": cid,
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["imported_count"] == 1
+        assert resp.json()["course_name"] == "Existing"
+
+    def test_confirm_rollback_on_invalid(self, client, auth_headers):
+        """If one question is invalid, no course or questions should be created."""
+        resp = client.post(self.CONFIRM_URL, json={
+            "questions": [
+                {"type": "fill_blank", "question": "Valid Q?", "answer": "Correct"},
+                {"type": "single_choice", "question": "No options?",
+                 "options": None, "answer": "A"},
+            ],
+            "course_name": "RollbackTest",
+        }, headers=auth_headers)
+        assert resp.status_code == 422
+
+        # Verify no questions were created
+        qs = client.get("/questions/", headers=auth_headers).json()
+        assert len(qs) == 0
+
+        # Verify no course was created (validation happens before course resolution)
+        courses = client.get("/courses/mine", headers=auth_headers).json()
+        assert all(c["name"] != "RollbackTest" for c in courses)
+
+    def test_confirm_empty_questions_rejected(self, client, auth_headers):
+        resp = client.post(self.CONFIRM_URL, json={
+            "questions": [],
+            "course_name": "Empty",
+        }, headers=auth_headers)
+        assert resp.status_code == 422
+        assert "没有" in resp.text
+
+    def test_confirm_nonexistent_course_id(self, client, auth_headers):
+        resp = client.post(self.CONFIRM_URL, json={
+            "questions": [
+                {"type": "fill_blank", "question": "Q?", "answer": "A"},
+            ],
+            "course_id": 99999,
+        }, headers=auth_headers)
+        assert resp.status_code == 400
+
+
+class TestEnhancedTextExtraction:
+    """Tests for enhanced text extraction: tables, images."""
+
+    def test_validator_rejects_bad_question(self):
+        """Test _validate_question_item directly."""
+        from backend.routers.imports import _validate_question_item
+        # Missing question
+        result, err = _validate_question_item({"type": "fill_blank", "answer": "A"})
+        assert result is None
+        assert err is not None
+
+    def test_validator_accepts_good_question(self):
+        from backend.routers.imports import _validate_question_item
+        result, err = _validate_question_item({
+            "type": "single_choice", "question": "Q?",
+            "options": {"A": "a", "B": "b"}, "answer": "A"
+        })
+        assert result is not None
+        assert err is None
+        assert result["type"] == "single_choice"
+
+    def test_validator_rejects_choice_without_options(self):
+        from backend.routers.imports import _validate_question_item
+        result, err = _validate_question_item({
+            "type": "single_choice", "question": "Q?", "answer": "A"
+        })
+        assert result is None
+        assert "选项" in (err or "")
+
+    def test_docx_table_text_extraction(self, tmp_path):
+        """Verify docx tables are included in extracted text."""
+        from docx import Document
+        doc = Document()
+        doc.add_paragraph("Normal paragraph")
+        table = doc.add_table(rows=2, cols=2)
+        table.cell(0, 0).text = "Q1"
+        table.cell(0, 1).text = "Answer1"
+        table.cell(1, 0).text = "Q2"
+        table.cell(1, 1).text = "Answer2"
+        path = str(tmp_path / "table_test.docx")
+        doc.save(path)
+        from backend.routers.imports import extract_text_and_warnings
+        text, warnings = extract_text_and_warnings(path)
+        assert "Normal paragraph" in text
+        assert "Q1 | Answer1" in text
+        assert "Q2 | Answer2" in text
+
+
+class TestAutoImportAIFailure:
+    """AI failure in /imports/file/auto: course may be created, but no questions added."""
+
+    FILE_AUTO = "/imports/file/auto"
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_ai_empty_questions_returns_400_no_questions_created(self, client, auth_headers):
+        """When AI returns zero questions, endpoint returns 400 and no questions in DB."""
+        import json
+        mock = patch("openai.OpenAI")
+        mc = mock.start()
+        try:
+            inst = mc.return_value
+            inst.chat.completions.create.return_value.choices = [
+                type("obj", (), {"message": type("obj", (), {"content": json.dumps({
+                    "questions": []
+                })})()})()
+            ]
+            content = _make_docx_bytes("Some content that yields no questions.")
+            resp = client.post(
+                self.FILE_AUTO, headers=auth_headers,
+                files={"file": ("test.docx", content, "application/octet-stream")},
+            )
+            # Endpoint returns 400 — no questions parsed
+            assert resp.status_code == 400
+            assert "解析" in resp.json()["detail"]
+            # No questions were created in DB
+            qs = client.get("/questions/", headers=auth_headers).json()
+            assert len(qs) == 0
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_ai_bad_json_returns_400_no_questions_created(self, client, auth_headers):
+        """When AI returns malformed JSON, endpoint returns 400 and no questions."""
+        mock = patch("openai.OpenAI")
+        mc = mock.start()
+        try:
+            inst = mc.return_value
+            inst.chat.completions.create.return_value.choices = [
+                type("obj", (), {"message": type("obj", (), {"content": "this is not json"})()})()
+            ]
+            content = _make_docx_bytes("Content.")
+            resp = client.post(
+                self.FILE_AUTO, headers=auth_headers,
+                files={"file": ("test.docx", content, "application/octet-stream")},
+            )
+            assert resp.status_code >= 400
+            qs = client.get("/questions/", headers=auth_headers).json()
+            assert len(qs) == 0
+        finally:
+            mock.stop()

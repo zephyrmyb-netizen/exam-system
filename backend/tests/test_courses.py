@@ -101,6 +101,112 @@ class TestCourses:
         assert len(data["items"]) == 2
 
 
+class TestCourseUpdate:
+    """Tests for PATCH /courses/{id} and POST /courses/{id}/unpublish."""
+
+    COURSES_URL = "/courses/"
+
+    def _create_course(self, client, auth_headers, name="Original"):
+        resp = client.post(self.COURSES_URL, json={"name": name}, headers=auth_headers)
+        return resp.json()
+
+    def test_update_name(self, client, auth_headers):
+        c = self._create_course(client, auth_headers)
+        resp = client.patch(f"{self.COURSES_URL}{c['id']}", json={
+            "name": "新课程名",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["name"] == "新课程名"
+
+    def test_update_description_and_subject(self, client, auth_headers):
+        c = self._create_course(client, auth_headers)
+        resp = client.patch(f"{self.COURSES_URL}{c['id']}", json={
+            "description": "New desc", "subject": "New subject",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["description"] == "New desc"
+        assert resp.json()["subject"] == "New subject"
+
+    def test_update_by_non_owner_forbidden(self, client, auth_headers):
+        c = self._create_course(client, auth_headers)
+        client.post("/auth/register", json={
+            "username": "course_upd_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "course_upd_other", "password": "pass"})
+        other = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.patch(f"{self.COURSES_URL}{c['id']}", json={
+            "name": "hacked",
+        }, headers=other)
+        assert resp.status_code == 403
+
+    def test_nonexistent_course_returns_404(self, client, auth_headers):
+        resp = client.patch(f"{self.COURSES_URL}99999", json={
+            "name": "ghost",
+        }, headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestCourseUnpublish:
+    """Tests for POST /courses/{id}/unpublish."""
+
+    COURSES_URL = "/courses/"
+
+    def _publish_course(self, client, auth_headers):
+        resp = client.post(self.COURSES_URL, json={
+            "name": "ToUnpublish", "visibility": "private",
+        }, headers=auth_headers)
+        cid = resp.json()["id"]
+        client.post(f"{self.COURSES_URL}{cid}/publish", headers=auth_headers)
+        return cid
+
+    def test_unpublish_makes_private(self, client, auth_headers):
+        cid = self._publish_course(client, auth_headers)
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["visibility"] == "private"
+
+    def test_unpublish_already_private_returns_400(self, client, auth_headers):
+        resp = client.post(self.COURSES_URL, json={
+            "name": "PrivateOnly", "visibility": "private",
+        }, headers=auth_headers)
+        cid = resp.json()["id"]
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 400
+        assert "已为私有" in resp.json()["detail"]
+
+    def test_unpublish_by_non_owner_forbidden(self, client, auth_headers):
+        cid = self._publish_course(client, auth_headers)
+        client.post("/auth/register", json={
+            "username": "unpub_c_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "unpub_c_other", "password": "pass"})
+        other = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=other)
+        assert resp.status_code == 403
+
+    def test_unpublish_also_makes_questions_private(self, client, auth_headers):
+        """After unpublishing a course, its questions should become private."""
+        cid = self._publish_course(client, auth_headers)
+        # Import a question into the published course
+        client.post("/questions/batch", json=[{
+            "type": "fill_blank", "question": "Q in published course", "answer": "A",
+            "course_id": cid,
+        }], headers=auth_headers)
+        q = client.get("/questions/", headers=auth_headers).json()[0]
+        # The question was created in a published course — should be public now?
+        # Actually batch import sets visibility=private regardless of course.
+        # Let's publish the individual question too
+        client.post(f"/questions/{q['id']}/publish", headers=auth_headers)
+
+        # Unpublish the course
+        client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=auth_headers)
+
+        # Question should now be private
+        q2 = client.get("/questions/", headers=auth_headers).json()
+        target = next(x for x in q2 if x["id"] == q["id"])
+        assert target["visibility"] == "private"
+
+
 class TestQuestionVisibility:
     QUESTIONS_BATCH = "/questions/batch"
     QUESTIONS_LIST = "/questions/"
