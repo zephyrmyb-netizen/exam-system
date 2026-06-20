@@ -158,7 +158,7 @@ onMounted(() => fetchAll());
       </div>
     </div>
 
-    <p class="app-version">Exam System v1.0</p>
+    <p class="app-version">Exam System v1.5.1</p>
   </section>
 </template>
 
@@ -169,7 +169,7 @@ onMounted(() => fetchAll());
 .user-banner {
   display: flex; align-items: center; gap: var(--space-4);
   padding: var(--space-4);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(239,246,255,0.92));
   border: 1px solid var(--line-soft);
   box-shadow: var(--shadow-sm);

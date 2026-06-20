@@ -2,12 +2,40 @@
 import { computed } from "vue";
 import { releaseNotes } from "../data/releaseNotes";
 
-/** 按日期降序排列（最新在前） */
+/**
+ * Parse a version string like "v1.2.1" or "v2" into a numeric array
+ * for comparison.  "v2" → [2]; "v1.11.3" → [1, 11, 3].
+ */
+function parseVersion(v) {
+  if (!v || typeof v !== "string") return [];
+  return v.replace(/^v/i, "").split(".").map(Number);
+}
+
+/**
+ * Compare two version strings. Returns negative if a<b, positive if a>b, 0 if equal.
+ * Major versions (v2) rank higher than any v1.x.x.
+ */
+function versionCompare(a, b) {
+  const pa = parseVersion(a);
+  const pb = parseVersion(b);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const va = pa[i] ?? 0;
+    const vb = pb[i] ?? 0;
+    if (va !== vb) return vb - va; // descending
+  }
+  return 0;
+}
+
+/** Sort: version descending, then date descending */
 const sorted = computed(() =>
-  [...releaseNotes].sort((a, b) => (a.date > b.date ? -1 : 1))
+  [...releaseNotes].sort((a, b) => {
+    const v = versionCompare(a.version, b.version);
+    if (v !== 0) return v;
+    return a.date > b.date ? -1 : 1;
+  })
 );
 
-/** 类型对应的标签颜色 */
 function typeColor(type) {
   const map = {
     "修复": "var(--rose)",
@@ -37,6 +65,7 @@ function typeBg(type) {
 
     <article v-for="note in sorted" :key="note.id" class="note-card">
       <div class="note-head">
+        <span v-if="note.version" class="note-version">{{ note.version }}</span>
         <span class="note-type" :style="{ color: typeColor(note.type), background: typeBg(note.type) }">
           {{ note.type }}
         </span>
@@ -71,6 +100,18 @@ function typeBg(type) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.note-version {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .note-type {

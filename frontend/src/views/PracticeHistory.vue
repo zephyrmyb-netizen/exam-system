@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  Play,
 } from "@lucide/vue";
 
 const records = ref([]);
@@ -74,7 +75,11 @@ onMounted(() => fetchPage(1));
     <div v-if="isEmpty" class="empty-state">
       <History :size="40" :stroke-width="1.5" color="var(--text-placeholder)" />
       <p>还没有练习记录。</p>
-      <p class="empty-hint">去练习页面开始，记录会自动保存。</p>
+      <p class="empty-hint">去练习页面选择课程，记录会自动保存。</p>
+      <button class="primary-button" type="button" @click="$router.push('/practice')" style="margin-top:4px">
+        <Play :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        去练习
+      </button>
     </div>
 
     <!-- Record list -->
@@ -137,7 +142,7 @@ onMounted(() => fetchPage(1));
   gap: var(--space-2);
   padding: var(--space-4);
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-xs);
 }

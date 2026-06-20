@@ -4,11 +4,60 @@
  * 每次修 bug 或增加功能必须在此新增一条公告。
  * 详见 docs/RELEASE_NOTE_GUIDE.md。
  *
- * @type {Array<{id:string, date:string, type:string, title:string, items:string[]}>}
+ * @type {Array<{id:string, version:string, date:string, type:string, title:string, items:string[]}>}
  */
 export const releaseNotes = [
   {
-    id: "2026-06-20-nav-return",
+    id: "v1.5.1-mobile-polish",
+    version: "v1.5.1",
+    date: "2026-06-20",
+    type: "优化",
+    title: "优化移动端导航与练习细节",
+    items: [
+      "底部导航改为悬浮样式，减少误触底部控件",
+      "练习页新增未选择答案提示和换题入口",
+      "导入题目前明确显示目标题库",
+    ],
+  },
+  {
+    id: "v1.4.1-courses-and-import",
+    version: "v1.4.1",
+    date: "2026-06-20",
+    type: "优化",
+    title: "优化题库与导入体验",
+    items: [
+      "导入前明确显示目标题库",
+      "优化我的题库和公共题库层级",
+      "导入成功后引导进入题库",
+    ],
+  },
+  {
+    id: "v1.3.1-ui-polish",
+    version: "v1.3.1",
+    date: "2026-06-20",
+    type: "优化",
+    title: "优化练习页与公告展示",
+    items: [
+      "优化练习页顶部信息和答题操作",
+      "更新公告新增版本号展示",
+      "精简练习方式选择，减少不可用入口干扰",
+    ],
+  },
+  {
+    id: "v1.2.1-practice-polish",
+    version: "v1.2.1",
+    date: "2026-06-20",
+    type: "优化",
+    title: "优化练习体验",
+    items: [
+      "优化练习页顶部信息和答题操作",
+      "精简练习方式选择，减少不可用入口干扰",
+      "修复错题强化进入后不自动加载的问题",
+    ],
+  },
+  {
+    id: "v1.1.1-nav-return",
+    version: "v1.1.1",
     date: "2026-06-20",
     type: "修复",
     title: "修复导航返回体验",
@@ -19,7 +68,8 @@ export const releaseNotes = [
     ],
   },
   {
-    id: "2026-06-20-nav-study-overview",
+    id: "v1.1.1-nav-study-overview",
+    version: "v1.1.1",
     date: "2026-06-20",
     type: "优化",
     title: "优化导航与学习概览",

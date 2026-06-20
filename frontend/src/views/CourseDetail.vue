@@ -110,6 +110,12 @@ watch(
       </div>
       <p v-if="course.description" class="course-desc">{{ course.description }}</p>
 
+      <!-- Public hint -->
+      <p v-if="course.visibility === 'public' && isOwner" class="public-hint">
+        <Globe :size="14" :stroke-width="2.5" style="margin-right:4px;flex-shrink:0" />
+        已公开，其他用户可在公共题库中看到
+      </p>
+
       <div class="course-header-actions">
         <button
           class="primary-button"
@@ -220,6 +226,21 @@ watch(
   font-size: var(--text-sm);
   color: var(--text-secondary);
   line-height: 1.55;
+}
+
+/* Public hint */
+.public-hint {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  justify-self: start;
 }
 
 .course-header-actions {

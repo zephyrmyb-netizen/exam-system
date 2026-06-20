@@ -159,7 +159,9 @@ function handleQuickEntry(item) {
       @click="router.push({ name: 'announcements', query: { from: 'home' } })"
     >
       <Megaphone :size="14" :stroke-width="2.5" class="announce-icon" />
-      <span class="announce-text">{{ latestNote.type }}：{{ latestNote.title }}</span>
+      <span class="announce-text">
+        <template v-if="latestNote.version">{{ latestNote.version }} · </template>{{ latestNote.type }}：{{ latestNote.title }}
+      </span>
       <ChevronRight :size="14" :stroke-width="2.5" class="announce-chevron" />
     </button>
 

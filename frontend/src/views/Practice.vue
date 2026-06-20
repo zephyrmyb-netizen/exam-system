@@ -7,7 +7,7 @@ import { typeLabel, formatOptions } from "../utils/question";
 import {
   Send, ArrowRight, CheckCircle, XCircle, BookMarked,
   Library, Shuffle, RefreshCw, AlertTriangle,
-  ChevronLeft, Sparkles, X,
+  ChevronLeft, Sparkles, X, Play,
 } from "@lucide/vue";
 
 const props = defineProps({
@@ -88,15 +88,37 @@ const answerOptions = computed(() => {
   return options.length > 0 ? options : ["A", "B", "C", "D"].map(k => ({ key: k, value: k }));
 });
 
+const canStartWithoutCourse = computed(() => props.mode === "wrong_review");
+
 const isWrongReviewEmpty = computed(() =>
-  props.mode === "wrong_review" && !loading && !errorMessage && question === null && sessionStats.value.answeredCount === 0
+  props.mode === "wrong_review" && !loading.value && !errorMessage.value && question.value === null && sessionStats.value.answeredCount === 0
 );
 
 const isCourseEmpty = computed(() =>
-  props.mode !== "wrong_review" && !loading && !errorMessage && question === null && sessionStats.value.answeredCount === 0
+  props.mode === "normal" && !props.courseId && !loading.value && !errorMessage.value && question.value === null && sessionStats.value.answeredCount === 0
 );
 
 // ── State helpers ──
+
+const hasAnswerSelected = computed(() => {
+  if (!question.value) return false;
+  if (question.value.type === "multiple_choice") return selectedAnswers.value.length > 0;
+  if (isTextQuestion.value) return textAnswer.value.trim().length > 0;
+  return selectedAnswer.value.length > 0;
+});
+
+const canSubmit = computed(() => hasAnswerSelected.value && !submitting.value);
+
+const answerHint = computed(() => {
+  if (!question.value) return "";
+  const t = question.value.type;
+  if (t === "multiple_choice") return "请选择所有正确选项";
+  if (t === "single_choice") return "请选择一个答案";
+  if (t === "true_false") return "请选择正确或错误";
+  if (isTextQuestion.value) return "请输入答案";
+  return "";
+});
+
 function resetAnswerState() {
   selectedAnswer.value = "";
   selectedAnswers.value = [];
@@ -195,6 +217,13 @@ function handleTextKeydown(e) {
   }
 }
 
+function confirmAndSkip() {
+  if (hasAnswerSelected.value) {
+    if (!window.confirm("当前答案还没提交，确定换一题吗？")) return;
+  }
+  fetchRandomQuestion();
+}
+
 function goBack() {
   if (props.courseId) {
     router.push(`/courses/${props.courseId}`);
@@ -222,12 +251,14 @@ function startSession() {
   fetchRandomQuestion();
 }
 
-onMounted(() => { if (props.courseId) startSession(); });
+onMounted(() => {
+  if (props.courseId || canStartWithoutCourse.value) startSession();
+});
 </script>
 
 <template>
   <section class="practice-page">
-    <!-- ── Compact Top Bar ── -->
+    <!-- ── Top Bar ── -->
     <div class="topbar">
       <button class="topbar-back" type="button" @click="goBack" aria-label="返回">
         <ChevronLeft :size="18" :stroke-width="2.5" />
@@ -236,34 +267,27 @@ onMounted(() => { if (props.courseId) startSession(); });
         <span class="topbar-course">{{ props.courseName || modeLabel || "练习" }}</span>
         <span v-if="modeLabel && props.mode !== 'normal'" class="topbar-mode">{{ modeLabel }}</span>
       </div>
-      <div class="topbar-progress">
-        <span class="prog-item" title="已答题数">
-          <span class="prog-value">{{ sessionStats.answeredCount }}</span>
-        </span>
-        <span class="prog-sep">·</span>
-        <span class="prog-item" title="正确率">
-          <span class="prog-value" :class="accuracy !== null && accuracy >= 70 ? 'text-green' : accuracy !== null && accuracy < 40 ? 'text-rose' : ''">
-            {{ accuracy !== null ? accuracy + '%' : '--' }}
-          </span>
-        </span>
-        <span class="prog-sep">·</span>
-        <span class="prog-item" title="连续答对">
-          <span class="prog-value prog-streak">{{ streakText }}</span>
-        </span>
-      </div>
-      <button class="topbar-next" type="button" :disabled="loading" @click="fetchRandomQuestion" title="换一题">
-        <Shuffle :size="15" :stroke-width="2.5" />
-      </button>
       <button class="topbar-end" type="button" @click="endPractice" aria-label="结束练习">
         <X :size="16" :stroke-width="2.5" />
         <span class="end-label">结束</span>
       </button>
     </div>
 
+    <!-- Stats chips (second row, only when question is loaded) -->
+    <div v-if="question" class="stats-chips">
+      <span class="chip">已答 {{ sessionStats.answeredCount }}</span>
+      <span class="chip-sep">·</span>
+      <span class="chip" :class="accuracy !== null && accuracy >= 70 ? 'chip-green' : accuracy !== null && accuracy < 40 ? 'chip-rose' : ''">
+        正确率 {{ accuracy !== null ? accuracy + '%' : '--' }}
+      </span>
+      <span class="chip-sep">·</span>
+      <span class="chip chip-streak">{{ streakText }}</span>
+    </div>
+
     <!-- ── Loading / Empty / Error states ── -->
 
-    <!-- No course selected -->
-    <div v-if="!props.courseId" class="state-block">
+    <!-- No course selected (only for normal mode) -->
+    <div v-if="!props.courseId && !canStartWithoutCourse && !question && !loading" class="state-block">
       <div class="state-icon"><Library :size="44" :stroke-width="1.5" /></div>
       <p class="state-title">请先选择课程</p>
       <p class="state-hint">从你的课程中选择一门，进入专注练习模式。</p>
@@ -320,7 +344,7 @@ onMounted(() => { if (props.courseId) startSession(); });
           <span class="stem-tag">{{ typeLabel(question.type) }}</span>
           <span class="stem-tag">{{ question.subject }}</span>
           <span class="stem-tag">{{ question.chapter }}</span>
-          <span v-if="question.type === 'multiple_choice'" class="stem-hint">可多选</span>
+          <span v-if="question.type === 'multiple_choice'" class="stem-hint">多选题，请选择所有正确选项</span>
         </div>
         <h2 class="stem-text">{{ question.question }}</h2>
       </div>
@@ -391,15 +415,29 @@ onMounted(() => { if (props.courseId) startSession(); });
       <p v-if="validationMessage" class="msg msg-warn">{{ validationMessage }}</p>
       <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
 
+      <!-- Submit hint (when disabled) -->
+      <p v-if="!result && !hasAnswerSelected && !submitting" class="submit-hint">{{ answerHint }}</p>
+
       <!-- ── Submit button ── -->
       <button
         v-if="!result"
         class="btn-action"
-        type="button" :disabled="submitting"
+        type="button" :disabled="!canSubmit"
         @click="submitAnswer"
       >
         <Send :size="17" :stroke-width="2.5" style="margin-right:6px" />
         {{ submitting ? "提交中..." : "提交答案" }}
+      </button>
+
+      <!-- ── "不会，换一题" — always visible before submission ── -->
+      <button
+        v-if="!result"
+        class="skip-link"
+        type="button"
+        @click="confirmAndSkip"
+      >
+        不会，换一题
+        <Shuffle :size="13" :stroke-width="2.5" style="margin-left:4px" />
       </button>
 
       <!-- ── Result feedback ── -->
@@ -419,7 +457,7 @@ onMounted(() => { if (props.courseId) startSession(); });
             <BookMarked :size="14" :stroke-width="2.5" style="margin-right:4px" />
             {{ result.wrongbook_recorded ? "已记录到错题本" : "已加入错题本" }}
           </div>
-          <button class="btn-action" type="button" :disabled="loading" @click="fetchRandomQuestion">
+          <button class="btn-action" type="button" :disabled="loading" @click="fetchRandomQuestion" style="margin-top:4px">
             <ArrowRight :size="17" :stroke-width="2.5" style="margin-right:4px" />
             {{ loading ? "加载中..." : "下一题" }}
           </button>
@@ -512,33 +550,22 @@ onMounted(() => { if (props.courseId) startSession(); });
   font-weight: 700;
 }
 
-.topbar-progress {
+/* ── Stats Chips (second row) ── */
+.stats-chips {
   display: flex;
   align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+  gap: 4px;
+  padding: 0 4px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
+  min-height: 24px;
 }
-.prog-value { color: var(--text-main); }
-.prog-streak { color: var(--amber); }
-.text-green { color: var(--emerald); }
-.text-rose { color: var(--rose); }
-.prog-sep { color: var(--line-strong); font-weight: 400; }
-
-.topbar-next {
-  display: grid; place-items: center;
-  width: 34px; height: 34px;
-  border: 1px solid var(--line-soft);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all var(--ease-out);
-}
-.topbar-next:hover { background: var(--primary-soft); color: var(--primary-strong); border-color: var(--primary-border); }
+.chip { color: var(--text-secondary); }
+.chip-green { color: var(--emerald); }
+.chip-rose { color: var(--rose); }
+.chip-streak { color: var(--amber); }
+.chip-sep { color: var(--line-strong); font-weight: 400; }
 
 .topbar-end {
   display: grid; place-items: center;
@@ -695,6 +722,18 @@ onMounted(() => { if (props.courseId) startSession(); });
 .msg-warn { background: #fef3c7; color: #92400e; }
 .msg-err { background: var(--rose-soft); color: var(--rose); }
 
+/* ── Submit hint ── */
+.submit-hint {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-placeholder);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* ── Action button ── */
 .btn-action {
   display: inline-flex; align-items: center; justify-content: center;
@@ -712,7 +751,27 @@ onMounted(() => { if (props.courseId) startSession(); });
 }
 .btn-action:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(37,99,235,0.3); }
 .btn-action:active:not(:disabled) { transform: translateY(0); }
-.btn-action:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-action:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Skip / Reset link ── */
+.skip-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 12px;
+  margin: -4px auto 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-placeholder);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--ease-out), background var(--ease-out);
+  justify-self: center;
+}
+.skip-link:hover { color: var(--text-muted); background: var(--surface-soft); }
 
 /* ── Result ── */
 .result {
@@ -839,7 +898,6 @@ onMounted(() => { if (props.courseId) startSession(); });
 }
 
 @media (max-width: 420px) {
-  .topbar-progress { font-size: 11px; }
   .stem-text { font-size: 16px; }
   .opt-card { padding: 12px 12px; min-height: 46px; }
   .tf-btn { padding: 18px 10px; font-size: 15px; }

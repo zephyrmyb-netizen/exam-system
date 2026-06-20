@@ -60,7 +60,7 @@ onUnmounted(() => {
     <div class="section-heading row-heading">
       <div>
         <h2>公共题库</h2>
-        <p>公开分享的题目集，直接浏览或练习。</p>
+        <p>公开分享的题目集，只读浏览 · 直接练习</p>
       </div>
       <button class="ghost-button" type="button" :disabled="loading" @click="fetchPublicCourses">
         刷新
