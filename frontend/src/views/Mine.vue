@@ -83,7 +83,13 @@ const menuSections = computed(() => [
 ]);
 
 function goTo(path) {
-  router.push(path);
+  if (path === "/study-overview") {
+    router.push({ name: "study-overview", query: { from: "mine" } });
+  } else if (path === "/announcements") {
+    router.push({ name: "announcements", query: { from: "mine" } });
+  } else {
+    router.push(path);
+  }
 }
 
 onMounted(() => fetchAll());

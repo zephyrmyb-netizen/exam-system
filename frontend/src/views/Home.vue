@@ -4,8 +4,8 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import {
-  BookOpen, Play, Upload, ChevronRight,
-  TrendingUp, BookMarked, Target, Zap, ArrowRight, Megaphone,
+  Play, Upload, ChevronRight,
+  TrendingUp, BookMarked, Target, Zap, Megaphone,
 } from "@lucide/vue";
 import { releaseNotes } from "../data/releaseNotes";
 
@@ -59,12 +59,22 @@ const latestNote = computed(() => {
 });
 
 const quickEntries = [
-  { key: "courses", label: "题库", icon: BookOpen, color: "var(--primary)" },
   { key: "wrongbook", label: "错题本", icon: BookMarked, color: "var(--rose)" },
   { key: "study-overview", label: "学习概览", icon: TrendingUp, color: "var(--teal)" },
+  { key: "announcements", label: "更新公告", icon: Megaphone, color: "var(--amber)" },
 ];
 
 onMounted(() => fetchAll());
+
+function handleQuickEntry(item) {
+  if (item.key === "study-overview") {
+    router.push({ name: "study-overview", query: { from: "home" } });
+  } else if (item.key === "announcements") {
+    router.push({ name: "announcements", query: { from: "home" } });
+  } else {
+    router.push("/" + item.key);
+  }
+}
 </script>
 
 <template>
@@ -82,7 +92,7 @@ onMounted(() => fetchAll());
     </div>
 
     <!-- Dashboard stats — clickable to /study-overview -->
-    <button class="dash-summary" type="button" @click="router.push('/study-overview')">
+    <button class="dash-summary" type="button" @click="router.push({ name: 'study-overview', query: { from: 'home' } })">
       <div class="dash-head">
         <Target :size="16" :stroke-width="2.5" class="dash-head-icon" />
         <span class="dash-head-title">学习概览</span>
@@ -146,7 +156,7 @@ onMounted(() => fetchAll());
       v-if="latestNote"
       class="announce-banner"
       type="button"
-      @click="router.push('/announcements')"
+      @click="router.push({ name: 'announcements', query: { from: 'home' } })"
     >
       <Megaphone :size="14" :stroke-width="2.5" class="announce-icon" />
       <span class="announce-text">{{ latestNote.type }}：{{ latestNote.title }}</span>
@@ -161,7 +171,7 @@ onMounted(() => fetchAll());
         :key="item.key"
         class="home-entry"
         type="button"
-        @click="router.push('/' + item.key)"
+        @click="handleQuickEntry(item)"
       >
         <span class="home-entry-icon" :style="{ background: item.color }">
           <component :is="item.icon" :size="22" :stroke-width="2.2" />

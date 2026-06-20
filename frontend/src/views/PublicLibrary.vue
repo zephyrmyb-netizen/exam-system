@@ -8,7 +8,6 @@ import {
   Layers,
   BookOpen,
   Search,
-  ArrowLeft,
 } from "@lucide/vue";
 
 const router = useRouter();
@@ -59,14 +58,9 @@ onUnmounted(() => {
 <template>
   <section class="stack">
     <div class="section-heading row-heading">
-      <div class="heading-left">
-        <button class="back-mini" type="button" @click="router.push('/courses')" aria-label="返回我的题库">
-          <ArrowLeft :size="16" :stroke-width="2.5" />
-        </button>
-        <div>
-          <h2>公共题库</h2>
-          <p>公开分享的题目集，直接浏览或练习。</p>
-        </div>
+      <div>
+        <h2>公共题库</h2>
+        <p>公开分享的题目集，直接浏览或练习。</p>
       </div>
       <button class="ghost-button" type="button" :disabled="loading" @click="fetchPublicCourses">
         刷新
@@ -131,33 +125,6 @@ onUnmounted(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-}
-
-.heading-left {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-}
-
-.back-mini {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line-soft);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  margin-top: 2px;
-  transition: all var(--ease-out);
-}
-
-.back-mini:hover {
-  background: var(--surface-soft);
-  border-color: var(--line-accent);
 }
 
 .search-bar {
