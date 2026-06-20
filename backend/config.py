@@ -2,13 +2,64 @@ import os
 import warnings
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
-# Always load .env from the backend/ directory so CWD doesn't matter
+# ── Load .env ───────────────────────────────────────────────────────────────
 _backend_dir = Path(__file__).resolve().parent
 _dotenv_path = _backend_dir / ".env"
+
+
+def _load_dotenv_values(path: Path) -> dict[str, str | None]:
+    """Read .env file at *path*, returning a dict of variable → value.
+
+    Uses utf-8-sig encoding so UTF-8 files with or without BOM work.
+    Returns an empty dict if the file is missing or unreadable.
+    """
+    try:
+        return dotenv_values(path, encoding="utf-8-sig") or {}
+    except Exception:
+        return {}
+
+
+def _apply_env_values(values: dict[str, str | None]) -> None:
+    """Apply dotenv values to os.environ.
+
+    Sets .env values, but preserves explicitly-set system environment
+    variables.  A stale value that matches the application's own default
+    (e.g. 'dev-invite' for INVITE_CODE) is treated as not-set and will
+    be overwritten by the .env value.
+    """
+    # Defaults that config.py itself would use when the variable is absent.
+    # Matching these in os.environ likely means a previous run leaked its
+    # fallback value, not a deliberate system setting.
+    _APP_DEFAULTS = {
+        "INVITE_CODE": "dev-invite",
+        "SECRET_KEY": "change-this-secret-key-in-production",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "OPENAI_MODEL": "gpt-4o-mini",
+        "APP_ENV": "development",
+        "APP_TIMEZONE": "Asia/Shanghai",
+        "ACCESS_TOKEN_EXPIRE_MINUTES": "1440",
+        "CHAT_RATE_LIMIT_PER_HOUR": "20",
+        "CHAT_MAX_MESSAGE_LENGTH": "4000",
+        "CHAT_MAX_HISTORY_MESSAGES": "20",
+        "CHAT_MAX_HISTORY_TOTAL_LENGTH": "20000",
+        "CHAT_UPSTREAM_TIMEOUT": "30",
+    }
+
+    for key, value in values.items():
+        if value is None:
+            continue
+        existing = os.environ.get(key)
+        if existing is None or existing == "":
+            os.environ[key] = value
+        elif key in _APP_DEFAULTS and existing == _APP_DEFAULTS[key]:
+            # Stale app default from a previous run — let .env override it
+            os.environ[key] = value
+
+
 if os.getenv("SKIP_DOTENV", "").lower() not in {"1", "true", "yes"}:
-    load_dotenv(_dotenv_path)
+    _apply_env_values(_load_dotenv_values(_dotenv_path))
 
 # ── Environment ─────────────────────────────────────────────────────────────
 APP_ENV = os.getenv("APP_ENV", "").lower() or os.getenv("ENV", "").lower() or "development"
