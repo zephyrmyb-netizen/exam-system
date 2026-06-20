@@ -225,6 +225,16 @@ onMounted(fetchCourses);
         </button>
 
         <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
+
+        <!-- 目标题库提示 -->
+        <p v-if="hasSelectedFile" class="target-hint">
+          <span v-if="selectedCourseId > 0">
+            将导入到已有题库：<strong>{{ courses.find(c => c.id === selectedCourseId)?.name || '' }}</strong>
+          </span>
+          <span v-else>
+            将创建题库：<strong>{{ derivedCourseName || '未命名' }}</strong>
+          </span>
+        </p>
       </template>
 
       <!-- Running -->
@@ -356,6 +366,17 @@ onMounted(fetchCourses);
 }
 .hero-cta:active { transform: scale(0.98); }
 .hero-cta:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Target hint ── */
+.target-hint {
+  margin: -4px 0 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.target-hint strong { color: var(--primary-strong); font-weight: 800; }
 
 /* ── AI Status ── */
 .ai-status {

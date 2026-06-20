@@ -85,10 +85,10 @@ async function deleteCourse(course) {
     <!-- Empty state -->
     <div v-if="!loading && courses.length === 0 && !errorMessage" class="empty-state">
       <GraduationCap :size="44" :stroke-width="1.5" color="var(--text-placeholder)" />
-      <p>还没有课程，去导入页面创建第一门课吧。</p>
+      <p>上传 Word / PPT，自动生成第一套题库</p>
       <button class="primary-button" type="button" @click="router.push('/import')">
         <Sparkles :size="17" :stroke-width="2.5" style="margin-right:6px" />
-        去导入题目
+        去导入
       </button>
     </div>
 
