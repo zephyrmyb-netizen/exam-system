@@ -518,7 +518,12 @@ async def import_file_auto(
     if not text.strip():
         raise HTTPException(status_code=400, detail="文件中未提取到任何文本内容")
 
-    # Resolve target course
+    # AI parse first (no DB writes yet)
+    question_dicts, _warnings = call_ai_parse(text)
+    if not question_dicts:
+        raise HTTPException(status_code=400, detail="未能从文档中解析出任何有效题目")
+
+    # Resolve target course only after successful parsing
     try:
         if course_id > 0:
             bank, _ = crud.resolve_course(db, current_user.id, course_id=course_id)
@@ -530,12 +535,7 @@ async def import_file_auto(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # AI parse
-    question_dicts, _warnings = call_ai_parse(text)
-    if not question_dicts:
-        raise HTTPException(status_code=400, detail="未能从文档中解析出任何有效题目")
-
-    # Import
+    # Import — single transaction
     imported = 0
     for d in question_dicts:
         try:
