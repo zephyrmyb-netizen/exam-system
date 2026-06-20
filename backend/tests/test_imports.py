@@ -182,7 +182,7 @@ class TestFileAutoCourseName:
     def _mock_openai_response(self):
         """Return a mock OpenAI response that returns a valid questions JSON."""
         import json
-        mock = patch("openai.OpenAI")
+        mock = patch("backend.routers.imports.OpenAI")
         mock_client = mock.start()
         instance = mock_client.return_value
         instance.chat.completions.create.return_value.choices = [
@@ -332,7 +332,7 @@ class TestPreviewImport:
         import json
         if questions_data is None:
             questions_data = [{"type": "fill_blank", "question": "Preview Q?", "answer": "Ans"}]
-        mock = patch("openai.OpenAI")
+        mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         inst = mc.return_value
         inst.chat.completions.create.return_value.choices = [
@@ -556,7 +556,7 @@ class TestAutoImportAIFailure:
     def test_ai_empty_questions_returns_400_no_questions_created(self, client, auth_headers):
         """When AI returns zero questions, endpoint returns 400 and no questions in DB."""
         import json
-        mock = patch("openai.OpenAI")
+        mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
@@ -582,7 +582,7 @@ class TestAutoImportAIFailure:
     @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
     def test_ai_bad_json_returns_400_no_questions_created(self, client, auth_headers):
         """When AI returns malformed JSON, endpoint returns 400 and no questions."""
-        mock = patch("openai.OpenAI")
+        mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value

@@ -89,26 +89,15 @@ def chat(
     req: ChatRequest,
     current_user: User = Depends(auth_module.get_current_user),
 ):
-    # ── Guard: AI not configured ─────────────────────────────────────────
-    if not OPENAI_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI 服务未配置，请联系管理员设置。",
-        )
-
-    # ── Rate limit ───────────────────────────────────────────────────────
-    _check_rate_limit(current_user.id, CHAT_RATE_LIMIT_PER_HOUR)
-
-    # ── Message length ───────────────────────────────────────────────────
+    # ── Input validation (before any API Key / rate-limit checks) ────────
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="消息不能为空。")
     if len(req.message) > CHAT_MAX_MESSAGE_LENGTH:
         raise HTTPException(
             status_code=400,
             detail=f"消息过长，单条消息不能超过 {CHAT_MAX_MESSAGE_LENGTH} 个字符。",
         )
-    if not req.message.strip():
-        raise HTTPException(status_code=400, detail="消息不能为空。")
 
-    # ── History validation ───────────────────────────────────────────────
     history = req.history or []
     if len(history) > CHAT_MAX_HISTORY_MESSAGES:
         raise HTTPException(
@@ -121,6 +110,16 @@ def chat(
             status_code=400,
             detail=f"历史消息总长度超过限制（{CHAT_MAX_HISTORY_TOTAL_LENGTH} 字符）。",
         )
+
+    # ── Guard: AI not configured ─────────────────────────────────────────
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI 服务未配置，请联系管理员设置。",
+        )
+
+    # ── Rate limit ───────────────────────────────────────────────────────
+    _check_rate_limit(current_user.id, CHAT_RATE_LIMIT_PER_HOUR)
 
     # ── Build messages for the upstream call ─────────────────────────────
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]

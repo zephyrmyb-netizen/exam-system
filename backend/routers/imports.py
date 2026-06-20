@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
@@ -169,8 +170,6 @@ def _extract_questions_from_ai_response(raw: str) -> tuple[list[dict], list[str]
 
 def _call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict], list[str]]:
     """Call AI to parse a single text chunk. Returns (question_dicts, warnings)."""
-    from openai import OpenAI
-
     client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
     prompt = (
         "你是一个题目解析助手。请将以下教育文档内容解析为 JSON 数组，每道题为一个对象。\n\n"
