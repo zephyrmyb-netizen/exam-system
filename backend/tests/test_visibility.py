@@ -284,7 +284,7 @@ class TestImportDefaultsPrivate:
 
     def test_file_auto_import_defaults_private(self, client, auth_headers):
         """POST /imports/file/auto creates questions with visibility='private'."""
-        from tests.test_imports import _make_docx_bytes
+        from backend.tests.test_imports import _make_docx_bytes
         import json
         from unittest.mock import MagicMock, patch
 

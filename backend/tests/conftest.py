@@ -3,8 +3,11 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure the parent dir is on sys.path so "from backend import ..." works
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Ensure the project root is on sys.path so "from backend import ..." works
+# regardless of whether pytest runs from project root, backend/, or CI.
+_proj_root = Path(__file__).resolve().parent.parent.parent
+if str(_proj_root) not in sys.path:
+    sys.path.insert(0, str(_proj_root))
 
 from typing import Generator
 

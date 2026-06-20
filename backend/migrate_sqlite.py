@@ -24,6 +24,50 @@ from pathlib import Path
 DB_PATH = Path(__file__).resolve().parent / "exam_system.db"
 
 
+def _add_unique_constraint_if_missing(cur, table, constraint_name, columns):
+    """Add a UNIQUE constraint if it doesn't already exist.
+
+    For SQLite: checks existing indexes; if constraint is missing,
+    deduplicates data (keeping the row with the lowest id), then creates
+    a unique index.  Safe to run repeatedly.
+    """
+    cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND name=?",
+        (table, constraint_name),
+    )
+    if cur.fetchone():
+        print(f"[INFO] Unique constraint {constraint_name} already exists.")
+        return
+
+    # Deduplicate: keep the row with the lowest id per (user_id, question_id)
+    col_list = [c.strip() for c in columns.split(",")]
+    if len(col_list) == 2:
+        c1, c2 = col_list
+        dedup_sql = f"""
+            DELETE FROM {table} WHERE id NOT IN (
+                SELECT MIN(id) FROM {table}
+                WHERE {c1} IS NOT NULL AND {c2} IS NOT NULL
+                GROUP BY {c1}, {c2}
+            )
+        """
+        try:
+            cur.execute(dedup_sql)
+            removed = cur.rowcount
+            if removed > 0:
+                print(f"[INFO] Removed {removed} duplicate rows from {table} before adding unique constraint.")
+        except Exception as e:
+            print(f"[WARN] Could not deduplicate {table}: {e}")
+
+    # Create unique index
+    try:
+        cur.execute(
+            f"CREATE UNIQUE INDEX {constraint_name} ON {table}({columns})"
+        )
+        print(f"[INFO] Created unique constraint {constraint_name} on {table}({columns}).")
+    except Exception as e:
+        print(f"[WARN] Could not create unique constraint {constraint_name}: {e}")
+
+
 def main():
     if not DB_PATH.exists():
         print(f"[ERROR] Database not found: {DB_PATH}")
@@ -153,6 +197,14 @@ def main():
             print("[INFO] Created user_question_reviews table (was missing).")
         else:
             print("[INFO] user_question_reviews table already exists.")
+
+        # ── 5b. Add unique constraint on (user_id, question_id) ────────
+        _add_unique_constraint_if_missing(
+            cur,
+            "user_question_reviews",
+            "uq_user_question_review",
+            "user_id, question_id",
+        )
 
         # ── 6. Handle old questions with NULL owner_id ─────────────────
         cur.execute("SELECT COUNT(*) FROM questions WHERE owner_id IS NULL")

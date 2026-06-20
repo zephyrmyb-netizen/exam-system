@@ -1158,8 +1158,7 @@ def upsert_wrong_record(db: Session, user_id: int, question_id: int, user_answer
             last_wrong_answer=user_answer,
         )
         db.add(record)
-    db.commit()
-    db.refresh(record)
+    db.flush()
     return record
 
 
@@ -1177,7 +1176,12 @@ def delete_wrong_record(db: Session, user_id: int, question_id: int) -> bool:
 
 
 def clear_wrong_record_if_correct(db: Session, user_id: int, question_id: int) -> None:
-    """If the user answered correctly, remove the wrong record if it exists."""
+    """If the user answered correctly, remove the wrong record if it exists.
+
+    Note: does NOT call db.commit() — the caller is responsible for
+    committing the transaction so that wrong record, practice record,
+    and review state are all written atomically.
+    """
     record = (
         db.query(models.WrongRecord)
         .filter(models.WrongRecord.user_id == user_id, models.WrongRecord.question_id == question_id)
@@ -1185,7 +1189,7 @@ def clear_wrong_record_if_correct(db: Session, user_id: int, question_id: int) -
     )
     if record:
         db.delete(record)
-        db.commit()
+        db.flush()
 
 
 # -- Metadata -----------------------------------------------------------------
