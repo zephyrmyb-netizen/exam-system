@@ -81,3 +81,32 @@ class TestAuth:
     def test_me_unauthorized(self, client):
         resp = client.get("/auth/me")
         assert resp.status_code == 401
+
+    def test_register_missing_username(self, client):
+        resp = client.post("/auth/register", json={
+            "password": "secret",
+            "invite_code": "dev-invite",
+        })
+        assert resp.status_code == 422
+
+    def test_register_missing_password(self, client):
+        resp = client.post("/auth/register", json={
+            "username": "nopw",
+            "invite_code": "dev-invite",
+        })
+        assert resp.status_code == 422
+
+    def test_register_whitespace_username(self, client):
+        resp = client.post("/auth/register", json={
+            "username": "   ",
+            "password": "secret",
+            "invite_code": "dev-invite",
+        })
+        assert resp.status_code == 400
+
+    def test_login_nonexistent_user(self, client):
+        resp = client.post("/auth/login", json={
+            "username": "doesnotexist",
+            "password": "whatever",
+        })
+        assert resp.status_code == 401

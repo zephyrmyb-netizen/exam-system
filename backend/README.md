@@ -14,6 +14,13 @@ User ──1:N── QuestionBank (课程/题库)
                             ├── visibility: private(默认) / public
                             ├── source: import / manual
                             └── owner_id → User
+
+User ──1:N── WrongRecord (错题本)
+User ──1:N── PracticeRecord (练习记录)
+User ──1:N── UserQuestionReview (间隔复习状态)
+                ├── review_level: 0~5
+                ├── next_review_at
+                └── consecutive_correct / consecutive_wrong
 ```
 
 **可见性规则：**
@@ -21,11 +28,44 @@ User ──1:N── QuestionBank (课程/题库)
 - `public` → 所有人可见
 - `owner_id IS NULL` → 向后兼容，等价于公开
 
-**发布流程：**
+**发布与撤回：**
 1. 用户创建课程（默认私有）
-2. 导入或手动添加题目到课程（默认私有）
-3. 点击发布 → 课程 + 课程下所有题目变为 `public`
-4. 发布后所有用户可在公共题库浏览和刷题
+2. 手动添加或批量导入题目到课程（默认私有）
+3. 发布 → 课程/题目变为 `public`，所有用户可见
+4. 撤回 → 课程/题目回到 `private`，仅自己可见
+
+## 间隔复习等级
+
+每次提交答案时自动更新复习状态：
+
+| review_level | 间隔 | 触发条件 |
+|---|---|---|
+| 0 | 未开始 | 初次创建或答错降级到 0 |
+| 1 | 1 天 | 答对后升级 |
+| 2 | 3 天 | 连续答对升级 |
+| 3 | 7 天 | 连续答对升级 |
+| 4 | 14 天 | 连续答对升级 |
+| 5 | 30 天 | 完全掌握 |
+
+答错时降一级（最低 0），连续答错记录到错题本。
+
+## 答案判分规则
+
+**单选题（single_choice）：** `A` / `a` / `选项A` / `选A` → 归一化为 `A`
+
+**判断题（true_false）：** `正确` / `对` / `True` / `T` → `True`；`错误` / `错` / `False` / `F` → `False`
+
+**多选题（multiple_choice）：** `A,B` / `AB` / `["A","B"]` / `A、B` → 排序后 `A,B`
+
+**填空题（fill_blank）：** 支持 `||` 表示多选一
+- `answer = "TCP||传输控制协议"` → 用户答 "TCP" 或 "传输控制协议" 均正确
+- 比较时忽略大小写、全角半角、多余空白
+
+**简答题（short_answer）：**
+- `||` 多选一（同上）
+- `&&` 所有关键词必须出现，顺序无关
+  - `answer = "冒泡排序&&交换&&相邻"` → 用户答案需同时包含三个关键词
+- 无分隔符时严格归一化匹配
 
 ## 数据模型
 
@@ -137,8 +177,8 @@ pip install psycopg2-binary
 支持任何 **OpenAI 兼容 API** 的 LLM 服务。推荐使用 Mimo（免费额度）：
 
 ```env
-# Mimo（推荐）
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
+# Mimo 示例
+OPENAI_API_KEY=<your-api-key>
 OPENAI_BASE_URL=https://api.xiaomimimo.com/v1
 OPENAI_MODEL=mimo-v2.5
 ```
@@ -152,10 +192,28 @@ OPENAI_MODEL=mimo-v2.5
 | DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` |
 | 自定义兼容接口 | 你的接口地址 | 对应模型名 |
 
-> ⚠️ **安全警告**：
-> - `backend/.env` 已写入 `.gitignore`，不会被提交到 Git
-> - **不要截图或分享你的 API Key**
-> - **不要提交 `.env` 文件到公开仓库**
+> ⚠️ **安全警告**（提交公开仓库前必读）：
+> - ✅ **`backend/.env` 不要提交** — 已在 `.gitignore` 中忽略
+> - ✅ **`backend/exam_system.db` 不要提交** — 包含真实数据
+> - ✅ **`uploads/` 不要提交** — 用户上传的文件不应进入仓库
+> - ✅ **不要截图、日志或视频中暴露 API Key / SECRET_KEY / 数据库内容**
+> - ✅ **公开仓库前运行 `git status` 和 `git grep -n "sk-"` 检查**
+
+## 公开仓库前检查清单
+
+在将本仓库公开之前，请逐项确认：
+
+```markdown
+- [ ] `.env` 文件未被 Git 跟踪
+- [ ] `backend/exam_system.db` 未被跟踪
+- [ ] `uploads/` 未被跟踪
+- [ ] `.env.example` 中不含真实的 API Key（应使用 `<your-api-key>` 占位）
+- [ ] 生产环境已设置随机 `SECRET_KEY`
+- [ ] 生产环境已修改 `INVITE_CODE`
+- [ ] 生产环境已配置 `CORS_ORIGINS`
+- [ ] 生产环境已设置 `APP_ENV=production`
+- [ ] 运行 `git grep -n "sk-"` 确认无 API Key 硬编码
+```
 
 这些配置同时影响以下接口：
 - `POST /chat` — AI 学习对话助手
@@ -185,10 +243,12 @@ OPENAI_MODEL=mimo-v2.5
 | GET | `/courses/` | 获取用户可见的所有课程 |
 | GET | `/courses/mine` | 只获取我创建的课程 |
 | GET | `/courses/{course_id}` | 课程详情 |
+| PATCH | `/courses/{course_id}` | 编辑课程（名称/描述/科目） |
 | DELETE | `/courses/{course_id}` | 删除课程（只能删自己的） |
 | GET | `/courses/{course_id}/questions` | 课程下的题目列表 |
 | GET | `/courses/{course_id}/practice/random` | 在课程内随机刷题 |
 | POST | `/courses/{course_id}/publish` | 发布课程（课程 + 题目变公开） |
+| POST | `/courses/{course_id}/unpublish` | 撤回课程（课程 + 题目回私有） |
 
 ### 公共题库
 
@@ -207,14 +267,26 @@ OPENAI_MODEL=mimo-v2.5
 | POST | `/questions/batch` | 批量导入题目 |
 | DELETE | `/questions/{question_id}` | 删除自己的题目 |
 | POST | `/questions/{question_id}/publish` | 发布单道题到公共题库 |
+| POST | `/questions/{question_id}/unpublish` | 撤回单道题回私有 |
 | GET | `/questions/meta` | 题目科目/章节筛选元数据 |
 
-### 刷题
+### 刷题与判分
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/practice/random` | 从全局可见题目中随机刷题 |
-| POST | `/practice/submit` | 提交答案并判分 |
+| GET | `/practice/random` | 从全局可见题目中随机抽题（支持 course_id/type/chapter 筛选） |
+| POST | `/practice/submit` | 提交答案并判分，更新错题本 + 间隔复习状态 |
+| GET | `/practice/stats` | 练习统计（今日题数、正确率等） |
+| GET | `/practice/history` | 练习历史（分页，最新优先） |
+
+### 间隔复习
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/practice/review/wrong` | 错题复习（按错题数权重抽取） |
+| GET | `/practice/review/today` | 今日复习建议摘要 |
+| GET | `/practice/review/due` | 到期需复习的题目列表（支持 course_id 筛选） |
+| GET | `/practice/insights/weak-types` | 薄弱题型分析 |
 
 ### 错题本
 
@@ -229,7 +301,9 @@ OPENAI_MODEL=mimo-v2.5
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/imports/file` | 上传 .docx/.pptx 提取文本（最大 10MB） |
-| POST | `/imports/file/auto` | 上传文件并 AI 自动导入题目（需配置 OPENAI_API_KEY） |
+| POST | `/imports/file/preview` | 上传文件并用 AI 解析为题目，返回预览（不入库） |
+| POST | `/imports/confirm` | 确认预览后的题目并写入数据库 |
+| POST | `/imports/file/auto` | 上传文件并 AI 直接导入（无预览编辑环节） |
 
 ### AI 对话
 

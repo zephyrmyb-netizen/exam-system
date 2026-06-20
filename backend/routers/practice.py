@@ -67,6 +67,18 @@ def submit_answer(
         correct_answer=question.answer,
     )
 
+    # 5. 更新间隔复习状态
+    crud.upsert_user_question_review(
+        db,
+        user_id=current_user.id,
+        question_id=question.id,
+        course_id=question.course_id,
+        is_correct=is_correct,
+    )
+
+    # 6. 提交事务
+    db.commit()
+
     return schemas.SubmitResponse(
         is_correct=is_correct,
         correct_answer=question.answer,
@@ -164,6 +176,47 @@ def review_today(
 ):
     """Return today's review suggestion for the current user."""
     return crud.get_today_review_summary(db, user_id=current_user.id)
+
+
+# ── Review: Due questions (spaced repetition) ─────────────────────────────
+@router.get("/review/due")
+def review_due(
+    course_id: int = Query(0, ge=0, description="课程ID筛选，0表示全部课程"),
+    limit: int = Query(20, ge=1, le=100, description="最多返回题数"),
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Return due review questions for the current user.
+
+    Due questions are those with next_review_at <= now in the
+    user_question_reviews table, ordered by earliest deadline and lowest
+    review level first.
+    """
+    if course_id > 0:
+        from ..routers.courses import _get_accessible_course
+        _get_accessible_course(db, course_id, current_user.id)
+
+    reviews = crud.get_due_reviews(
+        db,
+        user_id=current_user.id,
+        course_id=course_id if course_id > 0 else None,
+        limit=limit,
+    )
+
+    items = []
+    for rev in reviews:
+        item = {"id": rev.id, "review_level": rev.review_level,
+                "next_review_at": rev.next_review_at.isoformat() if rev.next_review_at else None,
+                "last_reviewed_at": rev.last_reviewed_at.isoformat() if rev.last_reviewed_at else None,
+                "consecutive_correct": rev.consecutive_correct,
+                "review_mode": rev.review_mode or ""}
+        if rev.question and rev.question_id:
+            item["question"] = rev.question.to_dict()
+        else:
+            item["question"] = None
+        items.append(item)
+
+    return {"items": items, "total": len(items)}
 
 
 # ── Insights: Weak types ──────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 # Database Migration Guide
 
+> ⚠️ **安全提示**：迁移过程不涉及 API Key，但请确保 `backend/.env` 中的密钥不被提交到 Git（已在 `.gitignore` 中忽略）。详见根目录 [README.md](../README.md) 的安全检查清单。
+
 ## Why `create_all` Doesn't Fix Old Databases
 
 `Base.metadata.create_all(bind=engine)` **creates tables that don't exist**, but it never modifies

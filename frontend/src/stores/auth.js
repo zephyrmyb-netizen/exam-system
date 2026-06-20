@@ -76,7 +76,6 @@ export function useAuth() {
         username: username.trim(),
         password,
         invite_code: inviteCode.trim(),
-        inviteCode: inviteCode.trim(),
       });
       authMessage.value = "注册成功，请使用新账号登录。";
       return true;

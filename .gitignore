@@ -43,5 +43,21 @@ playwright-report/
 Thumbs.db
 .DS_Store
 
+# Compiled Python (any location)
+*.pyc
+
+# Python tool caches
+.mypy_cache/
+.ruff_cache/
+
+# Coverage reports
+.coverage
+coverage/
+htmlcov/
+
+# Local env overrides (not committed)
+.env.local
+.env.*.local
+
 # Local scratch files
 prompt.docx

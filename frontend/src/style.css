@@ -107,15 +107,27 @@ html { background: var(--page-bg); }
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(59, 130, 246, 0.06), transparent),
-    var(--page-bg);
+  background: var(--page-bg);
   color: var(--text-main);
 }
 
-button, textarea, input, select {
+button, textarea, input, select, a {
   font: inherit;
   color: inherit;
+}
+
+/* ── Keyboard focus-visible ── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

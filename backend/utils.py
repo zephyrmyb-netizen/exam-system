@@ -112,7 +112,7 @@ def normalize_answer(answer: str, q_type: str) -> str:
     - single_choice:  A/a/选项A → "A"
     - true_false:     正确/对/true/T → "True", 错误/错/false/F → "False"
     - multiple_choice: A,B / AB / ["A","B"] → sorted "A,B"
-    - fill_blank / short_answer: stripped as-is
+    - fill_blank / short_answer: stripped as-is (normalization done at compare time)
     """
     if not answer:
         return answer
@@ -134,3 +134,116 @@ def normalize_answer(answer: str, q_type: str) -> str:
 
     # fill_blank, short_answer — just strip whitespace
     return answer
+
+
+# ── Grading helpers ──────────────────────────────────────────────────────
+
+def _normalize_text_for_compare(text: str) -> str:
+    """Normalize text for fill_blank / short_answer comparison.
+
+    - Strip leading/trailing whitespace
+    - Replace fullwidth punctuation with halfwidth equivalents
+    - Collapse multiple whitespace to single space
+    - Lowercase for case-insensitive comparison
+    """
+    if not text:
+        return ""
+
+    text = text.strip()
+
+    # Fullwidth → halfwidth mappings
+    replacements = {
+        "，": ",", "。": ".", "！": "!", "？": "?",
+        "；": ";", "：": ":", "（": "(", "）": ")",
+        "【": "[", "】": "]", "《": "<", "》": ">",
+        "“": '"', "”": '"', "‘": "'", "’": "'",
+        "　": " ",  # fullwidth space
+        "＠": "@", "＃": "#", "＄": "$", "％": "%",
+        "＆": "&", "＊": "*", "＋": "+", "－": "-",
+        "／": "/", "＝": "=", "＜": "<", "＞": ">",
+    }
+    for full, half in replacements.items():
+        text = text.replace(full, half)
+
+    # Collapse multiple whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Case-insensitive
+    text = text.lower()
+
+    return text
+
+
+def check_fill_blank_answer(correct_answer: str, user_answer: str) -> bool:
+    """Check a fill_blank answer, supporting multiple acceptable answers with ||.
+
+    Example correct answers:
+      "TCP"                   → single answer, exact match after normalization
+      "TCP||传输控制协议"      → either "TCP" or "传输控制协议" is correct
+
+    Comparison ignores:
+    - Leading/trailing whitespace
+    - Fullwidth/halfwidth punctuation
+    - Case (English)
+    - Multiple consecutive spaces
+    """
+    if not correct_answer:
+        return not user_answer.strip()
+
+    user_norm = _normalize_text_for_compare(user_answer)
+    if not user_norm:
+        return False
+
+    # Split by || for multiple acceptable answers
+    acceptable = correct_answer.split("||")
+    for ans in acceptable:
+        ans_norm = _normalize_text_for_compare(ans)
+        if user_norm == ans_norm:
+            return True
+
+    return False
+
+
+def check_short_answer_answer(correct_answer: str, user_answer: str) -> bool:
+    """Check a short_answer answer with keyword and alternative support.
+
+    Rules:
+    1. If correct_answer contains `||`: any one of the alternatives must match
+       (same as fill_blank || logic).
+    2. If correct_answer contains `&&`: ALL keywords must appear in user_answer
+       (order-insensitive).
+    3. If none of the above: keep original strict normalization match.
+
+    Comparison ignores leading/trailing whitespace, fullwidth/halfwidth,
+    case, and collapsed spaces (same as fill_blank).
+    """
+    if not correct_answer:
+        return not user_answer.strip()
+
+    user_norm = _normalize_text_for_compare(user_answer)
+    if not user_norm:
+        return False
+
+    # Rule 1: || alternatives
+    if "||" in correct_answer:
+        acceptable = correct_answer.split("||")
+        for ans in acceptable:
+            ans_norm = _normalize_text_for_compare(ans)
+            if user_norm == ans_norm:
+                return True
+        return False
+
+    # Rule 2: && all keywords required
+    if "&&" in correct_answer:
+        keywords = correct_answer.split("&&")
+        for kw in keywords:
+            kw_norm = _normalize_text_for_compare(kw)
+            if not kw_norm:
+                continue
+            if kw_norm not in user_norm:
+                return False
+        return True
+
+    # Rule 3: strict match (legacy behavior)
+    correct_norm = _normalize_text_for_compare(correct_answer)
+    return user_norm == correct_norm

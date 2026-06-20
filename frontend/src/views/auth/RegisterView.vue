@@ -79,7 +79,7 @@ async function handleRegister() {
 
       <!-- 邀请码提示 -->
       <p class="invite-hint">
-        💡 开发邀请码：<code>dev-invite</code>（默认）
+        💡 请输入管理员提供的邀请码。
       </p>
 
       <button class="primary-button full-button" type="submit" :disabled="loading">

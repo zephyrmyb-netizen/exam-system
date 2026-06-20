@@ -911,7 +911,9 @@ class TestTodayReview:
 
         resp = client.get(self.PRACTICE_REVIEW_TODAY, headers=auth_headers)
         data = resp.json()
-        assert data["due_count"] == 1
+        # due_count counts actually due review records (next_review_at <= now).
+        # A newly-created wrong review has next_review_at = now + 10 min, so it's
+        # not immediately due. wrong_count counts wrong_records directly.
         assert data["wrong_count"] == 1
         assert "wrong_review" in data["recommended_modes"]
 
@@ -1128,3 +1130,270 @@ class TestDeleteCourseComplete:
 
         mine = client.get("/courses/mine", headers=auth_headers).json()
         assert all(c["id"] != cid for c in mine)
+
+
+class TestManualCreateQuestion:
+    QUESTIONS_URL = "/questions/"
+    COURSES_URL = "/courses/"
+
+    def test_manual_create_question(self, client, auth_headers):
+        """POST /questions/ creates a single question with source=manual."""
+        resp = client.post(self.COURSES_URL, json={"name": "My Course"}, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        resp = client.post(self.QUESTIONS_URL, json={
+            "course_id": cid,
+            "type": "fill_blank",
+            "question": "中国的首都是？",
+            "answer": "北京",
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["source"] == "manual"
+        assert data["visibility"] == "private"
+        assert data["course_id"] == cid
+        assert data["question"] == "中国的首都是？"
+
+    def test_manual_create_requires_own_course(self, client, auth_headers):
+        """Cannot create question in another user's course."""
+        resp = client.post(self.COURSES_URL, json={"name": "A's Course"}, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        client.post("/auth/register", json={
+            "username": "mc_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "mc_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.post(self.QUESTIONS_URL, json={
+            "course_id": cid, "type": "fill_blank", "question": "Q", "answer": "A",
+        }, headers=bh)
+        assert resp.status_code == 403
+
+    def test_manual_create_nonexistent_course(self, client, auth_headers):
+        resp = client.post(self.QUESTIONS_URL, json={
+            "course_id": 99999, "type": "fill_blank", "question": "Q", "answer": "A",
+        }, headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestEditQuestion:
+    QUESTIONS_URL = "/questions/"
+    QUESTIONS_BATCH = "/questions/batch"
+
+    def test_edit_question(self, client, auth_headers):
+        """PATCH /questions/{id} should update fields."""
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Old Q", "answer": "Old",
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={
+            "question": "New Q", "answer": "New", "subject": "数学",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["question"] == "New Q"
+        assert data["answer"] == "New"
+        assert data["subject"] == "数学"
+
+    def test_edit_question_not_owner(self, client, auth_headers):
+        """Cannot edit another user's question."""
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A",
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        client.post("/auth/register", json={
+            "username": "eq_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "eq_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={"question": "Hacked"}, headers=bh)
+        assert resp.status_code == 403
+
+    def test_edit_question_change_course(self, client, auth_headers):
+        """Changing course_id should verify target course ownership."""
+        resp = client.post("/courses/", json={"name": "C1"}, headers=auth_headers)
+        c1 = resp.json()["id"]
+        resp = client.post("/courses/", json={"name": "C2"}, headers=auth_headers)
+        c2 = resp.json()["id"]
+
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": c1,
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        # Move to C2 (both owned)
+        resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={"course_id": c2}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["course_id"] == c2
+
+    def test_edit_question_change_course_not_own(self, client, auth_headers):
+        """Changing course_id to another user's course is forbidden."""
+        resp = client.post("/courses/", json={"name": "My C"}, headers=auth_headers)
+        cid = resp.json()["id"]
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": cid,
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        # Create course for user B
+        client.post("/auth/register", json={
+            "username": "eqc_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "eqc_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.post("/courses/", json={"name": "B's C"}, headers=bh)
+        bc = resp.json()["id"]
+
+        # User A tries to move question to B's course
+        resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={"course_id": bc}, headers=auth_headers)
+        assert resp.status_code == 403
+
+    def test_edit_nonexistent_question(self, client, auth_headers):
+        resp = client.patch(f"{self.QUESTIONS_URL}99999", json={"question": "X"}, headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestUnpublishQuestion:
+    QUESTIONS_URL = "/questions/"
+    QUESTIONS_BATCH = "/questions/batch"
+
+    def test_unpublish_question(self, client, auth_headers):
+        """POST /questions/{id}/unpublish should set visibility back to private."""
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A",
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        # Publish
+        client.post(f"{self.QUESTIONS_URL}{qid}/publish", headers=auth_headers)
+        # Unpublish
+        resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["visibility"] == "private"
+
+    def test_unpublish_already_private(self, client, auth_headers):
+        """Unpublish already private question returns 400."""
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A",
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+        resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 400
+
+    def test_unpublish_not_owner(self, client, auth_headers):
+        """Cannot unpublish another user's question."""
+        client.post(self.QUESTIONS_BATCH, json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A",
+        }], headers=auth_headers)
+        qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+        client.post("/auth/register", json={
+            "username": "uq_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "uq_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=bh)
+        assert resp.status_code == 403
+
+
+class TestEditCourse:
+    COURSES_URL = "/courses/"
+
+    def test_edit_course(self, client, auth_headers):
+        """PATCH /courses/{id} should update name, description, subject."""
+        resp = client.post(self.COURSES_URL, json={"name": "Old"}, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        resp = client.patch(f"{self.COURSES_URL}{cid}", json={
+            "name": "New", "description": "Desc", "subject": "Math",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["name"] == "New"
+        assert data["description"] == "Desc"
+        assert data["subject"] == "Math"
+
+    def test_edit_course_empty_name(self, client, auth_headers):
+        """Name cannot be empty."""
+        resp = client.post(self.COURSES_URL, json={"name": "X"}, headers=auth_headers)
+        cid = resp.json()["id"]
+        resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "  "}, headers=auth_headers)
+        assert resp.status_code == 400
+
+    def test_edit_course_not_owner(self, client, auth_headers):
+        """Cannot edit another user's course."""
+        resp = client.post(self.COURSES_URL, json={"name": "A's"}, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        client.post("/auth/register", json={
+            "username": "ec_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "ec_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "Hacked"}, headers=bh)
+        assert resp.status_code == 403
+
+    def test_edit_course_partial(self, client, auth_headers):
+        """Only name changed, other fields unchanged."""
+        resp = client.post(self.COURSES_URL, json={
+            "name": "Old", "description": "Old Desc", "subject": "Old Subj",
+        }, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "New"}, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["name"] == "New"
+        assert data["description"] == "Old Desc"
+        assert data["subject"] == "Old Subj"
+
+
+class TestUnpublishCourse:
+    COURSES_URL = "/courses/"
+
+    def test_unpublish_course(self, client, auth_headers):
+        """POST /courses/{id}/unpublish sets course and questions to private."""
+        resp = client.post(self.COURSES_URL, json={
+            "name": "Public", "visibility": "public",
+        }, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        # Add a public question
+        client.post("/questions/batch", json=[{
+            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": cid,
+        }], headers=auth_headers)
+        qid = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()[0]["id"]
+        client.post(f"/questions/{qid}/publish", headers=auth_headers)
+
+        # Unpublish course
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["visibility"] == "private"
+
+        # Question should also be private
+        q = client.get("/questions/", headers=auth_headers).json()
+        assert any(x["id"] == qid and x["visibility"] == "private" for x in q)
+
+    def test_unpublish_already_private(self, client, auth_headers):
+        """Unpublish private course returns 400."""
+        resp = client.post(self.COURSES_URL, json={"name": "P"}, headers=auth_headers)
+        cid = resp.json()["id"]
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=auth_headers)
+        assert resp.status_code == 400
+
+    def test_unpublish_not_owner(self, client, auth_headers):
+        """Cannot unpublish another user's course."""
+        resp = client.post(self.COURSES_URL, json={
+            "name": "A's", "visibility": "public",
+        }, headers=auth_headers)
+        cid = resp.json()["id"]
+
+        client.post("/auth/register", json={
+            "username": "uc_other", "password": "pass", "invite_code": "dev-invite",
+        })
+        r = client.post("/auth/login", json={"username": "uc_other", "password": "pass"})
+        bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=bh)
+        assert resp.status_code == 403

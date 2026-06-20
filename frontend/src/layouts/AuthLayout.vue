@@ -1,15 +1,9 @@
 <script setup>
-// Standalone auth layout — brand entry with glass surface
+// Standalone auth layout — clean brand entry
 </script>
 
 <template>
   <div class="auth-page">
-    <!-- Background decor -->
-    <div class="auth-bg-decor" aria-hidden="true">
-      <div class="auth-blob auth-blob--1"></div>
-      <div class="auth-blob auth-blob--2"></div>
-    </div>
-
     <div class="auth-card">
       <div class="auth-brand">
         <div class="auth-logo" aria-hidden="true">
@@ -41,68 +35,18 @@
   justify-content: center;
   padding: var(--space-8) var(--space-4);
   box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
 }
 
-/* ── Soft animated background blobs ── */
-.auth-bg-decor {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.auth-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.22;
-  animation: auth-float 12s ease-in-out infinite alternate;
-}
-
-.auth-blob--1 {
-  width: 280px;
-  height: 280px;
-  top: -60px;
-  right: -80px;
-  background: radial-gradient(circle, #3b82f6, #8b5cf6 70%);
-}
-
-.auth-blob--2 {
-  width: 240px;
-  height: 240px;
-  bottom: -40px;
-  left: -60px;
-  background: radial-gradient(circle, #0d9488, #3b82f6 70%);
-  animation-delay: -6s;
-  opacity: 0.18;
-}
-
-@keyframes auth-float {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(18px, -14px) scale(1.06); }
-  100% { transform: translate(-12px, 10px) scale(0.96); }
-}
-
-/* ── Card ── */
 .auth-card {
-  position: relative;
-  z-index: 1;
   width: 100%;
   max-width: 420px;
   padding: var(--space-8) var(--space-6);
-  border: 1px solid rgba(203, 213, 225, 0.5);
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-2xl);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 4px 16px rgba(15, 23, 42, 0.06),
-    0 20px 48px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
 }
 
-/* ── Brand ── */
 .auth-brand {
   text-align: center;
   margin-bottom: var(--space-8);

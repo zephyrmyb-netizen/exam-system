@@ -14,6 +14,14 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+# Keep tests independent from a developer's local backend/.env. The app config
+# loads backend/.env during import, so these values must be set before importing
+# backend modules below.
+os.environ["SKIP_DOTENV"] = "1"
+os.environ["APP_ENV"] = "development"
+os.environ["INVITE_CODE"] = "dev-invite"
+os.environ["SECRET_KEY"] = "test-secret-key-for-pytest"
+
 from backend.database import Base, get_db
 from backend.main import app
 
