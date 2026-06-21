@@ -1,8 +1,5 @@
-"""Chat endpoint — AI-powered conversation for study assistance.
+"""AI chat endpoint for study assistance."""
 
-Requires authentication.  Every call consumes the server-side API key,
-so anonymous access is not allowed.
-"""
 import logging
 import time
 from typing import List
@@ -27,21 +24,14 @@ from ..models import User
 logger = logging.getLogger("exam_system.chat")
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# ── Rate-limit store (in-memory, per user_id) ───────────────────────────────
-# Each user maps to a list of epoch-second timestamps for calls within the
-# current sliding window.  Cleaned on every request.
-_rate_window_s = 3600  # 1 hour
+_rate_window_s = 3600
 _rate_store: dict[int, list[float]] = {}
 
 
 def _check_rate_limit(user_id: int, limit: int) -> None:
-    """Enforce per-user hourly rate limit; raise 429 if exceeded."""
     now = time.time()
     cutoff = now - _rate_window_s
-
-    # Prune expired entries for this user
-    calls = _rate_store.get(user_id, [])
-    calls = [t for t in calls if t > cutoff]
+    calls = [t for t in _rate_store.get(user_id, []) if t > cutoff]
     _rate_store[user_id] = calls
 
     if len(calls) >= limit:
@@ -52,8 +42,6 @@ def _check_rate_limit(user_id: int, limit: int) -> None:
 
     calls.append(now)
 
-
-# ── Request / Response schemas ──────────────────────────────────────────────
 
 class HistoryMessage(BaseModel):
     role: str
@@ -77,11 +65,15 @@ class ChatResponse(BaseModel):
 
 
 SYSTEM_PROMPT = (
-    "你是考试复习助手，帮助用户拆解题目、总结重点、用问答方式复习知识。"
-    "请用中文回答，简洁清晰，每次回复控制在 200 字以内。"
+    "你是考试复习助手。请用中文回答，帮助用户拆解题目、总结考点、解释错题，"
+    "回答要简洁清楚，优先给可直接记忆和复习的内容。"
 )
 
-# ── Endpoint ────────────────────────────────────────────────────────────────
+
+def _extract_reply(completion) -> str:
+    message = completion.choices[0].message
+    content = (message.content or "").strip()
+    return content
 
 
 @router.post("/", response_model=ChatResponse)
@@ -89,10 +81,10 @@ def chat(
     req: ChatRequest,
     current_user: User = Depends(auth_module.get_current_user),
 ):
-    # ── Input validation (before any API Key / rate-limit checks) ────────
-    if not req.message.strip():
+    message_text = req.message.strip()
+    if not message_text:
         raise HTTPException(status_code=400, detail="消息不能为空。")
-    if len(req.message) > CHAT_MAX_MESSAGE_LENGTH:
+    if len(message_text) > CHAT_MAX_MESSAGE_LENGTH:
         raise HTTPException(
             status_code=400,
             detail=f"消息过长，单条消息不能超过 {CHAT_MAX_MESSAGE_LENGTH} 个字符。",
@@ -104,6 +96,7 @@ def chat(
             status_code=400,
             detail=f"历史消息过多，最多允许 {CHAT_MAX_HISTORY_MESSAGES} 条。",
         )
+
     total_history_len = sum(len(m.content) for m in history)
     if total_history_len > CHAT_MAX_HISTORY_TOTAL_LENGTH:
         raise HTTPException(
@@ -111,23 +104,19 @@ def chat(
             detail=f"历史消息总长度超过限制（{CHAT_MAX_HISTORY_TOTAL_LENGTH} 字符）。",
         )
 
-    # ── Guard: AI not configured ─────────────────────────────────────────
     if not OPENAI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI 服务未配置，请联系管理员设置。",
+            detail="AI 服务未配置，请先在 backend/.env 中设置 OPENAI_API_KEY。",
         )
 
-    # ── Rate limit ───────────────────────────────────────────────────────
     _check_rate_limit(current_user.id, CHAT_RATE_LIMIT_PER_HOUR)
 
-    # ── Build messages for the upstream call ─────────────────────────────
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for m in history:
-        messages.append({"role": m.role, "content": m.content})
-    messages.append({"role": "user", "content": req.message})
+    for item in history:
+        messages.append({"role": item.role, "content": item.content})
+    messages.append({"role": "user", "content": message_text})
 
-    # ── Call upstream AI ─────────────────────────────────────────────────
     client = OpenAI(
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
@@ -138,15 +127,23 @@ def chat(
         completion = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=messages,
-            max_tokens=500,
+            # Mimo reasoning models may spend many tokens before emitting content.
+            max_tokens=1200,
             temperature=0.7,
         )
-        reply = completion.choices[0].message.content or ""
+        reply = _extract_reply(completion)
     except Exception:
         logger.exception("Upstream AI call failed for user %s", current_user.id)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI 服务暂时不可用，请稍后再试。",
+            detail="AI 服务暂时不可用，请稍后重试。",
+        )
+
+    if not reply:
+        logger.warning("Upstream AI returned empty content for user %s", current_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI 返回内容为空，请重试一次。",
         )
 
     return ChatResponse(reply=reply)

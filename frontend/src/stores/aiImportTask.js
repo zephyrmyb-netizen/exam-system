@@ -1,23 +1,16 @@
-/**
- * Global AI import task state.
- *
- * Module-level refs survive component mount/unmount so the import
- * status is preserved across route changes.  Page refresh naturally
- * clears the state (no persistence).
- */
 import { ref } from "vue";
-import request, { getErrorMessage } from "../api/request";
+import { previewFile } from "../api/imports";
+import { getErrorMessage } from "../api/request";
 
-// ── Module-level (shared) state ──────────────────────────────────
-
-/** @type {"idle"|"running"|"success"|"error"} */
-const status = ref("idle");
+const status = ref("idle"); // idle | running | success | error
+const mode = ref("preview");
 const fileName = ref("");
 const courseId = ref(0);
 const courseName = ref("");
-const startedAt = ref(null); // Date.now() timestamp
+const startedAt = ref(null);
 const elapsedSeconds = ref(0);
 const estimatedSeconds = 30;
+const previewData = ref(null);
 const importedCount = ref(0);
 const message = ref("");
 const error = ref("");
@@ -42,104 +35,74 @@ function startElapsedTimer() {
   }, 1000);
 }
 
-// ── Composable ──────────────────────────────────────────────────
+function reset() {
+  clearElapsedTimer();
+  status.value = "idle";
+  mode.value = "preview";
+  fileName.value = "";
+  courseId.value = 0;
+  courseName.value = "";
+  startedAt.value = null;
+  elapsedSeconds.value = 0;
+  previewData.value = null;
+  importedCount.value = 0;
+  message.value = "";
+  error.value = "";
+  resultCourseId.value = null;
+  resultCourseName.value = "";
+}
+
+async function startPreview(file, params = {}) {
+  if (status.value === "running") return;
+
+  reset();
+  status.value = "running";
+  mode.value = "preview";
+  fileName.value = file?.name || "";
+  courseId.value = Number(params.course_id || 0);
+  courseName.value = params.course_name || "";
+  startedAt.value = Date.now();
+  startElapsedTimer();
+
+  try {
+    const data = await previewFile(file, params);
+    previewData.value = data;
+    message.value = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
+    status.value = "success";
+  } catch (err) {
+    error.value = getErrorMessage(err, "AI 解析失败，请稍后重试");
+    status.value = "error";
+  } finally {
+    clearElapsedTimer();
+  }
+}
+
+function markImported(result) {
+  importedCount.value = result?.imported_count || 0;
+  resultCourseId.value = result?.course_id || null;
+  resultCourseName.value = result?.course_name || "";
+  courseName.value = result?.course_name || courseName.value;
+  message.value = `导入成功，已导入 ${importedCount.value} 道题。`;
+}
 
 export function useAiImportTask() {
-  /**
-   * Reset to idle.
-   * @param {boolean} [keepFile=false] - Preserve fileName when re-importing after error.
-   */
-  function reset(keepFile = false) {
-    clearElapsedTimer();
-    status.value = "idle";
-    if (!keepFile) fileName.value = "";
-    courseId.value = 0;
-    courseName.value = "";
-    startedAt.value = null;
-    elapsedSeconds.value = 0;
-    importedCount.value = 0;
-    message.value = "";
-    error.value = "";
-    resultCourseId.value = null;
-    resultCourseName.value = "";
-  }
-
-  /**
-   * Start an AI import task.
-   *
-   * Rejects silently when already running (guard against duplicate clicks).
-   *
-   * @param {File}  file       - The .docx / .pptx file to upload.
-   * @param {number} targetCourseId  - 0 = auto-create "未分类题库".
-   * @param {string} [targetCourseName] - Display name of the target course.
-   */
-  async function startImport(file, targetCourseId, targetCourseName) {
-    if (status.value === "running") return;
-
-    // Keep fileName across retries only if the same file is re-used
-    reset(false);
-    status.value = "running";
-    fileName.value = file?.name || "";
-    courseId.value = targetCourseId;
-    courseName.value = targetCourseName || "";
-    startedAt.value = Date.now();
-    elapsedSeconds.value = 0;
-    startElapsedTimer();
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const params = {};
-      if (targetCourseId > 0) {
-        params.course_id = targetCourseId;
-      } else if (targetCourseName) {
-        // New course — send the name so the backend creates it
-        params.course_name = targetCourseName;
-      }
-
-      const { data } = await request.post("/imports/file/auto", formData, {
-        params,
-        timeout: 120000,
-      });
-
-      const count = data.imported_count ?? data.count ?? 0;
-      importedCount.value = count;
-      resultCourseId.value = data.course_id || null;
-      resultCourseName.value = data.course_name || "";
-      message.value = `AI 识别成功，已导入 ${count} 道题。`;
-      if (data.course_name) {
-        message.value += ` 已导入到课程「${data.course_name}」。`;
-      }
-      status.value = "success";
-    } catch (err) {
-      // 401 is already handled by the axios interceptor (clearToken + userMessage)
-      if (err?.response?.status === 401) {
-        error.value = "请先登录后使用 AI 导入。";
-      } else {
-        error.value = getErrorMessage(err, "AI 自动识别并导入失败");
-      }
-      status.value = "error";
-    } finally {
-      clearElapsedTimer();
-    }
-  }
-
   return {
-    // Read-only state
     status,
+    mode,
     fileName,
     courseId,
     courseName,
     startedAt,
     elapsedSeconds,
     estimatedSeconds,
+    previewData,
     importedCount,
     message,
     error,
     resultCourseId,
     resultCourseName,
-    // Actions
-    startImport,
+    startPreview,
+    markImported,
     reset,
   };
 }
