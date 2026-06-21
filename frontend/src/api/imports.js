@@ -20,7 +20,7 @@ export async function extractFileText(file, params) {
 
 /**
  * Upload a .docx / .pptx file for AI auto-recognition and import.
- * Long timeout (120s) for large files.
+ * Long timeout (7min) for large files. Backend may run several AI chunks.
  * @param {File} file - The file to process
  * @param {Object} [params] - { course_id, course_name }
  * @returns {Promise<Object>} { imported_count, course_id, course_name, ... }
@@ -30,7 +30,7 @@ export async function autoImportFile(file, params) {
   formData.append("file", file);
   const { data } = await request.post("/imports/file/auto", formData, {
     params,
-    timeout: 120000,
+    timeout: 420000,
   });
   return data;
 }
@@ -47,7 +47,7 @@ export async function previewFile(file, params) {
   formData.append("file", file);
   const { data } = await request.post("/imports/file/preview", formData, {
     params,
-    timeout: 120000,
+    timeout: 420000,
   });
   return data;
 }

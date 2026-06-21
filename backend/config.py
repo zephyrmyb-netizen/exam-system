@@ -45,6 +45,9 @@ def _apply_env_values(values: dict[str, str | None]) -> None:
         "CHAT_MAX_HISTORY_MESSAGES": "20",
         "CHAT_MAX_HISTORY_TOTAL_LENGTH": "20000",
         "CHAT_UPSTREAM_TIMEOUT": "30",
+        "IMPORT_UPSTREAM_TIMEOUT": "90",
+        "IMPORT_CHUNK_SIZE": "5000",
+        "IMPORT_MAX_CHUNKS": "3",
     }
 
     for key, value in values.items():
@@ -114,6 +117,12 @@ CHAT_MAX_MESSAGE_LENGTH = int(os.getenv("CHAT_MAX_MESSAGE_LENGTH", "4000"))
 CHAT_MAX_HISTORY_MESSAGES = int(os.getenv("CHAT_MAX_HISTORY_MESSAGES", "20"))
 CHAT_MAX_HISTORY_TOTAL_LENGTH = int(os.getenv("CHAT_MAX_HISTORY_TOTAL_LENGTH", "20000"))
 CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "30"))
+
+# AI import is usually slower than chat because one file may need several
+# sequential model calls. Keep these limits aligned with the frontend timeout.
+IMPORT_UPSTREAM_TIMEOUT = float(os.getenv("IMPORT_UPSTREAM_TIMEOUT", "90"))
+IMPORT_CHUNK_SIZE = int(os.getenv("IMPORT_CHUNK_SIZE", "5000"))
+IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "3"))
 
 # CORS safety: when origins is wildcard, credentials must be disabled
 # (browsers reject credentialed requests with Access-Control-Allow-Origin: *)

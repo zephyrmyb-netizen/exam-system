@@ -9,7 +9,7 @@ const courseId = ref(0);
 const courseName = ref("");
 const startedAt = ref(null);
 const elapsedSeconds = ref(0);
-const estimatedSeconds = 30;
+const estimatedSeconds = 90;
 const previewData = ref(null);
 const importedCount = ref(0);
 const message = ref("");
@@ -70,7 +70,7 @@ async function startPreview(file, params = {}) {
     message.value = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
     status.value = "success";
   } catch (err) {
-    error.value = getErrorMessage(err, "AI 解析失败，请稍后重试");
+    error.value = getErrorMessage(err, "AI 解析失败，请检查网络后重试");
     status.value = "error";
   } finally {
     clearElapsedTimer();

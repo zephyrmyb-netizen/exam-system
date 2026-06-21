@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.3-ai-import-timeout-cleanup",
+    version: "v1.5.3",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复 AI 导入超时并清理项目结构",
+    items: [
+      "延长 AI 文件导入等待时间，减少大文件解析时直接超时的问题",
+      "后端新增独立的 AI 导入分块与超时配置，避免和普通对话互相影响",
+      "补充 README 中的协作、清理和 AI 导入配置说明",
+    ],
+  },
+  {
     id: "v1.5.2-ai-import-chat-fix",
     version: "v1.5.2",
     date: "2026-06-22",

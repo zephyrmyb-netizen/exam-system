@@ -135,6 +135,10 @@ copy backend\.env.example backend\.env
 | `OPENAI_API_KEY`            | （空）                               | AI API 密钥（可选）   |
 | `OPENAI_BASE_URL`           | `https://api.openai.com/v1`          | AI API 地址（可选）   |
 | `OPENAI_MODEL`              | `gpt-4o-mini`                        | AI 模型名（可选）     |
+| `CHAT_UPSTREAM_TIMEOUT`     | `30`                                 | AI 对话单次请求超时秒数 |
+| `IMPORT_UPSTREAM_TIMEOUT`   | `90`                                 | AI 文件导入每个分块的上游超时秒数 |
+| `IMPORT_CHUNK_SIZE`         | `5000`                               | AI 文件导入每个分块约处理的字符数 |
+| `IMPORT_MAX_CHUNKS`         | `3`                                  | AI 文件导入最多处理的分块数 |
 
 #### SECRET_KEY 配置说明
 
@@ -185,6 +189,24 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 3. **确认导入**：用户确认后调用 `POST /imports/confirm`，后端校验所有题目后统一写入数据库
 
 这种方式确保用户对导入内容有完全控制权，避免 AI 解析错误直接入库。
+
+#### AI 导入超时排查
+
+AI 文件导入比普通对话更慢，因为后端会先提取 Word/PPT 文本，再把文本拆成多个分块顺序发给模型解析。
+
+当前默认配置：
+
+- 前端等待导入接口：`420` 秒
+- 后端单个分块上游超时：`IMPORT_UPSTREAM_TIMEOUT=90`
+- 每个分块字符数：`IMPORT_CHUNK_SIZE=5000`
+- 最多处理分块数：`IMPORT_MAX_CHUNKS=3`
+
+如果导入大文件仍然超时，优先按这个顺序处理：
+
+1. 确认 `backend/.env` 中 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL` 正确。
+2. 先用小文件测试 AI 导入，确认模型接口可用。
+3. 大文件可以适当调高 `IMPORT_UPSTREAM_TIMEOUT`，但要注意总耗时约等于 `IMPORT_UPSTREAM_TIMEOUT × IMPORT_MAX_CHUNKS`。
+4. 不建议无限调高 `IMPORT_MAX_CHUNKS`，否则用户会等待太久，模型费用也会变高。
 
 ### 发布与撤回公开
 
@@ -431,6 +453,48 @@ Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd'; backen
 # 启动前端（新窗口）
 Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd\frontend'; npm.cmd run dev -- --host 0.0.0.0"
 ```
+
+## 项目维护规范
+
+### DeepSeek 窗口协作规则
+
+为了避免一次改动范围过大，后续每个 DeepSeek 窗口只做一个小功能或一个小修复。推荐这样拆：
+
+- `后端接口`：只改 `backend/routers/*`、对应 `schemas.py` 和必要测试。
+- `后端数据库`：只改 `backend/models.py`、`backend/migrate_sqlite.py`、迁移文档和测试。
+- `后端导入`：只改 `backend/routers/imports.py`、导入相关 schema、导入测试。
+- `前端页面`：只改一个页面，例如 `frontend/src/views/Practice.vue` 或 `frontend/src/views/ImportQuestions.vue`。
+- `前端接口状态`：只改 `frontend/src/api/*`、`frontend/src/stores/*`。
+- `视觉打磨`：只改样式和组件展示，不改接口契约。
+- `项目总控`：只做测试、构建、`git diff` 检查和 README/公告更新。
+
+每个窗口最后都要说明：
+
+1. 改了哪些文件。
+2. 修了哪个具体问题。
+3. 运行了什么验证命令。
+4. `git diff --stat` 的结果。
+
+### 目录清理规则
+
+可以删除的本地生成文件：
+
+- `.pytest_cache/`
+- `__pycache__/`
+- `frontend/dist/`
+- `frontend/test-results/`
+- `frontend/.playwright-cli/`
+- `backend/exam_system.backup-*.db`
+- `backend/server.out.log`、`backend/server.err.log`
+- `frontend/server.out.log`、`frontend/server.err.log`
+
+不要删除：
+
+- `backend/.env`
+- `backend/exam_system.db`
+- `backend/.venv/`
+- `frontend/node_modules/`
+- 用户自己放进项目的资料文件，除非确认已经不需要
 
 ## 验收命令
 
