@@ -11,42 +11,35 @@ import {
   ChevronDown,
   Layers,
 } from "@lucide/vue";
-import request, { getErrorMessage } from "../api/request";
+import { getErrorMessage } from "../api/request";
 import { extractFileText, confirmImport } from "../api/imports";
 import { useAiImportTask } from "../stores/aiImportTask";
 import ImportPreview from "../components/import/ImportPreview.vue";
+import { useImportCourses } from "../composables/useImportCourses";
+import { useManualQuestionImport } from "../composables/useManualQuestionImport";
 
 const router = useRouter();
 const aiTask = useAiImportTask();
 
 const selectedFile = ref(null);
 const derivedCourseName = ref("");
-const courses = ref([]);
-const coursesLoading = ref(false);
 const selectedCourseId = ref(0);
 const advancedOpen = ref(false);
 const confirmError = ref("");
 const importResult = ref(null);
+const { courses, coursesLoading, fetchCourses } = useImportCourses();
+const {
+  jsonText,
+  importLoading,
+  importMessage,
+  importError,
+  jsonResultCourseId,
+  importQuestions,
+} = useManualQuestionImport(selectedCourseId);
 
 const ALLOWED_EXTENSIONS = [".docx", ".pptx"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-const jsonText = ref(`[
-  {
-    "subject": "语文",
-    "chapter": "古诗词",
-    "type": "single_choice",
-    "question": "下列诗句中，出自《静夜思》的是哪一句？",
-    "options": { "A": "床前明月光", "B": "春眠不觉晓", "C": "白日依山尽", "D": "两个黄鹂鸣翠柳" },
-    "answer": "A",
-    "analysis": "《静夜思》是李白的诗，首句是床前明月光。",
-    "difficulty": "easy"
-  }
-]`);
-const importLoading = ref(false);
-const importMessage = ref("");
-const importError = ref("");
-const jsonResultCourseId = ref(null);
 const fileLoading = ref(false);
 const fileMessage = ref("");
 const fileError = ref("");
@@ -171,47 +164,6 @@ function clearAll() {
   aiTask.reset();
 }
 
-function validateQuestionItem(item, index) {
-  const errors = [];
-  const n = index + 1;
-  const validTypes = ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer"];
-  if (!item.question?.trim()) errors.push(`第 ${n} 题：缺少题干`);
-  if (!item.type || !validTypes.includes(item.type)) errors.push(`第 ${n} 题：题型无效`);
-  if (!item.answer?.trim()) errors.push(`第 ${n} 题：缺少答案`);
-  return errors;
-}
-
-async function importQuestions() {
-  importLoading.value = true;
-  importMessage.value = "";
-  importError.value = "";
-  try {
-    const parsed = JSON.parse(jsonText.value);
-    if (!Array.isArray(parsed)) throw new Error("请粘贴 JSON 数组");
-    if (parsed.length === 0) throw new Error("JSON 数组为空");
-
-    const allErrors = [];
-    parsed.forEach((item, i) => allErrors.push(...validateQuestionItem(item, i)));
-    if (allErrors.length > 0) {
-      importError.value = `校验未通过：\n${allErrors.join("\n")}`;
-      return;
-    }
-
-    const { data } = await request.post("/questions/batch", parsed, {
-      params: { course_id: selectedCourseId.value > 0 ? selectedCourseId.value : 0 },
-    });
-    importMessage.value = `导入成功，共 ${data.imported_count || parsed.length} 道题。`;
-    jsonResultCourseId.value = data.course_id || null;
-  } catch (error) {
-    importError.value =
-      error instanceof SyntaxError || error.message?.includes("JSON")
-        ? `JSON 格式不正确：${error.message}`
-        : getErrorMessage(error, "导入失败");
-  } finally {
-    importLoading.value = false;
-  }
-}
-
 async function uploadFile() {
   if (!selectedFile.value) {
     fileError.value = "请先选择文件。";
@@ -239,18 +191,6 @@ async function copyPromptAndText() {
   const promptText = `请把下面的试题文本整理成标准 JSON 数组，只输出 JSON，不要解释：\n\n${extractedText.value}`;
   await navigator.clipboard?.writeText(promptText);
   fileMessage.value = "已复制文本";
-}
-
-async function fetchCourses() {
-  coursesLoading.value = true;
-  try {
-    const { data } = await request.get("/courses/mine");
-    courses.value = Array.isArray(data) ? data : data.items || [];
-  } catch {
-    courses.value = [];
-  } finally {
-    coursesLoading.value = false;
-  }
 }
 
 onMounted(fetchCourses);
@@ -301,7 +241,7 @@ onMounted(fetchCourses);
         <span class="running-dot"></span>
         <div>
           <strong>AI 正在解析题目</strong>
-          <p>请等待约 30 秒，切到其他页面也会继续处理。</p>
+          <p>通常需要 1-2 分钟，大文件会更久；切到其他页面也会继续处理。</p>
         </div>
       </div>
 

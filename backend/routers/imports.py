@@ -10,7 +10,14 @@ from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
-from ..config import CHAT_UPSTREAM_TIMEOUT, OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+from ..config import (
+    IMPORT_CHUNK_SIZE,
+    IMPORT_MAX_CHUNKS,
+    IMPORT_UPSTREAM_TIMEOUT,
+    OPENAI_API_KEY,
+    OPENAI_BASE_URL,
+    OPENAI_MODEL,
+)
 from ..crud import derive_course_name_from_filename
 from ..database import get_db
 from ..models import Question as QuestionModel
@@ -21,8 +28,8 @@ router = APIRouter(prefix="/imports", tags=["imports"])
 
 ALLOWED_EXTENSIONS = {".docx", ".pptx"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-AI_CHUNK_SIZE = 4000  # characters per chunk
-MAX_CHUNKS = 5  # maximum chunks to avoid runaway costs
+AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)  # characters per chunk
+MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)  # maximum chunks to avoid runaway costs
 
 
 # ── Text extraction (enhanced) ──────────────────────────────────────────────
@@ -173,7 +180,7 @@ def _call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict],
     client = OpenAI(
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
-        timeout=max(CHAT_UPSTREAM_TIMEOUT, 90),
+        timeout=IMPORT_UPSTREAM_TIMEOUT,
     )
     prompt = (
         "你是一个题目解析助手。请将以下教育文档内容解析为 JSON 数组，每道题为一个对象。\n\n"
@@ -552,7 +559,10 @@ async def import_file_auto(
     # AI parse first (no DB writes yet)
     question_dicts, _warnings = call_ai_parse(text)
     if not question_dicts:
-        raise HTTPException(status_code=400, detail="未能从文档中解析出任何有效题目")
+        detail = "未能从文档中解析出任何有效题目"
+        if _warnings:
+            detail += "：" + "；".join(_warnings[:3])
+        raise HTTPException(status_code=400, detail=detail)
 
     # Resolve target course only after successful parsing
     try:
