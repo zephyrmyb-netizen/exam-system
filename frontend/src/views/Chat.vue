@@ -1,8 +1,8 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
-import request from "../api/request.js";
-import { getErrorMessage } from "../api/request.js";
 import { Sparkles, Send, RefreshCw } from "@lucide/vue";
+import { sendChatMessage } from "../api/chat";
+import { getErrorMessage } from "../api/request";
 
 const messageList = ref(null);
 const draft = ref("");
@@ -11,13 +11,13 @@ const messages = ref([
   {
     id: 1,
     role: "assistant",
-    text: "晚上好，我可以帮你把题目拆成重点，也可以陪你用问答的方式复习。",
-    time: "19:42",
+    text: "晚上好，我可以帮你拆题、总结重点，也可以陪你用问答的方式复习。",
+    time: currentTime(),
+    error: false,
   },
 ]);
 
 const suggestions = ["出一道选择题", "解释这道错题", "总结本章重点"];
-
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
 
 function currentTime() {
@@ -37,30 +37,42 @@ function scrollToBottom() {
   });
 }
 
-function addMessage(role, text) {
+function addMessage(role, text, options = {}) {
   messages.value.push({
-    id: Date.now(),
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     role,
     text,
     time: currentTime(),
+    error: Boolean(options.error),
   });
 }
 
-async function sendMessage(text = draft.value) {
+function buildHistory() {
+  return messages.value
+    .filter((m) => !m.error && (m.role === "user" || m.role === "assistant"))
+    .slice(-8)
+    .map((m) => ({ role: m.role, content: m.text }));
+}
+
+async function sendMessage(text = draft.value, options = {}) {
   const content = text.trim();
   if (!content || loading.value) return;
 
-  addMessage("user", content);
+  if (!options.retry) {
+    addMessage("user", content);
+  }
   draft.value = "";
   scrollToBottom();
 
   loading.value = true;
   try {
-    const resp = await request.post("/chat/", { message: content });
-    addMessage("assistant", resp.data.reply);
+    const data = await sendChatMessage(content, buildHistory());
+    addMessage("assistant", data.reply || "AI 没有返回内容，请重试。", {
+      error: !data.reply,
+    });
   } catch (err) {
     const msg = getErrorMessage(err, "AI 回复失败，请稍后重试");
-    addMessage("assistant", msg);
+    addMessage("assistant", msg, { error: true });
   } finally {
     loading.value = false;
     scrollToBottom();
@@ -69,18 +81,18 @@ async function sendMessage(text = draft.value) {
 
 function retry(index) {
   const lastUserMsg = [...messages.value]
+    .slice(0, index)
     .reverse()
     .find((m) => m.role === "user");
   if (!lastUserMsg) return;
 
   messages.value.splice(index, 1);
-  sendMessage(lastUserMsg.text);
+  sendMessage(lastUserMsg.text, { retry: true });
 }
 </script>
 
 <template>
   <section class="chat-page" aria-label="学习对话">
-    <!-- Top bar -->
     <div class="chat-topbar">
       <div>
         <p class="chat-kicker">
@@ -92,13 +104,12 @@ function retry(index) {
       <span class="online-dot">在线</span>
     </div>
 
-    <!-- Messages -->
     <div ref="messageList" class="chat-messages">
       <article
         v-for="(message, idx) in messages"
         :key="message.id"
         class="chat-row"
-        :class="message.role"
+        :class="[message.role, { 'is-error': message.error }]"
       >
         <div class="chat-avatar" aria-hidden="true">
           {{ message.role === "assistant" ? "AI" : "我" }}
@@ -107,8 +118,9 @@ function retry(index) {
           <p>{{ message.text }}</p>
           <time>{{ message.time }}</time>
           <button
-            v-if="message.role === 'assistant' && message.text.startsWith('AI 回复失败')"
+            v-if="message.role === 'assistant' && message.error"
             class="retry-btn"
+            type="button"
             @click="retry(idx)"
           >
             <RefreshCw :size="12" :stroke-width="2.5" style="margin-right:3px;vertical-align:-1px" />
@@ -117,7 +129,6 @@ function retry(index) {
         </div>
       </article>
 
-      <!-- Typing indicator -->
       <div v-if="loading" class="chat-row assistant">
         <div class="chat-avatar" aria-hidden="true">AI</div>
         <div class="chat-bubble typing-indicator">
@@ -126,7 +137,6 @@ function retry(index) {
       </div>
     </div>
 
-    <!-- Suggestions -->
     <div class="suggestion-row" aria-label="快捷提问">
       <button
         v-for="suggestion in suggestions"
@@ -139,7 +149,6 @@ function retry(index) {
       </button>
     </div>
 
-    <!-- Composer -->
     <form class="chat-composer" @submit.prevent="sendMessage()">
       <textarea
         v-model="draft"
@@ -156,8 +165,6 @@ function retry(index) {
 </template>
 
 <style scoped>
-/* Refinements over global chat styles */
-
 .chat-kicker {
   display: inline-flex;
   align-items: center;
@@ -177,5 +184,10 @@ function retry(index) {
 .retry-btn {
   display: inline-flex;
   align-items: center;
+}
+
+.chat-row.is-error .chat-bubble {
+  border-color: var(--rose-border);
+  background: var(--rose-soft);
 }
 </style>

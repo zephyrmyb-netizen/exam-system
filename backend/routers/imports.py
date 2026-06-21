@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
-from ..config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+from ..config import CHAT_UPSTREAM_TIMEOUT, OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 from ..crud import derive_course_name_from_filename
 from ..database import get_db
 from ..models import Question as QuestionModel
@@ -170,7 +170,11 @@ def _extract_questions_from_ai_response(raw: str) -> tuple[list[dict], list[str]
 
 def _call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict], list[str]]:
     """Call AI to parse a single text chunk. Returns (question_dicts, warnings)."""
-    client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+    client = OpenAI(
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_BASE_URL,
+        timeout=max(CHAT_UPSTREAM_TIMEOUT, 90),
+    )
     prompt = (
         "你是一个题目解析助手。请将以下教育文档内容解析为 JSON 数组，每道题为一个对象。\n\n"
         "支持的题目类型：\n"
@@ -193,11 +197,39 @@ def _call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict],
         f"文档内容：\n{text_chunk}"
     )
 
+    # Override the legacy garbled prompt with a clean prompt. Keep it mostly
+    # ASCII so future Windows encoding issues are less likely to break AI import.
+    prompt = (
+        "You are an exam-question extraction assistant. Convert the document text into strict JSON.\n"
+        "Return ONLY a JSON object with this shape:\n"
+        "{\n"
+        '  "questions": [\n'
+        "    {\n"
+        '      "type": "single_choice | multiple_choice | true_false | fill_blank | short_answer",\n'
+        '      "question": "question text",\n'
+        '      "options": {"A": "option A", "B": "option B"},\n'
+        '      "answer": "correct answer",\n'
+        '      "analysis": "short explanation",\n'
+        '      "subject": "subject name",\n'
+        '      "chapter": "chapter name",\n'
+        '      "difficulty": "easy | normal | hard"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "Rules:\n"
+        "1. Use the original language of the document for question text and analysis.\n"
+        "2. For choice questions, options must be an object keyed by A/B/C/D.\n"
+        "3. For true_false answers, use one of: true, false, yes, no.\n"
+        "4. Do not include markdown fences or explanations outside JSON.\n\n"
+        f"Document text:\n{text_chunk}"
+    )
+
     response = client.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         temperature=0.1,
+        max_tokens=3000,
     )
     raw = response.choices[0].message.content
     if not raw:

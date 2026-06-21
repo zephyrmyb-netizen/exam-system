@@ -21,19 +21,14 @@ const { fetchProfile } = useAuth();
 const {
   status: aiStatus,
   fileName: aiFileName,
-  elapsedSeconds,
   estimatedSeconds,
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
 let successTimer = null;
 
-// Show the slim running banner when AI is running and user is NOT on /import
-const showAiBanner = computed(() => {
-  return aiStatus.value === "running" && route.path !== "/import";
-});
+const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
 
-// Show success toast for 3 seconds then dismiss
 watch(aiStatus, (val) => {
   if (val === "success") {
     showSuccessToast.value = true;
@@ -74,6 +69,7 @@ const activeNavKey = computed(() => {
   }
   return nav || "";
 });
+
 const showHeader = computed(() => route.name !== "home");
 const showBackButton = computed(() => !!route.meta?.parent);
 
@@ -81,29 +77,23 @@ function goBack() {
   const allowedFromRoutes = ["home", "mine", "courses", "practice", "public-library"];
   const from = route.query.from;
 
-  // 1. query.from takes priority
   if (from && allowedFromRoutes.includes(from)) {
     router.replace({ name: from });
     return;
   }
 
-  // 2. meta.parent fallback
   const parent = route.meta?.parent;
   if (parent) {
     router.replace({ name: parent, params: { ...route.params } });
     return;
   }
 
-  // 3. final fallback
   router.replace({ name: "home" });
 }
 
 function handleAuthChange() {
-  if (!getToken()) {
-    // 仅在当前不在登录页时跳转，避免重定向循环
-    if (route.name !== "login" && route.name !== "register") {
-      router.push({ name: "login", query: { redirect: route.fullPath } });
-    }
+  if (!getToken() && route.name !== "login" && route.name !== "register") {
+    router.push({ name: "login", query: { redirect: route.fullPath } });
   }
 }
 
@@ -123,6 +113,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
+  if (successTimer) clearTimeout(successTimer);
 });
 </script>
 
@@ -139,12 +130,11 @@ onUnmounted(() => {
         <span style="margin-left: 4px">返回</span>
       </button>
       <div class="page-intro">
-        <p class="page-kicker" v-if="route.meta?.description">{{ route.meta.description }}</p>
+        <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
         <h1>{{ route.meta?.title || "" }}</h1>
       </div>
     </header>
 
-    <!-- AI import running banner -->
     <div
       v-if="showAiBanner"
       class="ai-task-banner"
@@ -154,19 +144,18 @@ onUnmounted(() => {
       @keydown.enter="router.push('/import')"
     >
       <span class="ai-banner-dot"></span>
-      <span class="ai-banner-text">AI 正在导入题目，预计约 {{ estimatedSeconds }} 秒</span>
+      <span class="ai-banner-text">
+        AI 正在解析题目，预计约 {{ estimatedSeconds }} 秒
+        <small v-if="aiFileName"> · {{ aiFileName }}</small>
+      </span>
       <span class="ai-banner-arrow">
         <ArrowLeft :size="14" :stroke-width="2.5" style="transform:rotate(180deg)" />
       </span>
     </div>
 
-    <!-- AI import success toast -->
-    <div
-      v-if="showSuccessToast"
-      class="ai-task-toast"
-    >
+    <div v-if="showSuccessToast" class="ai-task-toast">
       <CheckCircle :size="16" :stroke-width="2.5" style="margin-right:6px;flex-shrink:0" />
-      <span>导入成功</span>
+      <span>导入解析完成</span>
     </div>
 
     <main class="app-main">
@@ -203,8 +192,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Only new / overriding styles; everything else is in style.css */
-
 .ghost-button.back-button {
   display: inline-flex;
   align-items: center;
@@ -212,14 +199,12 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* ── Bottom Nav touch optimisation ── */
 .nav-button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
-/* ── AI Task Banner ── */
 .ai-task-banner {
   display: flex;
   align-items: center;
@@ -250,7 +235,7 @@ onUnmounted(() => {
 
 @keyframes ai-dot-pulse {
   0%, 100% { opacity: 0.4; transform: scale(0.8); }
-  50%      { opacity: 1;   transform: scale(1.2); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 .ai-banner-text {
@@ -259,6 +244,11 @@ onUnmounted(() => {
   font-weight: 700;
   color: var(--primary-strong);
   line-height: 1.3;
+}
+
+.ai-banner-text small {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
 }
 
 .ai-banner-arrow {
@@ -271,7 +261,6 @@ onUnmounted(() => {
   color: var(--primary);
 }
 
-/* ── AI Success Toast ── */
 .ai-task-toast {
   position: fixed;
   bottom: calc(var(--nav-height) + var(--space-4));

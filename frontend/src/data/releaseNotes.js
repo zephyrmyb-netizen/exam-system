@@ -1,12 +1,24 @@
 /**
  * 更新公告数据
  *
- * 每次修 bug 或增加功能必须在此新增一条公告。
- * 详见 docs/RELEASE_NOTE_GUIDE.md。
+ * 每次修复 bug 或优化现有功能，都在这里新增一条公告。
+ * 最新版本放在数组最前面。
  *
  * @type {Array<{id:string, version:string, date:string, type:string, title:string, items:string[]}>}
  */
 export const releaseNotes = [
+  {
+    id: "v1.5.2-ai-import-chat-fix",
+    version: "v1.5.2",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复 AI 导入与对话稳定性",
+    items: [
+      "修复 AI 导入时切换页面后看不到解析进度的问题",
+      "优化 AI 对话超时处理，减少 Mimo 模型回复较慢时的失败提示",
+      "修复 AI 相关页面的乱码文案与重试状态显示",
+    ],
+  },
   {
     id: "v1.5.1-mobile-polish",
     version: "v1.5.1",
@@ -65,18 +77,6 @@ export const releaseNotes = [
       "修复从首页进入学习概览后返回位置不正确的问题",
       "优化底部导航切换，减少多余历史记录",
       "精简重复入口，让页面层级更清晰",
-    ],
-  },
-  {
-    id: "v1.1.1-nav-study-overview",
-    version: "v1.1.1",
-    date: "2026-06-20",
-    type: "优化",
-    title: "优化导航与学习概览",
-    items: [
-      "底部导航新增 AI 对话入口",
-      "练习入口移至首页",
-      "我的页新增学习概览入口",
     ],
   },
 ];
