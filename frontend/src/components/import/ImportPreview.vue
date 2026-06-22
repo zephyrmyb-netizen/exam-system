@@ -56,6 +56,14 @@ const effectiveCourseName = computed(() => {
   return courseNameInput.value.trim();
 });
 
+const timing = computed(() => props.previewData?.timing || null);
+
+function formatTiming(ms) {
+  const value = Number(ms || 0);
+  if (value >= 1000) return `${Math.round(value / 100) / 10}s`;
+  return `${value}ms`;
+}
+
 // ── Question editing ──
 const editingIndex = ref(-1); // -1 = not editing
 const showNewQuestionEditor = ref(false);
@@ -187,6 +195,13 @@ function handleRetry() {
       </button>
     </div>
 
+    <div v-if="timing" class="timing-strip">
+      <span>文字提取 {{ formatTiming(timing.extract_ms) }}</span>
+      <span>AI 生成 {{ formatTiming(timing.ai_ms) }}</span>
+      <span>总用时 {{ formatTiming(timing.total_ms) }}</span>
+      <span v-if="timing.chunks">分块 {{ timing.chunks }}</span>
+    </div>
+
     <!-- ── Question list ── -->
     <div class="q-list">
       <div
@@ -311,6 +326,25 @@ function handleRetry() {
   cursor: pointer; transition: background var(--ease-out), border-color var(--ease-out);
 }
 .add-btn:hover { background: var(--primary-soft); border-color: var(--primary-border); }
+
+.timing-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.timing-strip span {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
 
 /* ── Question list ── */
 .q-list { display: grid; gap: 6px; }

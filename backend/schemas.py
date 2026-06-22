@@ -248,16 +248,28 @@ class WrongRecordOut(BaseModel):
 
 # -- File Import ------------------------------------------------------------
 
+class ImportTiming(BaseModel):
+    """Safe performance summary for file import stages, in milliseconds."""
+    extract_ms: int = 0
+    chunk_ms: int = 0
+    ai_ms: int = 0
+    total_ms: int = 0
+    chunks: int = 0
+    ai_chunks: list[int] = []
+
+
 class FileExtractResponse(BaseModel):
     text: str
     filename: str
     suggested_course_name: str = "未分类题库"
+    timing: Optional[ImportTiming] = None
 
 
 class FileAutoResponse(BaseModel):
     imported_count: int
     course_id: Optional[int] = None
     course_name: str = "未分类题库"
+    timing: Optional[ImportTiming] = None
 
 
 class ImportedQuestion(BaseModel):
@@ -281,6 +293,7 @@ class PreviewImportResponse(BaseModel):
     total_parsed: int = 0
     total_valid: int = 0
     total_invalid: int = 0
+    timing: Optional[ImportTiming] = None
 
 
 class ConfirmImportRequest(BaseModel):
