@@ -472,6 +472,12 @@ async def preview_import(
         if "格式有误" in w:
             total_invalid += 1
 
+    if total_valid == 0:
+        detail = "未能从文档中解析出任何有效题目"
+        if all_warnings:
+            detail += "：" + "；".join(all_warnings[:3])
+        raise HTTPException(status_code=400, detail=detail)
+
     return schemas.PreviewImportResponse(
         questions=[ImportedQuestion(**q) for q in valid],
         suggested_course_name=suggested,
