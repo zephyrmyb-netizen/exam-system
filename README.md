@@ -194,6 +194,22 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 #### AI 导入超时排查
 
 AI 文件导入比普通对话更慢，因为后端会先提取 Word/PPT 文本，再把文本拆成多个分块顺序发给模型解析。
+其中 Word/PPT 文字提取通常很快，主要等待时间一般在 AI 分块生成题目阶段。前端会在等待时显示“正在读取文档 / AI 正在生成题目”，切换到其他页面后也会保留全局导入进度提示。
+
+`POST /imports/file`、`POST /imports/file/preview` 和 `POST /imports/file/auto` 会返回安全的 `timing` 统计，单位为毫秒：
+
+```json
+{
+  "timing": {
+    "extract_ms": 320,
+    "chunk_ms": 12,
+    "ai_ms": 54000,
+    "total_ms": 54500,
+    "chunks": 2,
+    "ai_chunks": [28000, 26000]
+  }
+}
+```
 
 当前默认配置：
 

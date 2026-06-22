@@ -360,6 +360,10 @@ class TestPreviewImport:
             assert data["total_parsed"] == 1
             assert data["total_valid"] == 1
             assert data["suggested_course_name"] == "test"
+            assert data["timing"]["extract_ms"] >= 0
+            assert data["timing"]["ai_ms"] >= 0
+            assert data["timing"]["total_ms"] >= 0
+            assert data["timing"]["chunks"] == 1
             # Verify no questions were created in DB
             q_resp = client.get("/questions/", headers=auth_headers)
             assert len(q_resp.json()) == 0

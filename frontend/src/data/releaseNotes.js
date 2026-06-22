@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.5-ai-import-progress-timing",
+    version: "v1.5.5",
+    date: "2026-06-22",
+    type: "优化",
+    title: "优化 AI 导入等待提示",
+    items: [
+      "导入等待时区分文档读取和 AI 生成阶段，避免一直显示提取文字造成误解",
+      "AI 导入预览新增文字提取、AI 生成和总耗时展示",
+      "后端导入接口返回安全的耗时统计，方便后续定位慢在哪一段",
+    ],
+  },
+  {
     id: "v1.5.4-ai-restart-stability",
     version: "v1.5.4",
     date: "2026-06-22",

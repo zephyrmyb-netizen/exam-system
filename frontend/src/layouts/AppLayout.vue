@@ -21,7 +21,8 @@ const { fetchProfile } = useAuth();
 const {
   status: aiStatus,
   fileName: aiFileName,
-  estimatedSeconds,
+  progressTitle: aiProgressTitle,
+  progressDetail: aiProgressDetail,
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
@@ -145,8 +146,9 @@ onUnmounted(() => {
     >
       <span class="ai-banner-dot"></span>
       <span class="ai-banner-text">
-        AI 正在解析题目，预计约 {{ estimatedSeconds }} 秒
+        {{ aiProgressTitle }}
         <small v-if="aiFileName"> · {{ aiFileName }}</small>
+        <small v-if="aiProgressDetail"> · {{ aiProgressDetail }}</small>
       </span>
       <span class="ai-banner-arrow">
         <ArrowLeft :size="14" :stroke-width="2.5" style="transform:rotate(180deg)" />

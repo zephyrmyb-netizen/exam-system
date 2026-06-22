@@ -1,6 +1,7 @@
 import json as json_module
 import os
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -30,6 +31,27 @@ ALLOWED_EXTENSIONS = {".docx", ".pptx"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)  # characters per chunk
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)  # maximum chunks to avoid runaway costs
+
+
+def _elapsed_ms(start: float) -> int:
+    return max(0, round((time.perf_counter() - start) * 1000))
+
+
+def _build_timing(
+    *,
+    total_start: float,
+    extract_ms: int = 0,
+    parse_timing: dict | None = None,
+) -> schemas.ImportTiming:
+    parse_timing = parse_timing or {}
+    return schemas.ImportTiming(
+        extract_ms=extract_ms,
+        chunk_ms=int(parse_timing.get("chunk_ms") or 0),
+        ai_ms=int(parse_timing.get("ai_ms") or 0),
+        total_ms=_elapsed_ms(total_start),
+        chunks=int(parse_timing.get("chunks") or 0),
+        ai_chunks=list(parse_timing.get("ai_chunks") or []),
+    )
 
 
 # ── Text extraction (enhanced) ──────────────────────────────────────────────
@@ -262,11 +284,19 @@ def _deduplicate_questions(questions: list[dict]) -> list[dict]:
 
 def call_ai_parse(
     text: str,
-) -> tuple[list[dict], list[str]]:
+) -> tuple[list[dict], list[str], dict]:
     """Parse document text into question dicts with chunking + dedup.
 
-    Returns (all_valid_questions, warnings).
+    Returns (all_valid_questions, warnings, timing).
     """
+    total_start = time.perf_counter()
+    timing = {
+        "chunk_ms": 0,
+        "ai_ms": 0,
+        "total_ms": 0,
+        "chunks": 0,
+        "ai_chunks": [],
+    }
     if not OPENAI_API_KEY:
         raise HTTPException(
             status_code=400,
@@ -277,6 +307,7 @@ def call_ai_parse(
     all_warnings: list[str] = []
 
     # Chunk the text
+    chunk_start = time.perf_counter()
     paragraphs = [p for p in text.split("\n") if p.strip()]
     chunks: list[str] = []
     current = ""
@@ -289,20 +320,27 @@ def call_ai_parse(
             current = current + "\n" + para if current else para
     if current:
         chunks.append(current)
+    timing["chunk_ms"] = _elapsed_ms(chunk_start)
 
     # Limit chunks
     if len(chunks) > MAX_CHUNKS:
         all_warnings.append(f"文档过长，仅处理前 {MAX_CHUNKS} 部分（共 {len(chunks)} 部分）")
         chunks = chunks[:MAX_CHUNKS]
+    timing["chunks"] = len(chunks)
 
     # Parse each chunk
     for i, chunk in enumerate(chunks):
+        ai_start = time.perf_counter()
         try:
             items, warns = _call_ai_parse_chunk(chunk, i)
             all_items.extend(items)
             all_warnings.extend(warns)
         except Exception as e:
             all_warnings.append(f"第 {i+1} 部分解析失败: {e}")
+        finally:
+            ai_chunk_ms = _elapsed_ms(ai_start)
+            timing["ai_chunks"].append(ai_chunk_ms)
+            timing["ai_ms"] += ai_chunk_ms
 
     # Deduplicate
     all_items = _deduplicate_questions(all_items)
@@ -317,7 +355,8 @@ def call_ai_parse(
         else:
             all_warnings.append(f"第 {idx+1} 题格式有误: {err}")
 
-    return valid, all_warnings
+    timing["total_ms"] = _elapsed_ms(total_start)
+    return valid, all_warnings, timing
 
 
 # ── POST /file (unchanged) ────────────────────────────────────────────────
@@ -329,6 +368,7 @@ async def upload_file(
     db: Session = Depends(get_db),
     _current_user=Depends(auth_module.get_current_user),
 ):
+    total_start = time.perf_counter()
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -350,11 +390,14 @@ async def upload_file(
             tmp.write(content)
             tmp_path = tmp.name
 
+        extract_start = time.perf_counter()
         text, _ = extract_text_and_warnings(tmp_path)
+        extract_ms = _elapsed_ms(extract_start)
         return schemas.FileExtractResponse(
             text=text,
             filename=file.filename or "unknown",
             suggested_course_name=derive_course_name_from_filename(file.filename or ""),
+            timing=_build_timing(total_start=total_start, extract_ms=extract_ms),
         )
     except HTTPException:
         raise
@@ -378,6 +421,7 @@ async def preview_import(
     """Upload a docx/pptx, extract text, parse via AI, return preview.
     Does NOT write anything to the database.
     """
+    total_start = time.perf_counter()
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -399,7 +443,9 @@ async def preview_import(
             tmp.write(content)
             tmp_path = tmp.name
 
+        extract_start = time.perf_counter()
         text, extract_warnings = extract_text_and_warnings(tmp_path)
+        extract_ms = _elapsed_ms(extract_start)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"文件提取失败: {str(e)}")
     finally:
@@ -413,7 +459,7 @@ async def preview_import(
         raise HTTPException(status_code=400, detail="文件中未提取到任何文本内容")
 
     # AI parse
-    questions, ai_warnings = call_ai_parse(text)
+    questions, ai_warnings, parse_timing = call_ai_parse(text)
     all_warnings = extract_warnings + ai_warnings
     suggested = derive_course_name_from_filename(file.filename or "")
 
@@ -433,6 +479,11 @@ async def preview_import(
         total_parsed=total_parsed,
         total_valid=total_valid,
         total_invalid=total_invalid,
+        timing=_build_timing(
+            total_start=total_start,
+            extract_ms=extract_ms,
+            parse_timing=parse_timing,
+        ),
     )
 
 
@@ -522,6 +573,7 @@ async def import_file_auto(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
+    total_start = time.perf_counter()
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -543,7 +595,9 @@ async def import_file_auto(
             tmp.write(content)
             tmp_path = tmp.name
 
+        extract_start = time.perf_counter()
         text, _ = extract_text_and_warnings(tmp_path)
+        extract_ms = _elapsed_ms(extract_start)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"文件提取失败: {str(e)}")
     finally:
@@ -557,7 +611,7 @@ async def import_file_auto(
         raise HTTPException(status_code=400, detail="文件中未提取到任何文本内容")
 
     # AI parse first (no DB writes yet)
-    question_dicts, _warnings = call_ai_parse(text)
+    question_dicts, _warnings, parse_timing = call_ai_parse(text)
     if not question_dicts:
         detail = "未能从文档中解析出任何有效题目"
         if _warnings:
@@ -603,4 +657,13 @@ async def import_file_auto(
     if imported > 0:
         db.commit()
 
-    return schemas.FileAutoResponse(imported_count=imported, course_id=bank.id, course_name=bank.name)
+    return schemas.FileAutoResponse(
+        imported_count=imported,
+        course_id=bank.id,
+        course_name=bank.name,
+        timing=_build_timing(
+            total_start=total_start,
+            extract_ms=extract_ms,
+            parse_timing=parse_timing,
+        ),
+    )

@@ -240,8 +240,8 @@ onMounted(fetchCourses);
       <div v-if="isParsing" class="running-panel">
         <span class="running-dot"></span>
         <div>
-          <strong>AI 正在解析题目</strong>
-          <p>通常需要 1-2 分钟，大文件会更久；切到其他页面也会继续处理。</p>
+          <strong>{{ aiTask.progressTitle.value }}</strong>
+          <p>{{ aiTask.progressDetail.value }}</p>
         </div>
       </div>
 
