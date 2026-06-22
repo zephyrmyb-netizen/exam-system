@@ -1,5 +1,6 @@
 import json as json_module
 import os
+import re
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -167,19 +168,9 @@ def _validate_question_item(item: dict) -> tuple[dict | None, str | None]:
     }, None
 
 
-def _extract_questions_from_ai_response(raw: str) -> tuple[list[dict], list[str]]:
-    """Extract a list of question dicts from an AI JSON response.
-    Returns (questions, warnings).
-    """
-    warnings: list[str] = []
-    try:
-        parsed = json_module.loads(raw)
-    except json_module.JSONDecodeError:
-        warnings.append("AI 返回了非 JSON 格式内容，已忽略此分块")
-        return [], warnings
-
+def _question_items_from_parsed_json(parsed) -> list:
     if isinstance(parsed, list):
-        items = parsed
+        return parsed
     elif isinstance(parsed, dict):
         items = (
             parsed.get("questions")
@@ -190,11 +181,95 @@ def _extract_questions_from_ai_response(raw: str) -> tuple[list[dict], list[str]
         )
         if not items and parsed:
             if "question" in parsed or "type" in parsed:
-                items = [parsed]
-    else:
-        items = []
+                return [parsed]
+        return items if isinstance(items, list) else []
+    return []
 
-    return items, warnings
+
+def _json_candidates_from_text(raw: str) -> list[str]:
+    """Return possible JSON snippets from model output.
+
+    Some OpenAI-compatible providers ignore JSON mode and wrap JSON in prose or
+    markdown fences. We only extract balanced JSON-looking snippets and never
+    trust arbitrary text as questions.
+    """
+    text = (raw or "").strip()
+    candidates: list[str] = []
+    if not text:
+        return candidates
+
+    candidates.append(text)
+
+    for match in re.finditer(r"```(?:json|JSON)?\s*([\s\S]*?)```", text):
+        fenced = match.group(1).strip()
+        if fenced:
+            candidates.append(fenced)
+
+    for open_char, close_char in (("{", "}"), ("[", "]")):
+        start = text.find(open_char)
+        while start != -1:
+            depth = 0
+            in_string = False
+            escaped = False
+            for idx in range(start, len(text)):
+                ch = text[idx]
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif ch == "\\":
+                        escaped = True
+                    elif ch == '"':
+                        in_string = False
+                    continue
+                if ch == '"':
+                    in_string = True
+                elif ch == open_char:
+                    depth += 1
+                elif ch == close_char:
+                    depth -= 1
+                    if depth == 0:
+                        candidates.append(text[start:idx + 1].strip())
+                        break
+            start = text.find(open_char, start + 1)
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in candidates:
+        if item and item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
+
+
+def _extract_questions_from_ai_response(raw: str) -> tuple[list[dict], list[str]]:
+    """Extract a list of question dicts from an AI response.
+
+    Accepts strict JSON, JSON inside markdown fences, or JSON embedded in a
+    short explanatory sentence. Returns (questions, warnings).
+    """
+    warnings: list[str] = []
+    last_error = ""
+
+    for candidate in _json_candidates_from_text(raw):
+        try:
+            parsed = json_module.loads(candidate)
+            if isinstance(parsed, str):
+                parsed = json_module.loads(parsed)
+        except json_module.JSONDecodeError as exc:
+            last_error = str(exc)
+            continue
+
+        items = _question_items_from_parsed_json(parsed)
+        if items:
+            if candidate.strip() != (raw or "").strip():
+                warnings.append("AI 返回内容包含说明文字，已自动提取其中的 JSON")
+            return items, warnings
+
+    if last_error:
+        warnings.append(f"AI 返回了非 JSON 格式内容，已忽略此分块（{last_error}）")
+    else:
+        warnings.append("AI 返回内容中未找到 questions 数组，已忽略此分块")
+    return [], warnings
 
 
 def _call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict], list[str]]:
