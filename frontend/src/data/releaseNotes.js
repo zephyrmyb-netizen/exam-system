@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.7-import-page-state",
+    version: "v1.5.7",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复 AI 导入页面状态",
+    items: [
+      "AI 解析中切回导入页时，文件选择区会显示当前文件并禁止更换文件",
+      "修复确认导入失败后按钮可能卡住，导致题目无法再次导入的问题",
+      "保留解析前选择的目标题库，切页回来后确认导入不会丢失目标",
+    ],
+  },
+  {
     id: "v1.5.6-import-auth-stability",
     version: "v1.5.6",
     date: "2026-06-22",

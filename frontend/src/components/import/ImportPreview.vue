@@ -15,6 +15,9 @@ const props = defineProps({
   /** existing courses for dropdown */
   courses: { type: Array, default: () => [] },
   coursesLoading: { type: Boolean, default: false },
+  confirming: { type: Boolean, default: false },
+  initialCourseId: { type: Number, default: 0 },
+  initialCourseName: { type: String, default: "" },
 });
 
 // ── Editable questions list ──
@@ -40,13 +43,29 @@ import { watch } from "vue";
 watch(() => props.previewData, initFromProps);
 
 // ── Course selection ──
-const selectedCourseId = ref(0);
+const selectedCourseId = ref(Number(props.initialCourseId || 0));
 const courseNameInput = ref("");
 
 // When previewData changes, set course name from suggestion
 watch(suggestedCourseName, (v) => {
-  if (v && selectedCourseId.value === 0) courseNameInput.value = v;
+  if (props.initialCourseName && selectedCourseId.value === 0) {
+    courseNameInput.value = props.initialCourseName;
+  } else if (v && selectedCourseId.value === 0) {
+    courseNameInput.value = v;
+  }
 }, { immediate: true });
+
+watch(() => props.initialCourseId, (v) => {
+  if (Number(v || 0) > 0) {
+    selectedCourseId.value = Number(v);
+  }
+});
+
+watch(() => props.initialCourseName, (v) => {
+  if (v && selectedCourseId.value === 0) {
+    courseNameInput.value = v;
+  }
+});
 
 const effectiveCourseName = computed(() => {
   if (selectedCourseId.value > 0) {
@@ -107,7 +126,6 @@ function removeQuestion(index) {
 }
 
 // ── Confirm ──
-const confirming = ref(false);
 const confirmError = ref("");
 
 function findFirstInvalid() {
@@ -138,7 +156,6 @@ async function handleConfirm() {
     return;
   }
 
-  confirming.value = true;
   confirmError.value = "";
 
   // Build payload — strip _tempId
