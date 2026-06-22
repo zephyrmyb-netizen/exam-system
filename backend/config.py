@@ -7,6 +7,9 @@ from dotenv import dotenv_values
 # ── Load .env ───────────────────────────────────────────────────────────────
 _backend_dir = Path(__file__).resolve().parent
 _dotenv_path = _backend_dir / ".env"
+DOTENV_PATH = str(_dotenv_path)
+DOTENV_LOADED = False
+PRESERVE_SYSTEM_ENV = os.getenv("PRESERVE_SYSTEM_ENV", "").lower() in {"1", "true", "yes"}
 
 
 def _load_dotenv_values(path: Path) -> dict[str, str | None]:
@@ -21,14 +24,17 @@ def _load_dotenv_values(path: Path) -> dict[str, str | None]:
         return {}
 
 
-def _apply_env_values(values: dict[str, str | None]) -> None:
+def _apply_env_values(values: dict[str, str | None], preserve_existing: bool | None = None) -> None:
     """Apply dotenv values to os.environ.
 
-    Sets .env values, but preserves explicitly-set system environment
-    variables.  A stale value that matches the application's own default
-    (e.g. 'dev-invite' for INVITE_CODE) is treated as not-set and will
-    be overwritten by the .env value.
+    By default, project .env values are authoritative for this local app. This
+    prevents stale Windows user/system environment variables from breaking AI
+    after a reboot. Set PRESERVE_SYSTEM_ENV=1 only when a deployment platform
+    must override .env values.
     """
+    if preserve_existing is None:
+        preserve_existing = PRESERVE_SYSTEM_ENV
+
     # Defaults that config.py itself would use when the variable is absent.
     # Matching these in os.environ likely means a previous run leaked its
     # fallback value, not a deliberate system setting.
@@ -54,7 +60,9 @@ def _apply_env_values(values: dict[str, str | None]) -> None:
         if value is None:
             continue
         existing = os.environ.get(key)
-        if existing is None or existing == "":
+        if not preserve_existing:
+            os.environ[key] = value
+        elif existing is None or existing == "":
             os.environ[key] = value
         elif key in _APP_DEFAULTS and existing == _APP_DEFAULTS[key]:
             # Stale app default from a previous run — let .env override it
@@ -62,7 +70,9 @@ def _apply_env_values(values: dict[str, str | None]) -> None:
 
 
 if os.getenv("SKIP_DOTENV", "").lower() not in {"1", "true", "yes"}:
-    _apply_env_values(_load_dotenv_values(_dotenv_path))
+    _dotenv_values = _load_dotenv_values(_dotenv_path)
+    DOTENV_LOADED = bool(_dotenv_values)
+    _apply_env_values(_dotenv_values)
 
 # ── Environment ─────────────────────────────────────────────────────────────
 APP_ENV = os.getenv("APP_ENV", "").lower() or os.getenv("ENV", "").lower() or "development"
@@ -116,7 +126,7 @@ CHAT_RATE_LIMIT_PER_HOUR = int(os.getenv("CHAT_RATE_LIMIT_PER_HOUR", "20"))
 CHAT_MAX_MESSAGE_LENGTH = int(os.getenv("CHAT_MAX_MESSAGE_LENGTH", "4000"))
 CHAT_MAX_HISTORY_MESSAGES = int(os.getenv("CHAT_MAX_HISTORY_MESSAGES", "20"))
 CHAT_MAX_HISTORY_TOTAL_LENGTH = int(os.getenv("CHAT_MAX_HISTORY_TOTAL_LENGTH", "20000"))
-CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "30"))
+CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "90"))
 
 # AI import is usually slower than chat because one file may need several
 # sequential model calls. Keep these limits aligned with the frontend timeout.

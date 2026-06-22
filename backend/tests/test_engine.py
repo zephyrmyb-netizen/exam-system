@@ -40,6 +40,16 @@ class TestDatabaseEngine:
         resp = client.get("/health")
         assert resp.status_code == 200
 
+    def test_ai_health_does_not_expose_secret(self, client):
+        resp = client.get("/health/ai")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "api_key_configured" in data
+        assert "model" in data
+        assert "base_url_host" in data
+        assert "OPENAI_API_KEY" not in data
+        assert "api_key" not in data
+
 
 class TestTimezone:
     """Tests for local timezone in today stat calculations."""

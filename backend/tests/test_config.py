@@ -53,15 +53,25 @@ class TestDotenvLoading:
             self._apply_env_file(env_file)
             assert os.environ.get("TEST_FILL_ME") == "from_dotenv"
 
-    def test_nonempty_system_env_not_overridden(self):
-        """Non-empty system env var should NOT be overridden by .env."""
+    def test_dotenv_overrides_nonempty_system_env_by_default(self):
+        """Project .env should override stale system env vars by default."""
         with tempfile.TemporaryDirectory() as tmp:
             env_file = Path(tmp) / ".env"
-            env_file.write_text("TEST_NO_OVERRIDE=dotenv_value\n", encoding="utf-8")
+            env_file.write_text("TEST_DOTENV_WINS=dotenv_value\n", encoding="utf-8")
 
-            os.environ["TEST_NO_OVERRIDE"] = "system_value"
+            os.environ["TEST_DOTENV_WINS"] = "system_value"
             self._apply_env_file(env_file)
-            assert os.environ.get("TEST_NO_OVERRIDE") == "system_value"
+            assert os.environ.get("TEST_DOTENV_WINS") == "dotenv_value"
+
+    def test_preserve_existing_keeps_system_env(self):
+        """Deployment mode can still keep explicit system env vars."""
+        with tempfile.TemporaryDirectory() as tmp:
+            env_file = Path(tmp) / ".env"
+            env_file.write_text("TEST_PRESERVE=dotenv_value\n", encoding="utf-8")
+
+            os.environ["TEST_PRESERVE"] = "system_value"
+            self._apply_env_file(env_file, preserve_existing=True)
+            assert os.environ.get("TEST_PRESERVE") == "system_value"
 
     def test_skip_dotenv_flag(self):
         """Test the _apply_env_values function respects logic (tested via direct call)."""
@@ -74,7 +84,7 @@ class TestDotenvLoading:
         values["TEST_SKIP_EXISTING"] = "override_attempt"
 
         from backend.config import _apply_env_values
-        _apply_env_values(values)
+        _apply_env_values(values, preserve_existing=True)
         assert os.environ.get("TEST_SKIP_EXISTING") == "keep_me"
         # Clean up
         os.environ.pop("TEST_SKIP_EXISTING", None)
@@ -88,8 +98,8 @@ class TestDotenvLoading:
     # ── helpers ──────────────────────────────────────────────────────────
 
     @staticmethod
-    def _apply_env_file(env_path):
+    def _apply_env_file(env_path, preserve_existing=None):
         """Simulate config.py's env loading for a specific file."""
         from backend.config import _load_dotenv_values, _apply_env_values
         values = _load_dotenv_values(env_path)
-        _apply_env_values(values)
+        _apply_env_values(values, preserve_existing=preserve_existing)
