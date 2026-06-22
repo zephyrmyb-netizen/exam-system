@@ -4,6 +4,7 @@ import { getErrorMessage } from "../api/request";
 
 const status = ref("idle"); // idle | running | success | error
 const mode = ref("preview");
+const fileRef = ref(null);
 const fileName = ref("");
 const courseId = ref(0);
 const courseName = ref("");
@@ -72,6 +73,7 @@ function reset() {
   clearElapsedTimer();
   status.value = "idle";
   mode.value = "preview";
+  fileRef.value = null;
   fileName.value = "";
   courseId.value = 0;
   courseName.value = "";
@@ -92,6 +94,7 @@ async function startPreview(file, params = {}) {
   reset();
   status.value = "running";
   mode.value = "preview";
+  fileRef.value = file || null;
   fileName.value = file?.name || "";
   courseId.value = Number(params.course_id || 0);
   courseName.value = params.course_name || "";
@@ -124,6 +127,7 @@ export function useAiImportTask() {
   return {
     status,
     mode,
+    fileRef,
     fileName,
     courseId,
     courseName,

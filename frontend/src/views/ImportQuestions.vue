@@ -26,6 +26,7 @@ const derivedCourseName = ref("");
 const selectedCourseId = ref(0);
 const advancedOpen = ref(false);
 const confirmError = ref("");
+const confirmLoading = ref(false);
 const importResult = ref(null);
 const { courses, coursesLoading, fetchCourses } = useImportCourses();
 const {
@@ -49,6 +50,10 @@ const hasSelectedFile = computed(() => !!selectedFile.value);
 const isParsing = computed(() => aiTask.status.value === "running");
 const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.previewData.value);
 const hasImportSuccess = computed(() => !!importResult.value);
+const activeFileName = computed(() => selectedFile.value?.name || aiTask.fileName.value || "");
+const hasActiveFile = computed(() => !!activeFileName.value);
+const activeCourseId = computed(() => selectedCourseId.value || aiTask.courseId.value || 0);
+const activeCourseName = computed(() => derivedCourseName.value || aiTask.courseName.value || "");
 
 const phase = computed(() => {
   if (hasImportSuccess.value) return "success";
@@ -57,10 +62,10 @@ const phase = computed(() => {
 });
 
 const currentTargetName = computed(() => {
-  if (selectedCourseId.value > 0) {
-    return courses.value.find((c) => c.id === selectedCourseId.value)?.name || "";
+  if (activeCourseId.value > 0) {
+    return courses.value.find((c) => c.id === activeCourseId.value)?.name || "";
   }
-  return derivedCourseName.value || aiTask.courseName.value || "";
+  return activeCourseName.value;
 });
 
 watch(
@@ -84,6 +89,11 @@ function goToCourse(courseId) {
 }
 
 function onFileChange(event) {
+  if (isParsing.value) {
+    event.target.value = "";
+    return;
+  }
+
   const file = event.target.files?.[0] || null;
   confirmError.value = "";
   fileError.value = "";
@@ -116,29 +126,33 @@ function onFileChange(event) {
 }
 
 async function handlePreview() {
-  if (!selectedFile.value) {
+  const file = selectedFile.value || aiTask.fileRef.value;
+  if (!file) {
     fileError.value = "请先选择文件。";
     return;
   }
 
   const params = {};
-  if (selectedCourseId.value > 0) {
-    params.course_id = selectedCourseId.value;
-  } else if (derivedCourseName.value.trim()) {
-    params.course_name = derivedCourseName.value.trim();
+  if (activeCourseId.value > 0) {
+    params.course_id = activeCourseId.value;
+  } else if (activeCourseName.value.trim()) {
+    params.course_name = activeCourseName.value.trim();
   }
 
-  await aiTask.startPreview(selectedFile.value, params);
+  await aiTask.startPreview(file, params);
 }
 
 async function handleConfirm(payload) {
   confirmError.value = "";
+  confirmLoading.value = true;
   try {
     const result = await confirmImport(payload);
     importResult.value = result;
     aiTask.markImported(result);
   } catch (error) {
     confirmError.value = getErrorMessage(error, "导入失败");
+  } finally {
+    confirmLoading.value = false;
   }
 }
 
@@ -148,7 +162,7 @@ function handleBackFromPreview() {
 }
 
 function handleRetryPreview() {
-  if (selectedFile.value) {
+  if (selectedFile.value || aiTask.fileRef.value) {
     handlePreview();
   } else {
     aiTask.reset();
@@ -204,18 +218,18 @@ onMounted(fetchCourses);
     </div>
 
     <template v-if="phase === 'select'">
-      <div class="hero-drop-zone">
+      <div class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
         <input class="file-input-native" type="file" accept=".docx,.pptx" :disabled="isParsing" @change="onFileChange" />
         <div class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></div>
-        <p v-if="!hasSelectedFile" class="hero-drop-text">选择 .docx 或 .pptx 文件</p>
+        <p v-if="!hasActiveFile" class="hero-drop-text">选择 .docx 或 .pptx 文件</p>
         <p v-else class="hero-drop-text hero-drop-selected">
           <CheckCircle :size="15" :stroke-width="2.5" style="margin-right:6px;flex-shrink:0" />
-          {{ selectedFile?.name || aiTask.fileName.value }}
+          {{ activeFileName }}
         </p>
-        <p class="hero-drop-hint">最大 10MB</p>
+        <p class="hero-drop-hint">{{ isParsing ? "AI 正在解析，暂不能更换文件" : "最大 10MB" }}</p>
       </div>
 
-      <div v-if="hasSelectedFile || aiTask.fileName.value" class="opt-panel">
+      <div v-if="hasActiveFile" class="opt-panel">
         <div class="opt-row">
           <label class="opt-label">推荐题库名称</label>
           <input v-model="derivedCourseName" class="opt-input" type="text" placeholder="自动从文件名生成" :disabled="isParsing" />
@@ -232,7 +246,7 @@ onMounted(fetchCourses);
         </div>
       </div>
 
-      <button class="hero-cta" type="button" :disabled="!hasSelectedFile || isParsing" @click="handlePreview">
+      <button class="hero-cta" type="button" :disabled="!hasActiveFile || isParsing" @click="handlePreview">
         <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" style="margin-right:8px" />
         {{ isParsing ? "AI 正在解析..." : "AI 解析文档" }}
       </button>
@@ -248,8 +262,8 @@ onMounted(fetchCourses);
       <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
       <p v-if="aiTask.error.value" class="msg msg-err">{{ aiTask.error.value }}</p>
 
-      <p v-if="(hasSelectedFile || aiTask.fileName.value) && !aiTask.error.value" class="target-hint">
-        <span v-if="selectedCourseId > 0">
+      <p v-if="hasActiveFile && !aiTask.error.value" class="target-hint">
+        <span v-if="activeCourseId > 0">
           将导入到已有题库：<strong>{{ currentTargetName }}</strong>
         </span>
         <span v-else>
@@ -278,7 +292,7 @@ onMounted(fetchCourses);
           <div class="adv-card">
             <div>只提取文本</div>
             <p class="adv-desc">提取文件文字，给其他 AI 工具整理。</p>
-            <button class="ghost-button" type="button" :disabled="fileLoading || !selectedFile" @click="uploadFile">
+            <button class="ghost-button" type="button" :disabled="fileLoading || isParsing || !selectedFile" @click="uploadFile">
               {{ fileLoading ? "提取中..." : "提取文本" }}
             </button>
             <p v-if="fileMessage" class="msg msg-ok">{{ fileMessage }}</p>
@@ -298,6 +312,9 @@ onMounted(fetchCourses);
         :previewData="aiTask.previewData.value"
         :courses="courses"
         :coursesLoading="coursesLoading"
+        :confirming="confirmLoading"
+        :initialCourseId="activeCourseId"
+        :initialCourseName="activeCourseName"
         @confirm="handleConfirm"
         @back="handleBackFromPreview"
         @retry="handleRetryPreview"
@@ -353,6 +370,17 @@ onMounted(fetchCourses);
 .hero-drop-zone:hover {
   border-color: var(--primary);
   background: var(--primary-soft);
+}
+
+.hero-drop-zone--disabled,
+.hero-drop-zone--disabled:hover {
+  cursor: wait;
+  border-color: var(--line-soft);
+  background: var(--surface-soft);
+}
+
+.hero-drop-zone--disabled .file-input-native {
+  cursor: not-allowed;
 }
 
 .hero-drop-icon {
