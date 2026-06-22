@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.8-ai-import-json-recovery",
+    version: "v1.5.8",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复 AI 导入返回 0 题",
+    items: [
+      "兼容 AI 返回 markdown 代码块包裹 JSON 的情况",
+      "兼容 AI 在 JSON 前后附加说明文字的情况",
+      "减少 Mimo 等兼容接口因非标准 JSON 输出导致整份文档解析失败的问题",
+    ],
+  },
+  {
     id: "v1.5.7-import-page-state",
     version: "v1.5.7",
     date: "2026-06-22",

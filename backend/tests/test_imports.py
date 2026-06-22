@@ -332,13 +332,15 @@ class TestPreviewImport:
         import json
         if questions_data is None:
             questions_data = [{"type": "fill_blank", "question": "Preview Q?", "answer": "Ans"}]
+        return self._mock_openai_raw_response(json.dumps({"questions": questions_data}))
+
+    def _mock_openai_raw_response(self, raw_content):
+        """Return a mock OpenAI response with exact raw content."""
         mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         inst = mc.return_value
         inst.chat.completions.create.return_value.choices = [
-            type("obj", (), {"message": type("obj", (), {"content": json.dumps({
-                "questions": questions_data
-            })})()})()
+            type("obj", (), {"message": type("obj", (), {"content": raw_content})()})()
         ]
         return mock
 
@@ -388,6 +390,43 @@ class TestPreviewImport:
             # Only valid question returned
             assert len(d["questions"]) == 1
             assert d["questions"][0]["question"] == "Good?"
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_accepts_markdown_fenced_json(self, client, auth_headers):
+        """Providers may wrap JSON in markdown; preview should still parse it."""
+        raw = """以下是解析结果：
+```json
+{"questions":[{"type":"fill_blank","question":"Markdown Q?","answer":"A"}]}
+```
+"""
+        mock = self._mock_openai_raw_response(raw)
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["questions"][0]["question"] == "Markdown Q?"
+            assert any("自动提取" in w for w in data["warnings"])
+        finally:
+            mock.stop()
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_accepts_json_embedded_in_text(self, client, auth_headers):
+        """Providers may add prose before JSON; preview should extract the object."""
+        raw = '解析完成：{"questions":[{"type":"fill_blank","question":"Embedded Q?","answer":"B"}]} 请核对。'
+        mock = self._mock_openai_raw_response(raw)
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["questions"][0]["question"] == "Embedded Q?"
         finally:
             mock.stop()
 
