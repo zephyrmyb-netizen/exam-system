@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.4-ai-restart-stability",
+    version: "v1.5.4",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复重启后 AI 配置不稳定",
+    items: [
+      "让 backend/.env 默认优先于 Windows 系统环境变量，避免重启后读到旧的 AI 配置",
+      "新增 /health/ai 诊断接口，方便检查 AI Key、模型和超时配置是否生效",
+      "提高 AI 对话默认超时时间，减少模型冷启动时的失败提示",
+    ],
+  },
+  {
     id: "v1.5.3-ai-import-timeout-cleanup",
     version: "v1.5.3",
     date: "2026-06-22",
