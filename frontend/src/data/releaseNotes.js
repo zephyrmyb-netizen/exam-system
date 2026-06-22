@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.6-import-auth-stability",
+    version: "v1.5.6",
+    date: "2026-06-22",
+    type: "修复",
+    title: "修复导入失败时异常退出登录",
+    items: [
+      "修复获取用户信息遇到临时网络或后端波动时误清登录状态的问题",
+      "AI 预览导入未解析出题目时改为明确失败提示，不再进入空预览",
+      "减少导入失败时页面被意外打断的情况",
+    ],
+  },
+  {
     id: "v1.5.5-ai-import-progress-timing",
     version: "v1.5.5",
     date: "2026-06-22",

@@ -30,8 +30,10 @@ export function useAuth() {
       const { data } = await request.get("/auth/me");
       user.value = data;
     } catch (error) {
-      user.value = null;
-      clearToken();
+      if (error?.response?.status === 401) {
+        user.value = null;
+        clearToken();
+      }
       authError.value = getErrorMessage(error, "获取用户信息失败");
     } finally {
       loading.value = false;

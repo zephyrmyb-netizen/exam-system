@@ -392,18 +392,16 @@ class TestPreviewImport:
             mock.stop()
 
     @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
-    def test_preview_no_questions_returns_empty(self, client, auth_headers):
-        """When AI returns no questions, preview returns empty list."""
+    def test_preview_no_questions_returns_clear_error(self, client, auth_headers):
+        """When AI returns no questions, preview should fail with a clear message."""
         mock = self._mock_openai_response([])
         try:
             resp = client.post(
                 self.PREVIEW_URL, headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
-            assert resp.status_code == 200
-            data = resp.json()
-            assert len(data["questions"]) == 0
-            assert data["total_parsed"] == 0
+            assert resp.status_code == 400
+            assert "未能从文档中解析出任何有效题目" in resp.json()["detail"]
         finally:
             mock.stop()
 
