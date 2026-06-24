@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.8-latest-note-order",
+    version: "v1.7.8",
+    date: "2026-06-24",
+    type: "修复",
+    title: "修复首页公告版本显示",
+    items: [
+      "首页更新公告直接读取最新公告项",
+      "修复同一天多个版本时首页可能不显示最新版本的问题",
+      "减少更新后手机端看起来没有变化的误判",
+    ],
+  },
+  {
     id: "v1.7.7-study-overview-stability",
     version: "v1.7.7",
     date: "2026-06-24",
