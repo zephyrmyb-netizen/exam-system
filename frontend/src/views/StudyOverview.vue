@@ -25,7 +25,7 @@ const accuracyColor = computed(() => {
   return "rose";
 });
 
-onMounted(() => { if (stats.value.todayCount === null) fetchAll(); });
+onMounted(() => fetchAll());
 </script>
 
 <template>
