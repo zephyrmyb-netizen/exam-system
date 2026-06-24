@@ -32,6 +32,7 @@ const sorted = computed(() =>
   [...releaseNotes].sort((a, b) => {
     const v = versionCompare(a.version, b.version);
     if (v !== 0) return v;
+    if (a.date === b.date) return 0;
     return a.date > b.date ? -1 : 1;
   })
 );
