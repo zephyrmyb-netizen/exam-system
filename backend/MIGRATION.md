@@ -48,7 +48,8 @@ If data isn't important during development:
 cd "D:\File\exam system"
 del backend\exam_system.db
 # Then restart the backend — it auto-creates a fresh DB with all models
-backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+# Daily use should not include --reload, so long AI imports are not interrupted
+backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 This works because `create_all` runs on a file that doesn't exist yet, so SQLite creates a fresh

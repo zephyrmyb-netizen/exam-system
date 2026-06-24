@@ -88,7 +88,8 @@ pip install -r backend\requirements.txt
 copy backend\.env.example backend\.env
 
 # 启动服务（监听 0.0.0.0:8000 以支持手机访问）
-backend\.venv\Scripts\uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+# 日常使用不要加 --reload，避免 AI 导入时后端因文件变动自动重启
+backend\.venv\Scripts\uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 > ⚠️ **必须从项目根目录启动**，因为 Python 模块路径 `backend.main` 依赖于项目根目录在 `sys.path` 中。如果从 `backend/` 目录下直接 `uvicorn main:app` 会报导入错误。
@@ -484,16 +485,22 @@ del backend\exam_system.db
 scripts/start_exam_system.bat
 ```
 
-脚本会启动后端、前端，并自动打开 `http://localhost:8000/health/ai` 检查 AI 配置是否读取成功。
+脚本会启动后端、前端，并自动打开 `http://localhost:8000/health/ai` 检查 AI 配置是否读取成功。日常使用的后端启动不带 `--reload`，这样 AI 导入大文件时不会因为文件变化自动重启。
 
 在项目根目录打开 PowerShell，粘贴以下命令即可同时启动前后端：
 
 ```powershell
 # 启动后端（新窗口）
-Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd'; backend\.venv\Scripts\activate; uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
+Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd'; backend\.venv\Scripts\activate; uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
 # 启动前端（新窗口）
 Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd\frontend'; npm.cmd run dev -- --host 0.0.0.0"
+```
+
+需要调后端代码时，才临时加 `--reload`：
+
+```powershell
+backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## 项目维护规范
@@ -518,6 +525,22 @@ Start-Process powershell -ArgumentList '-NoExit', '-Command', "cd '$pwd\frontend
 4. `git diff --stat` 的结果。
 
 ### 目录清理规则
+
+推荐先用脚本清理安全范围内的本地垃圾：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\cleanup_local_artifacts.ps1
+```
+
+默认只清理缓存、日志和前端构建产物。需要清理旧数据库备份或重复虚拟环境时，显式加参数：
+
+```powershell
+# 清理旧迁移备份库
+powershell -ExecutionPolicy Bypass -File scripts\cleanup_local_artifacts.ps1 -IncludeBackupDbs
+
+# 如果 backend\.venv 已可用，删除重复的 backend\venv
+powershell -ExecutionPolicy Bypass -File scripts\cleanup_local_artifacts.ps1 -IncludeDuplicateVenv
+```
 
 可以删除的本地生成文件：
 
