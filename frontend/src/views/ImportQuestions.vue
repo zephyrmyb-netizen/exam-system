@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   Sparkles,
-  Upload,
   ArrowRight,
   CheckCircle,
   FileUp,
@@ -46,7 +45,6 @@ const fileMessage = ref("");
 const fileError = ref("");
 const extractedText = ref("");
 
-const hasSelectedFile = computed(() => !!selectedFile.value);
 const isParsing = computed(() => aiTask.status.value === "running");
 const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.previewData.value);
 const hasImportSuccess = computed(() => !!importResult.value);
