@@ -92,7 +92,8 @@ backend\.venv\Scripts\activate
 pip install -r backend\requirements.txt
 
 # 5. 启动服务（注意模块路径与当前目录的关系）
-backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+# 日常使用不要加 --reload，避免 AI 导入时后端自动重启
+backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 API 文档自动生成于 http://127.0.0.1:8000/docs

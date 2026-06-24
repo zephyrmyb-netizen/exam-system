@@ -2,7 +2,7 @@
 
 在部署或提交测试前逐项执行，确认系统功能正常。
 
-> 运行前确保：后端已启动（`uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`），
+> 运行前确保：后端已启动（`uvicorn backend.main:app --host 0.0.0.0 --port 8000`），
 > 运行中如有失败项，检查后端日志定位原因。
 
 ---

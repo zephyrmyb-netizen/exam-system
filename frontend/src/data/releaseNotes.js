@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.5.9-maintenance-cleanup",
+    version: "v1.5.9",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化项目本地维护",
+    items: [
+      "新增本地清理脚本，用于清理缓存、日志和旧数据库备份",
+      "忽略根目录临时 Word 文档，减少调试资料污染 Git 状态",
+      "保留数据库本体和虚拟环境的显式开关，避免误删重要本地数据",
+    ],
+  },
+  {
     id: "v1.5.8-ai-import-json-recovery",
     version: "v1.5.8",
     date: "2026-06-22",
