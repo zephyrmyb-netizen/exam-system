@@ -28,7 +28,7 @@ const advancedOpen = ref(false);
 const confirmError = ref("");
 const confirmLoading = ref(false);
 const importResult = ref(null);
-const { courses, coursesLoading, fetchCourses } = useImportCourses();
+const { courses, coursesLoading, coursesError, fetchCourses } = useImportCourses();
 const {
   jsonText,
   importLoading,
@@ -132,6 +132,10 @@ async function handlePreview() {
     return;
   }
 
+  fileError.value = "";
+  confirmError.value = "";
+  importResult.value = null;
+
   const params = {};
   if (activeCourseId.value > 0) {
     params.course_id = activeCourseId.value;
@@ -166,6 +170,7 @@ function handleRetryPreview() {
     handlePreview();
   } else {
     aiTask.reset();
+    fileError.value = "文件状态已失效，请重新选择文档。";
   }
 }
 
@@ -202,9 +207,35 @@ async function uploadFile() {
 }
 
 async function copyPromptAndText() {
+  if (!extractedText.value) {
+    fileError.value = "暂无可复制文本。";
+    return;
+  }
+
   const promptText = `请把下面的试题文本整理成标准 JSON 数组，只输出 JSON，不要解释：\n\n${extractedText.value}`;
-  await navigator.clipboard?.writeText(promptText);
-  fileMessage.value = "已复制文本";
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(promptText);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = promptText;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (!copied) throw new Error("copy failed");
+    }
+    fileError.value = "";
+    fileMessage.value = "已复制文本";
+  } catch {
+    fileMessage.value = "";
+    fileError.value = "复制失败，请手动选择文本复制。";
+  }
 }
 
 onMounted(fetchCourses);
@@ -243,6 +274,12 @@ onMounted(fetchCourses);
               {{ c.name }}（{{ c.question_count ?? 0 }}题）
             </option>
           </select>
+        </div>
+        <div v-if="coursesError" class="inline-warning">
+          <span>{{ coursesError }}</span>
+          <button type="button" :disabled="coursesLoading" @click="fetchCourses">
+            {{ coursesLoading ? "重试中..." : "重试加载" }}
+          </button>
         </div>
       </div>
 
@@ -447,6 +484,33 @@ onMounted(fetchCourses);
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-glow);
   background: var(--surface);
+}
+
+.inline-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.inline-warning button {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--primary-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.inline-warning button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .hero-cta {
