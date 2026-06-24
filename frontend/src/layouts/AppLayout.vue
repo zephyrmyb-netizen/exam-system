@@ -13,6 +13,7 @@ import {
   Sparkles,
   CheckCircle,
 } from "@lucide/vue";
+import ConfirmDialog from "../components/common/ConfirmDialog.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -190,6 +191,8 @@ onUnmounted(() => {
         <span class="nav-label">{{ item.label }}</span>
       </button>
     </nav>
+
+    <ConfirmDialog />
   </div>
 </template>
 

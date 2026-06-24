@@ -6,6 +6,7 @@ import {
   Edit3, BookOpen, Layers, Lock, Globe, Sparkles,
 } from "@lucide/vue";
 import QuestionEditor from "../question/QuestionEditor.vue";
+import { useConfirmDialog } from "../../stores/confirmDialog";
 
 const emit = defineEmits(["confirm", "back", "retry"]);
 
@@ -19,6 +20,8 @@ const props = defineProps({
   initialCourseId: { type: Number, default: 0 },
   initialCourseName: { type: String, default: "" },
 });
+
+const confirmDialog = useConfirmDialog();
 
 // ── Editable questions list ──
 const questions = ref([]);
@@ -120,8 +123,14 @@ function onQuestionSaved(data) {
   }
 }
 
-function removeQuestion(index) {
-  if (!window.confirm(`确定删除第 ${index + 1} 题吗？`)) return;
+async function removeQuestion(index) {
+  const confirmed = await confirmDialog.confirm({
+    title: "删除题目",
+    message: `确定删除第 ${index + 1} 题吗？`,
+    confirmText: "删除",
+    tone: "danger",
+  });
+  if (!confirmed) return;
   questions.value.splice(index, 1);
 }
 

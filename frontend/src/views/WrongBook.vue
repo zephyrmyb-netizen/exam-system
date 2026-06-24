@@ -3,6 +3,9 @@ import { computed, onMounted, ref } from "vue";
 import request, { getErrorMessage } from "../api/request";
 import { typeLabel, typeOptions, formatOptions } from "../utils/question";
 import { Search, RefreshCw, Trash2, ChevronLeft, ChevronRight } from "@lucide/vue";
+import { useConfirmDialog } from "../stores/confirmDialog";
+
+const confirmDialog = useConfirmDialog();
 
 const wrongItems = ref([]);
 const loading = ref(false);
@@ -102,7 +105,12 @@ async function loadMore() {
 }
 
 async function removeWrongItem(item) {
-  const confirmed = window.confirm("确定从错题本移除这道题吗？");
+  const confirmed = await confirmDialog.confirm({
+    title: "移除错题",
+    message: "确定从错题本移除这道题吗？移除后不会删除原题。",
+    confirmText: "移除",
+    tone: "danger",
+  });
   if (!confirmed) return;
 
   errorMessage.value = "";

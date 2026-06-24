@@ -6,8 +6,10 @@ import {
   BookOpen, GraduationCap, ChevronRight, Layers, Globe, Lock,
   Play, Sparkles, Trash2, Plus, Pencil, X,
 } from "@lucide/vue";
+import { useConfirmDialog } from "../stores/confirmDialog";
 
 const router = useRouter();
+const confirmDialog = useConfirmDialog();
 const courses = ref([]);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -57,7 +59,12 @@ async function fetchCourses() {
 onMounted(fetchCourses);
 
 async function deleteCourse(course) {
-  const confirmed = window.confirm(`确定删除课程「${course.name}」吗？\n该课程共 ${course.question_count ?? 0} 道题，删除后题目将被一并移除。`);
+  const confirmed = await confirmDialog.confirm({
+    title: "删除课程",
+    message: `确定删除课程「${course.name}」吗？\n该课程共 ${course.question_count ?? 0} 道题，删除后题目将被一并移除。`,
+    confirmText: "删除",
+    tone: "danger",
+  });
   if (!confirmed) return;
   deleteLoading.value = course.id;
   errorMessage.value = "";
