@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.5-ai-banner-navigation",
+    version: "v1.7.5",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化 AI 导入横幅跳转",
+    items: [
+      "AI 正在解析横幅跳回导入页时不再额外增加历史记录",
+      "减少手机容器中误出现多余返回控件的情况",
+      "保持底部导航和导入横幅的跳转行为一致",
+    ],
+  },
+  {
     id: "v1.7.4-import-page-feedback",
     version: "v1.7.4",
     date: "2026-06-24",

@@ -106,6 +106,11 @@ function handleTabClick(item) {
   router.replace({ path: item.to });
 }
 
+function goToImportTab() {
+  if (route.path === "/import") return;
+  router.replace({ path: "/import" });
+}
+
 onMounted(() => {
   if (getToken()) {
     fetchProfile();
@@ -144,8 +149,8 @@ onUnmounted(() => {
       class="ai-task-banner"
       role="button"
       tabindex="0"
-      @click="router.push('/import')"
-      @keydown.enter="router.push('/import')"
+      @click="goToImportTab"
+      @keydown.enter="goToImportTab"
     >
       <span class="ai-banner-dot"></span>
       <span class="ai-banner-text">
