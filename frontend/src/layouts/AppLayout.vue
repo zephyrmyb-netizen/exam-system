@@ -53,6 +53,8 @@ const navItems = [
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
+const sourceAwareRoutes = new Set(["study-overview", "announcements"]);
+
 const activeNavKey = computed(() => {
   const nav = route.meta?.navKey;
   if (route.name === "study-overview") {
@@ -79,7 +81,7 @@ function goBack() {
   const allowedFromRoutes = ["home", "mine", "courses", "practice", "public-library"];
   const from = route.query.from;
 
-  if (from && allowedFromRoutes.includes(from)) {
+  if (sourceAwareRoutes.has(route.name) && from && allowedFromRoutes.includes(from)) {
     router.replace({ name: from });
     return;
   }
@@ -101,7 +103,7 @@ function handleAuthChange() {
 
 function handleTabClick(item) {
   if (route.path === item.to) return;
-  router.replace(item.to);
+  router.replace({ path: item.to });
 }
 
 onMounted(() => {
