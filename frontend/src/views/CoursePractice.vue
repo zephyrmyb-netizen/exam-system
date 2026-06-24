@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import request from "../api/request";
+import request, { getErrorMessage } from "../api/request";
 import {
   BookOpen, Layers, Play, Shuffle, RefreshCw,
 } from "@lucide/vue";
@@ -14,6 +14,7 @@ const courseId = computed(() => route.params.courseId);
 // ── Course info ──
 const course = ref(null);
 const loading = ref(false);
+const errorMessage = ref("");
 
 // ── Mode selection ──
 const modes = [
@@ -37,11 +38,13 @@ function endPractice() {
 async function fetchCourse() {
   if (!courseId.value) return;
   loading.value = true;
+  errorMessage.value = "";
   try {
     const { data } = await request.get(`/courses/${courseId.value}`);
     course.value = data;
-  } catch {
-    // non-critical
+  } catch (error) {
+    course.value = null;
+    errorMessage.value = getErrorMessage(error, "获取课程信息失败");
   } finally {
     loading.value = false;
   }
@@ -69,6 +72,9 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         </div>
       </div>
 
+      <p v-if="loading" class="info-message">正在加载课程...</p>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+
       <!-- Mode selection -->
       <p class="settings-section-label">选择练习方式</p>
       <div class="mode-grid">
@@ -92,9 +98,9 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 
       <!-- Stats summary -->
       <p class="settings-section-label">开始练习</p>
-      <button class="start-btn" type="button" @click="startPractice">
+      <button class="start-btn" type="button" :disabled="loading || !course" @click="startPractice">
         <Play :size="18" :stroke-width="2.5" style="margin-right:6px" />
-        {{ selectedMode === 'wrong_review' ? '开始错题强化' : '开始练习' }}
+        {{ loading ? "加载中..." : selectedMode === 'wrong_review' ? '开始错题强化' : '开始练习' }}
       </button>
     </template>
 
@@ -230,6 +236,16 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 
 .start-btn:active {
   transform: translateY(0);
+}
+
+.start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.start-btn:disabled:hover {
+  transform: none;
 }
 
 @media (max-width: 420px) {

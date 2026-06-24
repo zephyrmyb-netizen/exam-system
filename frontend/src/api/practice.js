@@ -89,5 +89,5 @@ export async function getReviewDueQuestion(params) {
  *   accuracy_rate, correct_count, wrong_count, recent_count_7d, etc.)
  */
 export async function getLearningStats() {
-  return practiceGet("/practice/stats");
+  return getPracticeStats();
 }
