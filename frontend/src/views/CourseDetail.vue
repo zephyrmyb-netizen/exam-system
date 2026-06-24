@@ -7,10 +7,12 @@ import {
   BookOpen, Layers, Play, Globe, Lock, Upload, Trash2, Pencil, X,
 } from "@lucide/vue";
 import QuestionList from "./QuestionList.vue";
+import { useConfirmDialog } from "../stores/confirmDialog";
 
 const route = useRoute();
 const router = useRouter();
 const { user } = useAuth();
+const confirmDialog = useConfirmDialog();
 const courseId = computed(() => route.params.courseId);
 
 const course = ref(null);
@@ -59,7 +61,11 @@ async function fetchCourse() {
 
 async function publishCourse() {
   if (!course.value || course.value.visibility === "public") return;
-  const confirmed = window.confirm(`确定将课程「${course.value.name}」发布到公共题库吗？`);
+  const confirmed = await confirmDialog.confirm({
+    title: "发布到公共题库",
+    message: `确定将「${course.value.name}」发布到公共题库吗？其他用户将可以看到这门课程。`,
+    confirmText: "发布",
+  });
   if (!confirmed) return;
   publishLoading.value = true;
   try { const { data } = await request.post(`/courses/${courseId.value}/publish`); course.value.visibility = data.visibility || "public"; }
@@ -69,7 +75,11 @@ async function publishCourse() {
 
 async function unpublishCourse() {
   if (!course.value || course.value.visibility !== "public") return;
-  const confirmed = window.confirm(`确定撤回课程「${course.value.name}」的公开状态吗？`);
+  const confirmed = await confirmDialog.confirm({
+    title: "撤回公开",
+    message: `确定撤回「${course.value.name}」的公开状态吗？撤回后其他用户将无法继续看到。`,
+    confirmText: "撤回",
+  });
   if (!confirmed) return;
   publishLoading.value = true;
   try { const { data } = await request.post(`/courses/${courseId.value}/unpublish`); course.value.visibility = data.visibility || "private"; }
@@ -79,9 +89,12 @@ async function unpublishCourse() {
 
 async function deleteCourse() {
   if (!course.value) return;
-  const confirmed = window.confirm(
-    `确定删除课程「${course.value.name}」吗？\n该课程共 ${course.value.question_count ?? 0} 道题，删除后题目将被一并移除，此操作不可撤销。`
-  );
+  const confirmed = await confirmDialog.confirm({
+    title: "删除课程",
+    message: `确定删除「${course.value.name}」吗？\n该课程共 ${course.value.question_count ?? 0} 道题，删除后题目将被一并移除，此操作不可撤销。`,
+    confirmText: "删除",
+    tone: "danger",
+  });
   if (!confirmed) return;
   deleteLoading.value = true; errorMessage.value = "";
   try { await request.delete(`/courses/${courseId.value}`); router.push({ name: "courses" }); }

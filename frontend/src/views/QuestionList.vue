@@ -11,10 +11,13 @@ import {
   Plus, Pencil, Globe, Lock,
 } from "@lucide/vue";
 import QuestionEditor from "../components/question/QuestionEditor.vue";
+import { useConfirmDialog } from "../stores/confirmDialog";
 
 const props = defineProps({
   courseId: { type: String, default: "" },
 });
+
+const confirmDialog = useConfirmDialog();
 
 const questions = ref([]);
 const expandedIds = ref(new Set());
@@ -104,7 +107,12 @@ async function loadMore() {
 }
 
 async function deleteQuestion(q) {
-  const confirmed = window.confirm(`确定删除这道题吗？\n${q.question}`);
+  const confirmed = await confirmDialog.confirm({
+    title: "删除题目",
+    message: `确定删除这道题吗？\n${q.question}`,
+    confirmText: "删除",
+    tone: "danger",
+  });
   if (!confirmed) return;
   actionMessage.value = "";
   errorMessage.value = "";

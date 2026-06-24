@@ -9,6 +9,7 @@ import {
   Library, Shuffle, RefreshCw, AlertTriangle,
   ChevronLeft, Sparkles, X, Play,
 } from "@lucide/vue";
+import { useConfirmDialog } from "../stores/confirmDialog";
 
 const props = defineProps({
   courseId: { type: String, default: "" },
@@ -19,6 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
+const confirmDialog = useConfirmDialog();
 
 const showSummary = ref(false);
 
@@ -224,9 +226,14 @@ function handleTextKeydown(e) {
   }
 }
 
-function confirmAndSkip() {
+async function confirmAndSkip() {
   if (hasAnswerSelected.value) {
-    if (!window.confirm("当前答案还没提交，确定换一题吗？")) return;
+    const confirmed = await confirmDialog.confirm({
+      title: "换下一题",
+      message: "当前答案还没提交，确定换一题吗？",
+      confirmText: "换题",
+    });
+    if (!confirmed) return;
   }
   fetchRandomQuestion();
 }

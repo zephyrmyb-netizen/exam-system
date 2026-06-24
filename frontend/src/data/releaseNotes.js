@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.6.1-confirm-dialog-polish",
+    version: "v1.6.1",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化确认弹窗体验",
+    items: [
+      "删除课程、删除题目、移除错题等危险操作改为应用内确认弹窗",
+      "练习中未提交答案换题时使用统一确认样式，减少手机端割裂感",
+      "统一确认弹窗支持取消、关闭和 Esc 返回，操作反馈更清晰",
+    ],
+  },
+  {
     id: "v1.5.9-maintenance-cleanup",
     version: "v1.5.9",
     date: "2026-06-24",
