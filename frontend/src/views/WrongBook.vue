@@ -10,6 +10,7 @@ const confirmDialog = useConfirmDialog();
 const wrongItems = ref([]);
 const loading = ref(false);
 const metaLoading = ref(false);
+const metaError = ref("");
 const errorMessage = ref("");
 const actionMessage = ref("");
 
@@ -30,13 +31,15 @@ function onFilterChange() { page.value = 1; fetchWrongBook(); }
 
 async function fetchMeta() {
   metaLoading.value = true;
+  metaError.value = "";
   try {
     const { data } = await request.get("/wrongbook/meta");
     subjects.value = data.subjects || [];
     chapters.value = data.chapters || [];
-  } catch {
+  } catch (error) {
     subjects.value = [];
     chapters.value = [];
+    metaError.value = getErrorMessage(error, "筛选条件加载失败");
   } finally {
     metaLoading.value = false;
   }
@@ -173,6 +176,11 @@ onMounted(() => {
       </select>
     </div>
 
+    <p v-if="metaError" class="filter-warning">
+      {{ metaError }}
+      <button type="button" :disabled="metaLoading" @click="fetchMeta">重试</button>
+    </p>
+
     <p v-if="loading && wrongItems.length === 0" class="info-message">正在加载错题...</p>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     <p v-if="actionMessage" class="success-message">{{ actionMessage }}</p>
@@ -276,6 +284,32 @@ onMounted(() => {
 
 .text-input.has-left-icon {
   padding-left: 40px;
+}
+
+.filter-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--amber-border);
+  border-radius: var(--radius-md);
+  background: var(--amber-soft);
+  color: #92400e;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.filter-warning button {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #92400e;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .meta-type {

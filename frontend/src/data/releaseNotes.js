@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.3-filter-error-feedback",
+    version: "v1.7.3",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化筛选加载反馈",
+    items: [
+      "题目列表筛选条件加载失败时显示提示和重试入口",
+      "错题本筛选条件加载失败时不再静默清空",
+      "减少网络波动时用户误以为没有科目或章节的情况",
+    ],
+  },
+  {
     id: "v1.7.2-practice-error-states",
     version: "v1.7.2",
     date: "2026-06-24",
