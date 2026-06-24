@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.7-study-overview-stability",
+    version: "v1.7.7",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化学习数据加载稳定性",
+    items: [
+      "学习概览接口返回异常结构时不再卡在更新中",
+      "首页、我的、学习概览会显示统计加载失败提示",
+      "统计加载失败时仍保留主要入口和页面操作",
+    ],
+  },
+  {
     id: "v1.7.6-import-error-detail",
     version: "v1.7.6",
     date: "2026-06-24",

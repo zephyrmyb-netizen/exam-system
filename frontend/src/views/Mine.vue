@@ -15,7 +15,7 @@ import {
 
 const router = useRouter();
 const { user, logout } = useAuth();
-const { stats, loading, fetchAll } = useStudyOverview();
+const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const usernameText = computed(() => user.value?.username || null);
 
@@ -127,6 +127,7 @@ onMounted(() => fetchAll());
     </div>
 
     <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+    <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <div v-for="section in menuSections" :key="section.key" class="menu-section">
       <p class="menu-section-label">{{ section.key }}</p>

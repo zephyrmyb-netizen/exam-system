@@ -9,7 +9,7 @@ import {
 } from "@lucide/vue";
 
 const router = useRouter();
-const { stats, review, loading, fetchAll } = useStudyOverview();
+const { stats, review, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
@@ -30,6 +30,9 @@ onMounted(() => { if (stats.value.todayCount === null) fetchAll(); });
 
 <template>
   <section class="overview-page">
+    <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+    <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
+
     <!-- Learning Stats -->
     <p class="section-label">学习数据</p>
     <div class="stat-grid">

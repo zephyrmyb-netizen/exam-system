@@ -17,7 +17,7 @@ import { releaseNotes } from "../data/releaseNotes";
 
 const router = useRouter();
 const { user } = useAuth();
-const { stats, loading, fetchAll } = useStudyOverview();
+const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -104,6 +104,7 @@ onMounted(() => fetchAll());
     </div>
 
     <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+    <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <button class="dash-summary surface-card" type="button" @click="openContextPage('study-overview')">
       <div class="dash-head">
