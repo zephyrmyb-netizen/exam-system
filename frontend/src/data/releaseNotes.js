@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.6-import-error-detail",
+    version: "v1.7.6",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化 AI 导入错误提示",
+    items: [
+      "预览导入时区分文件提取失败和 AI 解析失败",
+      "AI 客户端异常时返回更准确的解析失败提示",
+      "补充后端测试，防止导入错误文案再次混淆",
+    ],
+  },
+  {
     id: "v1.7.5-ai-banner-navigation",
     version: "v1.7.5",
     date: "2026-06-24",

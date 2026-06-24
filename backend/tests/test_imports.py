@@ -454,6 +454,24 @@ class TestPreviewImport:
         assert resp.status_code == 400
         assert "OPENAI_API_KEY" in resp.json()["detail"]
 
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_ai_unexpected_failure_is_not_reported_as_file_extract_failure(self, client, auth_headers):
+        """Unexpected AI client errors should point to AI parsing, not document extraction."""
+        mock = patch("backend.routers.imports.imports_service.preview_import_from_text")
+        mc = mock.start()
+        mc.side_effect = RuntimeError("upstream exploded")
+        try:
+            resp = client.post(
+                self.PREVIEW_URL, headers=auth_headers,
+                files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
+            )
+            assert resp.status_code == 502
+            detail = resp.json()["detail"]
+            assert "AI 解析失败" in detail
+            assert "文件提取失败" not in detail
+        finally:
+            mock.stop()
+
     def test_preview_unsupported_format(self, client, auth_headers):
         resp = client.post(
             self.PREVIEW_URL, headers=auth_headers,

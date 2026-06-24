@@ -75,14 +75,20 @@ async def preview_import(
         extract_start = time.perf_counter()
         text, extract_warnings = imports_service.extract_text_or_raise(saved.path)
         extract_ms = imports_service.elapsed_ms(extract_start)
-        _sync_ai_overrides()
-        questions, ai_warnings, parse_timing = imports_service.preview_import_from_text(text)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
+
+    try:
+        _sync_ai_overrides()
+        questions, ai_warnings, parse_timing = imports_service.preview_import_from_text(text)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"AI 解析失败: {exc}") from exc
 
     all_warnings = extract_warnings + ai_warnings
     total_valid = len(questions)
