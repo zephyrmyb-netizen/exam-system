@@ -4,20 +4,25 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import {
-  TrendingUp,
+  Bell,
   BookMarked,
-  Clock,
-  LogOut,
   ChevronRight,
-  ShieldCheck,
+  Clock,
+  HelpCircle,
+  LogOut,
   Megaphone,
+  MessageCircle,
+  ShieldCheck,
+  TrendingUp,
 } from "@lucide/vue";
 
 const router = useRouter();
 const { user, logout } = useAuth();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
-const usernameText = computed(() => user.value?.username || null);
+const usernameText = computed(() => user.value?.username || "未登录");
+const avatarChar = computed(() => usernameText.value.slice(0, 1).toUpperCase());
+const isLoggedIn = computed(() => !!user.value);
 
 const roleText = computed(() => {
   const role = user.value?.role;
@@ -26,77 +31,71 @@ const roleText = computed(() => {
   return "普通用户";
 });
 
-const avatarChar = computed(() => (usernameText.value || "?")[0].toUpperCase());
-const isLoggedIn = computed(() => !!user.value);
-
-const summaryDesc = computed(() => {
-  const todayCount = stats.value.todayCount;
-  const accuracyRate = stats.value.accuracyRate;
-  const parts = [];
-  if (todayCount !== null) parts.push(`今日 ${todayCount} 题`);
-  if (accuracyRate !== null) parts.push(`正确率 ${(accuracyRate * 100).toFixed(0)}%`);
-  if (parts.length === 0) return "查看学习数据";
-  return parts.join(" · ");
+const accuracyDisplay = computed(() => {
+  const rate = stats.value.accuracyRate;
+  if (rate === null) return "--";
+  return `${(rate * 100).toFixed(0)}%`;
 });
 
-const menuSections = computed(() => [
+const profileStats = computed(() => [
+  { label: "今日刷题", value: stats.value.todayCount, suffix: "题" },
+  { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
+  { label: "正确率", value: accuracyDisplay.value, suffix: "" },
+  { label: "错题", value: stats.value.wrongCount, suffix: "题" },
+]);
+
+const serviceGrid = computed(() => [
   {
-    key: "学习",
-    items: [
-      {
-        icon: TrendingUp,
-        label: "学习概览",
-        desc: summaryDesc.value,
-        to: "/study-overview",
-        color: "var(--teal)",
-        bg: "var(--teal-soft)",
-      },
-      {
-        icon: BookMarked,
-        label: "错题本",
-        desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道错题` : "",
-        to: "/wrongbook",
-        color: "var(--rose)",
-        bg: "var(--rose-soft)",
-      },
-      {
-        icon: Clock,
-        label: "练习记录",
-        desc: "查看答题历史",
-        to: "/practice/history",
-        color: "var(--amber)",
-        bg: "var(--amber-soft)",
-      },
-      {
-        icon: Megaphone,
-        label: "更新公告",
-        desc: "查看最新更新",
-        to: "/announcements",
-        color: "var(--teal)",
-        bg: "var(--teal-soft)",
-      },
-    ],
+    label: "学习概览",
+    desc: "数据和薄弱点",
+    icon: TrendingUp,
+    color: "var(--teal)",
+    to: { name: "study-overview", query: { from: "mine" } },
+  },
+  {
+    label: "错题本",
+    desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道待复盘` : "集中复盘",
+    icon: BookMarked,
+    color: "var(--rose)",
+    to: "/wrongbook",
+  },
+  {
+    label: "练习记录",
+    desc: "查看答题历史",
+    icon: Clock,
+    color: "var(--amber)",
+    to: { name: "practice-history", query: { from: "mine" } },
+  },
+  {
+    label: "更新公告",
+    desc: "最近修复内容",
+    icon: Megaphone,
+    color: "var(--primary)",
+    to: { name: "announcements", query: { from: "mine" } },
   },
 ]);
 
-function openContextPage(name) {
-  router.push({ name, query: { from: "mine" } });
-}
+const supportItems = [
+  {
+    label: "AI 对话",
+    desc: "追问知识点",
+    icon: MessageCircle,
+    to: "/chat",
+  },
+  {
+    label: "使用提示",
+    desc: "导入失败时先看公告和错误提示",
+    icon: HelpCircle,
+    to: { name: "announcements", query: { from: "mine" } },
+  },
+];
 
-function goTo(path) {
-  if (path === "/study-overview") {
-    openContextPage("study-overview");
+function goTo(target) {
+  if (typeof target === "string") {
+    router.push(target);
     return;
   }
-  if (path === "/announcements") {
-    openContextPage("announcements");
-    return;
-  }
-  if (path === "/practice/history") {
-    router.push({ name: "practice-history", query: { from: "mine" } });
-    return;
-  }
-  router.push(path);
+  router.push(target);
 }
 
 function handleLogout() {
@@ -109,154 +108,446 @@ onMounted(() => fetchAll());
 
 <template>
   <section class="mine-page">
-    <div class="user-banner surface-card surface-card--soft">
-      <div class="user-avatar">{{ avatarChar }}</div>
-      <div class="user-meta">
-        <div class="user-name-row">
-          <span class="user-name">{{ usernameText || "未登录" }}</span>
-          <span v-if="isLoggedIn" class="user-role">
-            <ShieldCheck :size="11" :stroke-width="2.5" style="margin-right:2px" />
-            {{ roleText }}
-          </span>
+    <div class="mine-header">
+      <div class="profile-row">
+        <div class="profile-avatar">{{ avatarChar }}</div>
+        <div class="profile-copy">
+          <div class="profile-name-row">
+            <h1>{{ usernameText }}</h1>
+            <span v-if="isLoggedIn" class="role-pill">
+              <ShieldCheck :size="12" :stroke-width="2.5" />
+              {{ roleText }}
+            </span>
+          </div>
+          <p>
+            <span class="status-dot" :class="{ online: isLoggedIn }"></span>
+            {{ isLoggedIn ? "账号已登录，学习数据已同步" : "请先登录账号" }}
+          </p>
         </div>
-        <span class="user-status">
-          <span class="status-dot" :class="{ online: isLoggedIn }"></span>
-          {{ isLoggedIn ? "已登录" : "离线" }}
-        </span>
+        <button class="notify-button" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
+          <Bell :size="18" :stroke-width="2.4" />
+        </button>
+      </div>
+
+      <div class="profile-stats">
+        <button
+          v-for="item in profileStats"
+          :key="item.label"
+          class="profile-stat"
+          type="button"
+          @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
+        >
+          <strong>
+            {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
+            <small v-if="item.suffix">{{ item.suffix }}</small>
+          </strong>
+          <span>{{ item.label }}</span>
+        </button>
       </div>
     </div>
 
-    <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+    <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <div v-for="section in menuSections" :key="section.key" class="menu-section">
-      <p class="menu-section-label">{{ section.key }}</p>
-      <div class="menu-group surface-card">
+    <section class="mine-section">
+      <div class="mine-section-head">
+        <h2>学习服务</h2>
+        <span>复盘、记录、公告</span>
+      </div>
+      <div class="service-grid">
         <button
-          v-for="item in section.items"
+          v-for="item in serviceGrid"
           :key="item.label"
-          class="menu-row"
+          class="service-item"
           type="button"
           @click="goTo(item.to)"
         >
-          <span class="menu-row-left">
-            <span class="menu-row-icon" :style="{ color: item.color, background: item.bg }">
-              <component :is="item.icon" :size="18" :stroke-width="2" />
-            </span>
-            <span class="menu-row-text">
-              <span class="menu-row-label">{{ item.label }}</span>
-              <span v-if="item.desc" class="menu-row-desc">{{ item.desc }}</span>
-            </span>
+          <span class="service-icon" :style="{ color: item.color }">
+            <component :is="item.icon" :size="24" :stroke-width="2.15" />
           </span>
-          <ChevronRight class="menu-chevron" :size="16" :stroke-width="2.5" color="var(--text-placeholder)" />
+          <strong>{{ item.label }}</strong>
+          <small>{{ item.desc }}</small>
         </button>
       </div>
-    </div>
+    </section>
 
-    <div class="menu-section">
-      <p class="menu-section-label">账号</p>
-      <div class="menu-group surface-card">
-        <button class="menu-row menu-row-logout" type="button" @click="handleLogout">
-          <span class="menu-row-left">
-            <span class="menu-row-icon logout-icon">
-              <LogOut :size="17" :stroke-width="2" />
-            </span>
-            <span class="menu-row-text">
-              <span class="menu-row-label">退出登录</span>
-              <span v-if="usernameText" class="menu-row-desc">{{ usernameText }}</span>
-            </span>
+    <section class="mine-section">
+      <div class="mine-section-head">
+        <h2>更多</h2>
+        <span>保留必要入口</span>
+      </div>
+      <div class="support-list">
+        <button
+          v-for="item in supportItems"
+          :key="item.label"
+          class="support-row"
+          type="button"
+          @click="goTo(item.to)"
+        >
+          <span class="support-icon">
+            <component :is="item.icon" :size="20" :stroke-width="2.2" />
           </span>
+          <span class="support-copy">
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.desc }}</small>
+          </span>
+          <ChevronRight :size="16" :stroke-width="2.5" />
         </button>
       </div>
-    </div>
+    </section>
 
-    <p class="app-version">Exam System v1.5.1</p>
+    <section class="mine-section">
+      <button class="logout-row" type="button" @click="handleLogout">
+        <span class="support-icon logout-icon">
+          <LogOut :size="19" :stroke-width="2.2" />
+        </span>
+        <span class="support-copy">
+          <strong>退出登录</strong>
+          <small>{{ usernameText }}</small>
+        </span>
+      </button>
+    </section>
+
+    <p class="app-version">Exam System v1.7.9</p>
   </section>
 </template>
 
 <style scoped>
-.mine-page { display: grid; gap: var(--space-4); }
-
-.user-banner {
-  display: flex;
-  align-items: center;
+.mine-page {
+  display: grid;
   gap: var(--space-4);
-  padding: var(--space-4);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(239, 246, 255, 0.92));
-  backdrop-filter: blur(8px);
 }
 
-.user-avatar {
-  flex-shrink: 0;
+.mine-header {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.profile-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.profile-avatar {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
   color: #fff;
-  font-size: 22px;
-  font-weight: 800;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.28);
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.24);
 }
 
-.user-meta { min-width: 0; display: grid; gap: 3px; }
-.user-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.user-name { font-size: var(--text-lg); font-weight: 800; line-height: 1.2; }
-.user-role { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-strong); font-size: 10px; font-weight: 700; }
-.user-status { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-placeholder); }
-.status-dot.online { background: var(--emerald); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); }
+.profile-copy {
+  min-width: 0;
+}
 
-.menu-section-label { margin: 0 0 2px 4px; font-size: var(--text-xs); font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.menu-group { display: grid; overflow: hidden; }
-
-.menu-row {
+.profile-name-row {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.profile-name-row h1 {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--text-xl);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.profile-copy p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-placeholder);
+}
+
+.status-dot.online {
+  background: var(--emerald);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.notify-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.profile-stat {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 68px;
+  padding: var(--space-2) 4px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  text-align: center;
+}
+
+.profile-stat strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: var(--text-lg);
+  line-height: 1.05;
+}
+
+.profile-stat small {
+  margin-left: 1px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.profile-stat span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.mine-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mine-section-head {
+  display: flex;
+  align-items: end;
   justify-content: space-between;
   gap: var(--space-3);
+  padding: 0 2px;
+}
+
+.mine-section-head h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--text-xl);
+  line-height: 1.2;
+}
+
+.mine-section-head span {
+  color: var(--text-placeholder);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.service-item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 96px;
+  padding: var(--space-2) 2px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: center;
+}
+
+.service-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.service-item strong {
+  color: var(--text-main);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+}
+
+.service-item small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.support-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.support-row,
+.logout-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
   width: 100%;
-  min-height: 52px;
+  min-height: 58px;
   padding: var(--space-3);
   border: none;
   border-bottom: 1px solid var(--line-soft);
   background: transparent;
   text-align: left;
   font: inherit;
-  color: var(--text-main);
-  cursor: pointer;
-  transition: background var(--ease-out), transform var(--ease-out);
 }
 
-.menu-row:last-child { border-bottom: none; }
-.menu-row:hover { background: var(--surface-soft); }
-.menu-row:active { background: var(--surface-strong); transform: scale(0.99); }
-.menu-row-left { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1; }
-.menu-row-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-sm); flex-shrink: 0; }
-.menu-row-text { display: grid; gap: 1px; min-width: 0; }
-.menu-row-label { font-size: var(--text-base); font-weight: 700; line-height: 1.3; }
-.menu-row-desc { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; }
-.menu-chevron { flex-shrink: 0; }
+.support-row:last-child {
+  border-bottom: none;
+}
 
-.menu-row-logout { color: var(--text-muted); }
-.logout-icon { color: var(--text-muted); background: var(--surface-soft); }
-.menu-row-logout:hover { background: var(--rose-soft); color: var(--rose); }
-.menu-row-logout:hover .logout-icon { color: var(--rose); background: #fff1f2; }
+.support-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.support-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.support-copy strong {
+  color: var(--text-main);
+  font-size: var(--text-base);
+}
+
+.support-copy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-row {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.logout-icon {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
 
 .app-version {
-  margin: var(--space-2) 0 0;
+  margin: 0;
+  color: var(--text-placeholder);
   text-align: center;
   font-size: var(--text-xs);
-  color: var(--text-placeholder);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 @media (max-width: 420px) {
-  .menu-row { min-height: 48px; padding: var(--space-2); }
-  .menu-row-label { font-size: 14px; }
-  .user-banner { padding: var(--space-3); }
-  .user-avatar { width: 44px; height: 44px; font-size: 18px; }
-  .user-name { font-size: 16px; }
+  .mine-header {
+    padding: var(--space-4);
+  }
+
+  .profile-row {
+    grid-template-columns: 50px minmax(0, 1fr) 38px;
+  }
+
+  .profile-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+
+  .profile-stats {
+    gap: 6px;
+  }
+
+  .profile-stat {
+    min-height: 62px;
+  }
+
+  .profile-stat strong {
+    font-size: var(--text-base);
+  }
+
+  .service-grid {
+    gap: 4px;
+    padding: var(--space-3);
+  }
+
+  .service-item {
+    min-height: 88px;
+  }
+
+  .service-icon {
+    width: 38px;
+    height: 38px;
+  }
 }
 </style>

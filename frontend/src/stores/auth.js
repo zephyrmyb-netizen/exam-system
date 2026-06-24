@@ -1,7 +1,6 @@
-import { ref, computed } from "vue";
-import request, { getToken, setToken, clearToken, getErrorMessage } from "../api/request";
+import { computed, ref } from "vue";
+import request, { clearToken, getErrorMessage, getToken, setToken } from "../api/request";
 
-/** 模块级共享状态 —— 所有调用 useAuth() 的组件读写同一份 */
 const user = ref(null);
 const loading = ref(false);
 const authMessage = ref("");
