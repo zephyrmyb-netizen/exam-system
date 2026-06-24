@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.2-practice-error-states",
+    version: "v1.7.2",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化练习页异常状态",
+    items: [
+      "练习中心加载学习数据或题库失败时显示明确提示和重试入口",
+      "课程练习页加载课程失败时不再静默，避免用户误以为按钮失效",
+      "登录令牌读写增加本地存储异常保护，提升移动端 WebView 稳定性",
+    ],
+  },
+  {
     id: "v1.7.1-practice-import-refactor",
     version: "v1.7.1",
     date: "2026-06-24",

@@ -2,6 +2,7 @@ import axios from "axios";
 
 const TOKEN_KEY = "exam_system_token";
 const AUTH_EVENT = "exam-system-auth-change";
+let memoryToken = "";
 
 function getDefaultApiBaseUrl() {
   const { protocol, hostname } = window.location;
@@ -16,20 +17,35 @@ function emitAuthChange(detail) {
 }
 
 export function getToken() {
-  return window.localStorage.getItem(TOKEN_KEY) || "";
+  try {
+    return window.localStorage.getItem(TOKEN_KEY) || memoryToken || "";
+  } catch {
+    return memoryToken || "";
+  }
 }
 
 export function setToken(token) {
-  if (token) {
-    window.localStorage.setItem(TOKEN_KEY, token);
-  } else {
-    window.localStorage.removeItem(TOKEN_KEY);
+  memoryToken = token || "";
+  try {
+    if (token) {
+      window.localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      window.localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // Some embedded browsers can block localStorage. Keep the token in memory
+    // for the current session so the app remains usable.
   }
   emitAuthChange({ token: token || "" });
 }
 
 export function clearToken() {
-  window.localStorage.removeItem(TOKEN_KEY);
+  memoryToken = "";
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // localStorage may be unavailable in restrictive webviews.
+  }
   emitAuthChange({ token: "" });
 }
 

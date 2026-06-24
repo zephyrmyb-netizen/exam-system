@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import request from "../api/request";
+import request, { getErrorMessage } from "../api/request";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
 import { typeLabel } from "../utils/question";
 import {
@@ -15,10 +15,12 @@ const router = useRouter();
 const stats = ref({ todayCount: null, totalCount: null, wrongCount: null });
 const review = ref({ dueCount: null, wrongCount: null, weakTypes: [] });
 const reviewLoading = ref(false);
+const reviewError = ref("");
 
 // ── Recent courses (max 3, lightweight) ──
 const recentCourses = ref([]);
 const coursesLoading = ref(false);
+const coursesError = ref("");
 
 const hasWrongQuestions = computed(() => {
   const w = review.value.wrongCount ?? stats.value.wrongCount;
@@ -33,37 +35,47 @@ const hasRecentCourses = computed(() => recentCourses.value.length > 0);
 
 async function fetchStatsReview() {
   reviewLoading.value = true;
-  const [statsR, reviewR, weakR] = await Promise.allSettled([
-    getPracticeStats(),
-    getTodayReview(),
-    getWeakTypes(),
-  ]);
-  if (statsR.status === "fulfilled") {
-    const d = statsR.value;
-    stats.value.todayCount = d.today_count ?? null;
-    stats.value.totalCount = d.total_count ?? null;
-    stats.value.wrongCount = d.wrong_count ?? null;
+  reviewError.value = "";
+  try {
+    const [statsR, reviewR, weakR] = await Promise.allSettled([
+      getPracticeStats(),
+      getTodayReview(),
+      getWeakTypes(),
+    ]);
+    if (statsR.status === "fulfilled") {
+      const d = statsR.value;
+      stats.value.todayCount = d.today_count ?? null;
+      stats.value.totalCount = d.total_count ?? null;
+      stats.value.wrongCount = d.wrong_count ?? null;
+    }
+    if (reviewR.status === "fulfilled") {
+      const d = reviewR.value;
+      review.value.dueCount = d.due_count ?? null;
+      review.value.wrongCount = d.wrong_count ?? null;
+    }
+    if (weakR.status === "fulfilled" && Array.isArray(weakR.value)) {
+      review.value.weakTypes = weakR.value.slice(0, 3);
+    }
+    const rejected = [statsR, reviewR, weakR].find((item) => item.status === "rejected");
+    if (rejected) {
+      reviewError.value = getErrorMessage(rejected.reason, "学习数据暂时不可用");
+    }
+  } finally {
+    reviewLoading.value = false;
   }
-  if (reviewR.status === "fulfilled") {
-    const d = reviewR.value;
-    review.value.dueCount = d.due_count ?? null;
-    review.value.wrongCount = d.wrong_count ?? null;
-  }
-  if (weakR.status === "fulfilled") {
-    review.value.weakTypes = weakR.value.slice(0, 3);
-  }
-  reviewLoading.value = false;
 }
 
 async function fetchRecentCourses() {
   coursesLoading.value = true;
+  coursesError.value = "";
   try {
     const { data } = await request.get("/courses/mine");
     const items = Array.isArray(data) ? data : data.items || [];
     // Show at most 3 recent courses (last created / first in list)
     recentCourses.value = items.slice(0, 3);
-  } catch {
+  } catch (error) {
     recentCourses.value = [];
+    coursesError.value = getErrorMessage(error, "题库列表暂时不可用");
   } finally {
     coursesLoading.value = false;
   }
@@ -103,6 +115,11 @@ onMounted(() => {
           {{ typeLabel(wt.question_type) }}
         </span>
       </div>
+    </div>
+
+    <div v-if="reviewError || coursesError" class="hub-warning">
+      <span>{{ reviewError || coursesError }}</span>
+      <button type="button" @click="reviewError ? fetchStatsReview() : fetchRecentCourses()">重试</button>
     </div>
 
     <!-- ── Mode Cards ── -->
@@ -217,6 +234,31 @@ onMounted(() => {
 .hub-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .hub-weak-lbl { font-size: 10px; font-weight: 700; color: var(--text-muted); }
 .hub-weak-chip { padding: 2px 7px; border-radius: 999px; background: var(--rose-soft); color: var(--rose); font-size: 10px; font-weight: 700; }
+
+.hub-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border: 1px solid var(--amber-border);
+  border-radius: var(--radius-md);
+  background: var(--amber-soft);
+  color: #92400e;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.hub-warning button {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #92400e;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* ── Modes ── */
 .modes { display: grid; gap: 6px; }
