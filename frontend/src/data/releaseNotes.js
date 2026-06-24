@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.4-import-page-feedback",
+    version: "v1.7.4",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化导入页异常反馈",
+    items: [
+      "导入页加载已有题库失败时显示明确提示和重试入口",
+      "AI 重新解析前清理旧错误，避免用户误判当前解析状态",
+      "复制提取文本增加剪贴板兜底处理，手机 WebView 不支持时给出明确提示",
+    ],
+  },
+  {
     id: "v1.7.3-filter-error-feedback",
     version: "v1.7.3",
     date: "2026-06-24",
