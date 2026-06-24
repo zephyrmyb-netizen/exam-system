@@ -62,7 +62,7 @@ const summarySubtitle = computed(() => {
 
 const latestNote = computed(() => {
   if (releaseNotes.length === 0) return null;
-  return [...releaseNotes].sort((a, b) => (a.date > b.date ? -1 : 1))[0];
+  return releaseNotes[0];
 });
 
 const quickEntries = [
