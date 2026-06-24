@@ -53,7 +53,7 @@ const navItems = [
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
-const sourceAwareRoutes = new Set(["study-overview", "announcements"]);
+const sourceAwareRoutes = new Set(["study-overview", "announcements", "practice-history"]);
 
 const activeNavKey = computed(() => {
   const nav = route.meta?.navKey;
@@ -68,13 +68,14 @@ const activeNavKey = computed(() => {
     return nav || "";
   }
   if (route.name === "practice-history") {
+    if (route.query.from === "home") return "home";
     if (route.query.from === "mine") return "mine";
     return "";
   }
   return nav || "";
 });
 
-const showHeader = computed(() => route.name !== "home");
+const showHeader = computed(() => !["home", "mine"].includes(route.name));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {

@@ -33,8 +33,7 @@ export function setToken(token) {
       window.localStorage.removeItem(TOKEN_KEY);
     }
   } catch {
-    // Some embedded browsers can block localStorage. Keep the token in memory
-    // for the current session so the app remains usable.
+    // 部分移动端 WebView 会限制 localStorage，保留内存 token 保证当前会话可用。
   }
   emitAuthChange({ token: token || "" });
 }
@@ -44,7 +43,7 @@ export function clearToken() {
   try {
     window.localStorage.removeItem(TOKEN_KEY);
   } catch {
-    // localStorage may be unavailable in restrictive webviews.
+    // localStorage 不可用时忽略，内存 token 已清空。
   }
   emitAuthChange({ token: "" });
 }
@@ -89,7 +88,7 @@ request.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export function getErrorMessage(error, fallback = "请求失败，请稍后重试") {

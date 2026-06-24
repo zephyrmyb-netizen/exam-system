@@ -47,7 +47,7 @@ const routes = [
         component: CourseList,
         meta: {
           title: "我的题库",
-          description: "选择课程开始练习",
+          description: "选择课程开始练习。",
           navKey: "list",
         },
       },
@@ -77,7 +77,7 @@ const routes = [
         component: PublicLibrary,
         meta: {
           title: "公共题库",
-          description: "公开分享的题目集",
+          description: "公开分享的题目集。",
           navKey: "list",
           parent: "courses",
         },
@@ -141,7 +141,7 @@ const routes = [
         component: Mine,
         meta: {
           title: "我的",
-          description: "查看身份信息，并进入常用复盘入口。",
+          description: "查看账号信息，并进入常用复盘入口。",
           navKey: "mine",
         },
       },
@@ -226,21 +226,25 @@ const router = createRouter({
   },
 });
 
-/** 路由守卫：未登录不可访问需认证页面；已登录不可访问游客页面 */
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
   const token = getToken();
 
-  if (to.matched.some((r) => r.meta.requiresAuth) && !token) {
+  if (to.matched.some((route) => route.meta.requiresAuth) && !token) {
     return {
       name: "login",
       query: { redirect: to.fullPath },
     };
   }
 
-  if (to.matched.some((r) => r.meta.guest) && token) {
+  if (to.matched.some((route) => route.meta.guest) && token) {
     const redirect = to.query.redirect;
-    // 仅允许跳转到相对路径的非游客页面，避免重定向循环
-    if (redirect && typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("/login") && !redirect.startsWith("/register")) {
+    if (
+      redirect &&
+      typeof redirect === "string" &&
+      redirect.startsWith("/") &&
+      !redirect.startsWith("/login") &&
+      !redirect.startsWith("/register")
+    ) {
       return { path: redirect };
     }
     return { name: "home" };
