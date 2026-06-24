@@ -11,6 +11,14 @@ export const typeLabels = {
   short_answer: "简答题",
 };
 
+export const TRUE_FALSE_TRUE = "正确";
+export const TRUE_FALSE_FALSE = "错误";
+
+export const TRUE_FALSE_OPTIONS = [
+  { key: TRUE_FALSE_TRUE, value: TRUE_FALSE_TRUE },
+  { key: TRUE_FALSE_FALSE, value: TRUE_FALSE_FALSE },
+];
+
 /** 根据 type 返回中文题型标签 */
 export function typeLabel(type) {
   return typeLabels[type] || type || "未知题型";
@@ -45,6 +53,27 @@ export function normalizeAnswerDisplay(answer) {
   const trimmed = answer.trim();
   if (!trimmed) return "";
   return trimmed;
+}
+
+export function isTextQuestionType(type) {
+  return ["fill_blank", "short_answer"].includes(type);
+}
+
+export function getQuestionAnswerHint(type) {
+  if (type === "multiple_choice") return "请选择所有正确选项";
+  if (type === "single_choice") return "请选择一个选项";
+  if (type === "true_false") return "请选择正确或错误";
+  if (isTextQuestionType(type)) return "请输入你的答案";
+  return "";
+}
+
+export function getResultCorrectAnswer(type, answer) {
+  if (!answer) return "";
+  if (type === "true_false") {
+    if (answer === "True") return TRUE_FALSE_TRUE;
+    if (answer === "False") return TRUE_FALSE_FALSE;
+  }
+  return normalizeAnswerDisplay(answer);
 }
 
 /** 用于筛选下拉的题型选项 */

@@ -1,18 +1,25 @@
 /**
- * Practice-related API calls — /practice/*
+ * Practice-related API calls -> /practice/*
  *
  * Encapsulates all /practice/ endpoints so views don't
  * hard-code request paths or response shapes.
  */
 import request from "./request";
 
+function practiceGet(url, params) {
+  return request.get(url, { params }).then(({ data }) => data);
+}
+
+function practicePost(url, payload) {
+  return request.post(url, payload).then(({ data }) => data);
+}
+
 /**
  * Fetch practice stats (today_count, total_count, accuracy_rate, etc.).
  * Returns the response data object on success; throws on failure.
  */
 export async function getPracticeStats() {
-  const { data } = await request.get("/practice/stats");
-  return data;
+  return practiceGet("/practice/stats");
 }
 
 /**
@@ -21,8 +28,7 @@ export async function getPracticeStats() {
  * @returns {Promise<Object>} { items, total, page, page_size, ... }
  */
 export async function getPracticeHistory(params) {
-  const { data } = await request.get("/practice/history", { params });
-  return data;
+  return practiceGet("/practice/history", params);
 }
 
 /**
@@ -31,18 +37,16 @@ export async function getPracticeHistory(params) {
  * @returns {Promise<Object>} The question object.
  */
 export async function getRandomPracticeQuestion(params) {
-  const { data } = await request.get("/practice/random", { params });
-  return data;
+  return practiceGet("/practice/random", params);
 }
 
 /**
  * Submit an answer for one question.
  * @param {Object} payload - { question_id, user_answer }
- * @returns {Promise<Object>} Result with is_correct, correct_answer, analysis, …
+ * @returns {Promise<Object>} Result with is_correct, correct_answer, analysis, ...
  */
 export async function submitPracticeAnswer(payload) {
-  const { data } = await request.post("/practice/submit", payload);
-  return data;
+  return practicePost("/practice/submit", payload);
 }
 
 /**
@@ -50,8 +54,7 @@ export async function submitPracticeAnswer(payload) {
  * @returns {Promise<Object>} { due_count, wrong_count, weak_types, recommended_modes }
  */
 export async function getTodayReview() {
-  const { data } = await request.get("/practice/review/today");
-  return data;
+  return practiceGet("/practice/review/today");
 }
 
 /**
@@ -59,8 +62,7 @@ export async function getTodayReview() {
  * @returns {Promise<Array>} [{ question_type, total_attempts, wrong_attempts, error_rate }]
  */
 export async function getWeakTypes() {
-  const { data } = await request.get("/practice/insights/weak-types");
-  return data;
+  return practiceGet("/practice/insights/weak-types");
 }
 
 /**
@@ -69,8 +71,7 @@ export async function getWeakTypes() {
  * @returns {Promise<Object>} The question object.
  */
 export async function getReviewWrongQuestion(params) {
-  const { data } = await request.get("/practice/review/wrong", { params });
-  return data;
+  return practiceGet("/practice/review/wrong", params);
 }
 
 /**
@@ -79,8 +80,7 @@ export async function getReviewWrongQuestion(params) {
  * @returns {Promise<Object>} The question object.
  */
 export async function getReviewDueQuestion(params) {
-  const { data } = await request.get("/practice/review/due", { params });
-  return data;
+  return practiceGet("/practice/review/due", params);
 }
 
 /**
@@ -89,6 +89,5 @@ export async function getReviewDueQuestion(params) {
  *   accuracy_rate, correct_count, wrong_count, recent_count_7d, etc.)
  */
 export async function getLearningStats() {
-  const { data } = await request.get("/practice/stats");
-  return data;
+  return practiceGet("/practice/stats");
 }

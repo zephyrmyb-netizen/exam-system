@@ -4,14 +4,20 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import {
-  Play, Upload, ChevronRight,
-  TrendingUp, BookMarked, Target, Zap, Megaphone,
+  Play,
+  Upload,
+  ChevronRight,
+  TrendingUp,
+  BookMarked,
+  Target,
+  Zap,
+  Megaphone,
 } from "@lucide/vue";
 import { releaseNotes } from "../data/releaseNotes";
 
 const router = useRouter();
 const { user } = useAuth();
-const { stats, review, fetchAll } = useStudyOverview();
+const { stats, loading, fetchAll } = useStudyOverview();
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -25,8 +31,10 @@ const usernameText = computed(() => user.value?.username || user.value?.name || 
 
 const dateText = computed(() =>
   new Intl.DateTimeFormat("zh-CN", {
-    month: "long", day: "numeric", weekday: "long",
-  }).format(new Date())
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date()),
 );
 
 const accuracyDisplay = computed(() => {
@@ -44,18 +52,17 @@ const accuracyColor = computed(() => {
 });
 
 const summarySubtitle = computed(() => {
-  const t = stats.value.todayCount;
-  const a = stats.value.accuracyRate;
+  const todayCount = stats.value.todayCount;
+  const accuracyRate = stats.value.accuracyRate;
   const parts = [];
-  if (t !== null) parts.push(`今日 ${t} 题`);
-  if (a !== null) parts.push(`正确率 ${(a * 100).toFixed(0)}%`);
+  if (todayCount !== null) parts.push(`今日 ${todayCount} 题`);
+  if (accuracyRate !== null) parts.push(`正确率 ${(accuracyRate * 100).toFixed(0)}%`);
   return parts.length > 0 ? parts.join(" · ") : "查看详细学习数据";
 });
 
-/** 最新一条公告（用于首页入口） */
 const latestNote = computed(() => {
   if (releaseNotes.length === 0) return null;
-  return releaseNotes.sort((a, b) => (a.date > b.date ? -1 : 1))[0];
+  return [...releaseNotes].sort((a, b) => (a.date > b.date ? -1 : 1))[0];
 });
 
 const quickEntries = [
@@ -64,23 +71,28 @@ const quickEntries = [
   { key: "announcements", label: "更新公告", icon: Megaphone, color: "var(--amber)" },
 ];
 
-onMounted(() => fetchAll());
+function openContextPage(name) {
+  router.push({ name, query: { from: "home" } });
+}
 
 function handleQuickEntry(item) {
   if (item.key === "study-overview") {
-    router.push({ name: "study-overview", query: { from: "home" } });
-  } else if (item.key === "announcements") {
-    router.push({ name: "announcements", query: { from: "home" } });
-  } else {
-    router.push("/" + item.key);
+    openContextPage("study-overview");
+    return;
   }
+  if (item.key === "announcements") {
+    openContextPage("announcements");
+    return;
+  }
+  router.push(`/${item.key}`);
 }
+
+onMounted(() => fetchAll());
 </script>
 
 <template>
   <section class="home-panel">
-    <!-- Welcome area -->
-    <div class="welcome-bar">
+    <div class="welcome-bar surface-card surface-card--soft">
       <div class="welcome-text">
         <p class="welcome-greeting">{{ greeting }}，{{ usernameText }}</p>
         <p class="welcome-date">{{ dateText }}</p>
@@ -91,8 +103,9 @@ function handleQuickEntry(item) {
       </div>
     </div>
 
-    <!-- Dashboard stats — clickable to /study-overview -->
-    <button class="dash-summary" type="button" @click="router.push({ name: 'study-overview', query: { from: 'home' } })">
+    <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+
+    <button class="dash-summary surface-card" type="button" @click="openContextPage('study-overview')">
       <div class="dash-head">
         <Target :size="16" :stroke-width="2.5" class="dash-head-icon" />
         <span class="dash-head-title">学习概览</span>
@@ -131,7 +144,6 @@ function handleQuickEntry(item) {
       <span class="dash-subtitle">{{ summarySubtitle }}</span>
     </button>
 
-    <!-- Main actions -->
     <div class="home-ctas">
       <button class="cta-card cta-card--primary" type="button" @click="router.push('/practice')">
         <div class="cta-icon"><Play :size="24" /></div>
@@ -151,12 +163,11 @@ function handleQuickEntry(item) {
       </button>
     </div>
 
-    <!-- Latest announcement -->
     <button
       v-if="latestNote"
       class="announce-banner"
       type="button"
-      @click="router.push({ name: 'announcements', query: { from: 'home' } })"
+      @click="openContextPage('announcements')"
     >
       <Megaphone :size="14" :stroke-width="2.5" class="announce-icon" />
       <span class="announce-text">
@@ -165,7 +176,6 @@ function handleQuickEntry(item) {
       <ChevronRight :size="14" :stroke-width="2.5" class="announce-chevron" />
     </button>
 
-    <!-- Quick entries -->
     <div class="section-label"><span>快捷入口</span></div>
     <div class="home-grid">
       <button
@@ -185,35 +195,45 @@ function handleQuickEntry(item) {
 </template>
 
 <style scoped>
-/* ── Welcome Bar ── */
 .welcome-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--line-soft); border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(239,246,255,0.96));
-  box-shadow: var(--shadow-card);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.96));
 }
+
 .welcome-text { min-width: 0; }
 .welcome-greeting { margin: 0; font-size: var(--text-lg); font-weight: 800; color: var(--text-main); letter-spacing: -0.01em; }
 .welcome-date { margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
 .welcome-prompt { margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-secondary); font-weight: 600; }
+
 .welcome-avatar {
-  flex-shrink: 0; display: grid; place-items: center;
-  width: 44px; height: 44px; border-radius: var(--radius-md);
-  color: #fff; background: linear-gradient(135deg, var(--primary), var(--violet));
-  font-size: var(--text-lg); font-weight: 800;
-  box-shadow: 0 4px 12px rgba(59,130,246,0.22);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  font-size: var(--text-lg);
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.22);
 }
 
-/* ── Dashboard Summary (clickable card) ── */
 .dash-summary {
-  display: grid; gap: var(--space-2);
-  width: 100%; padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--line-soft); border-radius: var(--radius-lg);
-  background: var(--surface); cursor: pointer; font: inherit; text-align: left;
-  box-shadow: var(--shadow-xs);
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
   transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out);
 }
+
 .dash-summary:hover { border-color: var(--line-accent); box-shadow: var(--shadow-card); }
 .dash-summary:active { transform: scale(0.985); }
 
@@ -237,68 +257,89 @@ function handleQuickEntry(item) {
 .di-val.green { color: var(--emerald); }
 .di-val.amber { color: var(--amber); }
 .di-lbl { font-size: 9px; color: var(--text-muted); font-weight: 600; }
-
 .dash-subtitle { font-size: var(--text-xs); color: var(--text-placeholder); font-weight: 500; }
 
-/* ── CTA Cards ── */
 .home-ctas { display: grid; gap: var(--space-2); }
+
 .cta-card {
-  display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: var(--space-3);
-  width: 100%; padding: var(--space-4);
-  border: 1.5px solid transparent; border-radius: var(--radius-md);
-  text-align: left; font: inherit; cursor: pointer;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
   transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out);
 }
+
 .cta-card:active { transform: scale(0.985); }
-.cta-card--primary { color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); border-color: rgba(37,99,235,0.6); box-shadow: var(--shadow-primary); }
-.cta-card--primary:hover { box-shadow: 0 10px 24px rgba(37,99,235,0.3); transform: translateY(-1px); }
-.cta-card--teal { color: #fff; background: linear-gradient(135deg, var(--teal), var(--teal-strong)); border-color: rgba(15,118,110,0.6); box-shadow: var(--shadow-teal); }
-.cta-card--teal:hover { box-shadow: 0 10px 24px rgba(13,148,136,0.3); transform: translateY(-1px); }
-.cta-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(255,255,255,0.18); }
+.cta-card--primary { color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); border-color: rgba(37, 99, 235, 0.6); box-shadow: var(--shadow-primary); }
+.cta-card--primary:hover { box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3); transform: translateY(-1px); }
+.cta-card--teal { color: #fff; background: linear-gradient(135deg, var(--teal), var(--teal-strong)); border-color: rgba(15, 118, 110, 0.6); box-shadow: var(--shadow-teal); }
+.cta-card--teal:hover { box-shadow: 0 10px 24px rgba(13, 148, 136, 0.3); transform: translateY(-1px); }
+.cta-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.18); }
 .cta-text { display: grid; gap: 2px; }
 .cta-title { font-size: var(--text-base); font-weight: 800; letter-spacing: -0.005em; }
 .cta-desc { font-size: var(--text-xs); font-weight: 500; opacity: 0.8; }
 .cta-chevron { opacity: 0.6; }
 
-/* ── Section Label ── */
 .section-label { padding: var(--space-2) 0 0; }
 .section-label span { font-size: var(--text-xs); font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
 
-/* ── Home Grid ── */
 .home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+
 .home-entry {
-  display: grid; gap: 6px; justify-items: center;
-  min-height: 92px; padding: var(--space-4) 8px;
-  border: 1px solid var(--line-soft); border-radius: var(--radius-md);
-  background: var(--surface); cursor: pointer; font: inherit; text-align: center;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-height: 92px;
+  padding: var(--space-4) 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
   transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out);
   box-shadow: var(--shadow-xs);
 }
+
 .home-entry:hover { border-color: var(--line-accent); box-shadow: var(--shadow-card); transform: translateY(-2px); }
 .home-entry:active { transform: scale(0.97); }
 .home-entry-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-md); color: #fff; }
 .home-entry-label { font-size: var(--text-xs); font-weight: 700; color: var(--text-secondary); }
 
-/* ── Announcement Banner ── */
 .announce-banner {
-  display: flex; align-items: center; gap: var(--space-2);
-  width: 100%; padding: var(--space-2) var(--space-3);
-  border: none; border-radius: var(--radius-md);
-  background: var(--surface-soft); cursor: pointer; font: inherit; text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
   color: var(--text-muted);
   transition: background var(--ease-out), color var(--ease-out);
 }
+
 .announce-banner:hover { background: var(--primary-soft); color: var(--primary-strong); }
 .announce-banner:active { transform: scale(0.99); }
 .announce-icon { flex-shrink: 0; }
 .announce-text { flex: 1; font-size: var(--text-xs); font-weight: 700; line-height: 1.3; }
 .announce-chevron { flex-shrink: 0; }
 
-/* ── Responsive ── */
 @media (min-width: 640px) {
   .home-ctas { grid-template-columns: 1fr 1fr; }
   .home-grid { grid-template-columns: repeat(5, 1fr); }
 }
+
 @media (max-width: 420px) {
   .dash-body { gap: 4px; }
   .di-val { font-size: 12px; }

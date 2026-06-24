@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.7.1-practice-import-refactor",
+    version: "v1.7.1",
+    date: "2026-06-24",
+    type: "优化",
+    title: "优化刷题页与导入维护结构",
+    items: [
+      "拆分刷题页组件，降低 Practice.vue 复杂度，提升后续维护稳定性",
+      "拆分后端 CRUD 与 AI 导入服务逻辑，让导入、题库、练习代码边界更清晰",
+      "拆分后端烟测文件，保持测试覆盖同时提升定位问题效率",
+    ],
+  },
+  {
     id: "v1.6.1-confirm-dialog-polish",
     version: "v1.6.1",
     date: "2026-06-24",

@@ -29,7 +29,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
         aria-modal="true"
         :aria-label="options.title"
       >
-        <button class="confirm-close" type="button" aria-label="关闭" @click="cancel">
+        <button class="confirm-close icon-button" type="button" aria-label="关闭" @click="cancel">
           <X :size="18" :stroke-width="2.5" />
         </button>
 
@@ -82,15 +82,6 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
   position: absolute;
   top: 12px;
   right: 12px;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--line-soft);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
 }
 
 .confirm-icon {
