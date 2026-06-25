@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.2-mobile-nav-version-polish",
+    version: "v1.8.2",
+    date: "2026-06-25",
+    type: "优化",
+    title: "优化移动端底部导航与版本显示",
+    items: [
+      "底部导航整体上移并增加页面底部安全留白，减少误触手机浏览器返回控制的情况",
+      "我的页面版本号改为自动读取最新更新公告，避免页面版本与公告版本不一致",
+    ],
+  },
+  {
     id: "v1.8.1-ai-timeout-message",
     version: "v1.8.1",
     date: "2026-06-25",

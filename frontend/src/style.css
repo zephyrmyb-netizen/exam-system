@@ -87,7 +87,8 @@
   /* ── Shell ── */
   --shell-max: 720px;
   --nav-height: 72px;
-  --practice-sticky-bottom: calc(var(--nav-height) + 16px);
+  --nav-safe-gap: max(22px, env(safe-area-inset-bottom, 22px));
+  --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 10px);
 
   color: var(--text-main);
   background: var(--page-bg);
@@ -144,7 +145,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   width: min(100%, var(--shell-max));
   min-height: 100vh;
   margin: 0 auto;
-  padding: var(--space-3) var(--space-3) calc(var(--nav-height) + var(--space-6));
+  padding: var(--space-3) var(--space-3) calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-6));
 }
 
 .app-header {
@@ -203,7 +204,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  bottom: var(--nav-safe-gap);
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1573,7 +1574,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 @media (min-width: 640px) {
   .app-shell {
-    padding: var(--space-6) var(--space-6) calc(var(--nav-height) + var(--space-8));
+    padding: var(--space-6) var(--space-6) calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-8));
   }
 
   .app-header {
@@ -1637,7 +1638,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   }
 
   :root {
-    --practice-sticky-bottom: calc(var(--nav-height) + 10px);
+    --nav-safe-gap: max(28px, env(safe-area-inset-bottom, 28px));
+    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 8px);
   }
 
   .app-header,

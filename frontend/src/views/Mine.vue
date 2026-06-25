@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   TrendingUp,
 } from "@lucide/vue";
+import { releaseNotes } from "../data/releaseNotes";
 
 const router = useRouter();
 const { user, logout } = useAuth();
@@ -36,6 +37,8 @@ const accuracyDisplay = computed(() => {
   if (rate === null) return "--";
   return `${(rate * 100).toFixed(0)}%`;
 });
+
+const appVersion = computed(() => releaseNotes[0]?.version || "v1.0.0");
 
 const profileStats = computed(() => [
   { label: "今日刷题", value: stats.value.todayCount, suffix: "题" },
@@ -208,7 +211,7 @@ onMounted(() => fetchAll());
       </button>
     </section>
 
-    <p class="app-version">Exam System v1.7.9</p>
+    <p class="app-version">Exam System {{ appVersion }}</p>
   </section>
 </template>
 
