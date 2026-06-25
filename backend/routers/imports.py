@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module, schemas
+from ..config import IMPORT_RATE_LIMIT_PER_HOUR
 from ..crud import derive_course_name_from_filename
 from ..database import get_db
+from ..ratelimit import RateLimiter, get_limiter
 from ..schemas import ImportedQuestion
 from ..services import imports_service
 
@@ -27,11 +29,27 @@ OpenAI = imports_service.OpenAI
 
 
 def _sync_ai_overrides() -> None:
-    imports_service.sync_ai_settings(
-        api_key=OPENAI_API_KEY,
-        base_url=OPENAI_BASE_URL,
-        client_class=OpenAI,
-    )
+    """Propagate router-level overrides (set by tests via mock.patch) to the service module."""
+    imports_service.OPENAI_API_KEY = OPENAI_API_KEY
+    imports_service.OPENAI_BASE_URL = OPENAI_BASE_URL
+    imports_service.OpenAI = OpenAI
+
+
+def rate_limiter() -> RateLimiter:
+    """FastAPI dependency returning the active rate limiter.
+
+    Override in tests via ``app.dependency_overrides[rate_limiter]``.
+    """
+    return get_limiter()
+
+
+def _enforce_import_limit(user_id: int, limiter: RateLimiter) -> None:
+    """Apply the per-user AI import rate limit.
+
+    AI import calls are expensive (multiple model requests per file), so we
+    cap how often a single user can hit them independently of chat limits.
+    """
+    limiter.check(key=f"import:user:{user_id}", limit=IMPORT_RATE_LIMIT_PER_HOUR)
 
 
 @router.post("/file", response_model=schemas.FileExtractResponse)
@@ -67,7 +85,9 @@ async def upload_file(
 async def preview_import(
     file: UploadFile = File(...),
     _current_user=Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
 ):
+    _enforce_import_limit(_current_user.id, limiter)
     total_start = time.perf_counter()
     saved = None
     try:
@@ -152,7 +172,9 @@ async def import_file_auto(
     course_name: str = Query("", description="目标课程名，course_id=0 时优先使用，为空则从文件名推断"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
 ):
+    _enforce_import_limit(current_user.id, limiter)
     total_start = time.perf_counter()
     saved = None
     try:

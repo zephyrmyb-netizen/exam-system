@@ -6,7 +6,48 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from .utils import VALID_QUESTION_TYPES, normalize_answer
 
 
+# -- Shared question validators (mixin) ---------------------------------------
+
+
+class QuestionValidatorMixin:
+    """Shared validators for QuestionCreate and QuestionManualCreate."""
+
+    @field_validator("question")
+    @classmethod
+    def question_not_empty(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("题目题干不能为空")
+        return stripped
+
+    @field_validator("type")
+    @classmethod
+    def type_must_be_valid(cls, v: str) -> str:
+        if v not in VALID_QUESTION_TYPES:
+            type_list = ", ".join(sorted(VALID_QUESTION_TYPES))
+            raise ValueError(f"无效的题目类型 '{v}'，仅支持：{type_list}")
+        return v
+
+    @field_validator("options")
+    @classmethod
+    def options_required_for_choice(cls, v: Optional[dict], info):
+        if info.data.get("type") in ("single_choice", "multiple_choice") and not v:
+            raise ValueError("选择题（single_choice / multiple_choice）必须提供 options")
+        return v
+
+    @field_validator("answer")
+    @classmethod
+    def answer_not_empty(cls, v: str, info):
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("答案不能为空")
+        q_type = info.data.get("type", "")
+        if q_type in VALID_QUESTION_TYPES:
+            return normalize_answer(stripped, q_type)
+        return stripped
+
 # -- Auth -------------------------------------------------------------------
+
 
 class UserCreate(BaseModel):
     username: str
@@ -66,7 +107,7 @@ class CourseUpdate(BaseModel):
 
 # -- Question ---------------------------------------------------------------
 
-class QuestionCreate(BaseModel):
+class QuestionCreate(QuestionValidatorMixin, BaseModel):
     subject: str = "默认科目"
     chapter: str = "默认章节"
     type: str  # single_choice, multiple_choice, true_false, fill_blank, short_answer
@@ -77,44 +118,8 @@ class QuestionCreate(BaseModel):
     difficulty: str = "normal"
     course_id: Optional[int] = None  # optional: add to a course
 
-    @field_validator("question")
-    @classmethod
-    def question_not_empty(cls, v: str) -> str:
-        stripped = v.strip()
-        if not stripped:
-            raise ValueError("题目题干不能为空")
-        return stripped
 
-    @field_validator("type")
-    @classmethod
-    def type_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_QUESTION_TYPES:
-            type_list = ", ".join(sorted(VALID_QUESTION_TYPES))
-            raise ValueError(
-                f"无效的题目类型 '{v}'，仅支持：{type_list}"
-            )
-        return v
-
-    @field_validator("options")
-    @classmethod
-    def options_required_for_choice(cls, v: Optional[dict], info):
-        if info.data.get("type") in ("single_choice", "multiple_choice") and not v:
-            raise ValueError("选择题（single_choice / multiple_choice）必须提供 options")
-        return v
-
-    @field_validator("answer")
-    @classmethod
-    def answer_not_empty(cls, v: str, info):
-        stripped = v.strip()
-        if not stripped:
-            raise ValueError("答案不能为空")
-        q_type = info.data.get("type", "")
-        if q_type in VALID_QUESTION_TYPES:
-            return normalize_answer(stripped, q_type)
-        return stripped
-
-
-class QuestionManualCreate(BaseModel):
+class QuestionManualCreate(QuestionValidatorMixin, BaseModel):
     """Manual single-question creation — course_id is required."""
     course_id: int
     subject: str = "默认科目"
@@ -125,40 +130,6 @@ class QuestionManualCreate(BaseModel):
     answer: str
     analysis: str = ""
     difficulty: str = "normal"
-
-    @field_validator("question")
-    @classmethod
-    def question_not_empty(cls, v: str) -> str:
-        stripped = v.strip()
-        if not stripped:
-            raise ValueError("题目题干不能为空")
-        return stripped
-
-    @field_validator("type")
-    @classmethod
-    def type_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_QUESTION_TYPES:
-            type_list = ", ".join(sorted(VALID_QUESTION_TYPES))
-            raise ValueError(f"无效的题目类型 '{v}'，仅支持：{type_list}")
-        return v
-
-    @field_validator("options")
-    @classmethod
-    def options_required_for_choice(cls, v: Optional[dict], info):
-        if info.data.get("type") in ("single_choice", "multiple_choice") and not v:
-            raise ValueError("选择题（single_choice / multiple_choice）必须提供 options")
-        return v
-
-    @field_validator("answer")
-    @classmethod
-    def answer_not_empty(cls, v: str, info):
-        stripped = v.strip()
-        if not stripped:
-            raise ValueError("答案不能为空")
-        q_type = info.data.get("type", "")
-        if q_type in VALID_QUESTION_TYPES:
-            return normalize_answer(stripped, q_type)
-        return stripped
 
 
 class QuestionUpdate(BaseModel):
