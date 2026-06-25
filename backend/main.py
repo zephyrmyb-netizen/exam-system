@@ -60,9 +60,6 @@ if not IS_PRODUCTION:
         logger.warning(msg)
         warnings.warn(msg)
 
-# Ensure tables are created (both at import time and via lifespan)
-Base.metadata.create_all(bind=engine)
-
 # CORS — origins read from config (env CORS_ORIGINS, fallback ["*"])
 # When origins is a wildcard, credentials MUST be disabled — browsers
 # reject credentialed requests paired with Access-Control-Allow-Origin: *.

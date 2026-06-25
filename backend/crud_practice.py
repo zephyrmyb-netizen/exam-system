@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
+from random import randint
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from . import models
@@ -46,9 +47,25 @@ def get_practice_stats(db: Session, user_id: int) -> dict:
     today_start = local_midnight.astimezone(timezone.utc)
     seven_days_ago = now_utc - timedelta(days=7)
 
-    base = db.query(models.PracticeRecord).filter(models.PracticeRecord.user_id == user_id)
+    # Merge multiple COUNT queries into a single aggregation for efficiency.
+    row = (
+        db.query(
+            func.count(models.PracticeRecord.id).label("total"),
+            func.sum(
+                case((models.PracticeRecord.is_correct == 1, 1), else_=0)
+            ).label("correct"),
+            func.sum(
+                case((models.PracticeRecord.answered_at >= today_start, 1), else_=0)
+            ).label("today"),
+            func.sum(
+                case((models.PracticeRecord.answered_at >= seven_days_ago, 1), else_=0)
+            ).label("recent_7d"),
+        )
+        .filter(models.PracticeRecord.user_id == user_id)
+        .first()
+    )
 
-    total_count = base.count()
+    total_count = int(row.total or 0)
     if total_count == 0:
         return {
             "today_count": 0,
@@ -59,11 +76,11 @@ def get_practice_stats(db: Session, user_id: int) -> dict:
             "recent_count_7d": 0,
         }
 
-    correct_count = base.filter(models.PracticeRecord.is_correct == 1).count()
+    correct_count = int(row.correct or 0)
+    today_count = int(row.today or 0)
+    recent_count_7d = int(row.recent_7d or 0)
     wrong_count = total_count - correct_count
-    today_count = base.filter(models.PracticeRecord.answered_at >= today_start).count()
-    recent_count_7d = base.filter(models.PracticeRecord.answered_at >= seven_days_ago).count()
-    accuracy_rate = round(correct_count / total_count, 4) if total_count > 0 else 0.0
+    accuracy_rate = round(correct_count / total_count, 4)
 
     return {
         "today_count": today_count,
@@ -236,17 +253,26 @@ def get_weak_types(
 def get_random_question(
     db: Session, user_id: int | None = None, q_type: str = "", chapter: str = "",
 ) -> Optional[models.Question]:
+    """Return a random question visible to *user_id*, using count+offset.
+
+    Avoids ``ORDER BY RANDOM()`` which forces a full-table sort. Instead
+    queries the count, picks a random offset, and fetches one row.
+    """
     query = _add_question_visibility_filter(db.query(models.Question), user_id)
     if q_type:
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
-    return query.order_by(func.random()).first()
+    count = query.count()
+    if count == 0:
+        return None
+    return query.offset(randint(0, count - 1)).limit(1).first()
 
 
 def get_random_question_in_course(
     db: Session, course_id: int, user_id: int | None = None, q_type: str = "", chapter: str = "",
 ) -> Optional[models.Question]:
+    """Random question in a course, using count+offset instead of ORDER BY RANDOM()."""
     query = _add_question_visibility_filter(
         db.query(models.Question).filter(models.Question.course_id == course_id),
         user_id,
@@ -255,7 +281,10 @@ def get_random_question_in_course(
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
-    return query.order_by(func.random()).first()
+    count = query.count()
+    if count == 0:
+        return None
+    return query.offset(randint(0, count - 1)).limit(1).first()
 
 
 def check_answer(question: models.Question, user_answer: str) -> bool:
