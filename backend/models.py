@@ -45,7 +45,7 @@ class QuestionBank(Base):
             "subject": self.subject or "",
             "visibility": self.visibility,
             "question_count": len(self.questions) if self.questions else 0,
-        "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -56,7 +56,7 @@ class Question(Base):
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="SET NULL"), nullable=True, index=True)
     visibility = Column(String(20), nullable=False, default="private", index=True)  # public / private
-    source = Column(String(20), nullable=False, default="import")  # public / private / import / manual
+    source = Column(String(20), nullable=False, default="import")  # import / manual
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     subject = Column(String(200), default="默认科目")
