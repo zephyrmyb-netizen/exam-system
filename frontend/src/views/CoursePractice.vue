@@ -23,6 +23,21 @@ const modes = [
 ];
 
 const selectedMode = ref("normal");
+const selectedModeInfo = computed(() => modes.find((mode) => mode.key === selectedMode.value) || modes[0]);
+const settingsTips = computed(() => [
+  {
+    label: "当前题库",
+    value: course.value?.name || "加载中",
+  },
+  {
+    label: "出题范围",
+    value: `${course.value?.question_count ?? "--"} 道题`,
+  },
+  {
+    label: "练习方式",
+    value: selectedModeInfo.value.label,
+  },
+]);
 
 // ── Start practice ──
 const showPractice = ref(false);
@@ -94,6 +109,13 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
             <span class="mode-card-desc">{{ m.desc }}</span>
           </span>
         </button>
+      </div>
+
+      <div class="settings-summary">
+        <div v-for="item in settingsTips" :key="item.label" class="settings-summary-item">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
       </div>
 
       <!-- Stats summary -->
@@ -210,6 +232,39 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   font-weight: 500;
 }
 
+.settings-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #fff, #f8fbff);
+}
+
+.settings-summary-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.settings-summary-item span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.settings-summary-item strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Start Button ── */
 .start-btn {
   display: inline-flex;
@@ -249,6 +304,10 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 }
 
 @media (max-width: 420px) {
+  .settings-summary {
+    grid-template-columns: 1fr;
+  }
+
   .settings-info h2 { font-size: 16px; }
 }
 </style>

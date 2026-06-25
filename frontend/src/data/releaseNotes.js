@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.5-practice-settings-summary",
+    version: "v1.8.5",
+    date: "2026-06-25",
+    type: "优化",
+    title: "优化练习设置确认信息",
+    items: [
+      "进入练习前显示当前题库、出题范围和练习方式，减少误进错题库的情况",
+      "练习设置页增加轻量确认卡片，移动端阅读更清楚",
+    ],
+  },
+  {
     id: "v1.8.4-ai-import-progress-copy",
     version: "v1.8.4",
     date: "2026-06-25",
