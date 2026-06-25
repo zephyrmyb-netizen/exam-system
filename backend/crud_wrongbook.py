@@ -10,28 +10,46 @@ from .crud_common import _add_question_visibility_filter
 def get_random_wrong_question(
     db: Session, user_id: int, course_id: int | None = None, q_type: str = "",
 ) -> Optional[models.Question]:
+    from random import randint
+
     wrong_qids = (
         db.query(models.WrongRecord.question_id)
         .filter(models.WrongRecord.user_id == user_id)
     )
 
-    query = _add_question_visibility_filter(
+    base = _add_question_visibility_filter(
         db.query(models.Question).filter(models.Question.id.in_(wrong_qids)),
         user_id,
     )
 
     if course_id is not None:
-        query = query.filter(models.Question.course_id == course_id)
+        base = base.filter(models.Question.course_id == course_id)
     if q_type:
-        query = query.filter(models.Question.type == q_type)
+        base = base.filter(models.Question.type == q_type)
 
-    query = (
-        query.join(models.WrongRecord, models.WrongRecord.question_id == models.Question.id)
+    # Find the maximum wrong_count among matching questions.
+    max_wc = (
+        db.query(func.max(models.WrongRecord.wrong_count))
         .filter(models.WrongRecord.user_id == user_id)
-        .order_by(models.WrongRecord.wrong_count.desc(), func.random())
+        .filter(models.WrongRecord.question_id.in_(
+            db.query(models.Question.id).filter(models.Question.id.in_(wrong_qids))
+        ))
+        .scalar()
     )
+    if max_wc is None:
+        return None
 
-    return query.first()
+    # Pick a random question from the highest-wrong-count group.
+    top_group = (
+        base.join(models.WrongRecord, models.WrongRecord.question_id == models.Question.id)
+        .filter(models.WrongRecord.user_id == user_id)
+        .filter(models.WrongRecord.wrong_count == max_wc)
+        .order_by(models.Question.id)
+    )
+    count = top_group.count()
+    if count == 0:
+        return None
+    return top_group.offset(randint(0, count - 1)).limit(1).first()
 
 
 def get_wrong_records(

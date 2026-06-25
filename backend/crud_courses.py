@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy import select as sa_select
 
 from . import models, schemas
 from .crud_common import _add_bank_visibility_filter
@@ -158,25 +159,27 @@ def delete_question_bank(db: Session, bank_id: int) -> bool:
     if not bank:
         return False
 
-    question_ids = [
-        row[0] for row in
-        db.query(models.Question.id).filter(models.Question.course_id == bank_id).all()
-    ]
+    # Use subquery (wrapped in select() to avoid SA coercion warnings).
+    qid_subq = (
+        db.query(models.Question.id)
+        .filter(models.Question.course_id == bank_id)
+        .subquery()
+    )
+    qid_sel = sa_select(qid_subq)
 
-    if question_ids:
-        db.query(models.PracticeRecord).filter(
-            models.PracticeRecord.question_id.in_(question_ids)
-        ).update({"question_id": None}, synchronize_session=False)
-        db.query(models.PracticeRecord).filter(
-            models.PracticeRecord.course_id == bank_id
-        ).update({"course_id": None}, synchronize_session=False)
+    db.query(models.PracticeRecord).filter(
+        models.PracticeRecord.question_id.in_(qid_sel)
+    ).update({"question_id": None}, synchronize_session=False)
+    db.query(models.PracticeRecord).filter(
+        models.PracticeRecord.course_id == bank_id
+    ).update({"course_id": None}, synchronize_session=False)
 
-        db.query(models.UserQuestionReview).filter(
-            models.UserQuestionReview.question_id.in_(question_ids)
-        ).update({"question_id": None}, synchronize_session=False)
-        db.query(models.UserQuestionReview).filter(
-            models.UserQuestionReview.course_id == bank_id
-        ).update({"course_id": None}, synchronize_session=False)
+    db.query(models.UserQuestionReview).filter(
+        models.UserQuestionReview.question_id.in_(qid_sel)
+    ).update({"question_id": None}, synchronize_session=False)
+    db.query(models.UserQuestionReview).filter(
+        models.UserQuestionReview.course_id == bank_id
+    ).update({"course_id": None}, synchronize_session=False)
 
     db.delete(bank)
     db.commit()
