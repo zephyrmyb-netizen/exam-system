@@ -52,7 +52,7 @@ let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 const progressTitle = computed<string>(() => {
   if (status.value === "running") {
     if (elapsedSeconds.value < 3) return "正在读取文档";
-    return "AI 正在生成题目";
+    return "AI 正在解析题目，请稍候";
   }
   if (status.value === "success") return "AI 解析完成";
   if (status.value === "error") return "AI 解析失败";
@@ -65,9 +65,9 @@ const progressDetail = computed<string>(() => {
       return "正在上传并提取文档文字，请稍候。";
     }
     if (elapsedSeconds.value < 60) {
-      return "文档文字通常很快完成提取，现在主要是在等待 AI 生成题目，约 30-90 秒。";
+      return "AI 正在导入题目，请等待约 30 秒；大文件或模型繁忙时可能需要更久。";
     }
-    return "AI 仍在处理，大文件或模型繁忙时会更久；切到其他页面也会继续。";
+    return "AI 仍在处理，大文件可能超过 1 分钟；切到其他页面也会继续，回来后可查看进度。";
   }
   if (status.value === "success" && timing.value) {
     return `本次用时 ${formatDuration(timing.value.total_ms)}，其中 AI 生成 ${formatDuration(timing.value.ai_ms)}。`;
