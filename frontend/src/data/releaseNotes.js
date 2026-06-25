@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.3-home-learning-space",
+    version: "v1.8.3",
+    date: "2026-06-25",
+    type: "优化",
+    title: "优化首页学习空间",
+    items: [
+      "首页新增最近题库列表，进入后可以直接查看题目或开始练习",
+      "没有题库时显示导入和题库入口，减少首页空白感",
+      "学习概览、最近题库和常用入口层级更清晰，减少重复操作",
+    ],
+  },
+  {
     id: "v1.8.2-mobile-nav-version-polish",
     version: "v1.8.2",
     date: "2026-06-25",

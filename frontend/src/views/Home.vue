@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
+import { getMyCourses } from "../api/courses";
+import { getErrorMessage } from "../api/request";
 import {
   BookOpen,
   ChevronRight,
@@ -21,6 +23,9 @@ import { releaseNotes } from "../data/releaseNotes";
 const router = useRouter();
 const { user } = useAuth();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
+const courses = ref([]);
+const coursesLoading = ref(false);
+const coursesError = ref("");
 
 const usernameText = computed(() => user.value?.username || user.value?.name || "同学");
 
@@ -46,6 +51,24 @@ const statCards = computed(() => [
 ]);
 
 const latestNote = computed(() => releaseNotes[0] || null);
+
+const recentCourses = computed(() =>
+  [...courses.value]
+    .sort((a, b) => {
+      const aTime = new Date(a.last_practiced_at || a.created_at || 0).getTime();
+      const bTime = new Date(b.last_practiced_at || b.created_at || 0).getTime();
+      return bTime - aTime;
+    })
+    .slice(0, 3),
+);
+
+function formatCourseDate(course) {
+  const raw = course.last_practiced_at || course.created_at;
+  if (!raw) return "暂无记录";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "暂无记录";
+  return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit" }).format(date);
+}
 
 const heroActions = [
   {
@@ -107,7 +130,27 @@ function goTo(target) {
   router.push(target);
 }
 
-onMounted(() => fetchAll());
+async function fetchRecentCourses() {
+  coursesLoading.value = true;
+  coursesError.value = "";
+
+  try {
+    courses.value = await getMyCourses();
+  } catch (error) {
+    coursesError.value = getErrorMessage(error, "题库加载失败，请稍后重试。");
+  } finally {
+    coursesLoading.value = false;
+  }
+}
+
+function startCoursePractice(course) {
+  router.push(`/courses/${course.id}/practice`);
+}
+
+onMounted(() => {
+  fetchAll();
+  fetchRecentCourses();
+});
 </script>
 
 <template>
@@ -168,6 +211,55 @@ onMounted(() => fetchAll());
         </div>
       </div>
     </button>
+
+    <section class="learning-space">
+      <div class="section-title-row section-title-row--plain">
+        <div>
+          <p class="section-kicker">我的学习空间</p>
+          <h2>最近题库</h2>
+        </div>
+        <button class="section-link-button" type="button" @click="goTo('/courses')">
+          内容管理
+          <ChevronRight :size="15" :stroke-width="2.5" />
+        </button>
+      </div>
+
+      <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
+      <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
+
+      <div v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="home-empty-panel">
+        <BookOpen :size="38" :stroke-width="1.8" />
+        <strong>还没有题库</strong>
+        <span>导入资料后，首页会显示最近学习的题库。</span>
+        <div class="home-empty-actions">
+          <button class="empty-primary" type="button" @click="goTo('/import')">去导入</button>
+          <button class="empty-secondary" type="button" @click="goTo('/courses')">去题库</button>
+        </div>
+      </div>
+
+      <div v-if="recentCourses.length > 0" class="recent-course-list">
+        <article v-for="course in recentCourses" :key="course.id" class="recent-course">
+          <button class="recent-course-main" type="button" @click="goTo(`/courses/${course.id}`)">
+            <span class="recent-course-icon">
+              <BookOpen :size="20" :stroke-width="2.2" />
+            </span>
+            <span class="recent-course-copy">
+              <strong>{{ course.name || "未命名题库" }}</strong>
+              <small>
+                {{ course.question_count ?? 0 }} 题
+                <span>·</span>
+                {{ course.visibility === "public" ? "公开" : "私有" }}
+                <span>·</span>
+                {{ formatCourseDate(course) }}
+              </small>
+            </span>
+          </button>
+          <button class="recent-course-action" type="button" @click="startCoursePractice(course)">
+            开始练习
+          </button>
+        </article>
+      </div>
+    </section>
 
     <div class="section-title-row section-title-row--plain">
       <div>
@@ -418,6 +510,160 @@ onMounted(() => fetchAll());
   font-weight: 700;
 }
 
+.learning-space {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.section-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  border: none;
+  color: var(--primary-strong);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.home-empty-panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  color: var(--text-muted);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.home-empty-panel strong {
+  color: var(--text-main);
+  font-size: var(--text-lg);
+}
+
+.home-empty-panel span {
+  max-width: 260px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.home-empty-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.empty-primary,
+.empty-secondary {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.empty-primary {
+  border: none;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: var(--shadow-primary);
+}
+
+.empty-secondary {
+  border: 1px solid var(--line-strong);
+  color: var(--primary-strong);
+  background: var(--surface);
+}
+
+.recent-course-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.recent-course {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.recent-course:last-child {
+  border-bottom: none;
+}
+
+.recent-course-main {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.recent-course-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.recent-course-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recent-course-copy strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--text-base);
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-course-copy small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-course-action {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  color: #fff;
+  background: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .study-entry-list {
   display: grid;
   gap: var(--space-2);
@@ -507,6 +753,15 @@ onMounted(() => fetchAll());
 
   .home-stat strong {
     font-size: var(--text-base);
+  }
+
+  .recent-course {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .recent-course-action {
+    width: 100%;
   }
 }
 </style>
