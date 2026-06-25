@@ -1,8 +1,33 @@
 """Tests for imports endpoints: file upload, size limits, AI auto import."""
 import io
-from unittest.mock import patch
+import time
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from backend.main import app
+from backend.ratelimit import MemoryRateLimiter
+
+
+def _mock_import_ai_response(questions=None):
+    """Return a mock OpenAI completion with valid question JSON."""
+    from unittest.mock import MagicMock
+    if questions is None:
+        questions = [{
+            "question": "测试题目？",
+            "type": "single_choice",
+            "options": {"A": "对", "B": "错"},
+            "answer": "A",
+            "analysis": "测试解析",
+        }]
+    import json
+    choice = MagicMock()
+    choice.message.content = json.dumps({"questions": questions}, ensure_ascii=False)
+    completion = MagicMock()
+    completion.choices = [choice]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = completion
+    return mock_client
 
 
 def _make_docx_bytes(text: str = "Test content paragraph.\nSecond paragraph.") -> bytes:
@@ -658,3 +683,92 @@ class TestAutoImportAIFailure:
             assert len(qs) == 0
         finally:
             mock.stop()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Import rate limiting — security tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestImportRateLimit:
+    """Per-user rate limits on AI import endpoints prevent API-key burning."""
+
+    FILE_PREVIEW = "/imports/file/preview"
+    FILE_AUTO = "/imports/file/auto"
+
+    def test_preview_rate_limit_429(self, client, auth_headers, monkeypatch):
+        limit = 2
+        monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
+
+        from backend.ratelimit import MemoryRateLimiter
+        from backend.routers.imports import rate_limiter as rl_dep
+        real_limiter = MemoryRateLimiter()
+        app.dependency_overrides[rl_dep] = lambda: real_limiter
+
+        monkeypatch.setattr(
+            "backend.services.imports_service._build_import_client",
+            lambda: _mock_import_ai_response(),
+        )
+
+        for _ in range(limit):
+            content = _make_docx_bytes("Rate limit test.")
+            resp = client.post(self.FILE_PREVIEW, headers=auth_headers,
+                               files={"file": ("rl.docx", content, "application/octet-stream")})
+            assert resp.status_code != 429, f"Unexpected 429 within limit: {resp.json()}"
+
+        content = _make_docx_bytes("Blocked.")
+        resp = client.post(self.FILE_PREVIEW, headers=auth_headers,
+                           files={"file": ("rl.docx", content, "application/octet-stream")})
+        assert resp.status_code == 429
+        assert "过于频繁" in resp.json()["detail"]
+
+    def test_auto_rate_limit_429(self, client, auth_headers, monkeypatch):
+        limit = 2
+        monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
+
+        from backend.ratelimit import MemoryRateLimiter
+        from backend.routers.imports import rate_limiter as rl_dep
+        real_limiter = MemoryRateLimiter()
+        app.dependency_overrides[rl_dep] = lambda: real_limiter
+
+        monkeypatch.setattr(
+            "backend.services.imports_service._build_import_client",
+            lambda: _mock_import_ai_response(),
+        )
+
+        for _ in range(limit):
+            content = _make_docx_bytes("Auto rate test.")
+            resp = client.post(self.FILE_AUTO, headers=auth_headers,
+                               files={"file": ("auto.docx", content, "application/octet-stream")})
+            assert resp.status_code != 429, f"Unexpected 429: {resp.json()}"
+
+        content = _make_docx_bytes("Blocked.")
+        resp = client.post(self.FILE_AUTO, headers=auth_headers,
+                           files={"file": ("auto.docx", content, "application/octet-stream")})
+        assert resp.status_code == 429
+        assert "过于频繁" in resp.json()["detail"]
+
+    def test_rate_limit_is_per_user(self, client, auth_headers, auth_headers_other, monkeypatch):
+        limit = 1
+        monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
+
+        from backend.ratelimit import MemoryRateLimiter
+        from backend.routers.imports import rate_limiter as rl_dep
+        real_limiter = MemoryRateLimiter()
+        app.dependency_overrides[rl_dep] = lambda: real_limiter
+
+        monkeypatch.setattr(
+            "backend.services.imports_service._build_import_client",
+            lambda: _mock_import_ai_response(),
+        )
+
+        content = _make_docx_bytes("Per-user test.")
+
+        # User A hits the limit
+        resp_a = client.post(self.FILE_PREVIEW, headers=auth_headers,
+                             files={"file": ("a.docx", content, "application/octet-stream")})
+        assert resp_a.status_code != 429
+
+        # User B is NOT blocked (separate key)
+        resp_b = client.post(self.FILE_PREVIEW, headers=auth_headers_other,
+                             files={"file": ("b.docx", content, "application/octet-stream")})
+        assert resp_b.status_code != 429, f"User B wrongly blocked: {resp_b.json()}"

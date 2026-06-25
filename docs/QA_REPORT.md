@@ -135,13 +135,13 @@ cd frontend && npm run build
 
 ---
 
-## 已知限制
+## 已知限制（截至 2026-06-25 已修）
 
 | 项目 | 说明 |
 |------|------|
 | 图片 OCR | 暂不支持，导入时会提示"文档中包含图片" |
-| 长文档分块 | 最多处理 5 个文本块（约 20000 字），超出部分忽略 |
-| 撤回公开 | `POST /courses/{id}/unpublish` 和 `POST /questions/{id}/unpublish` 暂未实现 |
+| 长文档分块 | 默认最多处理 3 个文本块（IMPORT_MAX_CHUNKS=3，约 15000 字），超出部分忽略 |
+| 撤回公开 | ✅ **已实现**（`POST /courses/{id}/unpublish` 和 `POST /questions/{id}/unpublish`） |
 | 手机端微信底部工具栏 | 浏览器壳层控件，Vue 无法隐藏；需 PWA/小程序/原生容器解决 |
 
 ---

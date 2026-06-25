@@ -5,10 +5,19 @@ from .config import DATABASE_URL
 
 _is_sqlite = DATABASE_URL.startswith("sqlite")
 
-_engine_kwargs = {}
+_engine_kwargs: dict = {}
 
 if _is_sqlite:
     _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production backends (PostgreSQL, MySQL, etc.) benefit from a tuned
+    # connection pool. SQLite uses a file lock and doesn't pool connections.
+    _engine_kwargs.update(
+        pool_size=10,
+        max_overflow=20,
+        pool_recycle=1800,   # reconnect after 30 min (avoid stale PG conns)
+        pool_pre_ping=True,  # verify liveness before returning a conn
+    )
 
 engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
