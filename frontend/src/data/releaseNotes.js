@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.4-ai-import-progress-copy",
+    version: "v1.8.4",
+    date: "2026-06-25",
+    type: "优化",
+    title: "优化 AI 导入等待提示",
+    items: [
+      "AI 导入处理中会明确提示预计等待约 30 秒，大文件可能更久",
+      "切换页面后返回导入页时，仍会提示 AI 正在继续处理",
+    ],
+  },
+  {
     id: "v1.8.3-home-learning-space",
     version: "v1.8.3",
     date: "2026-06-25",
