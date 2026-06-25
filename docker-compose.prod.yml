@@ -1,0 +1,50 @@
+# ── docker-compose.prod.yml ────────────────────────────────────────────────
+# Production deployment with PostgreSQL and Redis.
+# Start: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Unlike the base compose file which uses SQLite, this enables:
+# - PostgreSQL for concurrent access and production reliability
+# - Redis for accurate rate limiting across workers
+
+services:
+  backend:
+    environment:
+      - DATABASE_URL=postgresql://exam_user:${DB_PASSWORD:-change_me}@postgres:5432/exam_system
+      - REDIS_URL=redis://redis:6379/0
+      - APP_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: exam_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      POSTGRES_DB: exam_system
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exam_user -d exam_system"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
