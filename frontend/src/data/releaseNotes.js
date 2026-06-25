@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.1-ai-timeout-message",
+    version: "v1.8.1",
+    date: "2026-06-25",
+    type: "修复",
+    title: "优化 AI 超时提示",
+    items: [
+      "AI 对话或导入超时时显示更明确的提示，避免被误认为登录失效",
+      "补充请求层回归测试，防止非登录错误误清除账号状态",
+    ],
+  },
+  {
     id: "v1.8.0-full-stack-hardening",
     version: "v1.8.0",
     date: "2026-06-25",
