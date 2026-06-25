@@ -1,0 +1,59 @@
+# ── docker-compose.yml ───────────────────────────────────────────────────
+# Start:  docker compose up -d
+# Stop:   docker compose down
+#
+# Services are exposed at http://localhost:8080 (frontend) and
+# http://localhost:8000 (backend).  The frontend container proxies
+# API requests to the backend automatically via nginx.
+#
+# PostgreSQL and Redis are optional — uncomment their blocks and set
+# the corresponding environment variables in backend/.env.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - backend_data:/app/backend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Optional services — uncomment when needed.
+#
+#  postgres:
+#    image: postgres:16-alpine
+#    profiles: ["full"]
+#    environment:
+#      POSTGRES_USER: exam_user
+#      POSTGRES_PASSWORD: change_me
+#      POSTGRES_DB: exam_system
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - pg_data:/var/lib/postgresql/data
+#    restart: unless-stopped
+#
+#  redis:
+#    image: redis:7-alpine
+#    profiles: ["full"]
+#    ports:
+#      - "6379:6379"
+#    restart: unless-stopped
+
+volumes:
+  backend_data:
+#  pg_data:

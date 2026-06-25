@@ -41,34 +41,61 @@ exam-system/
 │   ├── config.py        # 环境配置（含生产环境安全校验）
 │   ├── models.py        # SQLAlchemy 数据模型
 │   ├── schemas.py       # Pydantic 校验模型
-│   ├── crud.py          # 数据库操作
+│   ├── crud.py          # 数据库操作（聚合导出）
 │   ├── auth.py          # JWT 认证
 │   ├── utils.py         # 答案归一化、填空/简答判分规则
+│   ├── ratelimit.py     # 限流（Redis / 内存双后端）
 │   ├── routers/         # API 路由
+│   ├── services/        # 业务服务（导入、AI 客户端）
+│   ├── migrations/      # Alembic 数据库迁移
 │   └── tests/           # pytest 测试
 ├── docs/                # 文档
 │   └── acceptance-checklist.md  # 验收清单
 ├── scripts/             # 工具脚本
 │   ├── security_check.py        # 安全检查
 │   └── smoke_test.ps1           # 冒烟测试
-├── frontend/            # Vue 3 前端
+├── frontend/            # Vue 3 前端（TypeScript）
 │   └── src/
 │       ├── views/       # 页面组件
-│       ├── api/         # API 请求封装
-│       └── router.js    # 路由配置
+│       ├── api/         # API 请求封装（TS）
+│       ├── composables/ # 可组合逻辑
+│       ├── stores/      # 全局状态
+│       ├── types/       # TS 类型定义
+│       ├── i18n/        # 国际化（vue-i18n）
+│       ├── router.ts    # 路由配置
+│       └── main.ts      # 应用入口
 └── .gitignore
 ```
 
 ## 技术栈
 
-| 层级   | 技术                                   |
-| ------ | -------------------------------------- |
-| 前端   | Vue 3 + Vite + Vue Router + Axios     |
-| 后端   | Python 3.11+ / FastAPI + SQLAlchemy    |
-| 数据库 | 开发：SQLite / 生产：推荐 PostgreSQL   |
-| 认证   | JWT（Bearer Token）                    |
+| 层级   | 技术                                         |
+| ------ | -------------------------------------------- |
+| 前端   | Vue 3 + Vite + Vue Router + Axios + TypeScript + Vue I18n |
+| 测试   | pytest（后端 300+）/ Vitest（前端）           |
+| 后端   | Python 3.11+ / FastAPI + SQLAlchemy + Alembic |
+| 数据库 | 开发：SQLite / 生产：推荐 PostgreSQL         |
+| 认证   | JWT（Bearer Token）                          |
+| 限流   | 内存（开发）/ Redis（生产，可选）             |
+| 部署   | Docker + docker-compose                      |
 
 ## 快速启动
+
+### 方式一：Docker（推荐生产/一键启动）
+
+```bash
+# 1. 配置环境变量
+cp backend/.env.example backend/.env
+# 编辑 backend/.env：至少设置 SECRET_KEY、INVITE_CODE
+
+# 2. 启动全部服务
+docker compose up -d
+
+# 前端 → http://localhost:8080
+# 后端 → http://localhost:8000/docs
+```
+
+### 方式二：本地开发
 
 ### 1. 后端（从项目根目录启动）
 
@@ -358,6 +385,34 @@ DATABASE_URL=postgresql://用户名:密码@localhost:5432/exam_system
 ```bash
 pip install psycopg2-binary
 ```
+
+### 数据库迁移（Alembic）
+
+项目已配置 Alembic 用于版本化数据库迁移，PostgreSQL / SQLite 通用：
+
+```bash
+cd "D:\File\exam system"
+
+# 生成新迁移（改完 models.py 后）
+backend\.venv\Scripts\python.exe -m alembic -c backend\alembic.ini revision --autogenerate -m "描述修改"
+
+# 应用迁移到数据库
+backend\.venv\Scripts\python.exe -m alembic -c backend\alembic.ini upgrade head
+```
+
+> 旧的 `backend/migrate_sqlite.py` 脚本保留作为 SQLite 专用兼容入口。
+
+### 限流配置
+
+AI 对话（`/chat`）和 AI 导入（`/imports/file/*`）均受每用户每小时频次限制。
+
+| 变量                            | 默认值  | 说明                              |
+| ------------------------------- | ------- | --------------------------------- |
+| `CHAT_RATE_LIMIT_PER_HOUR`      | 20      | 每用户每小时最多对话次数          |
+| `IMPORT_RATE_LIMIT_PER_HOUR`    | 10      | 每用户每小时最多导入次数          |
+| `REDIS_URL`                     | （空）  | 设置后限流由 Redis 管理（多 worker/实例下精确计数） |
+
+`REDIS_URL` 留空时使用进程内内存计数（单 worker 准确）。
 
 ### 重置开发数据库
 

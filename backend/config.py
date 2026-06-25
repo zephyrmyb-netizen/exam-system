@@ -54,6 +54,8 @@ def _apply_env_values(values: dict[str, str | None], preserve_existing: bool | N
         "IMPORT_UPSTREAM_TIMEOUT": "90",
         "IMPORT_CHUNK_SIZE": "5000",
         "IMPORT_MAX_CHUNKS": "3",
+        "IMPORT_RATE_LIMIT_PER_HOUR": "10",
+        "REDIS_URL": "",
     }
 
     for key, value in values.items():
@@ -121,7 +123,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-# Chat rate limiting (per user, in-memory)
+# Chat rate limiting (per user). The backend is Redis-backed when REDIS_URL is
+# set, otherwise an in-memory fixed-window limiter is used (accurate only
+# within a single worker process).
 CHAT_RATE_LIMIT_PER_HOUR = int(os.getenv("CHAT_RATE_LIMIT_PER_HOUR", "20"))
 CHAT_MAX_MESSAGE_LENGTH = int(os.getenv("CHAT_MAX_MESSAGE_LENGTH", "4000"))
 CHAT_MAX_HISTORY_MESSAGES = int(os.getenv("CHAT_MAX_HISTORY_MESSAGES", "20"))
@@ -133,6 +137,13 @@ CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "90"))
 IMPORT_UPSTREAM_TIMEOUT = float(os.getenv("IMPORT_UPSTREAM_TIMEOUT", "90"))
 IMPORT_CHUNK_SIZE = int(os.getenv("IMPORT_CHUNK_SIZE", "5000"))
 IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "3"))
+# Per-user limit for AI import calls (each call may cost several model requests).
+IMPORT_RATE_LIMIT_PER_HOUR = int(os.getenv("IMPORT_RATE_LIMIT_PER_HOUR", "10"))
+
+# ── Rate limiting backend ───────────────────────────────────────────────────
+# When set, rate limits are enforced via Redis (accurate across workers and
+# instances). When empty, an in-memory limiter is used (single-worker only).
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
 
 # CORS safety: when origins is wildcard, credentials must be disabled
 # (browsers reject credentialed requests with Access-Control-Allow-Origin: *)

@@ -2,23 +2,37 @@
 
 All upstream AI calls are mocked — no real network requests.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-# The chat module keeps an in-memory rate-limit store.  Reset it before
-# every test so rate-limit tests don't leak state across cases.
-import backend.routers.chat as chat_module
+from backend.main import app
+from backend.ratelimit import MemoryRateLimiter, reset_limiter_for_tests
+
+
+# ── Fixtures ────────────────────────────────────────────────────────────────
+
+class _NoLimitLimiter:
+    """A rate limiter that never blocks. Used in tests that don't test rate limiting."""
+
+    def check(self, *, key, limit, window_s=3600):
+        pass
 
 
 @pytest.fixture(autouse=True)
-def _clear_rate_store():
-    chat_module._rate_store.clear()
+def _override_limiter():
+    """Inject a fresh MemoryRateLimiter before each test so state doesn't leak."""
+    app.dependency_overrides.clear()
+    # Use a fresh in-memory limiter so tests are isolated.
+    limiter = MemoryRateLimiter()
+    from backend.routers.chat import rate_limiter as rl_dep
+    app.dependency_overrides[rl_dep] = lambda: limiter
     yield
-    chat_module._rate_store.clear()
+    app.dependency_overrides.clear()
+    reset_limiter_for_tests()
 
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _mock_openai_response(content: str = "这是 AI 助手的回复。") -> MagicMock:
     """Return a mock OpenAI completion with the given content."""
@@ -27,6 +41,13 @@ def _mock_openai_response(content: str = "这是 AI 助手的回复。") -> Magi
     completion = MagicMock()
     completion.choices = [choice]
     return completion
+
+
+def _mock_ai_client(content: str = "这是 AI 助手的回复。"):
+    """Return a mock OpenAI client whose completions.create returns the given content."""
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = _mock_openai_response(content)
+    return mock_client
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -64,7 +85,7 @@ class TestChatMessageValidation:
         assert "不能为空" in resp.json()["detail"]
 
     def test_message_too_long_returns_400(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "CHAT_MAX_MESSAGE_LENGTH", 10)
+        monkeypatch.setattr("backend.routers.chat.CHAT_MAX_MESSAGE_LENGTH", 10)
         resp = client.post(
             "/chat/",
             json={"message": "A" * 11},
@@ -93,7 +114,7 @@ class TestChatHistoryValidation:
         assert resp.status_code == 422  # Pydantic validation error
 
     def test_too_many_history_messages_returns_400(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "CHAT_MAX_HISTORY_MESSAGES", 2)
+        monkeypatch.setattr("backend.routers.chat.CHAT_MAX_HISTORY_MESSAGES", 2)
         history = [
             {"role": "user", "content": f"msg {i}"} for i in range(3)
         ]
@@ -106,7 +127,7 @@ class TestChatHistoryValidation:
         assert "历史消息过多" in resp.json()["detail"]
 
     def test_history_total_too_long_returns_400(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "CHAT_MAX_HISTORY_TOTAL_LENGTH", 10)
+        monkeypatch.setattr("backend.routers.chat.CHAT_MAX_HISTORY_TOTAL_LENGTH", 10)
         resp = client.post(
             "/chat/",
             json={
@@ -130,16 +151,16 @@ class TestChatRateLimit:
     """Per-user rate limiting enforcement."""
 
     def test_rate_limit_exceeded_returns_429(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "CHAT_RATE_LIMIT_PER_HOUR", 2)
-        monkeypatch.setattr(chat_module, "OPENAI_API_KEY", "sk-test")
-        monkeypatch.setattr(chat_module, "CHAT_UPSTREAM_TIMEOUT", 5.0)
+        monkeypatch.setattr("backend.routers.chat.CHAT_RATE_LIMIT_PER_HOUR", 2)
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
+        # Override rate limit to 2 for the chat key.
+        monkeypatch.setattr("backend.routers.chat.OPENAI_MODEL", "gpt-4o-mini")
 
-        # Patch OpenAI so calls don't hit the network
-        mock_client_cls = MagicMock()
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _mock_openai_response()
-        mock_client_cls.return_value = mock_client
-        monkeypatch.setattr(chat_module, "OpenAI", mock_client_cls)
+        # Mock the AI client singleton (must patch the name bound in chat module)
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: _mock_ai_client("ok"),
+        )
 
         # First two calls should succeed
         r1 = client.post("/chat/", json={"message": "hello"}, headers=auth_headers)
@@ -161,16 +182,11 @@ class TestChatSuccess:
     """Happy-path chat with mocked upstream."""
 
     def test_successful_chat_returns_reply(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "OPENAI_API_KEY", "sk-test")
-        monkeypatch.setattr(chat_module, "CHAT_UPSTREAM_TIMEOUT", 5.0)
-
-        mock_client_cls = MagicMock()
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _mock_openai_response(
-            "这是一条测试回复。"
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: _mock_ai_client("这是一条测试回复。"),
         )
-        mock_client_cls.return_value = mock_client
-        monkeypatch.setattr(chat_module, "OpenAI", mock_client_cls)
 
         resp = client.post(
             "/chat/",
@@ -189,14 +205,11 @@ class TestChatSuccess:
         assert data["reply"] == "这是一条测试回复。"
 
     def test_chat_without_history_succeeds(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "OPENAI_API_KEY", "sk-test")
-        monkeypatch.setattr(chat_module, "CHAT_UPSTREAM_TIMEOUT", 5.0)
-
-        mock_client_cls = MagicMock()
-        mock_client = MagicMock()
-        mock_client.chat.completions.create.return_value = _mock_openai_response("好的。")
-        mock_client_cls.return_value = mock_client
-        monkeypatch.setattr(chat_module, "OpenAI", mock_client_cls)
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: _mock_ai_client("好的。"),
+        )
 
         resp = client.post(
             "/chat/", json={"message": "什么是微积分？"}, headers=auth_headers
@@ -213,16 +226,16 @@ class TestChatUpstreamErrors:
     """Upstream failures must not leak API key or internal details."""
 
     def test_upstream_error_returns_safe_502(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "OPENAI_API_KEY", "sk-test")
-        monkeypatch.setattr(chat_module, "CHAT_UPSTREAM_TIMEOUT", 1.0)
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
 
-        mock_client_cls = MagicMock()
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = Exception(
             "Connection refused by upstream"
         )
-        mock_client_cls.return_value = mock_client
-        monkeypatch.setattr(chat_module, "OpenAI", mock_client_cls)
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: mock_client,
+        )
 
         resp = client.post(
             "/chat/", json={"message": "你好"}, headers=auth_headers
@@ -234,7 +247,7 @@ class TestChatUpstreamErrors:
         assert "Connection refused" not in detail
 
     def test_missing_api_key_returns_503(self, client, auth_headers, monkeypatch):
-        monkeypatch.setattr(chat_module, "OPENAI_API_KEY", "")
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "")
         resp = client.post(
             "/chat/", json={"message": "你好"}, headers=auth_headers
         )

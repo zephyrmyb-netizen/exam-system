@@ -73,6 +73,29 @@ def client(db_session) -> Generator:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def _default_noop_rate_limiter():
+    """Inject no-op rate limiters so tests don't hit 429 by default.
+
+    Individual tests that need real rate-limit enforcement can override
+    these dependency overrides in their own fixtures.
+    """
+    from backend.routers.chat import rate_limiter as chat_rl
+    from backend.routers.imports import rate_limiter as import_rl
+
+    class _NoLimitLimiter:
+        def check(self, *, key, limit, window_s=3600):
+            pass
+    noop = _NoLimitLimiter()
+
+    app.dependency_overrides[chat_rl] = lambda: noop
+    app.dependency_overrides[import_rl] = lambda: noop
+    from backend.ratelimit import reset_limiter_for_tests
+    reset_limiter_for_tests()
+    yield
+    # Don't clear here — let the client fixture handle final cleanup.
+
+
 @pytest.fixture(scope="function")
 def auth_headers(client) -> dict:
     """Register and login a test user, return Authorization header."""
@@ -86,6 +109,22 @@ def auth_headers(client) -> dict:
     resp = client.post("/auth/login", json={
         "username": "testuser",
         "password": "testpass123",
+    })
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="function")
+def auth_headers_other(client) -> dict:
+    """Second user — for per-user isolation tests (rate limit, visibility)."""
+    client.post("/auth/register", json={
+        "username": "otheruser",
+        "password": "otherpass123",
+        "invite_code": "dev-invite",
+    })
+    resp = client.post("/auth/login", json={
+        "username": "otheruser",
+        "password": "otherpass123",
     })
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

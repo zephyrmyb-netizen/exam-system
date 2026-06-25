@@ -69,11 +69,14 @@ def _normalize_multiple_choice(text: str) -> str:
     """
     cleaned = _strip_prefix(text).strip()
 
-    # Try JSON array: ["A","B"]
-    if cleaned.startswith('[') or cleaned.startswith('['):
+    # Try JSON array: ["A","B"] (also tolerate fullwidth ［ ］ from AI output)
+    if cleaned.startswith('[') or cleaned.startswith('［'):
+        json_candidate = cleaned
+        if json_candidate.startswith('［'):
+            json_candidate = '[' + json_candidate[1:].replace('］', ']', 1)
         try:
             import json
-            parsed = json.loads(cleaned)
+            parsed = json.loads(json_candidate)
             if isinstance(parsed, list):
                 letters = sorted(
                     _extract_single_choice(item) for item in parsed

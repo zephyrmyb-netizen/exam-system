@@ -1,0 +1,262 @@
+// ── Question ─────────────────────────────────────────────────────────────
+
+export type QuestionType =
+  | "single_choice"
+  | "multiple_choice"
+  | "true_false"
+  | "fill_blank"
+  | "short_answer";
+
+export type Difficulty = "easy" | "normal" | "hard";
+
+export type Visibility = "private" | "public";
+
+export type Source = "import" | "manual";
+
+export interface Question {
+  id: number;
+  owner_id: number | null;
+  course_id: number | null;
+  visibility: Visibility;
+  source: Source;
+  created_at: string | null;
+  subject: string;
+  chapter: string;
+  type: QuestionType;
+  question: string;
+  options: Record<string, string> | null;
+  answer: string;
+  analysis: string;
+  difficulty: Difficulty;
+  line_number?: number;
+}
+
+export interface QuestionCreate {
+  subject?: string;
+  chapter?: string;
+  type: QuestionType;
+  question: string;
+  options?: Record<string, string> | null;
+  answer: string;
+  analysis?: string;
+  difficulty?: Difficulty;
+  course_id?: number | null;
+}
+
+export interface QuestionUpdate {
+  course_id?: number;
+  subject?: string;
+  chapter?: string;
+  type?: QuestionType;
+  question?: string;
+  options?: Record<string, string> | null;
+  answer?: string;
+  analysis?: string;
+  difficulty?: Difficulty;
+}
+
+// ── Course / Question Bank ───────────────────────────────────────────────
+
+export interface Course {
+  id: number;
+  owner_id: number;
+  name: string;
+  description: string;
+  subject: string;
+  visibility: Visibility;
+  created_at: string | null;
+  question_count: number;
+  practice_count?: number;
+  last_practiced_at?: string | null;
+}
+
+export interface CourseCreate {
+  name: string;
+  description?: string;
+  subject?: string;
+  visibility?: Visibility;
+}
+
+export interface CourseUpdate {
+  name?: string;
+  description?: string;
+  subject?: string;
+}
+
+// ── Practice ─────────────────────────────────────────────────────────────
+
+export interface SubmitRequest {
+  question_id: number;
+  user_answer: string;
+}
+
+export interface SubmitResponse {
+  is_correct: boolean;
+  correct_answer: string;
+  analysis: string;
+  wrongbook_recorded: boolean;
+}
+
+export interface PracticeStats {
+  today_count: number;
+  total_count: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy_rate: number;
+  recent_count_7d: number;
+}
+
+export interface PracticeRecord {
+  id: number;
+  question_id: number | null;
+  course_id: number | null;
+  question_type: string | null;
+  question_text: string;
+  is_correct: boolean;
+  user_answer: string;
+  correct_answer: string;
+  answered_at: string | null;
+}
+
+export interface PracticeHistory {
+  items: PracticeRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// ── Wrong Book ───────────────────────────────────────────────────────────
+
+export interface WrongRecord {
+  id: number;
+  question_id: number;
+  question: Question;
+  wrong_count: number;
+  last_wrong_answer: string;
+}
+
+// ── Review ───────────────────────────────────────────────────────────────
+
+export interface TodayReview {
+  due_count: number;
+  wrong_count: number;
+  weak_types: WeakType[];
+  recommended_modes: string[];
+}
+
+export interface WeakType {
+  question_type: string;
+  total_attempts: number;
+  wrong_attempts: number;
+  error_rate: number;
+}
+
+export interface DueReviewItem {
+  id: number;
+  review_level: number;
+  next_review_at: string | null;
+  last_reviewed_at: string | null;
+  consecutive_correct: number;
+  review_mode: string;
+  question: Question | null;
+}
+
+// ── Import ───────────────────────────────────────────────────────────────
+
+export interface ImportTiming {
+  extract_ms: number;
+  chunk_ms: number;
+  ai_ms: number;
+  total_ms: number;
+  chunks: number;
+  ai_chunks: number[];
+}
+
+export interface ImportPreviewResponse {
+  questions: Question[];
+  suggested_course_name: string;
+  warnings: string[];
+  total_parsed: number;
+  total_valid: number;
+  total_invalid: number;
+  timing: ImportTiming | null;
+}
+
+export interface ConfirmImportRequest {
+  questions: Question[];
+  course_id?: number;
+  course_name?: string;
+}
+
+export interface ConfirmImportResponse {
+  imported_count: number;
+  course_id: number | null;
+  course_name: string;
+}
+
+export interface FileExtractResponse {
+  text: string;
+  filename: string;
+  suggested_course_name: string;
+  timing: ImportTiming | null;
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────
+
+export interface User {
+  id: number;
+  username: string;
+  role: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  password: string;
+  invite_code: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token: string;
+  token_type: string;
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  history?: ChatMessage[];
+}
+
+export interface ChatResponse {
+  reply: string;
+}
+
+// ── Generic paginated response ───────────────────────────────────────────
+
+export interface PaginatedResponse<T> {
+  total: number;
+  page: number;
+  page_size: number;
+  items: T[];
+}
+
+export interface OptionItem {
+  key: string;
+  value: string;
+}
+
+export interface QuestionMeta {
+  subjects: string[];
+  chapters: string[];
+}

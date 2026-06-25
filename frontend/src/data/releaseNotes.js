@@ -8,6 +8,25 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.0-full-stack-hardening",
+    version: "v1.8.0",
+    date: "2026-06-25",
+    type: "优化",
+    title: "全栈加固：限流、TS 迁移、容器化与工程补强",
+    items: [
+      "AI 对话和导入均接入限流（Redis + 内存双后端），防止 API 额度被无限消耗",
+      "OpenAI 客户端改为模块级单例，复用连接池减少请求开销",
+      "随机抽题改用 count + offset 替代 ORDER BY RANDOM()，避免题库增长后全表排序",
+      "新增 Alembic 数据库迁移支持，PostgreSQL/SQLite 通用",
+      "前端全面迁移到 TypeScript：类型定义 + API 层 + 工具函数",
+      "引入 vue-i18n 国际化框架，中文字符串集中管理",
+      "配置 Vitest 前端测试框架，utils 层已覆盖",
+      "新增 Dockerfile + docker-compose，支持一键容器化部署",
+      "修正 utils.py 重复条件 bug 和 models 注释错误",
+      "给 AI 导入补齐独立限流，与对话限流互相隔离",
+    ],
+  },
+  {
     id: "v1.7.9-home-mine-polish",
     version: "v1.7.9",
     date: "2026-06-24",
