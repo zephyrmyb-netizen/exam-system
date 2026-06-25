@@ -1,27 +1,55 @@
-import { computed, ref } from "vue";
+import { computed, ref, type Ref, type ComputedRef } from "vue";
 import { previewFile } from "../api/imports";
 import { getErrorMessage } from "../api/request";
+import type { ImportPreviewResponse, ImportTiming } from "../types";
 
-const status = ref("idle"); // idle | running | success | error
-const mode = ref("preview");
-const fileRef = ref(null);
-const fileName = ref("");
-const courseId = ref(0);
-const courseName = ref("");
-const startedAt = ref(null);
-const elapsedSeconds = ref(0);
+export type TaskStatus = "idle" | "running" | "success" | "error";
+export type TaskMode = "preview" | "auto";
+
+export interface AiImportTaskReturn {
+  status: Ref<TaskStatus>;
+  mode: Ref<TaskMode>;
+  fileRef: Ref<File | null>;
+  fileName: Ref<string>;
+  courseId: Ref<number>;
+  courseName: Ref<string>;
+  startedAt: Ref<number | null>;
+  elapsedSeconds: Ref<number>;
+  estimatedSeconds: number;
+  previewData: Ref<ImportPreviewResponse | null>;
+  timing: Ref<ImportTiming | null>;
+  importedCount: Ref<number>;
+  message: Ref<string>;
+  error: Ref<string>;
+  resultCourseId: Ref<number | null>;
+  resultCourseName: Ref<string>;
+  progressTitle: ComputedRef<string>;
+  progressDetail: ComputedRef<string>;
+  startPreview: (file: File, params?: Record<string, string | number>) => Promise<void>;
+  markImported: (result: { imported_count?: number; course_id?: number | null; course_name?: string }) => void;
+  reset: () => void;
+}
+
+const status = ref<TaskStatus>("idle");
+const mode = ref<TaskMode>("preview");
+const fileRef = ref<File | null>(null);
+const fileName = ref<string>("");
+const courseId = ref<number>(0);
+const courseName = ref<string>("");
+const startedAt = ref<number | null>(null);
+const elapsedSeconds = ref<number>(0);
 const estimatedSeconds = 90;
-const previewData = ref(null);
-const timing = ref(null);
-const importedCount = ref(0);
-const message = ref("");
-const error = ref("");
-const resultCourseId = ref(null);
-const resultCourseName = ref("");
+const previewData = ref<ImportPreviewResponse | null>(null);
+const timing = ref<ImportTiming | null>(null);
+const importedCount = ref<number>(0);
+const message = ref<string>("");
+const error = ref<string>("");
+const resultCourseId = ref<number | null>(null);
+const resultCourseName = ref<string>("");
 
-let elapsedTimer = null;
+let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
-const progressTitle = computed(() => {
+const progressTitle = computed<string>(() => {
   if (status.value === "running") {
     if (elapsedSeconds.value < 3) return "正在读取文档";
     return "AI 正在生成题目";
@@ -31,7 +59,7 @@ const progressTitle = computed(() => {
   return "AI 导入";
 });
 
-const progressDetail = computed(() => {
+const progressDetail = computed<string>(() => {
   if (status.value === "running") {
     if (elapsedSeconds.value < 3) {
       return "正在上传并提取文档文字，请稍候。";
@@ -47,20 +75,20 @@ const progressDetail = computed(() => {
   return "";
 });
 
-function formatDuration(ms) {
+function formatDuration(ms: number | undefined): string {
   const value = Number(ms || 0);
   if (value >= 1000) return `${Math.round(value / 100) / 10} 秒`;
   return `${value} 毫秒`;
 }
 
-function clearElapsedTimer() {
+function clearElapsedTimer(): void {
   if (elapsedTimer !== null) {
     clearInterval(elapsedTimer);
     elapsedTimer = null;
   }
 }
 
-function startElapsedTimer() {
+function startElapsedTimer(): void {
   clearElapsedTimer();
   elapsedTimer = setInterval(() => {
     if (startedAt.value !== null) {
@@ -69,7 +97,7 @@ function startElapsedTimer() {
   }, 1000);
 }
 
-function reset() {
+function reset(): void {
   clearElapsedTimer();
   status.value = "idle";
   mode.value = "preview";
@@ -88,7 +116,7 @@ function reset() {
   resultCourseName.value = "";
 }
 
-async function startPreview(file, params = {}) {
+async function startPreview(file: File, params: Record<string, string | number> = {}): Promise<void> {
   if (status.value === "running") return;
 
   reset();
@@ -97,7 +125,7 @@ async function startPreview(file, params = {}) {
   fileRef.value = file || null;
   fileName.value = file?.name || "";
   courseId.value = Number(params.course_id || 0);
-  courseName.value = params.course_name || "";
+  courseName.value = (params.course_name as string) || "";
   startedAt.value = Date.now();
   startElapsedTimer();
 
@@ -107,7 +135,7 @@ async function startPreview(file, params = {}) {
     timing.value = data?.timing || null;
     message.value = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
     status.value = "success";
-  } catch (err) {
+  } catch (err: unknown) {
     error.value = getErrorMessage(err, "AI 解析失败，请检查网络后重试");
     status.value = "error";
   } finally {
@@ -115,15 +143,15 @@ async function startPreview(file, params = {}) {
   }
 }
 
-function markImported(result) {
+function markImported(result: { imported_count?: number; course_id?: number | null; course_name?: string }): void {
   importedCount.value = result?.imported_count || 0;
-  resultCourseId.value = result?.course_id || null;
+  resultCourseId.value = result?.course_id ?? null;
   resultCourseName.value = result?.course_name || "";
   courseName.value = result?.course_name || courseName.value;
   message.value = `导入成功，已导入 ${importedCount.value} 道题。`;
 }
 
-export function useAiImportTask() {
+export function useAiImportTask(): AiImportTaskReturn {
   return {
     status,
     mode,

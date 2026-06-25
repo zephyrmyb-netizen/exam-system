@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, type Ref, type ComputedRef } from "vue";
 import { getErrorMessage } from "../api/request";
 import {
   getRandomPracticeQuestion,
@@ -13,8 +13,52 @@ import {
   isTextQuestionType,
   TRUE_FALSE_OPTIONS,
 } from "../utils/question";
+import type { Question, SubmitResponse, OptionItem } from "../types";
 
-function createSessionStats() {
+interface SessionStats {
+  answeredCount: number;
+  correctCount: number;
+  wrongCount: number;
+  streak: number;
+  startedAt: Date | null;
+}
+
+export interface UsePracticeSessionProps {
+  courseId?: number | null;
+  mode?: string;
+  modeParam?: string;
+}
+
+export interface UsePracticeSessionReturn {
+  answerHint: ComputedRef<string>;
+  answerOptions: ComputedRef<OptionItem[]>;
+  accuracy: ComputedRef<number | null>;
+  canSubmit: ComputedRef<boolean>;
+  correctAnswerDisplay: ComputedRef<string>;
+  currentAnswer: ComputedRef<string>;
+  errorMessage: Ref<string>;
+  fetchRandomQuestion: () => Promise<void>;
+  handleTextKeydown: (event: KeyboardEvent) => void;
+  hasAnswerSelected: ComputedRef<boolean>;
+  isTextQuestion: ComputedRef<boolean>;
+  loading: Ref<boolean>;
+  question: Ref<Question | null>;
+  result: Ref<SubmitResponse | null>;
+  selectedAnswer: Ref<string>;
+  selectedAnswers: Ref<string[]>;
+  sessionStats: Ref<SessionStats>;
+  setSingleAnswer: (value: string) => void;
+  startSession: () => void;
+  streakText: ComputedRef<string>;
+  submitAnswer: () => Promise<void>;
+  submitting: Ref<boolean>;
+  textAnswer: Ref<string>;
+  toggleMultipleAnswer: (key: string) => void;
+  updateTextAnswer: (value: string) => void;
+  validationMessage: Ref<string>;
+}
+
+function createSessionStats(): SessionStats {
   return {
     answeredCount: 0,
     correctCount: 0,
@@ -24,25 +68,25 @@ function createSessionStats() {
   };
 }
 
-export function usePracticeSession(props) {
-  const question = ref(null);
-  const selectedAnswer = ref("");
-  const selectedAnswers = ref([]);
-  const textAnswer = ref("");
-  const result = ref(null);
-  const loading = ref(false);
-  const submitting = ref(false);
-  const errorMessage = ref("");
-  const validationMessage = ref("");
-  const sessionStats = ref(createSessionStats());
+export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePracticeSessionReturn {
+  const question = ref<Question | null>(null);
+  const selectedAnswer = ref<string>("");
+  const selectedAnswers = ref<string[]>([]);
+  const textAnswer = ref<string>("");
+  const result = ref<SubmitResponse | null>(null);
+  const loading = ref<boolean>(false);
+  const submitting = ref<boolean>(false);
+  const errorMessage = ref<string>("");
+  const validationMessage = ref<string>("");
+  const sessionStats = ref<SessionStats>(createSessionStats());
 
-  const accuracy = computed(() => {
+  const accuracy = computed<number | null>(() => {
     const answered = sessionStats.value.answeredCount;
     if (answered === 0) return null;
     return Math.round((sessionStats.value.correctCount / answered) * 100);
   });
 
-  const streakText = computed(() => {
+  const streakText = computed<string>(() => {
     const streak = sessionStats.value.streak;
     if (streak === 0) return "0";
     if (streak >= 5) return `🔥 ${streak}`;
@@ -50,9 +94,9 @@ export function usePracticeSession(props) {
     return `✓ ${streak}`;
   });
 
-  const isTextQuestion = computed(() => isTextQuestionType(question.value?.type));
+  const isTextQuestion = computed<boolean>(() => isTextQuestionType(question.value?.type ?? ""));
 
-  const currentAnswer = computed(() => {
+  const currentAnswer = computed<string>(() => {
     if (!question.value) return "";
     if (question.value.type === "multiple_choice") {
       return [...selectedAnswers.value].sort().join(",");
@@ -61,7 +105,7 @@ export function usePracticeSession(props) {
     return selectedAnswer.value;
   });
 
-  const answerOptions = computed(() => {
+  const answerOptions = computed<OptionItem[]>(() => {
     if (!question.value) return [];
     if (question.value.type === "true_false") return TRUE_FALSE_OPTIONS;
 
@@ -71,7 +115,7 @@ export function usePracticeSession(props) {
       : ["A", "B", "C", "D"].map((key) => ({ key, value: key }));
   });
 
-  const hasAnswerSelected = computed(() => {
+  const hasAnswerSelected = computed<boolean>(() => {
     if (!question.value) return false;
     if (question.value.type === "multiple_choice") {
       return selectedAnswers.value.length > 0;
@@ -80,15 +124,15 @@ export function usePracticeSession(props) {
     return selectedAnswer.value.length > 0;
   });
 
-  const canSubmit = computed(() => hasAnswerSelected.value && !submitting.value);
+  const canSubmit = computed<boolean>(() => hasAnswerSelected.value && !submitting.value);
 
-  const answerHint = computed(() => getQuestionAnswerHint(question.value?.type));
+  const answerHint = computed<string>(() => getQuestionAnswerHint(question.value?.type ?? ""));
 
-  const correctAnswerDisplay = computed(() =>
-    getResultCorrectAnswer(question.value?.type, result.value?.correct_answer),
+  const correctAnswerDisplay = computed<string>(() =>
+    getResultCorrectAnswer(question.value?.type ?? "", result.value?.correct_answer ?? ""),
   );
 
-  function resetAnswerState() {
+  function resetAnswerState(): void {
     selectedAnswer.value = "";
     selectedAnswers.value = [];
     textAnswer.value = "";
@@ -96,29 +140,29 @@ export function usePracticeSession(props) {
     validationMessage.value = "";
   }
 
-  async function fetchRandomQuestion() {
+  async function fetchRandomQuestion(): Promise<void> {
     loading.value = true;
     errorMessage.value = "";
     validationMessage.value = "";
     resetAnswerState();
 
     try {
-      const params = {};
+      const params: Record<string, string | number> = {};
       if (props.courseId) params.course_id = props.courseId;
 
-      let data;
+      let data: Question;
       if (props.mode === "wrong_review") {
         data = await getReviewWrongQuestion(params);
       } else if (props.mode === "due_review") {
         data = await getReviewDueQuestion(params);
       } else {
-        if (props.mode === "type_practice") params.type = props.modeParam;
-        if (props.mode === "chapter_practice") params.chapter = props.modeParam;
+        if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
+        if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
         data = await getRandomPracticeQuestion(params);
       }
 
       question.value = data;
-    } catch (error) {
+    } catch (error: unknown) {
       question.value = null;
       errorMessage.value = getErrorMessage(error, "获取题目失败");
     } finally {
@@ -126,13 +170,13 @@ export function usePracticeSession(props) {
     }
   }
 
-  function setSingleAnswer(value) {
+  function setSingleAnswer(value: string): void {
     if (result.value) return;
     selectedAnswer.value = value;
     validationMessage.value = "";
   }
 
-  function toggleMultipleAnswer(key) {
+  function toggleMultipleAnswer(key: string): void {
     if (result.value) return;
     if (selectedAnswers.value.includes(key)) {
       selectedAnswers.value = selectedAnswers.value.filter((item) => item !== key);
@@ -142,12 +186,12 @@ export function usePracticeSession(props) {
     validationMessage.value = "";
   }
 
-  function updateTextAnswer(value) {
+  function updateTextAnswer(value: string): void {
     textAnswer.value = value;
     validationMessage.value = "";
   }
 
-  async function submitAnswer() {
+  async function submitAnswer(): Promise<void> {
     if (!question.value) return;
 
     if (question.value.type === "multiple_choice" && selectedAnswers.value.length === 0) {
@@ -181,14 +225,14 @@ export function usePracticeSession(props) {
         sessionStats.value.wrongCount += 1;
         sessionStats.value.streak = 0;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       errorMessage.value = getErrorMessage(error, "提交答案失败");
     } finally {
       submitting.value = false;
     }
   }
 
-  function handleTextKeydown(event) {
+  function handleTextKeydown(event: KeyboardEvent): void {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (!result.value && !submitting.value) {
@@ -197,7 +241,7 @@ export function usePracticeSession(props) {
     }
   }
 
-  function startSession() {
+  function startSession(): void {
     sessionStats.value = {
       ...createSessionStats(),
       startedAt: new Date(),
