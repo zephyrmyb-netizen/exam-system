@@ -1,0 +1,25 @@
+# ── Backend Dockerfile ─────────────────────────────────────────────────────
+# Build:   docker build -t exam-backend -f Dockerfile.backend .
+# Run:     docker run -p 8000:8000 --env-file backend/.env exam-backend
+#
+# Or use docker-compose.yml from the project root.
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies (python-docx / python-pptx need no extra libs)
+RUN pip install --no-cache-dir --upgrade pip
+
+# Copy requirements first for better layer caching
+COPY backend/requirements.txt ./backend/
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r ./backend/requirements.txt
+
+# Copy the rest of the application
+COPY backend/ ./backend/
+COPY scripts/ ./scripts/
+
+# Default to 8000 — uvicorn binds this
+EXPOSE 8000
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
