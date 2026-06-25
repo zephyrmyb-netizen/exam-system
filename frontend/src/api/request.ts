@@ -125,6 +125,7 @@ export function getErrorMessage(error: any, fallback = "请求失败，请稍后
       500: "服务器内部错误，请稍后重试。",
       502: "AI 服务暂时不可用，请稍后重试。",
       503: "服务暂时不可用，请稍后重试。",
+      504: "AI 调用超时，请稍后重试或拆分文档后再导入。",
     };
     if (statusMessages[status]) {
       return `${statusMessages[status]}（${status}）`;
