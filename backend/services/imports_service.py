@@ -65,14 +65,9 @@ def build_timing(
     )
 
 
-def sync_ai_settings(*, api_key=None, base_url=None, client_class=None) -> None:
-    global OPENAI_API_KEY, OPENAI_BASE_URL, OpenAI
-    if api_key is not None:
-        OPENAI_API_KEY = api_key
-    if base_url is not None:
-        OPENAI_BASE_URL = base_url
-    if client_class is not None:
-        OpenAI = client_class
+def _ai_override_active() -> bool:
+    """Return True when tests have injected a fake OpenAI class."""
+    return OpenAI is not __import__("openai").OpenAI
 
 
 def validate_upload(filename: str, content: bytes) -> str:
@@ -336,12 +331,27 @@ def extract_questions_from_ai_response(raw: str) -> tuple[list[dict[str, Any]], 
     return [], warnings
 
 
+def _build_import_client():
+    """Return the OpenAI client to use for import parsing.
+
+    Existing tests inject a fake ``OpenAI`` class via ``sync_ai_settings``;
+    when that override is active we honor it (instantiating the injected
+    class per-call, as before) so mocks keep working. In production there
+    is no override, so we reuse the singleton import client from
+    ``ai_client`` to avoid rebuilding the httpx connection pool each call.
+    """
+    if _ai_override_active():
+        return OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=OPENAI_BASE_URL,
+            timeout=IMPORT_UPSTREAM_TIMEOUT,
+        )
+    from .ai_client import get_import_client
+    return get_import_client()
+
+
 def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[str, Any]], list[str]]:
-    client = OpenAI(
-        api_key=OPENAI_API_KEY,
-        base_url=OPENAI_BASE_URL,
-        timeout=IMPORT_UPSTREAM_TIMEOUT,
-    )
+    client = _build_import_client()
     try:
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
@@ -524,29 +534,31 @@ def persist_imported_questions(
     course_id: int,
     questions: list[schemas.ImportedQuestion | dict[str, Any]],
 ) -> int:
-    imported = 0
+    now = datetime.now(timezone.utc)
+    models_to_add: list[QuestionModel] = []
+    for question_data in questions:
+        data = question_data.model_dump() if hasattr(question_data, "model_dump") else question_data
+        question = QuestionModel(
+            owner_id=user_id,
+            course_id=course_id,
+            visibility="private",
+            source="import",
+            created_at=now,
+            subject=data["subject"],
+            chapter=data["chapter"],
+            type=data["type"],
+            question=data["question"],
+            answer=normalize_answer(data["answer"], data["type"]),
+            analysis=data.get("analysis", ""),
+            difficulty=data.get("difficulty", "normal"),
+        )
+        question.set_options_dict(data.get("options"))
+        models_to_add.append(question)
+
     try:
-        for question_data in questions:
-            data = question_data.model_dump() if hasattr(question_data, "model_dump") else question_data
-            question = QuestionModel(
-                owner_id=user_id,
-                course_id=course_id,
-                visibility="private",
-                source="import",
-                created_at=datetime.now(timezone.utc),
-                subject=data["subject"],
-                chapter=data["chapter"],
-                type=data["type"],
-                question=data["question"],
-                answer=normalize_answer(data["answer"], data["type"]),
-                analysis=data.get("analysis", ""),
-                difficulty=data.get("difficulty", "normal"),
-            )
-            question.set_options_dict(data.get("options"))
-            db.add(question)
-            imported += 1
+        db.add_all(models_to_add)
         db.commit()
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"导入失败，已回滚: {exc}") from exc
-    return imported
+    return len(models_to_add)

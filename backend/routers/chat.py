@@ -1,11 +1,9 @@
 """AI chat endpoint for study assistance."""
 
 import logging
-import time
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from openai import OpenAI
 from pydantic import BaseModel, field_validator
 
 from .. import auth as auth_module
@@ -14,33 +12,15 @@ from ..config import (
     CHAT_MAX_HISTORY_TOTAL_LENGTH,
     CHAT_MAX_MESSAGE_LENGTH,
     CHAT_RATE_LIMIT_PER_HOUR,
-    CHAT_UPSTREAM_TIMEOUT,
     OPENAI_API_KEY,
-    OPENAI_BASE_URL,
     OPENAI_MODEL,
 )
 from ..models import User
+from ..ratelimit import RateLimiter, get_limiter
+from ..services.ai_client import get_chat_client
 
 logger = logging.getLogger("exam_system.chat")
 router = APIRouter(prefix="/chat", tags=["chat"])
-
-_rate_window_s = 3600
-_rate_store: dict[int, list[float]] = {}
-
-
-def _check_rate_limit(user_id: int, limit: int) -> None:
-    now = time.time()
-    cutoff = now - _rate_window_s
-    calls = [t for t in _rate_store.get(user_id, []) if t > cutoff]
-    _rate_store[user_id] = calls
-
-    if len(calls) >= limit:
-        raise HTTPException(
-            status_code=429,
-            detail=f"请求过于频繁，每小时最多 {limit} 次，请稍后再试。",
-        )
-
-    calls.append(now)
 
 
 class HistoryMessage(BaseModel):
@@ -71,15 +51,28 @@ SYSTEM_PROMPT = (
 
 
 def _extract_reply(completion) -> str:
+    if not completion.choices:
+        logger.warning("Upstream AI returned empty choices list")
+        return ""
     message = completion.choices[0].message
     content = (message.content or "").strip()
     return content
+
+
+def rate_limiter() -> RateLimiter:
+    """FastAPI dependency returning the active rate limiter.
+
+    Override this in tests via ``app.dependency_overrides[rate_limiter]``
+    to inject a fake limiter without touching the global one.
+    """
+    return get_limiter()
 
 
 @router.post("/", response_model=ChatResponse)
 def chat(
     req: ChatRequest,
     current_user: User = Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
 ):
     message_text = req.message.strip()
     if not message_text:
@@ -110,18 +103,16 @@ def chat(
             detail="AI 服务未配置，请先在 backend/.env 中设置 OPENAI_API_KEY。",
         )
 
-    _check_rate_limit(current_user.id, CHAT_RATE_LIMIT_PER_HOUR)
+    # Per-user fixed-window limit. Redis-backed when REDIS_URL is set.
+    limiter.check(key=f"chat:user:{current_user.id}", limit=CHAT_RATE_LIMIT_PER_HOUR)
 
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for item in history:
         messages.append({"role": item.role, "content": item.content})
     messages.append({"role": "user", "content": message_text})
 
-    client = OpenAI(
-        api_key=OPENAI_API_KEY,
-        base_url=OPENAI_BASE_URL,
-        timeout=CHAT_UPSTREAM_TIMEOUT,
-    )
+    # Reuse the singleton client so the httpx connection pool persists.
+    client = get_chat_client()
 
     try:
         completion = client.chat.completions.create(
