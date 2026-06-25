@@ -1,8 +1,9 @@
-﻿# Environment files
+﻿# Environment files (explicit — avoid ambiguity with .env.example)
 .env
-*.env
-backend/.env
-frontend/.env
+.env.local
+.env.*.local
+!backend/.env.example
+!frontend/.env.example
 
 # Python
 __pycache__/
