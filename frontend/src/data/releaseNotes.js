@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.10-course-list-search-polish",
+    version: "v1.8.10",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化题库页搜索和空状态",
+    items: [
+      "题库页新增搜索入口，可按题库名、科目和描述快速筛选",
+      "优化筛选无结果状态和题库数量提示，手机端查找题库更清楚",
+    ],
+  },
+  {
     id: "v1.8.9-mine-overview-entry",
     version: "v1.8.9",
     date: "2026-06-26",

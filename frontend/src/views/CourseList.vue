@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
 import {
@@ -14,6 +14,7 @@ import {
   Trash2,
   Plus,
   Pencil,
+  Search,
   X,
 } from "@lucide/vue";
 import { useConfirmDialog } from "../stores/confirmDialog";
@@ -25,6 +26,7 @@ const loading = ref(false);
 const errorMessage = ref("");
 const deleteLoading = ref(null);
 const publishLoading = ref(null);
+const searchText = ref("");
 
 const showForm = ref(false);
 const editingCourse = ref(null);
@@ -41,6 +43,24 @@ const cardColors = [
 ];
 
 const isEdit = () => !!editingCourse.value;
+
+const filteredCourses = computed(() => {
+  const keyword = searchText.value.trim().toLowerCase();
+  if (!keyword) return courses.value;
+
+  return courses.value.filter((course) => {
+    const fields = [course.name, course.subject, course.description, course.visibility];
+    return fields.some((field) => String(field || "").toLowerCase().includes(keyword));
+  });
+});
+
+const courseSummary = computed(() => {
+  const total = courses.value.length;
+  const visible = filteredCourses.value.length;
+  if (!total) return "管理课程，然后开始练习。";
+  if (searchText.value.trim()) return `已筛选 ${visible} / ${total} 个题库`;
+  return `共 ${total} 个题库，选择一门开始练习。`;
+});
 
 function getCardColor(index) {
   return cardColors[index % cardColors.length];
@@ -66,6 +86,10 @@ function openEdit(course) {
 
 function closeForm() {
   showForm.value = false;
+}
+
+function clearSearch() {
+  searchText.value = "";
 }
 
 async function handleSave() {
@@ -164,7 +188,7 @@ onMounted(fetchCourses);
     <div class="section-heading row-heading">
       <div>
         <h2>我的题库</h2>
-        <p>管理课程，然后开始练习。</p>
+        <p>{{ courseSummary }}</p>
       </div>
       <div class="heading-actions">
         <button class="ghost-button" type="button" :disabled="loading" @click="fetchCourses">刷新</button>
@@ -176,6 +200,19 @@ onMounted(fetchCourses);
 
     <p v-if="loading" class="status-banner status-banner--info">加载中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
+
+    <div v-if="courses.length > 0" class="course-search-panel surface-card">
+      <Search :size="18" :stroke-width="2.3" color="var(--text-placeholder)" />
+      <input
+        v-model="searchText"
+        class="course-search-input"
+        type="search"
+        placeholder="搜索题库、科目或描述"
+      />
+      <button v-if="searchText" class="mini-btn" type="button" title="清空搜索" @click="clearSearch">
+        <X :size="14" :stroke-width="2.5" />
+      </button>
+    </div>
 
     <div v-if="!loading && courses.length === 0 && !errorMessage" class="status-panel status-panel--empty">
       <GraduationCap :size="44" :stroke-width="1.5" color="var(--text-placeholder)" />
@@ -192,7 +229,22 @@ onMounted(fetchCourses);
     </div>
 
     <div
-      v-for="(course, index) in courses"
+      v-if="!loading && courses.length > 0 && filteredCourses.length === 0 && !errorMessage"
+      class="status-panel status-panel--empty"
+    >
+      <Search :size="42" :stroke-width="1.5" color="var(--text-placeholder)" />
+      <p class="status-panel__title">没有找到匹配题库</p>
+      <p class="status-panel__text">换个关键词试试，或者清空搜索查看全部题库。</p>
+      <div class="status-actions">
+        <button class="ghost-button" type="button" @click="clearSearch">清空搜索</button>
+        <button class="primary-button" type="button" @click="router.push('/import')">
+          <Sparkles :size="16" :stroke-width="2.5" style="margin-right:4px" />去导入
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-for="(course, index) in filteredCourses"
       :key="course.id"
       class="course-card surface-card"
       :style="{ '--card-accent': getCardColor(index).bar }"
@@ -252,7 +304,7 @@ onMounted(fetchCourses);
       </div>
     </div>
 
-    <div v-if="courses.length > 0" class="public-library-link">
+    <div v-if="courses.length > 0 && filteredCourses.length > 0" class="public-library-link">
       <button class="ghost-button full-button" type="button" @click="router.push('/public-library')">
         <Globe :size="16" :stroke-width="2.5" style="margin-right:6px" />浏览公共题库
       </button>
@@ -295,6 +347,33 @@ onMounted(fetchCourses);
 
 <style scoped>
 .heading-actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
+.course-search-panel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border-color: var(--line-soft);
+  box-shadow: none;
+}
+
+.course-search-input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.course-search-input::placeholder {
+  color: var(--text-placeholder);
+  font-weight: 600;
+}
 
 .course-card {
   display: grid;
