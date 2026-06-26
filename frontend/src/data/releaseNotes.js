@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.11-practice-hub-entry-polish",
+    version: "v1.8.11",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化练习入口页",
+    items: [
+      "练习页顶部新增继续练习或选择题库的主入口，开始刷题路径更直接",
+      "优化练习统计卡片和手机端布局，让练习中心层级更清楚",
+    ],
+  },
+  {
     id: "v1.8.10-course-list-search-polish",
     version: "v1.8.10",
     date: "2026-06-26",

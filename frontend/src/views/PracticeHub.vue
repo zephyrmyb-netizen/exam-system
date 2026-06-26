@@ -32,6 +32,23 @@ const hasDueQuestions = computed(() => {
 });
 
 const hasRecentCourses = computed(() => recentCourses.value.length > 0);
+const primaryCourse = computed(() => recentCourses.value[0] || null);
+const heroTitle = computed(() => (primaryCourse.value ? "继续上次练习" : "开始一次练习"));
+const heroDesc = computed(() => {
+  if (primaryCourse.value) {
+    const count = primaryCourse.value.question_count ?? 0;
+    return `${primaryCourse.value.name || "未命名题库"} · ${count} 题`;
+  }
+  return "先选择题库，或者导入资料生成题库。";
+});
+
+function openPrimaryPractice() {
+  if (primaryCourse.value) {
+    router.push(`/courses/${primaryCourse.value.id}/practice`);
+    return;
+  }
+  router.push("/courses");
+}
 
 async function fetchStatsReview() {
   reviewLoading.value = true;
@@ -91,6 +108,19 @@ onMounted(() => {
   <section class="hub">
     <!-- ── Overview Banner ── -->
     <div class="hub-overview">
+      <div class="hub-hero">
+        <div class="hub-hero-copy">
+          <span class="hub-kicker">练习中心</span>
+          <h2>{{ heroTitle }}</h2>
+          <p>{{ heroDesc }}</p>
+        </div>
+        <button class="hub-hero-btn" type="button" @click="openPrimaryPractice">
+          <Play v-if="primaryCourse" :size="15" :stroke-width="2.8" />
+          <Library v-else :size="15" :stroke-width="2.8" />
+          {{ primaryCourse ? "继续练习" : "选择题库" }}
+        </button>
+      </div>
+
       <div class="hub-stats">
         <div class="hub-stat">
           <span class="hub-stat-val">{{ stats.todayCount !== null ? stats.todayCount : "--" }}</span>
@@ -127,8 +157,8 @@ onMounted(() => {
       <button class="mode mode--cta" type="button" @click="router.push('/courses')">
         <Library :size="18" :stroke-width="2.5" class="mode-icon" style="color:var(--primary)" />
         <span class="mode-text">
-          <span class="mode-title">从题库选择课程</span>
-          <span class="mode-desc">选一门课，开始练习</span>
+          <span class="mode-title">选择题库练习</span>
+          <span class="mode-desc">按课程进入练习设置</span>
         </span>
         <ChevronRight :size="16" :stroke-width="2.5" style="color:var(--text-placeholder);flex-shrink:0" />
       </button>
@@ -221,12 +251,75 @@ onMounted(() => {
 /* ── Overview ── */
 .hub-overview {
   display: grid; gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   border: 1px solid var(--primary-border);
   border-radius: var(--radius-md);
-  background: var(--primary-soft);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.16), transparent 34%),
+    linear-gradient(135deg, #ffffff, #f3f7ff);
 }
-.hub-stats { display: flex; gap: var(--space-5); }
+
+.hub-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.hub-hero-copy {
+  min-width: 0;
+}
+
+.hub-kicker {
+  display: inline-flex;
+  margin-bottom: 3px;
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hub-hero h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: clamp(22px, 5.6vw, 30px);
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.hub-hero p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 92px;
+  min-height: 40px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+}
+
+.hub-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
 .hub-stat { display: grid; gap: 1px; }
 .hub-stat-val { font-size: 18px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
 .hub-stat-lbl { font-size: 10px; font-weight: 600; color: var(--text-muted); }
@@ -317,4 +410,12 @@ onMounted(() => {
 .hub-guidance-alts button { font-size: var(--text-xs); padding: 6px 12px; min-height: 32px; }
 
 .primary-button, .ghost-button { display: inline-flex; align-items: center; justify-content: center; }
+
+@media (max-width: 420px) {
+  .hub-overview { padding: var(--space-3); }
+  .hub-hero { grid-template-columns: 1fr; }
+  .hub-hero-btn { width: 100%; }
+  .hub-stats { gap: 6px; }
+  .hub-stat-val { font-size: 16px; }
+}
 </style>
