@@ -684,6 +684,42 @@ class TestAutoImportAIFailure:
         finally:
             mock.stop()
 
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_ai_plain_text_response_is_repaired_to_json(self, client, auth_headers):
+        """When the first AI response is plain text, retry once to convert it to JSON."""
+        import json
+        mock = patch("backend.routers.imports.OpenAI")
+        mc = mock.start()
+        try:
+            inst = mc.return_value
+            first = type("obj", (), {"message": type("obj", (), {
+                "content": "1. Python 是什么？答案：一种编程语言。解析：常用于后端和数据分析。"
+            })()})()
+            second = type("obj", (), {"message": type("obj", (), {"content": json.dumps({
+                "questions": [
+                    {
+                        "type": "short_answer",
+                        "question": "Python 是什么？",
+                        "answer": "一种编程语言",
+                        "analysis": "Python 常用于后端和数据分析。",
+                    }
+                ]
+            }, ensure_ascii=False)})()})()
+            inst.chat.completions.create.side_effect = [
+                type("obj", (), {"choices": [first]})(),
+                type("obj", (), {"choices": [second]})(),
+            ]
+            content = _make_docx_bytes("Python 是什么？答案：一种编程语言。")
+            resp = client.post(
+                self.FILE_AUTO, headers=auth_headers,
+                files={"file": ("test.docx", content, "application/octet-stream")},
+            )
+            assert resp.status_code == 200
+            assert resp.json()["imported_count"] == 1
+            assert inst.chat.completions.create.call_count == 2
+        finally:
+            mock.stop()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Import rate limiting — security tests

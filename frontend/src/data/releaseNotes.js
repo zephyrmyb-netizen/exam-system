@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.8-ai-import-json-repair",
+    version: "v1.8.8",
+    date: "2026-06-26",
+    type: "修复",
+    title: "增强 AI 导入格式修复能力",
+    items: [
+      "AI 导入遇到普通文本响应时会自动尝试整理为 JSON，减少解析 0 题的情况",
+      "补充回归测试，防止 AI 返回格式异常时直接导入失败",
+    ],
+  },
+  {
     id: "v1.8.7-mobile-nav-practice-exit",
     version: "v1.8.7",
     date: "2026-06-26",
