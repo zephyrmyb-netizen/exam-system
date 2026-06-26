@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.9-mine-overview-entry",
+    version: "v1.8.9",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化我的页学习概览入口",
+    items: [
+      "我的页将分散统计收拢为学习概览入口，页面层级更像个人中心",
+      "保留今日刷题、总刷题、正确率和近 7 日数据摘要，点击可查看完整统计",
+    ],
+  },
+  {
     id: "v1.8.8-ai-import-json-repair",
     version: "v1.8.8",
     date: "2026-06-26",

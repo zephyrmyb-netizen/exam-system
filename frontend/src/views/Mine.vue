@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import {
+  BarChart3,
   Bell,
   BookMarked,
   ChevronRight,
@@ -40,12 +41,12 @@ const accuracyDisplay = computed(() => {
 
 const appVersion = computed(() => releaseNotes[0]?.version || "v1.0.0");
 
-const profileStats = computed(() => [
-  { label: "今日刷题", value: stats.value.todayCount, suffix: "题" },
-  { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
-  { label: "正确率", value: accuracyDisplay.value, suffix: "" },
-  { label: "错题", value: stats.value.wrongCount, suffix: "题" },
-]);
+const overviewSummary = computed(() => ({
+  today: stats.value.todayCount,
+  total: stats.value.totalCount,
+  accuracy: accuracyDisplay.value,
+  recent: stats.value.recentCount7d,
+}));
 
 const serviceGrid = computed(() => [
   {
@@ -132,21 +133,25 @@ onMounted(() => fetchAll());
         </button>
       </div>
 
-      <div class="profile-stats">
-        <button
-          v-for="item in profileStats"
-          :key="item.label"
-          class="profile-stat"
-          type="button"
-          @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
-        >
-          <strong>
-            {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
-            <small v-if="item.suffix">{{ item.suffix }}</small>
-          </strong>
-          <span>{{ item.label }}</span>
-        </button>
-      </div>
+      <button
+        class="overview-entry"
+        type="button"
+        @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
+      >
+        <span class="overview-icon">
+          <BarChart3 :size="24" :stroke-width="2.3" />
+        </span>
+        <span class="overview-copy">
+          <strong>学习概览</strong>
+          <small>
+            今日 {{ overviewSummary.today ?? "--" }} 题
+            · 总计 {{ overviewSummary.total ?? "--" }} 题
+            · 正确率 {{ overviewSummary.accuracy }}
+          </small>
+        </span>
+        <span class="overview-chip">近 7 日 {{ overviewSummary.recent ?? "--" }} 题</span>
+        <ChevronRight :size="17" :stroke-width="2.5" />
+      </button>
     </div>
 
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
@@ -321,41 +326,64 @@ onMounted(() => fetchAll());
   background: var(--surface);
 }
 
-.profile-stats {
+.overview-entry {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-2);
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 76px;
+  padding: var(--space-3);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+  color: inherit;
+  background:
+    radial-gradient(circle at right top, rgba(59, 130, 246, 0.14), transparent 38%),
+    linear-gradient(135deg, #eff6ff, #ffffff);
+  box-shadow: var(--shadow-xs);
+  text-align: left;
 }
 
-.profile-stat {
+.overview-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: var(--shadow-primary);
+}
+
+.overview-copy {
   display: grid;
   gap: 4px;
   min-width: 0;
-  min-height: 68px;
-  padding: var(--space-2) 4px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--surface-soft);
-  text-align: center;
 }
 
-.profile-stat strong {
-  overflow-wrap: anywhere;
+.overview-copy strong {
   color: var(--text-main);
-  font-size: var(--text-lg);
-  line-height: 1.05;
+  font-size: var(--text-base);
 }
 
-.profile-stat small {
-  margin-left: 1px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
-.profile-stat span {
+.overview-copy small {
+  overflow: hidden;
   color: var(--text-muted);
   font-size: var(--text-xs);
-  font-weight: 800;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-chip {
+  padding: 5px 9px;
+  border-radius: var(--radius-full);
+  color: var(--primary-strong);
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid var(--primary-border);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .mine-section {
@@ -527,16 +555,19 @@ onMounted(() => fetchAll());
     font-size: 20px;
   }
 
-  .profile-stats {
-    gap: 6px;
+  .overview-entry {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: var(--space-2);
   }
 
-  .profile-stat {
-    min-height: 62px;
+  .overview-icon {
+    width: 42px;
+    height: 42px;
   }
 
-  .profile-stat strong {
-    font-size: var(--text-base);
+  .overview-chip {
+    grid-column: 2 / 4;
+    justify-self: start;
   }
 
   .service-grid {
