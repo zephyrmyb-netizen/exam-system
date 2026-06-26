@@ -211,6 +211,20 @@ def build_ai_prompt(text_chunk: str) -> str:
     )
 
 
+def build_ai_repair_prompt(raw_response: str) -> str:
+    return (
+        "The previous assistant response was not valid import JSON. "
+        "Convert it into strict JSON now.\n"
+        "Return ONLY a JSON object with this shape:\n"
+        '{"questions":[{"type":"single_choice | multiple_choice | true_false | fill_blank | short_answer",'
+        '"question":"question text","options":{"A":"option A","B":"option B"},'
+        '"answer":"correct answer","analysis":"short explanation","subject":"subject name",'
+        '"chapter":"chapter name","difficulty":"easy | normal | hard"}]}\n'
+        "If the text contains no question, return {\"questions\":[]}.\n\n"
+        f"Previous response:\n{raw_response}"
+    )
+
+
 def validate_question_item(item: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
     q_type = (item.get("type") or "").strip()
     question = (item.get("question") or "").strip()
@@ -392,6 +406,31 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
         return [], [f"第 {chunk_index + 1} 部分 AI 返回了空响应"]
 
     items, warnings = extract_questions_from_ai_response(raw)
+    should_repair = (
+        not items
+        and raw.strip()
+        and '"questions"' not in raw
+        and '"question"' not in raw
+    )
+    if should_repair:
+        try:
+            repair_response = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[{"role": "user", "content": build_ai_repair_prompt(raw)}],
+                response_format={"type": "json_object"},
+                temperature=0,
+                max_tokens=3000,
+            )
+            repair_raw = repair_response.choices[0].message.content if repair_response.choices else ""
+            repaired_items, repair_warnings = extract_questions_from_ai_response(repair_raw)
+            if repaired_items:
+                items = repaired_items
+                warnings = ["AI 返回格式异常，已自动尝试修复为 JSON"] + repair_warnings
+        except (APITimeoutError, TimeoutError):
+            warnings.append("AI 返回格式异常，自动修复请求超时")
+        except Exception:
+            warnings.append("AI 返回格式异常，自动修复失败")
+
     if warnings:
         warnings = [f"第 {chunk_index + 1} 部分: {warning}" for warning in warnings]
     return items, warnings
