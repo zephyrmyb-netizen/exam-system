@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.6-ai-import-error-safety",
+    version: "v1.8.6",
+    date: "2026-06-26",
+    type: "修复",
+    title: "修复 AI 导入异常提示",
+    items: [
+      "AI 导入遇到上游服务异常时显示更清晰的安全提示，不再暴露底层错误细节",
+      "修正 AI 服务失败被误判为文档未解析出题目的情况",
+    ],
+  },
+  {
     id: "v1.8.5-practice-settings-summary",
     version: "v1.8.5",
     date: "2026-06-25",
