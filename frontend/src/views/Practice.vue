@@ -149,9 +149,9 @@ onMounted(() => {
 
     <div v-if="!props.courseId && !canStartWithoutCourse && !question && !loading" class="state-block">
       <div class="state-icon"><Library :size="44" :stroke-width="1.5" /></div>
-      <p class="state-title">请先选择课程</p>
-      <p class="state-hint">从你的课程中选择一门，进入专注练习模式。</p>
-      <button class="primary-button" type="button" @click="goBack">去选择课程</button>
+      <p class="state-title">请先选择题库</p>
+      <p class="state-hint">从你的题库中选择一个，进入专注练习模式。</p>
+      <button class="primary-button" type="button" @click="goBack">去选择题库</button>
     </div>
 
     <div v-else-if="isWrongReviewEmpty" class="state-block">
@@ -176,8 +176,8 @@ onMounted(() => {
 
     <div v-else-if="isCourseEmpty" class="state-block">
       <div class="state-icon"><AlertTriangle :size="44" :stroke-width="1.5" /></div>
-      <p class="state-title">该课程暂时无题目</p>
-      <p class="state-hint">先去导入或添加题目到当前课程。</p>
+      <p class="state-title">该题库暂时无题目</p>
+      <p class="state-hint">先去导入或添加题目到当前题库。</p>
       <button class="primary-button" type="button" @click="router.push('/import')">
         <Sparkles :size="16" :stroke-width="2.5" />
         <span>去导入题目</span>

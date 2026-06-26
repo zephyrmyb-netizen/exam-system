@@ -19,8 +19,8 @@ const errorMessage = ref("");
 
 // ── Mode selection ──
 const modes = [
-  { key: "normal", label: "随机练习", desc: "从当前课程随机抽题", icon: Shuffle, color: "var(--primary)" },
-  { key: "wrong_review", label: "错题强化", desc: "复盘当前课程做错的题", icon: RefreshCw, color: "var(--rose)" },
+  { key: "normal", label: "随机练习", desc: "从当前题库随机抽题", icon: Shuffle, color: "var(--primary)" },
+  { key: "wrong_review", label: "错题强化", desc: "复盘当前题库做错的题", icon: RefreshCw, color: "var(--rose)" },
 ];
 
 const selectedMode = ref("normal");
@@ -67,7 +67,7 @@ async function fetchCourse() {
     course.value = data;
   } catch (error) {
     course.value = null;
-    errorMessage.value = getErrorMessage(error, "获取课程信息失败");
+    errorMessage.value = getErrorMessage(error, "获取题库信息失败");
   } finally {
     loading.value = false;
   }
@@ -95,7 +95,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         </div>
       </div>
 
-      <p v-if="loading" class="info-message">正在加载课程...</p>
+      <p v-if="loading" class="info-message">正在加载题库...</p>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
       <!-- Mode selection -->

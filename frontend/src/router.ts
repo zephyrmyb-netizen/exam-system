@@ -47,7 +47,7 @@ const routes: RouteRecordRaw[] = [
         component: CourseList,
         meta: {
           title: "我的题库",
-          description: "选择课程开始练习。",
+          description: "选择题库开始练习。",
           navKey: "list",
         },
       },
@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
         name: "course-detail",
         component: CourseDetail,
         meta: {
-          title: "课程题目",
+          title: "题库题目",
           navKey: "list",
           parent: "courses",
         },
@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
         name: "course-practice",
         component: CoursePractice,
         meta: {
-          title: "课程练习",
+          title: "题库练习",
           navKey: "list",
           parent: "course-detail",
         },

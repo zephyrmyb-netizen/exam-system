@@ -74,7 +74,7 @@ onUnmounted(() => {
         v-model="searchKeyword"
         class="search-input"
         type="search"
-        placeholder="搜索课程名、描述或科目..."
+        placeholder="搜索题库名、描述或科目..."
       />
     </div>
 
@@ -83,8 +83,8 @@ onUnmounted(() => {
 
     <div v-if="!loading && libraries.length === 0 && !errorMessage" class="empty-state">
       <Globe :size="40" :stroke-width="1.5" color="var(--text-placeholder)" />
-      <p v-if="searchKeyword">未找到匹配「{{ searchKeyword }}」的公开课程</p>
-      <p v-else>还没有人发布公开课程，成为第一个吧！</p>
+      <p v-if="searchKeyword">未找到匹配「{{ searchKeyword }}」的公开题库</p>
+      <p v-else>还没有人发布公开题库，成为第一个吧！</p>
       <button
         v-if="!searchKeyword"
         class="ghost-button"

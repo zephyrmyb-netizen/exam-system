@@ -58,9 +58,9 @@ const filteredCourses = computed(() => {
 const courseSummary = computed(() => {
   const total = courses.value.length;
   const visible = filteredCourses.value.length;
-  if (!total) return "管理课程，然后开始练习。";
+  if (!total) return "管理题库，然后开始练习。";
   if (searchText.value.trim()) return `已筛选 ${visible} / ${total} 个题库`;
-  return `共 ${total} 个题库，选择一门开始练习。`;
+  return `共 ${total} 个题库，选择一个开始练习。`;
 });
 
 function getCardColor(index) {
@@ -95,7 +95,7 @@ function clearSearch() {
 
 async function handleSave() {
   if (!form.name.trim()) {
-    formError.value = "课程名称不能为空";
+    formError.value = "题库名称不能为空";
     return;
   }
 
@@ -133,7 +133,7 @@ async function fetchCourses() {
     const { data } = await request.get("/courses/mine");
     courses.value = Array.isArray(data) ? data : data.items || [];
   } catch (error) {
-    errorMessage.value = getErrorMessage(error, "获取课程失败");
+    errorMessage.value = getErrorMessage(error, "获取题库失败");
   } finally {
     loading.value = false;
   }
@@ -141,7 +141,7 @@ async function fetchCourses() {
 
 async function deleteCourse(course) {
   const confirmed = await confirmDialog.confirm({
-    title: "删除课程",
+    title: "删除题库",
     message: `确定删除“${course.name}”吗？\n共 ${course.question_count ?? 0} 道题会一起移除。`,
     confirmText: "删除",
     tone: "danger",
@@ -199,7 +199,7 @@ onMounted(fetchCourses);
       <div class="heading-actions">
         <button class="ghost-button" type="button" :disabled="loading" @click="fetchCourses">刷新</button>
         <button class="primary-button" type="button" @click="openCreate">
-          <Plus :size="16" :stroke-width="2.5" style="margin-right:4px" />创建课程
+          <Plus :size="16" :stroke-width="2.5" style="margin-right:4px" />创建题库
         </button>
       </div>
     </div>
@@ -222,11 +222,11 @@ onMounted(fetchCourses);
 
     <div v-if="!loading && courses.length === 0 && !errorMessage" class="status-panel status-panel--empty">
       <GraduationCap :size="44" :stroke-width="1.5" color="var(--text-placeholder)" />
-      <p class="status-panel__title">还没有课程</p>
-      <p class="status-panel__text">创建一门，或先去导入。</p>
+      <p class="status-panel__title">还没有题库</p>
+      <p class="status-panel__text">创建一个题库，或先去导入。</p>
       <div class="status-actions">
         <button class="primary-button" type="button" @click="openCreate">
-          <Plus :size="16" :stroke-width="2.5" style="margin-right:4px" />创建课程
+          <Plus :size="16" :stroke-width="2.5" style="margin-right:4px" />创建题库
         </button>
         <button class="ghost-button" type="button" @click="router.push('/import')">
           <Sparkles :size="16" :stroke-width="2.5" style="margin-right:4px" />去导入
@@ -321,7 +321,7 @@ onMounted(fetchCourses);
     <div v-if="showForm" class="form-overlay" @click.self="closeForm">
       <div class="form-modal surface-card">
         <div class="form-head">
-          <h3>{{ isEdit() ? "编辑课程" : "创建课程" }}</h3>
+          <h3>{{ isEdit() ? "编辑题库" : "创建题库" }}</h3>
           <button class="form-close icon-button" type="button" @click="closeForm">
             <X :size="18" :stroke-width="2.5" />
           </button>
@@ -330,7 +330,7 @@ onMounted(fetchCourses);
         <p v-if="formError" class="status-banner status-banner--error form-error">{{ formError }}</p>
 
         <label class="field">
-          <span class="field-label">课程名称</span>
+          <span class="field-label">题库名称</span>
           <input v-model="form.name" class="field-input" type="text" placeholder="如：高等数学" />
         </label>
         <label class="field">
@@ -339,7 +339,7 @@ onMounted(fetchCourses);
         </label>
         <label class="field">
           <span class="field-label">描述（可选）</span>
-          <textarea v-model="form.description" class="field-input field-textarea" placeholder="简单描述课程内容" />
+          <textarea v-model="form.description" class="field-input field-textarea" placeholder="简单描述题库内容" />
         </label>
 
         <div class="form-actions">

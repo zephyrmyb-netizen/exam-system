@@ -159,7 +159,7 @@ onMounted(() => {
         <Library :size="18" :stroke-width="2.5" class="mode-icon" style="color:var(--primary)" />
         <span class="mode-text">
           <span class="mode-title">选择题库练习</span>
-          <span class="mode-desc">按课程进入练习设置</span>
+          <span class="mode-desc">按题库进入练习设置</span>
         </span>
         <ChevronRight :size="16" :stroke-width="2.5" style="color:var(--text-placeholder);flex-shrink:0" />
       </button>
@@ -225,8 +225,8 @@ onMounted(() => {
     <!-- ── Guidance when no courses ── -->
     <div v-if="!coursesLoading && !hasRecentCourses" class="hub-guidance">
       <GraduationCap :size="44" :stroke-width="1.5" color="var(--text-placeholder)" />
-      <p class="hub-guidance-title">从题库中选择一门课开始练习</p>
-      <p class="hub-guidance-hint">还没有课程？先去导入题目创建一门课。</p>
+      <p class="hub-guidance-title">选择一个题库开始练习</p>
+      <p class="hub-guidance-hint">还没有题库？先去导入题目创建一个题库。</p>
       <div class="hub-guidance-actions">
         <button class="primary-button" type="button" @click="router.push('/courses')">
           <Library :size="16" :stroke-width="2.5" style="margin-right:6px" />
