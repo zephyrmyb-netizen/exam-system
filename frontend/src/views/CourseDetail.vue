@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
+import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useAuth } from "../stores/auth";
 import {
   BookOpen, Layers, Play, Globe, Lock, Upload, Trash2, Pencil, X,
@@ -20,6 +21,7 @@ const loading = ref(false);
 const errorMessage = ref("");
 const publishLoading = ref(false);
 const deleteLoading = ref(false);
+const canStartPractice = computed(() => !!course.value && isPracticeReadyCourse(course.value));
 
 // ── Edit form state ──
 const showForm = ref(false);
@@ -102,6 +104,11 @@ async function deleteCourse() {
   finally { deleteLoading.value = false; }
 }
 
+function goToPractice() {
+  if (!canStartPractice.value) return;
+  router.push(`/courses/${courseId.value}/practice`);
+}
+
 onMounted(fetchCourse);
 watch(() => route.params.courseId, fetchCourse);
 </script>
@@ -117,7 +124,7 @@ watch(() => route.params.courseId, fetchCourse);
           <BookOpen :size="24" :stroke-width="2" />
         </div>
         <div class="course-header-info">
-          <h2>{{ course.name || "课程" }}</h2>
+          <h2>{{ getCourseDisplayName(course) }}</h2>
           <p class="course-header-meta">
             <Layers :size="14" :stroke-width="2" />
             <span>{{ course.question_count ?? 0 }} 道题</span>
@@ -136,9 +143,14 @@ watch(() => route.params.courseId, fetchCourse);
         <Globe :size="14" :stroke-width="2.5" style="margin-right:4px;flex-shrink:0" />已公开，其他用户可在公共题库中看到
       </p>
 
+      <p v-if="!canStartPractice" class="public-hint public-hint--empty">
+        当前题库还没有题目，先导入题目后再开始练习。
+      </p>
+
       <div class="course-header-actions">
-        <button class="primary-button" type="button" @click="router.push(`/courses/${courseId}/practice`)">
-          <Play :size="17" :stroke-width="2.5" style="margin-right:6px" />练这门课
+        <button class="primary-button" type="button" :disabled="!canStartPractice" @click="goToPractice">
+          <Play :size="17" :stroke-width="2.5" style="margin-right:6px" />
+          {{ canStartPractice ? "练这门课" : "暂无题目" }}
         </button>
         <button v-if="isOwner" class="ghost-button" type="button" @click="openEdit">
           <Pencil :size="15" :stroke-width="2.5" style="margin-right:4px" />编辑
@@ -187,6 +199,7 @@ watch(() => route.params.courseId, fetchCourse);
 .visibility-badge.public { background: #ecfdf3; color: #067647; }
 .course-desc { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.55; }
 .public-hint { margin: 0; display: inline-flex; align-items: center; gap: 2px; padding: 6px 12px; border-radius: var(--radius-md); background: var(--emerald-soft); color: var(--emerald); font-size: var(--text-xs); font-weight: 700; justify-self: start; }
+.public-hint--empty { background: var(--amber-soft); color: var(--amber); }
 .course-header-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .delete-btn-subtle { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--line-strong); cursor: pointer; flex-shrink: 0; transition: all var(--ease-out); }
 .delete-btn-subtle:hover:not(:disabled) { color: var(--rose); background: var(--rose-soft); border-color: var(--rose-border); }
