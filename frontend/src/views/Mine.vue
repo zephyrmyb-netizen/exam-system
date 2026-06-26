@@ -14,7 +14,6 @@ import {
   Megaphone,
   MessageCircle,
   ShieldCheck,
-  TrendingUp,
 } from "@lucide/vue";
 import { releaseNotes } from "../data/releaseNotes";
 
@@ -49,13 +48,6 @@ const overviewSummary = computed(() => ({
 }));
 
 const serviceGrid = computed(() => [
-  {
-    label: "学习概览",
-    desc: "数据和薄弱点",
-    icon: TrendingUp,
-    color: "var(--teal)",
-    to: { name: "study-overview", query: { from: "mine" } },
-  },
   {
     label: "错题本",
     desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道待复盘` : "集中复盘",
@@ -414,7 +406,7 @@ onMounted(() => fetchAll());
 
 .service-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
   padding: var(--space-4);
   border: 1px solid var(--line-soft);
