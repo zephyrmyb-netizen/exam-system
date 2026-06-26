@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.15-mobile-bottom-nav-clearance",
+    version: "v1.8.15",
+    date: "2026-06-26",
+    type: "修复",
+    title: "修复手机端底部遮挡",
+    items: [
+      "优化手机端底部导航的安全区距离，减少与微信或浏览器底部控制栏冲突",
+      "增加页面底部滚动留白，避免最近题库等内容被固定导航遮住",
+    ],
+  },
+  {
     id: "v1.8.14-mine-entry-dedupe",
     version: "v1.8.14",
     date: "2026-06-26",
