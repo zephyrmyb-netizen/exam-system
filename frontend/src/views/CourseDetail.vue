@@ -152,6 +152,14 @@ watch(() => route.params.courseId, fetchCourse);
           <Play :size="17" :stroke-width="2.5" style="margin-right:6px" />
           {{ canStartPractice ? "练这门课" : "暂无题目" }}
         </button>
+        <button
+          v-if="isOwner && !canStartPractice"
+          class="ghost-button"
+          type="button"
+          @click="router.push({ name: 'import', query: { course_id: courseId } })"
+        >
+          <Upload :size="15" :stroke-width="2.5" style="margin-right:4px" />去导入题目
+        </button>
         <button v-if="isOwner" class="ghost-button" type="button" @click="openEdit">
           <Pencil :size="15" :stroke-width="2.5" style="margin-right:4px" />编辑
         </button>

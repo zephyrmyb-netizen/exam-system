@@ -140,7 +140,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         v-if="course && !canStartPractice"
         class="ghost-button full-button"
         type="button"
-        @click="router.push('/import')"
+        @click="router.push({ name: 'import', query: { course_id: courseId } })"
       >
         去导入题目
       </button>
