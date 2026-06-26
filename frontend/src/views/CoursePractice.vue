@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
+import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import {
   BookOpen, Layers, Play, Shuffle, RefreshCw,
 } from "@lucide/vue";
@@ -24,10 +25,16 @@ const modes = [
 
 const selectedMode = ref("normal");
 const selectedModeInfo = computed(() => modes.find((mode) => mode.key === selectedMode.value) || modes[0]);
+const canStartPractice = computed(() => !!course.value && isPracticeReadyCourse(course.value));
+const startButtonText = computed(() => {
+  if (loading.value) return "加载中...";
+  if (!canStartPractice.value) return "暂无题目";
+  return selectedMode.value === "wrong_review" ? "开始错题强化" : "开始练习";
+});
 const settingsTips = computed(() => [
   {
     label: "当前题库",
-    value: course.value?.name || "加载中",
+    value: course.value ? getCourseDisplayName(course.value) : "加载中",
   },
   {
     label: "出题范围",
@@ -43,6 +50,7 @@ const settingsTips = computed(() => [
 const showPractice = ref(false);
 
 function startPractice() {
+  if (!canStartPractice.value) return;
   showPractice.value = true;
 }
 
@@ -78,7 +86,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         <div class="settings-header-top">
           <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
           <div class="settings-info">
-            <h2>{{ course.name || "课程" }}</h2>
+            <h2>{{ getCourseDisplayName(course) }}</h2>
             <p class="settings-meta">
               <Layers :size="13" :stroke-width="2" />
               <span>{{ course.question_count ?? 0 }} 道题</span>
@@ -118,11 +126,23 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         </div>
       </div>
 
+      <p v-if="course && !canStartPractice" class="status-banner status-banner--info">
+        当前题库还没有题目，先导入题目后再开始练习。
+      </p>
+
       <!-- Stats summary -->
       <p class="settings-section-label">开始练习</p>
-      <button class="start-btn" type="button" :disabled="loading || !course" @click="startPractice">
+      <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
         <Play :size="18" :stroke-width="2.5" style="margin-right:6px" />
-        {{ loading ? "加载中..." : selectedMode === 'wrong_review' ? '开始错题强化' : '开始练习' }}
+        {{ startButtonText }}
+      </button>
+      <button
+        v-if="course && !canStartPractice"
+        class="ghost-button full-button"
+        type="button"
+        @click="router.push('/import')"
+      >
+        去导入题目
       </button>
     </template>
 
