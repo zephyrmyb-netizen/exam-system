@@ -12,7 +12,6 @@ import {
   FileUp,
   History,
   Megaphone,
-  MessageCircle,
   Search,
   Sparkles,
   Target,
@@ -79,22 +78,22 @@ const heroActions = [
     badge: "推荐",
   },
   {
-    label: "我的题库",
-    desc: "选择课程开始练习",
-    icon: BookOpen,
-    to: "/courses",
-  },
-  {
     label: "开始练习",
     desc: "错题、到期、随机练",
     icon: ClipboardList,
     to: "/practice",
   },
   {
-    label: "AI 对话",
-    desc: "追问知识点",
-    icon: MessageCircle,
-    to: "/chat",
+    label: "错题本",
+    desc: "集中复盘易错题",
+    icon: Target,
+    to: "/wrongbook",
+  },
+  {
+    label: "学习概览",
+    desc: "查看今日进度",
+    icon: TrendingUp,
+    to: { name: "study-overview", query: { from: "home" } },
   },
 ];
 
@@ -219,7 +218,7 @@ onMounted(() => {
           <h2>最近题库</h2>
         </div>
         <button class="section-link-button" type="button" @click="goTo('/courses')">
-          内容管理
+          查看全部
           <ChevronRight :size="15" :stroke-width="2.5" />
         </button>
       </div>
@@ -233,7 +232,7 @@ onMounted(() => {
         <span>导入资料后，首页会显示最近学习的题库。</span>
         <div class="home-empty-actions">
           <button class="empty-primary" type="button" @click="goTo('/import')">去导入</button>
-          <button class="empty-secondary" type="button" @click="goTo('/courses')">去题库</button>
+          <button class="empty-secondary" type="button" @click="goTo('/courses')">浏览题库</button>
         </div>
       </div>
 

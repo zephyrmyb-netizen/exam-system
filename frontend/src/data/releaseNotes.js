@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.13-home-actions-dedupe",
+    version: "v1.8.13",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化首页快捷入口",
+    items: [
+      "收敛首页快捷入口，减少与底部导航重复的题库和 AI 对话入口",
+      "首页更突出 AI 导入、开始练习、错题本和学习概览等学习任务",
+    ],
+  },
+  {
     id: "v1.8.12-ai-import-guidance",
     version: "v1.8.12",
     date: "2026-06-26",
