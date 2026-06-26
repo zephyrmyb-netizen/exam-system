@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.18-empty-course-settings-guard",
+    version: "v1.8.18",
+    date: "2026-06-26",
+    type: "修复",
+    title: "修复空题库练习入口",
+    items: [
+      "练习设置页会识别 0 题题库，并提示先导入题目",
+      "空题库不再能从详情入口直接进入无题练习流程",
+    ],
+  },
+  {
     id: "v1.8.17-empty-course-practice-guard",
     version: "v1.8.17",
     date: "2026-06-26",
