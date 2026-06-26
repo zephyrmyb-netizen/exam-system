@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.20-import-target-prefill",
+    version: "v1.8.20",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化空题库导入衔接",
+    items: [
+      "从空题库进入导入页时，会自动选中当前题库作为导入目标",
+      "课程详情页为空时提供直接导入入口，减少重复选择题库的步骤",
+    ],
+  },
+  {
     id: "v1.8.19-empty-course-detail-guard",
     version: "v1.8.19",
     date: "2026-06-26",

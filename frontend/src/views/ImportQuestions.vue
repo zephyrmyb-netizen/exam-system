@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   Sparkles,
   ArrowRight,
@@ -18,6 +18,7 @@ import { useImportCourses } from "../composables/useImportCourses";
 import { useManualQuestionImport } from "../composables/useManualQuestionImport";
 
 const router = useRouter();
+const route = useRoute();
 const aiTask = useAiImportTask();
 
 const selectedFile = ref(null);
@@ -84,6 +85,20 @@ function deriveNameFromFile(file) {
 function goToCourse(courseId) {
   if (courseId) router.push({ name: "course-detail", params: { courseId } });
   else router.push("/courses");
+}
+
+function readTargetCourseIdFromRoute() {
+  const raw = route.query.course_id || route.query.courseId;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const id = Number(value);
+  return Number.isFinite(id) && id > 0 ? id : 0;
+}
+
+function syncTargetCourseFromRoute() {
+  const targetCourseId = readTargetCourseIdFromRoute();
+  if (targetCourseId > 0) {
+    selectedCourseId.value = targetCourseId;
+  }
 }
 
 function onFileChange(event) {
@@ -236,7 +251,15 @@ async function copyPromptAndText() {
   }
 }
 
-onMounted(fetchCourses);
+watch(
+  () => [route.query.course_id, route.query.courseId],
+  syncTargetCourseFromRoute,
+);
+
+onMounted(() => {
+  syncTargetCourseFromRoute();
+  fetchCourses();
+});
 </script>
 
 <template>
