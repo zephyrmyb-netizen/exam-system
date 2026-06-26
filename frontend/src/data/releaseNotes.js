@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.17-empty-course-practice-guard",
+    version: "v1.8.17",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化空题库操作",
+    items: [
+      "题库页的 0 题题库不再显示可开始练习状态，避免进入空练习流程",
+      "统一题库名称为空时的展示文案，让题库列表和首页表达一致",
+    ],
+  },
+  {
     id: "v1.8.16-recent-course-filter",
     version: "v1.8.16",
     date: "2026-06-26",

@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
+import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import {
   BookOpen,
   GraduationCap,
@@ -180,6 +181,11 @@ async function togglePublish(course) {
   }
 }
 
+function goToPractice(course) {
+  if (!isPracticeReadyCourse(course)) return;
+  router.push(`/courses/${course.id}/practice`);
+}
+
 onMounted(fetchCourses);
 </script>
 
@@ -254,7 +260,7 @@ onMounted(fetchCourses);
           <BookOpen :size="20" :stroke-width="2" />
         </div>
         <div class="course-info">
-          <h3>{{ course.name || "未命名课程" }}</h3>
+          <h3>{{ getCourseDisplayName(course) }}</h3>
           <p class="course-meta">
             <Layers :size="13" :stroke-width="2" />
             <span>{{ course.question_count ?? 0 }} 道题</span>
@@ -275,9 +281,11 @@ onMounted(fetchCourses);
         <button
           class="primary-button course-action-btn course-start-btn"
           type="button"
-          @click="router.push(`/courses/${course.id}/practice`)"
+          :disabled="!isPracticeReadyCourse(course)"
+          @click="goToPractice(course)"
         >
-          <Play :size="14" :stroke-width="2.5" style="margin-right:3px" />开始练习
+          <Play :size="14" :stroke-width="2.5" style="margin-right:3px" />
+          {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
         </button>
         <button class="mini-btn" type="button" title="编辑" @click.stop="openEdit(course)">
           <Pencil :size="13" :stroke-width="2.5" />
