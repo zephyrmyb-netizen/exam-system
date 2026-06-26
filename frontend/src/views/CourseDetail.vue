@@ -40,7 +40,7 @@ function openEdit() {
 function closeForm() { showForm.value = false; }
 
 async function handleSave() {
-  if (!form.name.trim()) { formError.value = "课程名称不能为空"; return; }
+  if (!form.name.trim()) { formError.value = "题库名称不能为空"; return; }
   formLoading.value = true; formError.value = "";
   try {
     const payload = { name: form.name.trim(), description: form.description.trim(), subject: form.subject.trim() };
@@ -57,7 +57,7 @@ async function fetchCourse() {
   if (!courseId.value) return;
   loading.value = true; errorMessage.value = "";
   try { const { data } = await request.get(`/courses/${courseId.value}`); course.value = data; }
-  catch (error) { errorMessage.value = getErrorMessage(error, "获取课程信息失败"); }
+  catch (error) { errorMessage.value = getErrorMessage(error, "获取题库信息失败"); }
   finally { loading.value = false; }
 }
 
@@ -65,7 +65,7 @@ async function publishCourse() {
   if (!course.value || course.value.visibility === "public") return;
   const confirmed = await confirmDialog.confirm({
     title: "发布到公共题库",
-    message: `确定将「${course.value.name}」发布到公共题库吗？其他用户将可以看到这门课程。`,
+    message: `确定将「${course.value.name}」发布到公共题库吗？其他用户将可以看到这个题库。`,
     confirmText: "发布",
   });
   if (!confirmed) return;
@@ -92,15 +92,15 @@ async function unpublishCourse() {
 async function deleteCourse() {
   if (!course.value) return;
   const confirmed = await confirmDialog.confirm({
-    title: "删除课程",
-    message: `确定删除「${course.value.name}」吗？\n该课程共 ${course.value.question_count ?? 0} 道题，删除后题目将被一并移除，此操作不可撤销。`,
+    title: "删除题库",
+    message: `确定删除「${course.value.name}」吗？\n该题库共 ${course.value.question_count ?? 0} 道题，删除后题目将被一并移除，此操作不可撤销。`,
     confirmText: "删除",
     tone: "danger",
   });
   if (!confirmed) return;
   deleteLoading.value = true; errorMessage.value = "";
   try { await request.delete(`/courses/${courseId.value}`); router.push({ name: "courses" }); }
-  catch (error) { errorMessage.value = getErrorMessage(error, "删除课程失败"); }
+  catch (error) { errorMessage.value = getErrorMessage(error, "删除题库失败"); }
   finally { deleteLoading.value = false; }
 }
 
@@ -115,7 +115,7 @@ watch(() => route.params.courseId, fetchCourse);
 
 <template>
   <section class="stack">
-    <div v-if="loading" class="info-message">加载课程信息...</div>
+    <div v-if="loading" class="info-message">加载题库信息...</div>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <div v-if="course" class="course-header">
@@ -150,7 +150,7 @@ watch(() => route.params.courseId, fetchCourse);
       <div class="course-header-actions">
         <button class="primary-button" type="button" :disabled="!canStartPractice" @click="goToPractice">
           <Play :size="17" :stroke-width="2.5" style="margin-right:6px" />
-          {{ canStartPractice ? "练这门课" : "暂无题目" }}
+          {{ canStartPractice ? "开始练习" : "暂无题目" }}
         </button>
         <button
           v-if="isOwner && !canStartPractice"
@@ -169,7 +169,7 @@ watch(() => route.params.courseId, fetchCourse);
         <button v-if="isOwner && course.visibility === 'public'" class="ghost-button" type="button" :disabled="publishLoading" @click="unpublishCourse">
           <Lock :size="15" :stroke-width="2.5" style="margin-right:4px" />撤回公开
         </button>
-        <button v-if="isOwner" class="delete-btn-subtle" type="button" :disabled="deleteLoading" @click="deleteCourse" title="删除此课程">
+        <button v-if="isOwner" class="delete-btn-subtle" type="button" :disabled="deleteLoading" @click="deleteCourse" title="删除此题库">
           <Trash2 :size="16" :stroke-width="2.5" />
         </button>
       </div>
@@ -180,9 +180,9 @@ watch(() => route.params.courseId, fetchCourse);
     <!-- ── Edit Form Modal ── -->
     <div v-if="showForm" class="form-overlay" @click.self="closeForm">
       <div class="form-modal">
-        <div class="form-head"><h3>编辑课程</h3><button class="form-close" type="button" @click="closeForm"><X :size="18" :stroke-width="2.5" /></button></div>
+        <div class="form-head"><h3>编辑题库</h3><button class="form-close" type="button" @click="closeForm"><X :size="18" :stroke-width="2.5" /></button></div>
         <p v-if="formError" class="form-error">{{ formError }}</p>
-        <label class="field"><span class="field-label">课程名称</span><input v-model="form.name" class="field-input" type="text" /></label>
+        <label class="field"><span class="field-label">题库名称</span><input v-model="form.name" class="field-input" type="text" /></label>
         <label class="field"><span class="field-label">科目</span><input v-model="form.subject" class="field-input" type="text" placeholder="可选" /></label>
         <label class="field"><span class="field-label">描述</span><textarea v-model="form.description" class="field-input field-textarea" placeholder="可选" /></label>
         <div class="form-actions">

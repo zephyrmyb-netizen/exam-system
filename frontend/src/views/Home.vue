@@ -169,7 +169,7 @@ onMounted(() => {
 
       <button class="home-search" type="button" @click="router.push('/courses')">
         <Search :size="18" :stroke-width="2.3" />
-        <span>搜索题库、课程、题目</span>
+        <span>搜索题库、科目、题目</span>
       </button>
 
       <div class="hero-action-grid">
