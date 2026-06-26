@@ -87,8 +87,9 @@
   /* ── Shell ── */
   --shell-max: 720px;
   --nav-height: 72px;
-  --nav-safe-gap: max(28px, env(safe-area-inset-bottom, 28px));
-  --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 10px);
+  --nav-safe-gap: max(32px, env(safe-area-inset-bottom, 32px));
+  --nav-bottom-clearance: calc(var(--nav-height) + var(--nav-safe-gap) + 56px);
+  --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 16px);
 
   color: var(--text-main);
   background: var(--page-bg);
@@ -145,7 +146,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   width: min(100%, var(--shell-max));
   min-height: 100vh;
   margin: 0 auto;
-  padding: var(--space-3) var(--space-3) calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-6));
+  padding: var(--space-3) var(--space-3) var(--nav-bottom-clearance);
 }
 
 .app-header {
@@ -204,7 +205,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--nav-safe-gap) + 6px);
+  bottom: calc(var(--nav-safe-gap) + 10px);
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1574,7 +1575,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 @media (min-width: 640px) {
   .app-shell {
-    padding: var(--space-6) var(--space-6) calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-8));
+    padding: var(--space-6) var(--space-6) calc(var(--nav-bottom-clearance) + var(--space-2));
   }
 
   .app-header {
@@ -1628,18 +1629,32 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   }
 }
 
+@media (max-width: 640px) {
+  :root {
+    --nav-safe-gap: max(56px, env(safe-area-inset-bottom, 56px));
+    --nav-bottom-clearance: calc(var(--nav-height) + var(--nav-safe-gap) + 76px);
+    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 20px);
+  }
+
+  .bottom-nav {
+    bottom: calc(var(--nav-safe-gap) + 12px);
+    width: min(calc(100% - 18px), calc(var(--shell-max) - 18px));
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    Responsive — Small mobile (≤ 420px)
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 420px) {
   .app-shell {
-    padding: 10px 10px calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-6));
+    padding: 10px 10px var(--nav-bottom-clearance);
   }
 
   :root {
-    --nav-safe-gap: max(52px, env(safe-area-inset-bottom, 52px));
-    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 14px);
+    --nav-safe-gap: max(60px, env(safe-area-inset-bottom, 60px));
+    --nav-bottom-clearance: calc(var(--nav-height) + var(--nav-safe-gap) + 84px);
+    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 22px);
   }
 
   .app-header,
@@ -1659,7 +1674,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
   .bottom-nav {
     gap: 1px;
-    width: min(calc(100% - 12px), calc(var(--shell-max) - 12px));
+    width: min(calc(100% - 16px), calc(var(--shell-max) - 16px));
   }
 
   .nav-icon {
