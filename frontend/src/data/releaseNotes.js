@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.14-mine-entry-dedupe",
+    version: "v1.8.14",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化我的页入口层级",
+    items: [
+      "移除我的页重复的学习概览入口，保留顶部学习概览卡片作为主入口",
+      "调整学习服务网格，错题本、练习记录和更新公告入口更清晰",
+    ],
+  },
+  {
     id: "v1.8.13-home-actions-dedupe",
     version: "v1.8.13",
     date: "2026-06-26",
