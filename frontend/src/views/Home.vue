@@ -5,6 +5,7 @@ import { useAuth } from "../stores/auth";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
+import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import {
   BookOpen,
   ChevronRight,
@@ -53,6 +54,7 @@ const latestNote = computed(() => releaseNotes[0] || null);
 
 const recentCourses = computed(() =>
   [...courses.value]
+    .filter(isPracticeReadyCourse)
     .sort((a, b) => {
       const aTime = new Date(a.last_practiced_at || a.created_at || 0).getTime();
       const bTime = new Date(b.last_practiced_at || b.created_at || 0).getTime();
@@ -243,7 +245,7 @@ onMounted(() => {
               <BookOpen :size="20" :stroke-width="2.2" />
             </span>
             <span class="recent-course-copy">
-              <strong>{{ course.name || "未命名题库" }}</strong>
+              <strong>{{ getCourseDisplayName(course) }}</strong>
               <small>
                 {{ course.question_count ?? 0 }} 题
                 <span>·</span>

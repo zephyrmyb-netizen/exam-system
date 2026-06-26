@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
+import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { typeLabel } from "../utils/question";
 import {
   BookOpen, Play, Layers, Upload, Library, GraduationCap,
@@ -37,7 +38,7 @@ const heroTitle = computed(() => (primaryCourse.value ? "继续上次练习" : "
 const heroDesc = computed(() => {
   if (primaryCourse.value) {
     const count = primaryCourse.value.question_count ?? 0;
-    return `${primaryCourse.value.name || "未命名题库"} · ${count} 题`;
+    return `${getCourseDisplayName(primaryCourse.value)} · ${count} 题`;
   }
   return "先选择题库，或者导入资料生成题库。";
 });
@@ -88,8 +89,8 @@ async function fetchRecentCourses() {
   try {
     const { data } = await request.get("/courses/mine");
     const items = Array.isArray(data) ? data : data.items || [];
-    // Show at most 3 recent courses (last created / first in list)
-    recentCourses.value = items.slice(0, 3);
+    // 首页式入口只展示真正可练习的题库，0 题空题库留在题库管理页处理。
+    recentCourses.value = items.filter(isPracticeReadyCourse).slice(0, 3);
   } catch (error) {
     recentCourses.value = [];
     coursesError.value = getErrorMessage(error, "题库列表暂时不可用");
@@ -210,7 +211,7 @@ onMounted(() => {
               <BookOpen :size="16" :stroke-width="2" />
             </div>
             <div class="recent-info">
-              <span class="recent-name">{{ course.name || "未命名" }}</span>
+              <span class="recent-name">{{ getCourseDisplayName(course) }}</span>
               <span class="recent-meta"><Layers :size="10" :stroke-width="2" /> {{ course.question_count ?? 0 }} 题</span>
             </div>
           </div>

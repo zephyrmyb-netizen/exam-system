@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.16-recent-course-filter",
+    version: "v1.8.16",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化最近题库展示",
+    items: [
+      "首页和练习中心不再把 0 题空题库展示为最近可练习内容",
+      "统一未命名题库的展示文案，减少首页学习空间里的占位感",
+    ],
+  },
+  {
     id: "v1.8.15-mobile-bottom-nav-clearance",
     version: "v1.8.15",
     date: "2026-06-26",
