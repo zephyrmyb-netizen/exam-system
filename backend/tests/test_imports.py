@@ -689,6 +689,31 @@ class TestAutoImportAIFailure:
 # Import rate limiting — security tests
 # ═══════════════════════════════════════════════════════════════════════════════
 
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_ai_upstream_error_returns_safe_detail(self, client, auth_headers):
+        """Unexpected upstream errors should not leak provider internals or API keys."""
+        mock = patch("backend.routers.imports.OpenAI")
+        mc = mock.start()
+        try:
+            inst = mc.return_value
+            inst.chat.completions.create.side_effect = Exception(
+                "401 invalid_api_key sk-secret-should-not-leak"
+            )
+            content = _make_docx_bytes("Content.")
+            resp = client.post(
+                self.FILE_AUTO,
+                headers=auth_headers,
+                files={"file": ("test.docx", content, "application/octet-stream")},
+            )
+            assert resp.status_code == 502
+            detail = resp.json()["detail"]
+            assert "AI 服务暂时不可用" in detail
+            assert "sk-secret-should-not-leak" not in detail
+            assert "invalid_api_key" not in detail
+        finally:
+            mock.stop()
+
+
 class TestImportRateLimit:
     """Per-user rate limits on AI import endpoints prevent API-key burning."""
 

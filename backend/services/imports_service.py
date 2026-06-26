@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, UploadFile
-from openai import OpenAI
+from openai import APIConnectionError, APIStatusError, OpenAI
 from sqlalchemy.orm import Session
 
 from .. import crud, schemas
@@ -350,6 +350,22 @@ def _build_import_client():
     return get_import_client()
 
 
+def safe_ai_error_detail(exc: Exception | None = None) -> str:
+    """Return a user-safe upstream AI error message.
+
+    Provider exceptions can include request ids, upstream internals, or even
+    credential fragments. Keep API responses useful without leaking details.
+    """
+    if isinstance(exc, APIStatusError):
+        if exc.status_code in (401, 403):
+            return "AI 服务鉴权失败，请检查后端 AI Key 和接口地址配置"
+        if exc.status_code == 429:
+            return "AI 服务请求过于频繁，请稍后重试"
+    if isinstance(exc, APIConnectionError):
+        return "AI 服务连接失败，请检查网络或接口地址后重试"
+    return "AI 服务暂时不可用，请稍后重试"
+
+
 def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[str, Any]], list[str]]:
     client = _build_import_client()
     try:
@@ -366,8 +382,10 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
     except HTTPException:
         raise
+    except (APIStatusError, APIConnectionError) as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"AI 调用失败: {exc}") from exc
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
 
     raw = response.choices[0].message.content if response.choices else ""
     if not raw:
@@ -433,6 +451,7 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
 
     saw_timeout = False
     saw_invalid_json = False
+    saw_upstream_error = False
     other_http_error: HTTPException | None = None
 
     for index, chunk in enumerate(chunks):
@@ -446,7 +465,9 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         except HTTPException as exc:
             if exc.status_code == 504:
                 saw_timeout = True
-            elif exc.status_code not in (400, 502):
+            elif exc.status_code == 502:
+                saw_upstream_error = True
+            elif exc.status_code != 400:
                 other_http_error = exc
             all_warnings.append(f"第 {index + 1} 部分解析失败: {exc.detail}")
         finally:
@@ -471,6 +492,8 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         raise other_http_error
     if not valid and saw_timeout:
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试")
+    if not valid and saw_upstream_error:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail())
     if not valid and saw_invalid_json:
         raise HTTPException(status_code=400, detail="AI 返回非 JSON，无法解析题目")
 
