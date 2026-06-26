@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.19-empty-course-detail-guard",
+    version: "v1.8.19",
+    date: "2026-06-26",
+    type: "修复",
+    title: "完善空题库练习保护",
+    items: [
+      "课程详情页会提示空题库需要先导入题目",
+      "0 题题库的详情页练习按钮不再进入空练习流程",
+    ],
+  },
+  {
     id: "v1.8.18-empty-course-settings-guard",
     version: "v1.8.18",
     date: "2026-06-26",
