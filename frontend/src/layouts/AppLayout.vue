@@ -183,7 +183,7 @@ onUnmounted(() => {
           'nav-button--ai': item.emphasis,
         }"
         type="button"
-        @click="handleTabClick(item)"
+        @click.stop.prevent="handleTabClick(item)"
       >
         <span
           class="nav-icon"
