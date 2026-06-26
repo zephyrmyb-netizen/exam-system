@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.12-ai-import-guidance",
+    version: "v1.8.12",
+    date: "2026-06-26",
+    type: "优化",
+    title: "优化 AI 导入说明",
+    items: [
+      "导入页明确展示当前支持的文件格式和预计等待时间",
+      "补充切换页面后解析不中断的提示，减少 AI 导入过程中的误解",
+    ],
+  },
+  {
     id: "v1.8.11-practice-hub-entry-polish",
     version: "v1.8.11",
     date: "2026-06-26",
