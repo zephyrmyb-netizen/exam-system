@@ -8,6 +8,17 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.8.7-mobile-nav-practice-exit",
+    version: "v1.8.7",
+    date: "2026-06-26",
+    type: "修复",
+    title: "优化手机端底部导航与练习退出",
+    items: [
+      "调整手机端底部导航安全区，减少误触浏览器返回控制的情况",
+      "练习结束弹窗主按钮改为“结束练习”，操作含义更清楚",
+    ],
+  },
+  {
     id: "v1.8.6-ai-import-error-safety",
     version: "v1.8.6",
     date: "2026-06-26",

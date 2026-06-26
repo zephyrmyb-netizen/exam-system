@@ -87,7 +87,7 @@
   /* ── Shell ── */
   --shell-max: 720px;
   --nav-height: 72px;
-  --nav-safe-gap: max(22px, env(safe-area-inset-bottom, 22px));
+  --nav-safe-gap: max(28px, env(safe-area-inset-bottom, 28px));
   --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 10px);
 
   color: var(--text-main);
@@ -204,7 +204,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: var(--nav-safe-gap);
+  bottom: calc(var(--nav-safe-gap) + 6px);
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1634,12 +1634,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 @media (max-width: 420px) {
   .app-shell {
-    padding: 10px 10px calc(var(--nav-height) + var(--space-4));
+    padding: 10px 10px calc(var(--nav-height) + var(--nav-safe-gap) + var(--space-6));
   }
 
   :root {
-    --nav-safe-gap: max(28px, env(safe-area-inset-bottom, 28px));
-    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 8px);
+    --nav-safe-gap: max(52px, env(safe-area-inset-bottom, 52px));
+    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 14px);
   }
 
   .app-header,

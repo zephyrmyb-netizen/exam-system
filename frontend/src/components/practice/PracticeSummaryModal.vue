@@ -66,7 +66,7 @@ defineEmits(["end", "continue"]);
         <div class="practice-summary__actions">
           <button class="practice-primary-button" type="button" @click="$emit('end')">
             <ArrowRight :size="17" :stroke-width="2.5" />
-            <span>结束并返回</span>
+            <span>结束练习</span>
           </button>
           <button class="practice-secondary-button" type="button" @click="$emit('continue')">
             <Play :size="17" :stroke-width="2.5" />
