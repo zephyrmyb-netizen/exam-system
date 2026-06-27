@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [
+  "backend/.venv",
+  "frontend/node_modules",
+  "frontend/dist",
+  "uploads",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

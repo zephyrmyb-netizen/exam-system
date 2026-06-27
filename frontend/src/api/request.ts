@@ -7,7 +7,7 @@ let memoryToken = "";
 function getDefaultApiBaseUrl(): string {
   const { hostname } = window.location;
   if (hostname && hostname !== "localhost" && hostname !== "127.0.0.1") {
-    // Production: use relative path (nginx proxies to backend on same origin)
+    // Production: use relative path when nginx proxies backend on same origin.
     return "";
   }
   return "http://127.0.0.1:8000";
@@ -34,7 +34,7 @@ export function setToken(token: string): void {
       window.localStorage.removeItem(TOKEN_KEY);
     }
   } catch {
-    // localStorage unavailable in some mobile WebViews — memory token suffices
+    // Some embedded mobile WebViews may disable localStorage; keep memory token.
   }
   emitAuthChange({ token: token || "" });
 }
@@ -44,7 +44,7 @@ export function clearToken(): void {
   try {
     window.localStorage.removeItem(TOKEN_KEY);
   } catch {
-    // localStorage unavailable — memory token already cleared
+    // localStorage unavailable; memory token is already cleared.
   }
   emitAuthChange({ token: "" });
 }

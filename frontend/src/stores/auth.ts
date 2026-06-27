@@ -74,7 +74,7 @@ export const useAuthStore = defineStore("auth", {
           password,
         });
         const token = normalizeToken(data);
-        if (!token) throw new Error("登录成功，但未收到 token");
+        if (!token) throw new Error("登录成功，但没有收到 token");
         setToken(token);
         await this.fetchProfile();
         this.authMessage = "登录成功。";

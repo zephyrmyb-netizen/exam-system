@@ -1,4 +1,4 @@
-import type { Course, CourseCreate, CourseUpdate } from "@/types";
+import type { Course, CourseUpdate } from "@/types";
 import request from "./request.ts";
 
 export function getMyCourses(): Promise<Course[]> {

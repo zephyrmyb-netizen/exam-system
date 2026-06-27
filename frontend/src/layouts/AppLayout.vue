@@ -1,19 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAuth } from "../stores/auth";
-import { useAiImportTask } from "../stores/aiImportTask";
+import { ArrowLeft, CheckCircle, Home, Library, Plus, Sparkles, User } from "@lucide/vue";
+
 import { getAuthEventName, getToken } from "../api/request";
-import {
-  Home,
-  Library,
-  Plus,
-  User,
-  ArrowLeft,
-  Sparkles,
-  CheckCircle,
-} from "@lucide/vue";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
+import { useAiImportTask } from "../stores/aiImportTask";
+import { useAuth } from "../stores/auth";
 
 const route = useRoute();
 const router = useRouter();
@@ -27,7 +20,7 @@ const {
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
-let successTimer = null;
+let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
 
@@ -57,38 +50,28 @@ const sourceAwareRoutes = new Set(["study-overview", "announcements", "practice-
 
 const activeNavKey = computed(() => {
   const nav = route.meta?.navKey;
-  if (route.name === "study-overview") {
+  if (sourceAwareRoutes.has(route.name as string)) {
     if (route.query.from === "home") return "home";
     if (route.query.from === "mine") return "mine";
     return nav || "";
-  }
-  if (route.name === "announcements") {
-    if (route.query.from === "home") return "home";
-    if (route.query.from === "mine") return "mine";
-    return nav || "";
-  }
-  if (route.name === "practice-history") {
-    if (route.query.from === "home") return "home";
-    if (route.query.from === "mine") return "mine";
-    return "";
   }
   return nav || "";
 });
 
-const showHeader = computed(() => !["home", "mine"].includes(route.name));
+const showHeader = computed(() => !["home", "mine"].includes(route.name as string));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
   const allowedFromRoutes = ["home", "mine", "courses", "practice", "public-library"];
   const from = route.query.from;
 
-  if (sourceAwareRoutes.has(route.name) && from && allowedFromRoutes.includes(from)) {
+  if (sourceAwareRoutes.has(route.name as string) && typeof from === "string" && allowedFromRoutes.includes(from)) {
     router.replace({ name: from });
     return;
   }
 
   const parent = route.meta?.parent;
-  if (parent) {
+  if (typeof parent === "string") {
     router.replace({ name: parent, params: { ...route.params } });
     return;
   }
@@ -102,7 +85,7 @@ function handleAuthChange() {
   }
 }
 
-function handleTabClick(item) {
+function handleTabClick(item: { to: string }) {
   if (route.path === item.to) return;
   router.replace({ path: item.to });
 }
@@ -113,9 +96,7 @@ function goToImportTab() {
 }
 
 onMounted(() => {
-  if (getToken()) {
-    fetchProfile();
-  }
+  if (getToken()) fetchProfile();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
 });
@@ -130,14 +111,9 @@ onUnmounted(() => {
 <template>
   <div class="app-shell">
     <header v-if="showHeader" class="app-header">
-      <button
-        v-if="showBackButton"
-        class="ghost-button back-button"
-        type="button"
-        @click="goBack"
-      >
+      <button v-if="showBackButton" class="layout-back-button" type="button" @click="goBack">
         <ArrowLeft :size="18" :stroke-width="2.5" />
-        <span style="margin-left: 4px">返回</span>
+        <span>返回</span>
       </button>
       <div class="page-intro">
         <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
@@ -155,17 +131,17 @@ onUnmounted(() => {
     >
       <span class="ai-banner-dot"></span>
       <span class="ai-banner-text">
-        {{ aiProgressTitle }}
+        {{ aiProgressTitle || "AI 正在解析题目，请稍候" }}
         <small v-if="aiFileName"> · {{ aiFileName }}</small>
         <small v-if="aiProgressDetail"> · {{ aiProgressDetail }}</small>
       </span>
       <span class="ai-banner-arrow">
-        <ArrowLeft :size="14" :stroke-width="2.5" style="transform:rotate(180deg)" />
+        <ArrowLeft :size="14" :stroke-width="2.5" style="transform: rotate(180deg)" />
       </span>
     </div>
 
     <div v-if="showSuccessToast" class="ai-task-toast">
-      <CheckCircle :size="16" :stroke-width="2.5" style="margin-right:6px;flex-shrink:0" />
+      <CheckCircle :size="16" :stroke-width="2.5" />
       <span>导入解析完成</span>
     </div>
 
@@ -178,23 +154,12 @@ onUnmounted(() => {
         v-for="item in navItems"
         :key="item.key"
         class="nav-button"
-        :class="{
-          active: activeNavKey === item.key,
-          'nav-button--ai': item.emphasis,
-        }"
+        :class="{ active: activeNavKey === item.key, 'nav-button--ai': item.emphasis }"
         type="button"
         @click.stop.prevent="handleTabClick(item)"
       >
-        <span
-          class="nav-icon"
-          :class="{ 'nav-icon--ai': item.emphasis }"
-          aria-hidden="true"
-        >
-          <component
-            :is="item.icon"
-            :size="item.emphasis ? 24 : 20"
-            :stroke-width="item.emphasis ? 2.4 : 2"
-          />
+        <span class="nav-icon" :class="{ 'nav-icon--ai': item.emphasis }" aria-hidden="true">
+          <component :is="item.icon" :size="item.emphasis ? 24 : 20" :stroke-width="item.emphasis ? 2.4 : 2" />
         </span>
         <span class="nav-label">{{ item.label }}</span>
       </button>
@@ -205,36 +170,43 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.ghost-button.back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  white-space: nowrap;
+.app-shell {
+  min-height: 100vh;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
-.nav-button {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+.app-header {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.layout-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-main);
+  font-weight: 800;
 }
 
 .ai-task-banner {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-2);
   padding: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-2);
   border: 1px solid var(--line-accent);
   border-radius: var(--radius-md);
   background: var(--primary-soft);
   cursor: pointer;
-  transition: background var(--ease-out);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.ai-task-banner:active {
-  background: #dbeafe;
 }
 
 .ai-banner-dot {
@@ -254,54 +226,91 @@ onUnmounted(() => {
 .ai-banner-text {
   flex: 1;
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--primary-strong);
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .ai-banner-text small {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-weight: 650;
 }
 
 .ai-banner-arrow {
-  flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: var(--primary);
+  color: var(--primary-strong);
 }
 
 .ai-task-toast {
   position: fixed;
-  bottom: calc(var(--nav-height) + var(--space-4));
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
+  bottom: calc(104px + env(safe-area-inset-bottom));
+  z-index: 80;
   display: inline-flex;
   align-items: center;
-  padding: var(--space-2) var(--space-4);
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
   border-radius: var(--radius-full);
-  background: var(--emerald-soft);
-  border: 1px solid var(--emerald-border);
-  color: var(--emerald);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  box-shadow: var(--shadow-elevated);
-  animation: ai-toast-in 0.3s ease-out;
-  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-modal);
 }
 
-@keyframes ai-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
+.bottom-nav {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  z-index: 70;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  min-height: 78px;
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(18px);
+}
+
+.nav-button {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 56px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.nav-button.active { color: var(--primary); }
+.nav-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 14px; }
+.nav-icon--ai {
+  width: 58px;
+  height: 58px;
+  margin-top: -28px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.32);
+}
+.nav-label { line-height: 1; }
+
+@media (min-width: 760px) {
+  .app-shell { max-width: 640px; margin: 0 auto; }
+  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100vw - 28px)); transform: translateX(-50%); }
 }
 </style>

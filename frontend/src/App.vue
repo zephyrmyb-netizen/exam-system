@@ -1,5 +1,9 @@
-<script setup>
-// App.vue — 根组件，只渲染由路由器决定的顶层布局
+<script setup lang="ts">
+import { onMounted } from "vue";
+import { useThemeStore } from "@/stores/theme";
+
+const theme = useThemeStore();
+onMounted(() => theme.init());
 </script>
 
 <template>
