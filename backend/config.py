@@ -3,6 +3,7 @@ import warnings
 from pathlib import Path
 
 from dotenv import dotenv_values
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ── Load .env ───────────────────────────────────────────────────────────────
 _backend_dir = Path(__file__).resolve().parent
@@ -75,6 +76,40 @@ if os.getenv("SKIP_DOTENV", "").lower() not in {"1", "true", "yes"}:
     _dotenv_values = _load_dotenv_values(_dotenv_path)
     DOTENV_LOADED = bool(_dotenv_values)
     _apply_env_values(_dotenv_values)
+
+
+class AppSettings(BaseSettings):
+    """Typed environment snapshot.
+
+    Keep module-level constants below for existing imports, but centralize
+    environment parsing here so new code has a typed settings object.
+    """
+
+    model_config = SettingsConfigDict(extra="ignore")
+
+    app_env: str = "development"
+    app_timezone: str = "Asia/Shanghai"
+    database_url: str = f"sqlite:///{_backend_dir / 'exam_system.db'}"
+    secret_key: str = "change-this-secret-key-in-production"
+    access_token_expire_minutes: int = 1440
+    cors_origins: str = ""
+    invite_code: str = "dev-invite"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    chat_rate_limit_per_hour: int = 20
+    chat_max_message_length: int = 4000
+    chat_max_history_messages: int = 20
+    chat_max_history_total_length: int = 20000
+    chat_upstream_timeout: float = 90
+    import_upstream_timeout: float = 90
+    import_chunk_size: int = 5000
+    import_max_chunks: int = 3
+    import_rate_limit_per_hour: int = 10
+    redis_url: str = ""
+
+
+SETTINGS = AppSettings()
 
 # ── Environment ─────────────────────────────────────────────────────────────
 APP_ENV = os.getenv("APP_ENV", "").lower() or os.getenv("ENV", "").lower() or "development"

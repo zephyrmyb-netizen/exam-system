@@ -3,6 +3,7 @@ import sys
 import warnings
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,9 +16,12 @@ from .config import (
     _RAW_CORS,
 )
 from .database import Base, engine
+from .logging_config import configure_logging
+from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
 
-logger = logging.getLogger("exam_system")
+configure_logging()
+logger = structlog.get_logger("exam_system")
 
 
 @asynccontextmanager
@@ -27,6 +31,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Exam System API", version="1.0.0", lifespan=lifespan)
+app.add_middleware(RequestIDMiddleware)
 
 # ── Startup warnings (development only — production errors are raised in config.py) ─
 if not IS_PRODUCTION:

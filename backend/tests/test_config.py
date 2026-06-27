@@ -6,6 +6,14 @@ from pathlib import Path
 import pytest
 
 
+def test_config_exposes_typed_settings_snapshot():
+    from backend import config
+
+    assert config.SETTINGS.app_env == config.APP_ENV
+    assert config.SETTINGS.invite_code == config.INVITE_CODE
+    assert config.SETTINGS.openai_model == config.OPENAI_MODEL
+
+
 def _clean_test_env():
     """Remove all TEST_* keys from os.environ."""
     for k in list(os.environ.keys()):
