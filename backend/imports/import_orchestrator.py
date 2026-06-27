@@ -4,7 +4,7 @@ import re
 import tempfile
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -220,7 +220,7 @@ def build_ai_repair_prompt(raw_response: str) -> str:
         '"question":"question text","options":{"A":"option A","B":"option B"},'
         '"answer":"correct answer","analysis":"short explanation","subject":"subject name",'
         '"chapter":"chapter name","difficulty":"easy | normal | hard"}]}\n'
-        "If the text contains no question, return {\"questions\":[]}.\n\n"
+        'If the text contains no question, return {"questions":[]}.\n\n'
         f"Previous response:\n{raw_response}"
     )
 
@@ -257,13 +257,7 @@ def question_items_from_parsed_json(parsed: Any) -> list[dict[str, Any]]:
     if isinstance(parsed, list):
         return parsed
     if isinstance(parsed, dict):
-        items = (
-            parsed.get("questions")
-            or parsed.get("items")
-            or parsed.get("data")
-            or parsed.get("result")
-            or []
-        )
+        items = parsed.get("questions") or parsed.get("items") or parsed.get("data") or parsed.get("result") or []
         if not items and parsed and ("question" in parsed or "type" in parsed):
             return [parsed]
         return items if isinstance(items, list) else []
@@ -306,7 +300,7 @@ def json_candidates_from_text(raw: str) -> list[str]:
                 elif ch == close_char:
                     depth -= 1
                     if depth == 0:
-                        candidates.append(text[start:idx + 1].strip())
+                        candidates.append(text[start : idx + 1].strip())
                         break
             start = text.find(open_char, start + 1)
 
@@ -361,6 +355,7 @@ def _build_import_client():
             timeout=IMPORT_UPSTREAM_TIMEOUT,
         )
     from ..services.ai_client import get_import_client
+
     return get_import_client()
 
 
@@ -406,12 +401,7 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
         return [], [f"第 {chunk_index + 1} 部分 AI 返回了空响应"]
 
     items, warnings = extract_questions_from_ai_response(raw)
-    should_repair = (
-        not items
-        and raw.strip()
-        and '"questions"' not in raw
-        and '"question"' not in raw
-    )
+    should_repair = not items and raw.strip() and '"questions"' not in raw and '"question"' not in raw
     if should_repair:
         try:
             repair_response = client.chat.completions.create(
@@ -596,7 +586,7 @@ def persist_imported_questions(
     course_id: int,
     questions: list[schemas.ImportedQuestion | dict[str, Any]],
 ) -> int:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     models_to_add: list[QuestionModel] = []
     for question_data in questions:
         data = question_data.model_dump() if hasattr(question_data, "model_dump") else question_data

@@ -1,9 +1,8 @@
 """Tests for backend/config.py dotenv loading logic."""
+
 import os
 import tempfile
 from pathlib import Path
-
-import pytest
 
 
 def test_config_exposes_typed_settings_snapshot():
@@ -92,6 +91,7 @@ class TestDotenvLoading:
         values["TEST_SKIP_EXISTING"] = "override_attempt"
 
         from backend.config import _apply_env_values
+
         _apply_env_values(values, preserve_existing=True)
         assert os.environ.get("TEST_SKIP_EXISTING") == "keep_me"
         # Clean up
@@ -100,6 +100,7 @@ class TestDotenvLoading:
     def test_missing_env_file_does_not_raise(self):
         """Missing .env returns empty dict."""
         from backend.config import _load_dotenv_values
+
         result = _load_dotenv_values(Path("/nonexistent/.env"))
         assert result == {}
 
@@ -108,6 +109,7 @@ class TestDotenvLoading:
     @staticmethod
     def _apply_env_file(env_path, preserve_existing=None):
         """Simulate config.py's env loading for a specific file."""
-        from backend.config import _load_dotenv_values, _apply_env_values
+        from backend.config import _apply_env_values, _load_dotenv_values
+
         values = _load_dotenv_values(env_path)
         _apply_env_values(values, preserve_existing=preserve_existing)

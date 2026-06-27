@@ -18,6 +18,17 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.10.2-backend-ruff-baseline",
+    version: "v1.10.2",
+    date: "2026-06-27",
+    type: "优化",
+    title: "补齐后端 Ruff 代码质量基线",
+    items: [
+      "整理后端导入、类型标注和未使用代码，让 Ruff 全量检查可以稳定通过。",
+      "补充 Ruff 后端依赖，确保重新安装环境后也能执行同一套代码质量检查。",
+    ],
+  },
+  {
     id: "v1.10.1-layered-courses-api",
     version: "v1.10.1",
     date: "2026-06-27",

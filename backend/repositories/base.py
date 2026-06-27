@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy.orm import Query, Session
 
@@ -17,7 +17,7 @@ class BaseRepository(Generic[ModelType]):
     Business rules stay in services; repositories only compose queries.
     """
 
-    model: Type[ModelType]
+    model: type[ModelType]
 
     def __init__(self, db: Session):
         self.db = db

@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
@@ -42,7 +42,8 @@ def batch_import(
         batch_course_id = bank.id
 
     count = crud.create_questions_batch(
-        db, questions,
+        db,
+        questions,
         owner_id=current_user.id,
         course_id=batch_course_id,
         visibility="private",
@@ -84,8 +85,12 @@ def list_questions(
     questions, total = crud.get_questions(
         db,
         user_id=current_user.id,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
     items = [q.to_dict() for q in questions]
@@ -112,8 +117,12 @@ def list_my_questions(
     questions, total = crud.get_my_questions(
         db,
         user_id=current_user.id,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
     items = [q.to_dict() for q in questions]
@@ -139,8 +148,12 @@ def list_public_questions(
     """List all public questions (the public question pool)."""
     questions, total = crud.get_public_questions(
         db,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
     items = [q.to_dict() for q in questions]

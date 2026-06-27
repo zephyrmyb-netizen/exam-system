@@ -1,7 +1,6 @@
 """AI chat endpoint for study assistance."""
 
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
@@ -37,7 +36,7 @@ class HistoryMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    history: List[HistoryMessage] | None = None
+    history: list[HistoryMessage] | None = None
 
 
 class ChatResponse(BaseModel):

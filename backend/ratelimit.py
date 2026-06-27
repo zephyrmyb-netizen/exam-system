@@ -15,6 +15,7 @@ The active limiter is chosen in :func:`get_limiter` based on whether
 :func:`rate_limiter` (and the action-specific wrappers in routers) so the
 backend can be swapped in tests via ``app.dependency_overrides``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,11 +77,7 @@ class MemoryRateLimiter:
         self._calls_since_prune = 0
         cutoff = now - window_s
         # Keep keys that have at least one still-valid timestamp.
-        self._store = {
-            k: [t for t in v if t > cutoff]
-            for k, v in self._store.items()
-            if any(t > cutoff for t in v)
-        }
+        self._store = {k: [t for t in v if t > cutoff] for k, v in self._store.items() if any(t > cutoff for t in v)}
 
 
 class RedisRateLimiter:
@@ -100,9 +97,7 @@ class RedisRateLimiter:
         try:
             self._redis.ping()
         except Exception as exc:  # pragma: no cover - environment dependent
-            logger.warning(
-                "Redis connection failed (%s); rate limiting will be inaccurate.", exc
-            )
+            logger.warning("Redis connection failed (%s); rate limiting will be inaccurate.", exc)
 
     def check(self, *, key: str, limit: int, window_s: int = 3600) -> None:
         redis_key = f"{self._KEY_PREFIX}{key}"
@@ -137,9 +132,7 @@ def get_limiter() -> RateLimiter:
             _limiter = RedisRateLimiter(REDIS_URL)
             logger.info("Rate limiting backed by Redis: %s", REDIS_URL)
         except Exception as exc:  # pragma: no cover - environment dependent
-            logger.warning(
-                "Could not initialize Redis limiter (%s); falling back to memory.", exc
-            )
+            logger.warning("Could not initialize Redis limiter (%s); falling back to memory.", exc)
             _limiter = MemoryRateLimiter()
     else:
         _limiter = MemoryRateLimiter()

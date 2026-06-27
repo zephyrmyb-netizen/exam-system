@@ -1,9 +1,7 @@
 """Tests for imports endpoints: file upload, size limits, AI auto import."""
-import io
-import time
-from unittest.mock import MagicMock, patch
 
-import pytest
+import io
+from unittest.mock import MagicMock, patch
 
 from backend.main import app
 from backend.ratelimit import MemoryRateLimiter
@@ -11,16 +9,18 @@ from backend.ratelimit import MemoryRateLimiter
 
 def _mock_import_ai_response(questions=None):
     """Return a mock OpenAI completion with valid question JSON."""
-    from unittest.mock import MagicMock
     if questions is None:
-        questions = [{
-            "question": "测试题目？",
-            "type": "single_choice",
-            "options": {"A": "对", "B": "错"},
-            "answer": "A",
-            "analysis": "测试解析",
-        }]
+        questions = [
+            {
+                "question": "测试题目？",
+                "type": "single_choice",
+                "options": {"A": "对", "B": "错"},
+                "answer": "A",
+                "analysis": "测试解析",
+            }
+        ]
     import json
+
     choice = MagicMock()
     choice.message.content = json.dumps({"questions": questions}, ensure_ascii=False)
     completion = MagicMock()
@@ -33,6 +33,7 @@ def _mock_import_ai_response(questions=None):
 def _make_docx_bytes(text: str = "Test content paragraph.\nSecond paragraph.") -> bytes:
     """Create a minimal .docx file in-memory."""
     from docx import Document
+
     doc = Document()
     for line in text.split("\n"):
         doc.add_paragraph(line)
@@ -51,7 +52,13 @@ class TestFileImport:
         resp = client.post(
             self.FILE_UPLOAD,
             headers=auth_headers,
-            files={"file": ("test.docx", content, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            files={
+                "file": (
+                    "test.docx",
+                    content,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -64,8 +71,13 @@ class TestFileImport:
         resp = client.post(
             self.FILE_UPLOAD,
             headers=auth_headers,
-            files={"file": ("java复习题.docx", content,
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            files={
+                "file": (
+                    "java复习题.docx",
+                    content,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -86,8 +98,13 @@ class TestFileImport:
         resp = client.post(
             self.FILE_UPLOAD,
             headers=auth_headers,
-            files={"file": ("large.docx", large_content,
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            files={
+                "file": (
+                    "large.docx",
+                    large_content,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
         )
         assert resp.status_code == 413
         assert "超过" in resp.json()["detail"]
@@ -103,8 +120,13 @@ class TestFileImport:
         resp = client.post(
             self.FILE_AUTO,
             headers=auth_headers,
-            files={"file": ("test.docx", content,
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            files={
+                "file": (
+                    "test.docx",
+                    content,
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            },
         )
         assert resp.status_code == 400
         detail = resp.json()["detail"]
@@ -116,31 +138,38 @@ class TestDeriveCourseName:
 
     def test_normal_file(self):
         from backend.crud import derive_course_name_from_filename
+
         assert derive_course_name_from_filename("java复习题.docx") == "java复习题"
 
     def test_pptx_file(self):
         from backend.crud import derive_course_name_from_filename
+
         assert derive_course_name_from_filename("期末考试题.pptx") == "期末考试题"
 
     def test_whitespace_collapsed(self):
         from backend.crud import derive_course_name_from_filename
+
         assert derive_course_name_from_filename("  期末  考试 题.pptx ") == "期末 考试 题"
 
     def test_empty_filename(self):
         from backend.crud import derive_course_name_from_filename
+
         assert derive_course_name_from_filename("") == "未分类题库"
 
     def test_none_filename(self):
         from backend.crud import derive_course_name_from_filename
+
         assert derive_course_name_from_filename(None) == "未分类题库"
 
     def test_illegal_chars_stripped(self):
         from backend.crud import derive_course_name_from_filename
+
         result = derive_course_name_from_filename("math: test? <foo>.docx")
         assert "math test foo" == result or "math  test  foo" == result
 
     def test_truncate_long(self):
         from backend.crud import derive_course_name_from_filename
+
         long_name = "a" * 200 + ".docx"
         result = derive_course_name_from_filename(long_name)
         assert len(result) == 80
@@ -151,9 +180,18 @@ class TestCourseNameInBatchImport:
 
     def test_batch_with_course_name_creates_new(self, client, auth_headers):
         """batch?course_name=Java复习题 should create that bank."""
-        resp = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers, params={"course_name": "Java复习题"})
+        resp = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+            params={"course_name": "Java复习题"},
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["course_name"] == "Java复习题"
@@ -161,12 +199,30 @@ class TestCourseNameInBatchImport:
 
     def test_batch_with_course_name_reuses_existing(self, client, auth_headers):
         """Second batch with same course_name should reuse the bank."""
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q1?", "answer": "A",
-        }], headers=auth_headers, params={"course_name": "Reused"})
-        resp2 = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q2?", "answer": "B",
-        }], headers=auth_headers, params={"course_name": "Reused"})
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q1?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+            params={"course_name": "Reused"},
+        )
+        resp2 = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q2?",
+                    "answer": "B",
+                }
+            ],
+            headers=auth_headers,
+            params={"course_name": "Reused"},
+        )
         assert resp2.status_code == 200
         data = resp2.json()
         assert data["course_name"] == "Reused"
@@ -183,17 +239,34 @@ class TestCourseNameInBatchImport:
         cid = bank["id"]
 
         # Use course_id, passing a different course_name
-        resp = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers, params={"course_id": cid, "course_name": "Ignored"})
+        resp = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+            params={"course_id": cid, "course_name": "Ignored"},
+        )
         assert resp.status_code == 200
         assert resp.json()["course_name"] == "ExistingCourse"
 
     def test_batch_without_course_name_fallsback_uncategorized(self, client, auth_headers):
         """No course_id and no course_name → fallback to 未分类题库."""
-        resp = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers)
+        resp = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["course_name"] == "未分类题库"
@@ -207,13 +280,26 @@ class TestFileAutoCourseName:
     def _mock_openai_response(self):
         """Return a mock OpenAI response that returns a valid questions JSON."""
         import json
+
         mock = patch("backend.routers.imports.OpenAI")
         mock_client = mock.start()
         instance = mock_client.return_value
         instance.chat.completions.create.return_value.choices = [
-            type("obj", (), {"message": type("obj", (), {"content": json.dumps({
-                "questions": [{"type": "fill_blank", "question": "Mock Q?", "answer": "A"}]
-            })})()})()
+            type(
+                "obj",
+                (),
+                {
+                    "message": type(
+                        "obj",
+                        (),
+                        {
+                            "content": json.dumps(
+                                {"questions": [{"type": "fill_blank", "question": "Mock Q?", "answer": "A"}]}
+                            )
+                        },
+                    )()
+                },
+            )()
         ]
         return mock
 
@@ -229,8 +315,13 @@ class TestFileAutoCourseName:
             resp = client.post(
                 self.FILE_AUTO,
                 headers=auth_headers,
-                files={"file": ("ignored.docx", content,
-                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                files={
+                    "file": (
+                        "ignored.docx",
+                        content,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
                 params={"course_name": "Java复习题"},
             )
             assert resp.status_code == 200
@@ -253,8 +344,13 @@ class TestFileAutoCourseName:
             resp = client.post(
                 self.FILE_AUTO,
                 headers=auth_headers,
-                files={"file": ("ignored.docx", content,
-                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                files={
+                    "file": (
+                        "ignored.docx",
+                        content,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
                 params={"course_id": cid, "course_name": "IgnoredName"},
             )
             assert resp.status_code == 200
@@ -272,8 +368,13 @@ class TestFileAutoCourseName:
             resp = client.post(
                 self.FILE_AUTO,
                 headers=auth_headers,
-                files={"file": ("java复习题.docx", content,
-                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                files={
+                    "file": (
+                        "java复习题.docx",
+                        content,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
             )
             assert resp.status_code == 200
             data = resp.json()
@@ -286,9 +387,14 @@ class TestFileAutoCourseName:
         """Different users with same course_name should get separate banks."""
         alice = auth_headers
         # Register bob
-        client.post("/auth/register", json={
-            "username": "bob_auto_cn", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "bob_auto_cn",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "bob_auto_cn", "password": "pass"})
         bob = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -297,12 +403,14 @@ class TestFileAutoCourseName:
             content = self._make_docx()
 
             r1 = client.post(
-                self.FILE_AUTO, headers=alice,
+                self.FILE_AUTO,
+                headers=alice,
                 files={"file": ("ignored.docx", content, "application/octet-stream")},
                 params={"course_name": "SharedName"},
             )
             r2 = client.post(
-                self.FILE_AUTO, headers=bob,
+                self.FILE_AUTO,
+                headers=bob,
                 files={"file": ("ignored.docx", content, "application/octet-stream")},
                 params={"course_name": "SharedName"},
             )
@@ -317,9 +425,14 @@ class TestCourseNameUserIsolation:
     """Different users should have separate banks even with the same name."""
 
     def _auth(self, client, username):
-        client.post("/auth/register", json={
-            "username": username, "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": username,
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": username, "password": "pass"})
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -328,15 +441,33 @@ class TestCourseNameUserIsolation:
         bob = self._auth(client, "bob_cn")
 
         # Alice creates a course via batch import
-        r = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Alice Q?", "answer": "A",
-        }], headers=alice, params={"course_name": "MyCourse"})
+        r = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Alice Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=alice,
+            params={"course_name": "MyCourse"},
+        )
         alice_cid = r.json()["course_id"]
 
         # Bob does the same — should create a separate bank
-        r = client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Bob Q?", "answer": "B",
-        }], headers=bob, params={"course_name": "MyCourse"})
+        r = client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Bob Q?",
+                    "answer": "B",
+                }
+            ],
+            headers=bob,
+            params={"course_name": "MyCourse"},
+        )
         bob_cid = r.json()["course_id"]
 
         # Different course IDs
@@ -355,6 +486,7 @@ class TestPreviewImport:
     def _mock_openai_response(self, questions_data=None):
         """Return a mock OpenAI response for preview."""
         import json
+
         if questions_data is None:
             questions_data = [{"type": "fill_blank", "question": "Preview Q?", "answer": "Ans"}]
         return self._mock_openai_raw_response(json.dumps({"questions": questions_data}))
@@ -378,7 +510,8 @@ class TestPreviewImport:
         mock = self._mock_openai_response()
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 200
@@ -407,7 +540,8 @@ class TestPreviewImport:
         mock = self._mock_openai_response(data)
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 200
@@ -429,7 +563,8 @@ class TestPreviewImport:
         mock = self._mock_openai_raw_response(raw)
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 200
@@ -446,7 +581,8 @@ class TestPreviewImport:
         mock = self._mock_openai_raw_response(raw)
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 200
@@ -461,7 +597,8 @@ class TestPreviewImport:
         mock = self._mock_openai_response([])
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 400
@@ -473,7 +610,8 @@ class TestPreviewImport:
     def test_preview_no_openai_key(self, client, auth_headers):
         """Without key, preview returns 400."""
         resp = client.post(
-            self.PREVIEW_URL, headers=auth_headers,
+            self.PREVIEW_URL,
+            headers=auth_headers,
             files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
         )
         assert resp.status_code == 400
@@ -487,7 +625,8 @@ class TestPreviewImport:
         mc.side_effect = RuntimeError("upstream exploded")
         try:
             resp = client.post(
-                self.PREVIEW_URL, headers=auth_headers,
+                self.PREVIEW_URL,
+                headers=auth_headers,
                 files={"file": ("test.docx", self._make_docx(), "application/octet-stream")},
             )
             assert resp.status_code == 502
@@ -499,7 +638,8 @@ class TestPreviewImport:
 
     def test_preview_unsupported_format(self, client, auth_headers):
         resp = client.post(
-            self.PREVIEW_URL, headers=auth_headers,
+            self.PREVIEW_URL,
+            headers=auth_headers,
             files={"file": ("test.txt", b"hello", "text/plain")},
         )
         assert resp.status_code == 400
@@ -513,14 +653,17 @@ class TestConfirmImport:
 
     def test_confirm_creates_questions(self, client, auth_headers):
         """Confirm with valid questions should create questions and a course."""
-        resp = client.post(self.CONFIRM_URL, json={
-            "questions": [
-                {"type": "fill_blank", "question": "Confirm Q?", "answer": "Ans"},
-                {"type": "single_choice", "question": "Choice?",
-                 "options": {"A": "a", "B": "b"}, "answer": "A"},
-            ],
-            "course_name": "ConfirmCourse",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.CONFIRM_URL,
+            json={
+                "questions": [
+                    {"type": "fill_blank", "question": "Confirm Q?", "answer": "Ans"},
+                    {"type": "single_choice", "question": "Choice?", "options": {"A": "a", "B": "b"}, "answer": "A"},
+                ],
+                "course_name": "ConfirmCourse",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["imported_count"] == 2
@@ -535,26 +678,33 @@ class TestConfirmImport:
         """Confirm with existing course_id should add to that course."""
         bank = client.post("/courses/", json={"name": "Existing"}, headers=auth_headers).json()
         cid = bank["id"]
-        resp = client.post(self.CONFIRM_URL, json={
-            "questions": [
-                {"type": "fill_blank", "question": "Add to existing?", "answer": "Yes"},
-            ],
-            "course_id": cid,
-        }, headers=auth_headers)
+        resp = client.post(
+            self.CONFIRM_URL,
+            json={
+                "questions": [
+                    {"type": "fill_blank", "question": "Add to existing?", "answer": "Yes"},
+                ],
+                "course_id": cid,
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["imported_count"] == 1
         assert resp.json()["course_name"] == "Existing"
 
     def test_confirm_rollback_on_invalid(self, client, auth_headers):
         """If one question is invalid, no course or questions should be created."""
-        resp = client.post(self.CONFIRM_URL, json={
-            "questions": [
-                {"type": "fill_blank", "question": "Valid Q?", "answer": "Correct"},
-                {"type": "single_choice", "question": "No options?",
-                 "options": None, "answer": "A"},
-            ],
-            "course_name": "RollbackTest",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.CONFIRM_URL,
+            json={
+                "questions": [
+                    {"type": "fill_blank", "question": "Valid Q?", "answer": "Correct"},
+                    {"type": "single_choice", "question": "No options?", "options": None, "answer": "A"},
+                ],
+                "course_name": "RollbackTest",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 422
 
         # Verify no questions were created
@@ -566,20 +716,28 @@ class TestConfirmImport:
         assert all(c["name"] != "RollbackTest" for c in courses)
 
     def test_confirm_empty_questions_rejected(self, client, auth_headers):
-        resp = client.post(self.CONFIRM_URL, json={
-            "questions": [],
-            "course_name": "Empty",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.CONFIRM_URL,
+            json={
+                "questions": [],
+                "course_name": "Empty",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 422
         assert "没有" in resp.text
 
     def test_confirm_nonexistent_course_id(self, client, auth_headers):
-        resp = client.post(self.CONFIRM_URL, json={
-            "questions": [
-                {"type": "fill_blank", "question": "Q?", "answer": "A"},
-            ],
-            "course_id": 99999,
-        }, headers=auth_headers)
+        resp = client.post(
+            self.CONFIRM_URL,
+            json={
+                "questions": [
+                    {"type": "fill_blank", "question": "Q?", "answer": "A"},
+                ],
+                "course_id": 99999,
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 400
 
 
@@ -589,6 +747,7 @@ class TestEnhancedTextExtraction:
     def test_validator_rejects_bad_question(self):
         """Test _validate_question_item directly."""
         from backend.routers.imports import _validate_question_item
+
         # Missing question
         result, err = _validate_question_item({"type": "fill_blank", "answer": "A"})
         assert result is None
@@ -596,25 +755,25 @@ class TestEnhancedTextExtraction:
 
     def test_validator_accepts_good_question(self):
         from backend.routers.imports import _validate_question_item
-        result, err = _validate_question_item({
-            "type": "single_choice", "question": "Q?",
-            "options": {"A": "a", "B": "b"}, "answer": "A"
-        })
+
+        result, err = _validate_question_item(
+            {"type": "single_choice", "question": "Q?", "options": {"A": "a", "B": "b"}, "answer": "A"}
+        )
         assert result is not None
         assert err is None
         assert result["type"] == "single_choice"
 
     def test_validator_rejects_choice_without_options(self):
         from backend.routers.imports import _validate_question_item
-        result, err = _validate_question_item({
-            "type": "single_choice", "question": "Q?", "answer": "A"
-        })
+
+        result, err = _validate_question_item({"type": "single_choice", "question": "Q?", "answer": "A"})
         assert result is None
         assert "选项" in (err or "")
 
     def test_docx_table_text_extraction(self, tmp_path):
         """Verify docx tables are included in extracted text."""
         from docx import Document
+
         doc = Document()
         doc.add_paragraph("Normal paragraph")
         table = doc.add_table(rows=2, cols=2)
@@ -625,6 +784,7 @@ class TestEnhancedTextExtraction:
         path = str(tmp_path / "table_test.docx")
         doc.save(path)
         from backend.routers.imports import extract_text_and_warnings
+
         text, warnings = extract_text_and_warnings(path)
         assert "Normal paragraph" in text
         assert "Q1 | Answer1" in text
@@ -640,18 +800,18 @@ class TestAutoImportAIFailure:
     def test_ai_empty_questions_returns_400_no_questions_created(self, client, auth_headers):
         """When AI returns zero questions, endpoint returns 400 and no questions in DB."""
         import json
+
         mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
             inst.chat.completions.create.return_value.choices = [
-                type("obj", (), {"message": type("obj", (), {"content": json.dumps({
-                    "questions": []
-                })})()})()
+                type("obj", (), {"message": type("obj", (), {"content": json.dumps({"questions": []})})()})()
             ]
             content = _make_docx_bytes("Some content that yields no questions.")
             resp = client.post(
-                self.FILE_AUTO, headers=auth_headers,
+                self.FILE_AUTO,
+                headers=auth_headers,
                 files={"file": ("test.docx", content, "application/octet-stream")},
             )
             # Endpoint returns 400 — no questions parsed
@@ -675,7 +835,8 @@ class TestAutoImportAIFailure:
             ]
             content = _make_docx_bytes("Content.")
             resp = client.post(
-                self.FILE_AUTO, headers=auth_headers,
+                self.FILE_AUTO,
+                headers=auth_headers,
                 files={"file": ("test.docx", content, "application/octet-stream")},
             )
             assert resp.status_code >= 400
@@ -688,30 +849,53 @@ class TestAutoImportAIFailure:
     def test_ai_plain_text_response_is_repaired_to_json(self, client, auth_headers):
         """When the first AI response is plain text, retry once to convert it to JSON."""
         import json
+
         mock = patch("backend.routers.imports.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
-            first = type("obj", (), {"message": type("obj", (), {
-                "content": "1. Python 是什么？答案：一种编程语言。解析：常用于后端和数据分析。"
-            })()})()
-            second = type("obj", (), {"message": type("obj", (), {"content": json.dumps({
-                "questions": [
-                    {
-                        "type": "short_answer",
-                        "question": "Python 是什么？",
-                        "answer": "一种编程语言",
-                        "analysis": "Python 常用于后端和数据分析。",
-                    }
-                ]
-            }, ensure_ascii=False)})()})()
+            first = type(
+                "obj",
+                (),
+                {
+                    "message": type(
+                        "obj", (), {"content": "1. Python 是什么？答案：一种编程语言。解析：常用于后端和数据分析。"}
+                    )()
+                },
+            )()
+            second = type(
+                "obj",
+                (),
+                {
+                    "message": type(
+                        "obj",
+                        (),
+                        {
+                            "content": json.dumps(
+                                {
+                                    "questions": [
+                                        {
+                                            "type": "short_answer",
+                                            "question": "Python 是什么？",
+                                            "answer": "一种编程语言",
+                                            "analysis": "Python 常用于后端和数据分析。",
+                                        }
+                                    ]
+                                },
+                                ensure_ascii=False,
+                            )
+                        },
+                    )()
+                },
+            )()
             inst.chat.completions.create.side_effect = [
                 type("obj", (), {"choices": [first]})(),
                 type("obj", (), {"choices": [second]})(),
             ]
             content = _make_docx_bytes("Python 是什么？答案：一种编程语言。")
             resp = client.post(
-                self.FILE_AUTO, headers=auth_headers,
+                self.FILE_AUTO,
+                headers=auth_headers,
                 files={"file": ("test.docx", content, "application/octet-stream")},
             )
             assert resp.status_code == 200
@@ -720,10 +904,9 @@ class TestAutoImportAIFailure:
         finally:
             mock.stop()
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Import rate limiting — security tests
-# ═══════════════════════════════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # Import rate limiting — security tests
+    # ═══════════════════════════════════════════════════════════════════════════════
 
     @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
     def test_ai_upstream_error_returns_safe_detail(self, client, auth_headers):
@@ -732,9 +915,7 @@ class TestAutoImportAIFailure:
         mc = mock.start()
         try:
             inst = mc.return_value
-            inst.chat.completions.create.side_effect = Exception(
-                "401 invalid_api_key sk-secret-should-not-leak"
-            )
+            inst.chat.completions.create.side_effect = Exception("401 invalid_api_key sk-secret-should-not-leak")
             content = _make_docx_bytes("Content.")
             resp = client.post(
                 self.FILE_AUTO,
@@ -760,8 +941,8 @@ class TestImportRateLimit:
         limit = 2
         monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
 
-        from backend.ratelimit import MemoryRateLimiter
         from backend.routers.imports import rate_limiter as rl_dep
+
         real_limiter = MemoryRateLimiter()
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
@@ -772,13 +953,17 @@ class TestImportRateLimit:
 
         for _ in range(limit):
             content = _make_docx_bytes("Rate limit test.")
-            resp = client.post(self.FILE_PREVIEW, headers=auth_headers,
-                               files={"file": ("rl.docx", content, "application/octet-stream")})
+            resp = client.post(
+                self.FILE_PREVIEW,
+                headers=auth_headers,
+                files={"file": ("rl.docx", content, "application/octet-stream")},
+            )
             assert resp.status_code != 429, f"Unexpected 429 within limit: {resp.json()}"
 
         content = _make_docx_bytes("Blocked.")
-        resp = client.post(self.FILE_PREVIEW, headers=auth_headers,
-                           files={"file": ("rl.docx", content, "application/octet-stream")})
+        resp = client.post(
+            self.FILE_PREVIEW, headers=auth_headers, files={"file": ("rl.docx", content, "application/octet-stream")}
+        )
         assert resp.status_code == 429
         assert "过于频繁" in resp.json()["detail"]
 
@@ -786,8 +971,8 @@ class TestImportRateLimit:
         limit = 2
         monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
 
-        from backend.ratelimit import MemoryRateLimiter
         from backend.routers.imports import rate_limiter as rl_dep
+
         real_limiter = MemoryRateLimiter()
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
@@ -798,13 +983,15 @@ class TestImportRateLimit:
 
         for _ in range(limit):
             content = _make_docx_bytes("Auto rate test.")
-            resp = client.post(self.FILE_AUTO, headers=auth_headers,
-                               files={"file": ("auto.docx", content, "application/octet-stream")})
+            resp = client.post(
+                self.FILE_AUTO, headers=auth_headers, files={"file": ("auto.docx", content, "application/octet-stream")}
+            )
             assert resp.status_code != 429, f"Unexpected 429: {resp.json()}"
 
         content = _make_docx_bytes("Blocked.")
-        resp = client.post(self.FILE_AUTO, headers=auth_headers,
-                           files={"file": ("auto.docx", content, "application/octet-stream")})
+        resp = client.post(
+            self.FILE_AUTO, headers=auth_headers, files={"file": ("auto.docx", content, "application/octet-stream")}
+        )
         assert resp.status_code == 429
         assert "过于频繁" in resp.json()["detail"]
 
@@ -812,8 +999,8 @@ class TestImportRateLimit:
         limit = 1
         monkeypatch.setattr("backend.routers.imports.IMPORT_RATE_LIMIT_PER_HOUR", limit)
 
-        from backend.ratelimit import MemoryRateLimiter
         from backend.routers.imports import rate_limiter as rl_dep
+
         real_limiter = MemoryRateLimiter()
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
@@ -825,11 +1012,15 @@ class TestImportRateLimit:
         content = _make_docx_bytes("Per-user test.")
 
         # User A hits the limit
-        resp_a = client.post(self.FILE_PREVIEW, headers=auth_headers,
-                             files={"file": ("a.docx", content, "application/octet-stream")})
+        resp_a = client.post(
+            self.FILE_PREVIEW, headers=auth_headers, files={"file": ("a.docx", content, "application/octet-stream")}
+        )
         assert resp_a.status_code != 429
 
         # User B is NOT blocked (separate key)
-        resp_b = client.post(self.FILE_PREVIEW, headers=auth_headers_other,
-                             files={"file": ("b.docx", content, "application/octet-stream")})
+        resp_b = client.post(
+            self.FILE_PREVIEW,
+            headers=auth_headers_other,
+            files={"file": ("b.docx", content, "application/octet-stream")},
+        )
         assert resp_b.status_code != 429, f"User B wrongly blocked: {resp_b.json()}"

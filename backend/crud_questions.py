@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -37,11 +36,11 @@ def get_questions(
     return apply_pagination(query, page, page_size)
 
 
-def get_question_by_id(db: Session, question_id: int) -> Optional[models.Question]:
+def get_question_by_id(db: Session, question_id: int) -> models.Question | None:
     return db.query(models.Question).filter(models.Question.id == question_id).first()
 
 
-def get_visible_question_by_id(db: Session, question_id: int, user_id: int) -> Optional[models.Question]:
+def get_visible_question_by_id(db: Session, question_id: int, user_id: int) -> models.Question | None:
     query = _add_question_visibility_filter(
         db.query(models.Question).filter(models.Question.id == question_id),
         user_id,
@@ -66,7 +65,7 @@ def create_questions_batch(
             course_id=q_course_id,
             visibility=visibility,
             source=source,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             subject=q.subject,
             chapter=q.chapter,
             type=q.type,
@@ -92,7 +91,9 @@ def delete_question(db: Session, question_id: int) -> bool:
 
 
 def create_single_question(
-    db: Session, data: schemas.QuestionManualCreate, owner_id: int,
+    db: Session,
+    data: schemas.QuestionManualCreate,
+    owner_id: int,
 ) -> models.Question:
     normalized_answer = normalize_answer(data.answer, data.type)
     question = models.Question(
@@ -100,7 +101,7 @@ def create_single_question(
         course_id=data.course_id,
         visibility="private",
         source="manual",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         subject=data.subject,
         chapter=data.chapter,
         type=data.type,
@@ -117,8 +118,10 @@ def create_single_question(
 
 
 def update_question(
-    db: Session, question_id: int, data: schemas.QuestionUpdate,
-) -> Optional[models.Question]:
+    db: Session,
+    question_id: int,
+    data: schemas.QuestionUpdate,
+) -> models.Question | None:
     question = db.query(models.Question).filter(models.Question.id == question_id).first()
     if not question:
         return None
@@ -155,9 +158,7 @@ def update_question(
     return question
 
 
-def update_question_visibility(
-    db: Session, question_id: int, visibility: str
-) -> Optional[models.Question]:
+def update_question_visibility(db: Session, question_id: int, visibility: str) -> models.Question | None:
     question = db.query(models.Question).filter(models.Question.id == question_id).first()
     if not question:
         return None
@@ -225,17 +226,15 @@ def get_my_questions(
 
 
 def get_question_meta(db: Session, user_id: int | None = None) -> dict:
-    query = _add_question_visibility_filter(
-        db.query(models.Question).distinct(), user_id
-    )
+    query = _add_question_visibility_filter(db.query(models.Question).distinct(), user_id)
     subjects = [
-        r[0] for r in query.with_entities(models.Question.subject)
-        .distinct().order_by(models.Question.subject).all()
+        r[0]
+        for r in query.with_entities(models.Question.subject).distinct().order_by(models.Question.subject).all()
         if r[0]
     ]
     chapters = [
-        r[0] for r in query.with_entities(models.Question.chapter)
-        .distinct().order_by(models.Question.chapter).all()
+        r[0]
+        for r in query.with_entities(models.Question.chapter).distinct().order_by(models.Question.chapter).all()
         if r[0]
     ]
     return {"subjects": subjects, "chapters": chapters}

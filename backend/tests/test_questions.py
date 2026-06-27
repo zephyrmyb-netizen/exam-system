@@ -1,8 +1,9 @@
-﻿"""Tests for questions endpoints: batch import, list, delete, validation."""
+"""Tests for questions endpoints: batch import, list, delete, validation."""
+
 import pytest
 from pydantic import ValidationError
+
 from backend.schemas import QuestionCreate
-from backend.utils import normalize_answer
 
 
 class TestQuestionSchema:
@@ -10,28 +11,36 @@ class TestQuestionSchema:
 
     def test_valid_single_choice(self):
         q = QuestionCreate(
-            type="single_choice", question="Q?",
-            options={"A": "a", "B": "b"}, answer="A",
+            type="single_choice",
+            question="Q?",
+            options={"A": "a", "B": "b"},
+            answer="A",
         )
         assert q.answer == "A"
 
     def test_normalize_answer_single_choice(self):
         q = QuestionCreate(
-            type="single_choice", question="Q?",
-            options={"A": "a", "B": "b"}, answer="选项A",
+            type="single_choice",
+            question="Q?",
+            options={"A": "a", "B": "b"},
+            answer="选项A",
         )
         assert q.answer == "A"
 
     def test_normalize_true_false(self):
         q = QuestionCreate(
-            type="true_false", question="Q?", answer="正确",
+            type="true_false",
+            question="Q?",
+            answer="正确",
         )
         assert q.answer == "True"
 
     def test_normalize_multiple_choice(self):
         q = QuestionCreate(
-            type="multiple_choice", question="Q?",
-            options={"A": "a", "B": "b", "C": "c"}, answer="C,A",
+            type="multiple_choice",
+            question="Q?",
+            options={"A": "a", "B": "b", "C": "c"},
+            answer="C,A",
         )
         # Should be sorted: A,C
         assert q.answer == "A,C"
@@ -39,25 +48,34 @@ class TestQuestionSchema:
     def test_empty_question_rejected(self):
         with pytest.raises(ValidationError, match="不能为空"):
             QuestionCreate(
-                type="fill_blank", question="  ", answer="ans",
+                type="fill_blank",
+                question="  ",
+                answer="ans",
             )
 
     def test_invalid_type_rejected(self):
         with pytest.raises(ValidationError, match="无效"):
             QuestionCreate(
-                type="invalid", question="Q?", answer="ans",
+                type="invalid",
+                question="Q?",
+                answer="ans",
             )
 
     def test_missing_options_for_choice(self):
         with pytest.raises(ValidationError, match="必须提供"):
             QuestionCreate(
-                type="single_choice", question="Q?", options=None, answer="A",
+                type="single_choice",
+                question="Q?",
+                options=None,
+                answer="A",
             )
 
     def test_empty_answer_rejected(self):
         with pytest.raises(ValidationError, match="不能为空"):
             QuestionCreate(
-                type="fill_blank", question="Q?", answer="  ",
+                type="fill_blank",
+                question="Q?",
+                answer="  ",
             )
 
 
@@ -73,21 +91,33 @@ class TestQuestionsAPI:
         assert resp.json()["imported_count"] == len(sample_questions)
 
     def test_batch_import_empty_question_rejected(self, client, auth_headers):
-        resp = client.post(self.BATCH_URL, json=[
-            {"type": "fill_blank", "question": "  ", "answer": "ans"},
-        ], headers=auth_headers)
+        resp = client.post(
+            self.BATCH_URL,
+            json=[
+                {"type": "fill_blank", "question": "  ", "answer": "ans"},
+            ],
+            headers=auth_headers,
+        )
         assert resp.status_code == 422
 
     def test_batch_import_invalid_type_rejected(self, client, auth_headers):
-        resp = client.post(self.BATCH_URL, json=[
-            {"type": "invalid", "question": "Q?", "answer": "ans"},
-        ], headers=auth_headers)
+        resp = client.post(
+            self.BATCH_URL,
+            json=[
+                {"type": "invalid", "question": "Q?", "answer": "ans"},
+            ],
+            headers=auth_headers,
+        )
         assert resp.status_code == 422
 
     def test_batch_import_missing_options(self, client, auth_headers):
-        resp = client.post(self.BATCH_URL, json=[
-            {"type": "single_choice", "question": "Q?", "options": None, "answer": "A"},
-        ], headers=auth_headers)
+        resp = client.post(
+            self.BATCH_URL,
+            json=[
+                {"type": "single_choice", "question": "Q?", "options": None, "answer": "A"},
+            ],
+            headers=auth_headers,
+        )
         assert resp.status_code == 422
 
     def test_list_questions_legacy(self, client, auth_headers, sample_questions):
@@ -180,25 +210,42 @@ class TestQuestionUpdate:
     QUESTIONS_BATCH = "/questions/batch"
 
     def _create_question(self, client, auth_headers, q_type="fill_blank"):
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": q_type, "question": "Original Q?", "answer": "Original",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": q_type,
+                    "question": "Original Q?",
+                    "answer": "Original",
+                }
+            ],
+            headers=auth_headers,
+        )
         return client.get("/questions/", headers=auth_headers).json()[0]
 
     def test_update_subject_and_chapter(self, client, auth_headers):
         q = self._create_question(client, auth_headers)
-        resp = client.patch(f"/questions/{q['id']}", json={
-            "subject": "新科目", "chapter": "新章节",
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"/questions/{q['id']}",
+            json={
+                "subject": "新科目",
+                "chapter": "新章节",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["subject"] == "新科目"
         assert resp.json()["chapter"] == "新章节"
 
     def test_update_answer(self, client, auth_headers):
         q = self._create_question(client, auth_headers)
-        resp = client.patch(f"/questions/{q['id']}", json={
-            "answer": "NewAnswer",
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"/questions/{q['id']}",
+            json={
+                "answer": "NewAnswer",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["answer"] == "NewAnswer"
 
@@ -207,44 +254,70 @@ class TestQuestionUpdate:
         # Create a new course
         c_resp = client.post("/courses/", json={"name": "TargetCourse"}, headers=auth_headers)
         new_cid = c_resp.json()["id"]
-        resp = client.patch(f"/questions/{q['id']}", json={
-            "course_id": new_cid,
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"/questions/{q['id']}",
+            json={
+                "course_id": new_cid,
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["course_id"] == new_cid
 
     def test_update_course_id_to_others_course_forbidden(self, client, auth_headers):
         q = self._create_question(client, auth_headers)
         # Create another user and their course
-        client.post("/auth/register", json={
-            "username": "other_edit", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "other_edit",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "other_edit", "password": "pass"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         c_resp = client.post("/courses/", json={"name": "OthersCourse"}, headers=other)
         others_cid = c_resp.json()["id"]
 
-        resp = client.patch(f"/questions/{q['id']}", json={
-            "course_id": others_cid,
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"/questions/{q['id']}",
+            json={
+                "course_id": others_cid,
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 403
 
     def test_update_by_non_owner_forbidden(self, client, auth_headers):
         q = self._create_question(client, auth_headers)
-        client.post("/auth/register", json={
-            "username": "non_owner", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "non_owner",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "non_owner", "password": "pass"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
-        resp = client.patch(f"/questions/{q['id']}", json={
-            "subject": "hacked",
-        }, headers=other)
+        resp = client.patch(
+            f"/questions/{q['id']}",
+            json={
+                "subject": "hacked",
+            },
+            headers=other,
+        )
         assert resp.status_code == 403
 
     def test_nonexistent_question_returns_404(self, client, auth_headers):
-        resp = client.patch("/questions/99999", json={
-            "subject": "ghost",
-        }, headers=auth_headers)
+        resp = client.patch(
+            "/questions/99999",
+            json={
+                "subject": "ghost",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 404
 
 
@@ -254,9 +327,17 @@ class TestQuestionUnpublish:
     QUESTIONS_BATCH = "/questions/batch"
 
     def _publish_question(self, client, auth_headers):
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         q = client.get("/questions/", headers=auth_headers).json()[0]
         client.post(f"/questions/{q['id']}/publish", headers=auth_headers)
         return q["id"]
@@ -268,9 +349,17 @@ class TestQuestionUnpublish:
         assert resp.json()["visibility"] == "private"
 
     def test_unpublish_already_private_returns_400(self, client, auth_headers):
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Private Q?", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Private Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
         # Already private
         resp = client.post(f"/questions/{qid}/unpublish", headers=auth_headers)
@@ -279,9 +368,14 @@ class TestQuestionUnpublish:
 
     def test_unpublish_by_non_owner_forbidden(self, client, auth_headers):
         qid = self._publish_question(client, auth_headers)
-        client.post("/auth/register", json={
-            "username": "unpub_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "unpub_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "unpub_other", "password": "pass"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/questions/{qid}/unpublish", headers=other)

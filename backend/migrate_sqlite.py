@@ -15,10 +15,9 @@ What it does:
 7. Reports what was changed
 """
 
-import os
 import shutil
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "exam_system.db"
@@ -60,9 +59,7 @@ def _add_unique_constraint_if_missing(cur, table, constraint_name, columns):
 
     # Create unique index
     try:
-        cur.execute(
-            f"CREATE UNIQUE INDEX {constraint_name} ON {table}({columns})"
-        )
+        cur.execute(f"CREATE UNIQUE INDEX {constraint_name} ON {table}({columns})")
         print(f"[INFO] Created unique constraint {constraint_name} on {table}({columns}).")
     except Exception as e:
         print(f"[WARN] Could not create unique constraint {constraint_name}: {e}")
@@ -227,7 +224,7 @@ def main():
                 if row:
                     bank_id = row[0]
                 else:
-                    now = datetime.now(timezone.utc).isoformat()
+                    now = datetime.now(UTC).isoformat()
                     cur.execute(
                         "INSERT INTO question_banks (owner_id, name, description, visibility, created_at) "
                         "VALUES (?, '旧数据', '升级前导入的旧题目', 'private', ?)",
@@ -254,7 +251,9 @@ def main():
                     (now,),
                 )
                 conn.commit()
-                print(f"[INFO] Assigned {unowned} old questions to user '{uname}' (id={uid}), bank '旧数据' (id={bank_id})")
+                print(
+                    f"[INFO] Assigned {unowned} old questions to user '{uname}' (id={uid}), bank '旧数据' (id={bank_id})"
+                )
             else:
                 print("[WARN] No user exists. Old questions will remain with NULL owner_id.")
                 print("       They will be visible to all users until they are assigned.")

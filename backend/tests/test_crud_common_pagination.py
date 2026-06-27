@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend import models
 from backend.crud_common import apply_pagination
@@ -20,7 +20,7 @@ def _create_banks(db_session, count=5):
             owner_id=user.id,
             name=f"分页题库 {index}",
             visibility="private",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db_session.add(bank)
         banks.append(bank)

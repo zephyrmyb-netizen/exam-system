@@ -1,8 +1,8 @@
 """Tests for UserQuestionReview model and migration."""
-import os
+
 import subprocess
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -16,6 +16,7 @@ class TestUserQuestionReviewModel:
     def _create_user(self, db_session, user_id):
         """Create a test user so FK constraints are satisfied."""
         from backend import models as m
+
         user = m.User(id=user_id, username=f"test_{user_id}", password_hash="x")
         db_session.add(user)
         db_session.flush()
@@ -24,12 +25,17 @@ class TestUserQuestionReviewModel:
     def _create_question(self, db_session, question_id, owner_id=1, course_id=None):
         """Create a test question with FK deps."""
         from backend import models as m
+
         if course_id:
             bank = m.QuestionBank(id=course_id, owner_id=owner_id, name=f"bank_{course_id}")
             db_session.add(bank)
         q = m.Question(
-            id=question_id, owner_id=owner_id, course_id=course_id,
-            type="single_choice", question=f"Q{question_id}", answer="A",
+            id=question_id,
+            owner_id=owner_id,
+            course_id=course_id,
+            type="single_choice",
+            question=f"Q{question_id}",
+            answer="A",
         )
         db_session.add(q)
         db_session.flush()
@@ -45,7 +51,7 @@ class TestUserQuestionReviewModel:
         """Create a review entry and retrieve it."""
         self._create_user(db_session, 1)
         self._create_question(db_session, 10, course_id=5)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         review = models.UserQuestionReview(
             user_id=1,
             question_id=10,
@@ -91,7 +97,7 @@ class TestUserQuestionReviewModel:
         self._create_user(db_session, 2)
         self._create_question(db_session, 100, owner_id=1)
         self._create_question(db_session, 200, owner_id=2)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for uid in [1, 2]:
             review = models.UserQuestionReview(
                 user_id=uid,
@@ -130,7 +136,9 @@ class TestUserQuestionReviewModel:
         """question_id should allow NULL (SET NULL)."""
         self._create_user(db_session, 1)
         review = models.UserQuestionReview(
-            user_id=1, question_id=None, review_level=1,
+            user_id=1,
+            question_id=None,
+            review_level=1,
         )
         db_session.add(review)
         db_session.commit()
@@ -150,13 +158,15 @@ class TestMigrationIdempotent:
     def test_migration_idempotent(self):
         """Run migrate_sqlite.py twice; second run must not error."""
         project_root = Path(__file__).resolve().parent.parent
-        db_path = project_root / "exam_system.db"
         migrate_script = project_root / "migrate_sqlite.py"
 
         # Run once
         result1 = subprocess.run(
             [sys.executable, str(migrate_script)],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(project_root.parent),
         )
         output1 = (result1.stdout or "") + (result1.stderr or "")
@@ -164,7 +174,10 @@ class TestMigrationIdempotent:
         # Run twice
         result2 = subprocess.run(
             [sys.executable, str(migrate_script)],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(project_root.parent),
         )
         output2 = (result2.stdout or "") + (result2.stderr or "")

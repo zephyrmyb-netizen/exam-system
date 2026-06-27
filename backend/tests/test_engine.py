@@ -1,6 +1,7 @@
 """Tests for database engine compatibility (SQLite vs PostgreSQL)."""
+
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 
 
 class TestDatabaseEngine:
@@ -57,13 +58,16 @@ class TestTimezone:
     def test_zoneinfo_is_available(self):
         """zoneinfo should be available (Python 3.9+)."""
         from zoneinfo import ZoneInfo
+
         tz = ZoneInfo("Asia/Shanghai")
         assert tz is not None
 
     def test_default_timezone_is_valid(self):
         """APP_TIMEZONE default 'Asia/Shanghai' must be a valid zone."""
         from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
         from backend.config import APP_TIMEZONE
+
         try:
             tz = ZoneInfo(APP_TIMEZONE)
             assert tz is not None

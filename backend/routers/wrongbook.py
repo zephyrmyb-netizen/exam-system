@@ -1,8 +1,8 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
-from .. import crud, schemas
+from .. import crud
 from ..database import get_db
 
 router = APIRouter(prefix="/wrongbook", tags=["wrongbook"])
@@ -20,19 +20,26 @@ def list_wrong_records(
     current_user=Depends(auth_module.get_current_user),
 ):
     records, total = crud.get_wrong_records(
-        db, current_user.id,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        db,
+        current_user.id,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
     )
     result = []
     for r in records:
-        result.append({
-            "id": r.id,
-            "question_id": r.question_id,
-            "question": r.question.to_dict(),
-            "wrong_count": r.wrong_count,
-            "last_wrong_answer": r.last_wrong_answer or "",
-        })
+        result.append(
+            {
+                "id": r.id,
+                "question_id": r.question_id,
+                "question": r.question.to_dict(),
+                "wrong_count": r.wrong_count,
+                "last_wrong_answer": r.last_wrong_answer or "",
+            }
+        )
 
     # Legacy mode: no pagination params → return flat array
     if page <= 0 or page_size <= 0:
