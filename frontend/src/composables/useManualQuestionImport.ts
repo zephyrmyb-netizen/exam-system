@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+
 import request, { getErrorMessage } from "../api/request";
 
 const DEFAULT_JSON_TEXT = `[
@@ -7,7 +8,12 @@ const DEFAULT_JSON_TEXT = `[
     "chapter": "古诗词",
     "type": "single_choice",
     "question": "下列诗句中，出自《静夜思》的是哪一句？",
-    "options": { "A": "床前明月光", "B": "春眠不觉晓", "C": "白日依山尽", "D": "两个黄鹂鸣翠柳" },
+    "options": {
+      "A": "床前明月光",
+      "B": "春眠不觉晓",
+      "C": "白日依山尽",
+      "D": "两个黄鹂鸣翠柳"
+    },
     "answer": "A",
     "analysis": "《静夜思》是李白的诗，首句是床前明月光。",
     "difficulty": "easy"

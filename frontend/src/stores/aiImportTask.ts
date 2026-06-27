@@ -1,5 +1,6 @@
 import { type ComputedRef, type Ref } from "vue";
 import { defineStore, storeToRefs } from "pinia";
+
 import { previewFile } from "../api/imports";
 import { getErrorMessage } from "../api/request";
 import type { ImportPreviewResponse, ImportTiming } from "../types";
@@ -86,9 +87,11 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         }
         return "AI 仍在处理，大文件可能超过 1 分钟；切到其他页面也会继续，回来后可查看进度。";
       }
+
       if (state.status === "success" && state.timing) {
         return `本次用时 ${formatDuration(state.timing.total_ms)}，其中 AI 生成 ${formatDuration(state.timing.ai_ms)}。`;
       }
+
       return "";
     },
   },

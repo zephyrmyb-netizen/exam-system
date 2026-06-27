@@ -2,24 +2,30 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  Sparkles,
   ArrowRight,
-  CheckCircle,
-  FileUp,
   BookOpen,
+  CheckCircle,
   ChevronDown,
+  FileUp,
   Layers,
+  Sparkles,
 } from "@lucide/vue";
+
+import { confirmImport, extractFileText } from "../api/imports";
 import { getErrorMessage } from "../api/request";
-import { extractFileText, confirmImport } from "../api/imports";
-import { useAiImportTask } from "../stores/aiImportTask";
+import ImportCapabilityStrip from "../components/import/ImportCapabilityStrip.vue";
 import ImportPreview from "../components/import/ImportPreview.vue";
+import ImportTaskMonitor from "../components/import/ImportTaskMonitor.vue";
 import { useImportCourses } from "../composables/useImportCourses";
 import { useManualQuestionImport } from "../composables/useManualQuestionImport";
+import { useAiImportTask } from "../stores/aiImportTask";
 
 const router = useRouter();
 const route = useRoute();
 const aiTask = useAiImportTask();
+
+const ALLOWED_EXTENSIONS = [".docx", ".pptx"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const selectedFile = ref(null);
 const derivedCourseName = ref("");
@@ -28,6 +34,11 @@ const advancedOpen = ref(false);
 const confirmError = ref("");
 const confirmLoading = ref(false);
 const importResult = ref(null);
+const fileLoading = ref(false);
+const fileMessage = ref("");
+const fileError = ref("");
+const extractedText = ref("");
+
 const { courses, coursesLoading, coursesError, fetchCourses } = useImportCourses();
 const {
   jsonText,
@@ -37,14 +48,6 @@ const {
   jsonResultCourseId,
   importQuestions,
 } = useManualQuestionImport(selectedCourseId);
-
-const ALLOWED_EXTENSIONS = [".docx", ".pptx"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-const fileLoading = ref(false);
-const fileMessage = ref("");
-const fileError = ref("");
-const extractedText = ref("");
 
 const isParsing = computed(() => aiTask.status.value === "running");
 const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.previewData.value);
@@ -62,7 +65,7 @@ const phase = computed(() => {
 
 const currentTargetName = computed(() => {
   if (activeCourseId.value > 0) {
-    return courses.value.find((c) => c.id === activeCourseId.value)?.name || "";
+    return courses.value.find((course) => course.id === activeCourseId.value)?.name || "";
   }
   return activeCourseName.value;
 });
@@ -76,6 +79,11 @@ watch(
   }
 );
 
+watch(
+  () => [route.query.course_id, route.query.courseId],
+  syncTargetCourseFromRoute
+);
+
 function deriveNameFromFile(file) {
   if (!file?.name) return "";
   const dot = file.name.lastIndexOf(".");
@@ -83,8 +91,11 @@ function deriveNameFromFile(file) {
 }
 
 function goToCourse(courseId) {
-  if (courseId) router.push({ name: "course-detail", params: { courseId } });
-  else router.push("/courses");
+  if (courseId) {
+    router.push({ name: "course-detail", params: { courseId } });
+    return;
+  }
+  router.push("/courses");
 }
 
 function readTargetCourseIdFromRoute() {
@@ -110,6 +121,8 @@ function onFileChange(event) {
   const file = event.target.files?.[0] || null;
   confirmError.value = "";
   fileError.value = "";
+  fileMessage.value = "";
+  extractedText.value = "";
   importResult.value = null;
   aiTask.reset();
 
@@ -119,7 +132,7 @@ function onFileChange(event) {
     return;
   }
 
-  const ext = file.name?.substring(file.name.lastIndexOf("."))?.toLowerCase();
+  const ext = file.name?.slice(file.name.lastIndexOf(".")).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     fileError.value = `不支持 ${ext || "未知"} 格式，仅支持 ${ALLOWED_EXTENSIONS.join("、")}`;
     selectedFile.value = null;
@@ -181,10 +194,10 @@ function handleBackFromPreview() {
 function handleRetryPreview() {
   if (selectedFile.value || aiTask.fileRef.value) {
     handlePreview();
-  } else {
-    aiTask.reset();
-    fileError.value = "文件状态已失效，请重新选择文档。";
+    return;
   }
+  aiTask.reset();
+  fileError.value = "文件状态已失效，请重新选择文档。";
 }
 
 function clearAll() {
@@ -192,6 +205,9 @@ function clearAll() {
   derivedCourseName.value = "";
   selectedCourseId.value = 0;
   confirmError.value = "";
+  fileError.value = "";
+  fileMessage.value = "";
+  extractedText.value = "";
   importResult.value = null;
   aiTask.reset();
 }
@@ -251,11 +267,6 @@ async function copyPromptAndText() {
   }
 }
 
-watch(
-  () => [route.query.course_id, route.query.courseId],
-  syncTargetCourseFromRoute,
-);
-
 onMounted(() => {
   syncTargetCourseFromRoute();
   fetchCourses();
@@ -269,48 +280,35 @@ onMounted(() => {
       <p>上传 Word / PPT，AI 自动解析成题库</p>
     </div>
 
-    <div class="import-capability-strip">
-      <div class="import-capability">
-        <span class="capability-label">当前支持</span>
-        <strong>Word .docx / PPT .pptx</strong>
-      </div>
-      <div class="import-capability">
-        <span class="capability-label">处理提示</span>
-        <strong>约 30 秒，大文件会更久</strong>
-      </div>
-      <div class="import-capability import-capability--wide">
-        <span class="capability-label">切换页面</span>
-        <strong>解析不中断，回来可继续查看</strong>
-      </div>
-    </div>
+    <ImportCapabilityStrip />
 
     <template v-if="phase === 'select'">
-      <div class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
+      <label class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
         <input class="file-input-native" type="file" accept=".docx,.pptx" :disabled="isParsing" @change="onFileChange" />
-        <div class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></div>
-        <p v-if="!hasActiveFile" class="hero-drop-text">选择 .docx 或 .pptx 文件</p>
-        <p v-else class="hero-drop-text hero-drop-selected">
-          <CheckCircle :size="15" :stroke-width="2.5" style="margin-right:6px;flex-shrink:0" />
+        <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
+        <span v-if="!hasActiveFile" class="hero-drop-text">选择 .docx 或 .pptx 文件</span>
+        <span v-else class="hero-drop-text hero-drop-selected">
+          <CheckCircle :size="15" :stroke-width="2.5" />
           {{ activeFileName }}
-        </p>
-        <p class="hero-drop-hint">{{ isParsing ? "AI 正在解析，暂不能更换文件" : "最大 10MB" }}</p>
-      </div>
+        </span>
+        <span class="hero-drop-hint">{{ isParsing ? "AI 正在解析，暂不能更换文件" : "最大 10MB" }}</span>
+      </label>
 
       <div v-if="hasActiveFile" class="opt-panel">
-        <div class="opt-row">
-          <label class="opt-label">推荐题库名称</label>
+        <label class="opt-row">
+          <span class="opt-label">推荐题库名称</span>
           <input v-model="derivedCourseName" class="opt-input" type="text" placeholder="自动从文件名生成" :disabled="isParsing" />
-        </div>
-        <div class="opt-row">
-          <label class="opt-label">或导入到已有题库</label>
+        </label>
+        <label class="opt-row">
+          <span class="opt-label">或导入到已有题库</span>
           <select v-model="selectedCourseId" class="opt-input" :disabled="isParsing">
             <option :value="0">新建题库</option>
             <option v-if="coursesLoading" disabled>加载中...</option>
-            <option v-for="c in courses" :key="c.id" :value="c.id">
-              {{ c.name }}（{{ c.question_count ?? 0 }}题）
+            <option v-for="course in courses" :key="course.id" :value="course.id">
+              {{ course.name }}（{{ course.question_count ?? 0 }} 题）
             </option>
           </select>
-        </div>
+        </label>
         <div v-if="coursesError" class="inline-warning">
           <span>{{ coursesError }}</span>
           <button type="button" :disabled="coursesLoading" @click="fetchCourses">
@@ -320,17 +318,15 @@ onMounted(() => {
       </div>
 
       <button class="hero-cta" type="button" :disabled="!hasActiveFile || isParsing" @click="handlePreview">
-        <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" style="margin-right:8px" />
+        <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" />
         {{ isParsing ? "AI 正在解析..." : "AI 解析文档" }}
       </button>
 
-      <div v-if="isParsing" class="running-panel">
-        <span class="running-dot"></span>
-        <div>
-          <strong>{{ aiTask.progressTitle.value }}</strong>
-          <p>{{ aiTask.progressDetail.value }}</p>
-        </div>
-      </div>
+      <ImportTaskMonitor
+        v-if="isParsing"
+        :title="aiTask.progressTitle.value"
+        :detail="aiTask.progressDetail.value"
+      />
 
       <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
       <p v-if="aiTask.error.value" class="msg msg-err">{{ aiTask.error.value }}</p>
@@ -350,9 +346,10 @@ onMounted(() => {
           <span>其他导入方式</span>
           <ChevronDown :size="15" :stroke-width="2.5" class="adv-chevron" />
         </summary>
+
         <div class="adv-body">
           <div class="adv-card">
-            <div>JSON 导入</div>
+            <div class="adv-title">JSON 导入</div>
             <textarea v-model="jsonText" class="adv-textarea" spellcheck="false" />
             <button class="primary-button small" type="button" :disabled="importLoading" @click="importQuestions">
               {{ importLoading ? "导入中..." : "导入 JSON" }}
@@ -363,7 +360,7 @@ onMounted(() => {
           </div>
 
           <div class="adv-card">
-            <div>只提取文本</div>
+            <div class="adv-title">只提取文本</div>
             <p class="adv-desc">提取文件文字，给其他 AI 工具整理。</p>
             <button class="ghost-button" type="button" :disabled="fileLoading || isParsing || !selectedFile" @click="uploadFile">
               {{ fileLoading ? "提取中..." : "提取文本" }}
@@ -415,9 +412,9 @@ onMounted(() => {
             type="button"
             @click="goToCourse(importResult.course_id)"
           >
-            <BookOpen :size="16" :stroke-width="2.5" style="margin-right:6px" />
+            <BookOpen :size="16" :stroke-width="2.5" />
             进入题库
-            <ArrowRight :size="16" :stroke-width="2.5" style="margin-left:4px" />
+            <ArrowRight :size="16" :stroke-width="2.5" />
           </button>
           <button class="ghost-button" type="button" @click="clearAll">继续导入</button>
         </div>
@@ -427,40 +424,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.import-capability-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.import-capability {
-  display: grid;
-  gap: 2px;
-  min-height: 58px;
-  padding: 10px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.88)),
-    var(--surface);
-}
-
-.import-capability--wide {
-  grid-column: 1 / -1;
-}
-
-.capability-label {
-  color: var(--text-placeholder);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.import-capability strong {
-  color: var(--text-main);
-  font-size: var(--text-xs);
-  line-height: 1.35;
-}
-
 .hero-drop-zone {
   position: relative;
   display: grid;
@@ -481,9 +444,18 @@ onMounted(() => {
 
 .hero-drop-zone--disabled,
 .hero-drop-zone--disabled:hover {
-  cursor: wait;
   border-color: var(--line-soft);
   background: var(--surface-soft);
+  cursor: wait;
+}
+
+.file-input-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .hero-drop-zone--disabled .file-input-native {
@@ -501,26 +473,26 @@ onMounted(() => {
 }
 
 .hero-drop-text {
-  margin: 0;
+  color: var(--text-secondary);
   font-size: var(--text-base);
   font-weight: 700;
-  color: var(--text-secondary);
 }
 
 .hero-drop-selected {
-  color: var(--primary-strong);
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  color: var(--primary-strong);
   word-break: break-all;
 }
 
 .hero-drop-hint {
-  margin: 0;
-  font-size: var(--text-xs);
   color: var(--text-placeholder);
+  font-size: var(--text-xs);
 }
 
-.opt-panel {
+.opt-panel,
+.adv-card {
   display: grid;
   gap: var(--space-3);
   padding: var(--space-3);
@@ -535,9 +507,9 @@ onMounted(() => {
 }
 
 .opt-label {
+  color: var(--text-muted);
   font-size: var(--text-xs);
   font-weight: 700;
-  color: var(--text-muted);
 }
 
 .opt-input {
@@ -552,8 +524,8 @@ onMounted(() => {
 
 .opt-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
   background: var(--surface);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .inline-warning {
@@ -570,30 +542,25 @@ onMounted(() => {
 }
 
 .inline-warning button {
-  flex-shrink: 0;
   border: none;
   background: transparent;
   color: var(--primary-strong);
-  font: inherit;
   cursor: pointer;
-}
-
-.inline-warning button:disabled {
-  opacity: 0.6;
-  cursor: wait;
+  font: inherit;
 }
 
 .hero-cta {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 100%;
   min-height: 50px;
   padding: var(--space-3) var(--space-4);
   border: none;
   border-radius: var(--radius-lg);
-  color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #fff;
   box-shadow: var(--shadow-primary);
   font-size: var(--text-base);
   font-weight: 800;
@@ -606,113 +573,18 @@ onMounted(() => {
   box-shadow: none;
 }
 
-.running-panel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--line-accent);
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-
-.running-panel p {
-  margin: 2px 0 0;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-}
-
-.running-dot {
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--primary);
-  animation: running-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes running-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.25); }
-}
-
 .target-hint {
   margin: -4px 0 0;
-  text-align: center;
-  font-size: var(--text-sm);
   color: var(--text-muted);
+  font-size: var(--text-sm);
   font-weight: 600;
   line-height: 1.5;
+  text-align: center;
 }
 
 .target-hint strong {
   color: var(--primary-strong);
   font-weight: 800;
-}
-
-.ai-done {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-6) var(--space-4);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  justify-items: center;
-  background: var(--emerald-soft);
-  border: 1px solid var(--emerald-border);
-}
-
-.ai-done-icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.ai-done-title {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.ai-done-stats {
-  display: flex;
-  gap: var(--space-5);
-  justify-content: center;
-}
-
-.ai-done-stat {
-  display: grid;
-  gap: 2px;
-  text-align: center;
-}
-
-.ai-done-num {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.ai-done-course {
-  font-size: var(--text-base);
-  color: var(--primary-strong);
-}
-
-.ai-done-lbl {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.ai-done-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  justify-content: center;
-  margin-top: var(--space-1);
 }
 
 .msg {
@@ -729,7 +601,8 @@ onMounted(() => {
   color: var(--emerald);
 }
 
-.msg-err {
+.msg-err,
+.msg-err-pre {
   background: var(--rose-soft);
   color: var(--rose);
 }
@@ -737,8 +610,6 @@ onMounted(() => {
 .msg-err-pre {
   white-space: pre-wrap;
   word-break: break-word;
-  background: var(--rose-soft);
-  color: var(--rose);
   text-align: left;
 }
 
@@ -781,37 +652,32 @@ onMounted(() => {
   padding-top: var(--space-2);
 }
 
-.adv-card {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+.adv-title {
+  color: var(--text-main);
+  font-weight: 800;
 }
 
 .adv-desc {
   margin: 0;
-  font-size: var(--text-xs);
   color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
 .adv-textarea {
-  width: 100%;
-  min-height: 120px;
+  min-height: 160px;
   padding: var(--space-3);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
-  font-size: var(--text-sm);
-  font-family: "SF Mono", monospace;
+  color: var(--text-main);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
   resize: vertical;
-  outline: none;
 }
 
 .adv-extracted {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .adv-extracted pre {
@@ -819,21 +685,69 @@ onMounted(() => {
   overflow: auto;
   margin: 0;
   padding: var(--space-2);
-  border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: var(--surface-soft);
-  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-size: 12px;
   white-space: pre-wrap;
-  word-break: break-word;
 }
 
-.file-input-native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
+.ai-done {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--emerald-border);
+  border-radius: var(--radius-lg);
+  background: var(--emerald-soft);
+  text-align: center;
+}
+
+.ai-done-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.ai-done-title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.ai-done-stats,
+.ai-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.ai-done-stat {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.ai-done-num {
+  color: var(--text-main);
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.ai-done-course {
+  color: var(--primary-strong);
+  font-size: var(--text-base);
+}
+
+.ai-done-lbl {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
 }
 
 .primary-button,
@@ -841,28 +755,10 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 }
 
-.primary-button {
-  width: 100%;
-  min-height: 44px;
-}
-
-@media (max-width: 420px) {
-  .import-capability-strip { gap: 7px; }
-  .import-capability { min-height: 54px; padding: 9px 10px; }
-
-  .hero-drop-zone {
-    padding: var(--space-8) var(--space-3);
-  }
-
-  .hero-drop-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .ai-done-stats {
-    gap: var(--space-3);
-  }
+.small {
+  min-height: 38px;
 }
 </style>

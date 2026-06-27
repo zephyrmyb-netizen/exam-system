@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+
 import request, { getErrorMessage } from "../api/request";
 import type { Course } from "../types";
 
