@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -17,15 +17,16 @@ import request, { getErrorMessage } from "../api/request";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
 import PracticeModeCard from "../components/practice/PracticeModeCard.vue";
 import PracticeOverviewCard from "../components/practice/PracticeOverviewCard.vue";
+import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 
 const router = useRouter();
 
-const stats = ref({ todayCount: null, totalCount: null, wrongCount: null });
-const review = ref({ dueCount: null, wrongCount: null, weakTypes: [] });
+const stats = ref({ todayCount: null as number | null, totalCount: null as number | null, wrongCount: null as number | null });
+const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as any[] });
 const reviewError = ref("");
 
-const recentCourses = ref([]);
+const recentCourses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
 
@@ -35,12 +36,11 @@ const hasDueQuestions = computed(() => (review.value.dueCount ?? 0) > 0);
 const hasRecentCourses = computed(() => recentCourses.value.length > 0);
 const primaryCourse = computed(() => recentCourses.value[0] || null);
 
-const heroTitle = computed(() => (primaryCourse.value ? "继续上次练习" : "开始一次练习"));
+const heroTitle = computed(() => (primaryCourse.value ? "继续上次练习" : "先选择题库"));
 const heroDesc = computed(() => {
   if (!primaryCourse.value) {
-    return "先选择题库，或导入资料生成题库。";
+    return "练习前先选择一门题库，避免进入空练习。";
   }
-
   const count = primaryCourse.value.question_count ?? 0;
   return `${getCourseDisplayName(primaryCourse.value)} · ${count} 题`;
 });
@@ -51,7 +51,7 @@ const modeCards = computed(() => [
     icon: Library,
     iconColor: "var(--primary)",
     title: "选择题库练习",
-    description: "按题库进入练习设置",
+    description: "按课程进入练习设置",
     cta: true,
     showArrow: true,
     disabled: false,
@@ -91,14 +91,11 @@ function openPrimaryPractice() {
     router.push(`/courses/${primaryCourse.value.id}/practice`);
     return;
   }
-
   router.push("/courses");
 }
 
-function goToMode(card) {
-  if (!card.disabled) {
-    router.push(card.to);
-  }
+function goToMode(card: { disabled: boolean; to: string }) {
+  if (!card.disabled) router.push(card.to);
 }
 
 async function fetchStatsReview() {
@@ -129,7 +126,7 @@ async function fetchStatsReview() {
 
     const rejected = [statsResult, reviewResult, weakResult].find((item) => item.status === "rejected");
     if (rejected) {
-      reviewError.value = getErrorMessage(rejected.reason, "学习数据暂时不可用");
+      reviewError.value = getErrorMessage((rejected as PromiseRejectedResult).reason, "学习数据暂时不可用");
     }
   } catch (error) {
     reviewError.value = getErrorMessage(error, "学习数据暂时不可用");
@@ -140,7 +137,7 @@ async function fetchRecentCourses() {
   coursesLoading.value = true;
   coursesError.value = "";
   try {
-    const { data } = await request.get("/courses/mine");
+    const { data } = await request.get<Course[] | { items: Course[] }>("/courses/mine");
     const items = Array.isArray(data) ? data : data.items || [];
     recentCourses.value = items.filter(isPracticeReadyCourse).slice(0, 3);
   } catch (error) {
@@ -156,7 +153,6 @@ function retryFailedRequest() {
     fetchStatsReview();
     return;
   }
-
   fetchRecentCourses();
 }
 
@@ -252,207 +248,29 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.hub {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.hub-warning {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 8px 10px;
-  border: 1px solid var(--amber-border);
-  border-radius: var(--radius-md);
-  background: var(--amber-soft);
-  color: #92400e;
-  font-size: var(--text-xs);
-  font-weight: 700;
-}
-
-.hub-warning button {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: #92400e;
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.modes {
-  display: grid;
-  gap: 6px;
-}
-
-.hub-section {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.hub-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hub-section-label {
-  font-size: var(--text-xs);
-  font-weight: 800;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.hub-section-link {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--primary);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.hub-section-link:hover {
-  color: var(--primary-strong);
-}
-
-.recent-list {
-  display: grid;
-  gap: 6px;
-}
-
-.recent-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-}
-
-.recent-body {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  cursor: pointer;
-}
-
-.recent-icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
-
-.icon-private {
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-
-.icon-public {
-  background: var(--emerald-soft);
-  color: var(--emerald);
-}
-
-.recent-info {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.recent-name {
-  overflow: hidden;
-  color: var(--text-main);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recent-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.recent-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 28px;
-  padding: 4px 10px;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-full);
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.hub-guidance {
-  display: grid;
-  place-items: center;
-  gap: var(--space-2);
-  padding: var(--space-8) var(--space-4);
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.hub-guidance p {
-  margin: 0;
-}
-
-.hub-guidance-title {
-  color: var(--text-secondary);
-  font-size: var(--text-base);
-  font-weight: 700;
-}
-
-.hub-guidance-hint {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.hub-guidance-actions,
-.hub-guidance-alts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.hub-guidance-alts {
-  margin-top: var(--space-1);
-}
-
-.hub-guidance-alts button {
-  min-height: 32px;
-  padding: 6px 12px;
-  font-size: var(--text-xs);
-}
-
-.primary-button,
-.ghost-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
+.hub { display: grid; gap: var(--space-3); }
+.hub-warning { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--amber-border); border-radius: var(--radius-sm); background: var(--amber-soft); color: var(--amber); font-size: var(--text-xs); font-weight: 700; }
+.hub-warning button { border: none; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }
+.modes { display: grid; gap: var(--space-2); }
+.hub-section { display: grid; gap: var(--space-2); }
+.hub-section-head { display: flex; align-items: center; justify-content: space-between; }
+.hub-section-label { color: var(--text-main); font-size: var(--text-sm); font-weight: 800; }
+.hub-section-link { border: none; background: transparent; color: var(--primary-strong); font-size: var(--text-xs); font-weight: 800; cursor: pointer; }
+.recent-list { display: grid; gap: var(--space-2); }
+.recent-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface); }
+.recent-body { display: flex; align-items: center; gap: var(--space-2); min-width: 0; cursor: pointer; }
+.recent-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-sm); flex-shrink: 0; }
+.icon-private { background: var(--primary-soft); color: var(--primary); }
+.icon-public { background: var(--emerald-soft); color: var(--emerald); }
+.recent-info { display: grid; gap: 1px; min-width: 0; }
+.recent-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); color: var(--text-main); font-weight: 750; }
+.recent-meta { display: inline-flex; align-items: center; gap: 3px; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.recent-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 32px; padding: 0 10px; border: none; border-radius: var(--radius-sm); background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+.hub-guidance { display: grid; place-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: var(--surface); text-align: center; }
+.hub-guidance-title { margin: 0; color: var(--text-main); font-size: var(--text-md); font-weight: 850; }
+.hub-guidance-hint { margin: 0; color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; }
+.hub-guidance-actions, .hub-guidance-alts { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
+.primary-button, .ghost-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 13px; border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 800; cursor: pointer; }
+.primary-button { border: none; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; box-shadow: var(--shadow-primary); }
+.ghost-button { border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-main); }
 </style>

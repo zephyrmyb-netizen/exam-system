@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from .. import auth as auth_module
 from .. import crud, models, schemas
 from ..database import get_db
+from ..services.course_service import CourseService
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 

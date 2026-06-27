@@ -2,34 +2,13 @@
 import { ChevronRight } from "@lucide/vue";
 
 defineProps({
-  icon: {
-    type: [Object, Function],
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  iconColor: {
-    type: String,
-    default: "var(--primary)",
-  },
-  cta: {
-    type: Boolean,
-    default: false,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-  showArrow: {
-    type: Boolean,
-    default: false,
-  },
+  icon: { type: [Object, Function], required: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  iconColor: { type: String, default: "var(--primary)" },
+  cta: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  showArrow: { type: Boolean, default: false },
 });
 
 defineEmits(["select"]);
@@ -48,12 +27,7 @@ defineEmits(["select"]);
       <span class="mode-title">{{ title }}</span>
       <span class="mode-description">{{ description }}</span>
     </span>
-    <ChevronRight
-      v-if="showArrow"
-      :size="16"
-      :stroke-width="2.5"
-      class="mode-arrow"
-    />
+    <ChevronRight v-if="showArrow" :size="16" :stroke-width="2.5" class="mode-arrow" />
   </button>
 </template>
 
@@ -73,51 +47,13 @@ defineEmits(["select"]);
   text-align: left;
   transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out);
 }
-
-.mode-card:hover:not(.mode-card--disabled) {
-  border-color: var(--line-accent);
-  box-shadow: var(--shadow-xs);
-}
-
-.mode-card:active:not(.mode-card--disabled) {
-  transform: scale(0.985);
-}
-
-.mode-card--cta {
-  border-color: var(--primary-border);
-  background: linear-gradient(135deg, #fafcff, #f0f6ff);
-}
-
-.mode-card--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.mode-icon {
-  flex-shrink: 0;
-}
-
-.mode-text {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-  flex: 1;
-}
-
-.mode-title {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.mode-description {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.mode-arrow {
-  color: var(--text-placeholder);
-  flex-shrink: 0;
-}
+.mode-card:hover:not(.mode-card--disabled) { border-color: var(--line-accent); box-shadow: var(--shadow-xs); }
+.mode-card:active:not(.mode-card--disabled) { transform: scale(0.985); }
+.mode-card--cta { border-color: var(--primary-border); background: linear-gradient(135deg, #fafcff, #f0f6ff); }
+.mode-card--disabled { opacity: 0.5; cursor: not-allowed; }
+.mode-icon { flex-shrink: 0; }
+.mode-text { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.mode-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-main); }
+.mode-description { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.mode-arrow { color: var(--text-placeholder); flex-shrink: 0; }
 </style>
