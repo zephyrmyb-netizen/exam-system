@@ -8,6 +8,18 @@
  */
 export const releaseNotes = [
   {
+    id: "v1.9.1-code-quality-split",
+    version: "v1.9.1",
+    date: "2026-06-27",
+    type: "优化",
+    title: "完成首轮代码质量拆分",
+    items: [
+      "拆分练习中心、题库详情和导入页的核心展示组件，降低后续维护成本",
+      "恢复 AI 导入、确认弹窗、题库导入相关提示文案，减少乱码和误解",
+      "补充练习中心组件测试，并保持前端测试与构建通过",
+    ],
+  },
+  {
     id: "v1.8.21-question-bank-wording",
     version: "v1.8.21",
     date: "2026-06-26",
