@@ -1,5 +1,5 @@
 """Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
-import pytest
+
 
 class TestMyCourses:
     COURSES_MINE = "/courses/mine"
@@ -27,9 +27,14 @@ class TestMyCourses:
         client.post("/courses/", json={"name": "A's Private"}, headers=auth_headers)
 
         # Register user B
-        client.post("/auth/register", json={
-            "username": "bob_mine", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "bob_mine",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "bob_mine", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -60,8 +65,7 @@ class TestMyCourses:
         """question_count should reflect the number of questions in the course."""
         resp = client.post("/courses/", json={"name": "With Qs"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post("/questions/batch", json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post("/questions/batch", json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         resp = client.get(self.COURSES_MINE, headers=auth_headers)
         c = next(x for x in resp.json() if x["id"] == cid)
@@ -71,19 +75,28 @@ class TestMyCourses:
         """practice_count and last_practiced_at should reflect submissions."""
         resp = client.post("/courses/", json={"name": "Practice Me"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post("/questions/batch", json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post("/questions/batch", json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         # Get questions
         qq = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()
 
         # Submit answers
-        client.post("/practice/submit", json={
-            "question_id": qq[0]["id"], "user_answer": qq[0]["answer"],
-        }, headers=auth_headers)
-        client.post("/practice/submit", json={
-            "question_id": qq[1]["id"], "user_answer": "wrong",
-        }, headers=auth_headers)
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": qq[0]["id"],
+                "user_answer": qq[0]["answer"],
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": qq[1]["id"],
+                "user_answer": "wrong",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.COURSES_MINE, headers=auth_headers)
         c = next(x for x in resp.json() if x["id"] == cid)
@@ -94,14 +107,18 @@ class TestMyCourses:
         """practice_count should only count the CURRENT user's practice."""
         resp = client.post("/courses/", json={"name": "Two Users"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post("/questions/batch", json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post("/questions/batch", json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         # User A practices
         qq = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()
-        client.post("/practice/submit", json={
-            "question_id": qq[0]["id"], "user_answer": qq[0]["answer"],
-        }, headers=auth_headers)
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": qq[0]["id"],
+                "user_answer": qq[0]["answer"],
+            },
+            headers=auth_headers,
+        )
 
         # User A sees practice_count=1
         resp = client.get(self.COURSES_MINE, headers=auth_headers)
@@ -109,9 +126,14 @@ class TestMyCourses:
         assert c["practice_count"] == 1
 
         # User B registers, but can't see User A's course at all via /mine
-        client.post("/auth/register", json={
-            "username": "pc_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "pc_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "pc_iso", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.COURSES_MINE, headers=b_headers)
@@ -119,20 +141,35 @@ class TestMyCourses:
 
     def test_public_course_logic_unchanged(self, client, auth_headers):
         """Own public courses should appear in /mine with correct counts."""
-        resp = client.post("/courses/", json={
-            "name": "My Public", "visibility": "public",
-        }, headers=auth_headers)
+        resp = client.post(
+            "/courses/",
+            json={
+                "name": "My Public",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         # Add questions
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": cid,
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                    "course_id": cid,
+                }
+            ],
+            headers=auth_headers,
+        )
 
         resp = client.get(self.COURSES_MINE, headers=auth_headers)
         c = next(x for x in resp.json() if x["id"] == cid)
         assert c["question_count"] == 1
         assert c["visibility"] == "public"
+
 
 class TestCourseQuestions:
     def test_course_questions_empty(self, client, auth_headers):
@@ -163,9 +200,14 @@ class TestCourseQuestions:
         client.post("/questions/batch", json=sample_questions, headers=auth_headers)
 
         # User B tries to access
-        client.post("/auth/register", json={
-            "username": "spy", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "spy",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "spy", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"/courses/{cid}/questions", headers=b_headers)
@@ -178,12 +220,12 @@ class TestCourseQuestions:
             q["course_id"] = cid
         client.post("/questions/batch", json=sample_questions, headers=auth_headers)
 
-        resp = client.get(f"/courses/{cid}/questions", headers=auth_headers,
-                          params={"page": 1, "page_size": 2})
+        resp = client.get(f"/courses/{cid}/questions", headers=auth_headers, params={"page": 1, "page_size": 2})
         data = resp.json()
         assert isinstance(data, dict)
         assert data["total"] == 4
         assert len(data["items"]) == 2
+
 
 class TestCoursePractice:
     def test_random_from_course(self, client, auth_headers, sample_questions):
@@ -210,19 +252,33 @@ class TestCoursePractice:
             q["course_id"] = cid
         client.post("/questions/batch", json=sample_questions, headers=auth_headers)
 
-        client.post("/auth/register", json={
-            "username": "spy2", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "spy2",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "spy2", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"/courses/{cid}/practice/random", headers=b_headers)
         assert resp.status_code == 404
 
+
 class TestPublish:
     def test_publish_question(self, client, auth_headers):
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
         resp = client.post(f"/questions/{qid}/publish", headers=auth_headers)
@@ -230,32 +286,58 @@ class TestPublish:
         assert resp.json()["visibility"] == "public"
 
         # Verify other user can see it
-        client.post("/auth/register", json={
-            "username": "viewer_pub", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "viewer_pub",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "viewer_pub", "password": "pass"})
         v_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get("/questions/", headers=v_headers)
         assert any(q["id"] == qid for q in resp.json())
 
     def test_publish_question_not_owner_forbidden(self, client, auth_headers):
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
-        client.post("/auth/register", json={
-            "username": "pub_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "pub_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "pub_other", "password": "pass"})
         o_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/questions/{qid}/publish", headers=o_headers)
         assert resp.status_code == 403
 
     def test_publish_question_already_published(self, client, auth_headers):
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q?", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q?",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
         client.post(f"/questions/{qid}/publish", headers=auth_headers)
         resp = client.post(f"/questions/{qid}/publish", headers=auth_headers)
@@ -274,9 +356,14 @@ class TestPublish:
         resp = client.post("/courses/", json={"name": "A's Course"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        client.post("/auth/register", json={
-            "username": "pub_course", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "pub_course",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "pub_course", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/courses/{cid}/publish", headers=b_headers)

@@ -1,5 +1,5 @@
 """Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
-import pytest
+
 
 class TestPracticeStats:
     PRACTICE_SUBMIT = "/practice/submit"
@@ -24,9 +24,14 @@ class TestPracticeStats:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_STATS, headers=auth_headers)
         data = resp.json()
@@ -43,9 +48,14 @@ class TestPracticeStats:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_STATS, headers=auth_headers)
         data = resp.json()
@@ -68,15 +78,25 @@ class TestPracticeStats:
 
         # First: correct
         sc_q = next(q for q in questions if q["type"] == "single_choice")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         # Second: wrong
         tf_q = next(q for q in questions if q["type"] == "true_false")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": tf_q["id"], "user_answer": "错",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": tf_q["id"],
+                "user_answer": "错",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_STATS, headers=auth_headers)
         data = resp.json()
@@ -93,14 +113,24 @@ class TestPracticeStats:
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         # User B checks stats → should be zero
-        client.post("/auth/register", json={
-            "username": "stats_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "stats_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "stats_iso", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_STATS, headers=b_headers)
@@ -123,9 +153,14 @@ class TestPracticeStats:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        resp = client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["is_correct"] is True
 
@@ -140,9 +175,14 @@ class TestPracticeStats:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        resp = client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["is_correct"] is False
         assert resp.json()["wrongbook_recorded"] is True
@@ -157,6 +197,7 @@ class TestPracticeStats:
         assert len(wb) == 1
         assert wb[0]["question_id"] == sc_q["id"]
         assert wb[0]["wrong_count"] == 1
+
 
 class TestPracticeHistory:
     PRACTICE_SUBMIT = "/practice/submit"
@@ -182,9 +223,14 @@ class TestPracticeHistory:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_HISTORY, headers=auth_headers)
         data = resp.json()
@@ -207,12 +253,22 @@ class TestPracticeHistory:
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_HISTORY, headers=auth_headers)
         items = resp.json()["items"]
@@ -228,14 +284,24 @@ class TestPracticeHistory:
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         # User B
-        client.post("/auth/register", json={
-            "username": "hist_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "hist_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "hist_iso", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_HISTORY, headers=b_headers)
@@ -251,10 +317,14 @@ class TestPracticeHistory:
 
         # Submit 3 answers
         for q in [sc_q, tf_q, mc_q]:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"],
-                "user_answer": q["answer"],
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": q["answer"],
+                },
+                headers=auth_headers,
+            )
 
         # Page size 2 → only 2 items
         resp = client.get(self.PRACTICE_HISTORY, headers=auth_headers, params={"page": 1, "page_size": 2})
@@ -271,6 +341,7 @@ class TestPracticeHistory:
         resp = client.get(self.PRACTICE_HISTORY, headers=auth_headers, params={"page": 3, "page_size": 2})
         data = resp.json()
         assert len(data["items"]) == 0
+
 
 class TestWrongReview:
     PRACTICE_REVIEW_WRONG = "/practice/review/wrong"
@@ -290,9 +361,14 @@ class TestWrongReview:
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
         # Submit wrong
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_REVIEW_WRONG, headers=auth_headers)
         assert resp.status_code == 200
@@ -306,15 +382,30 @@ class TestWrongReview:
         tf_q = next(q for q in questions if q["type"] == "true_false")
 
         # tf_q wrong once, sc_q wrong twice -> sc_q should come first
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": tf_q["id"], "user_answer": "错",
-        }, headers=auth_headers)
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "D",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": tf_q["id"],
+                "user_answer": "错",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "D",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.PRACTICE_REVIEW_WRONG, headers=auth_headers)
         assert resp.status_code == 200
@@ -326,14 +417,24 @@ class TestWrongReview:
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         # User B
-        client.post("/auth/register", json={
-            "username": "wr_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "wr_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "wr_iso", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_REVIEW_WRONG, headers=bh)
@@ -373,6 +474,7 @@ class TestWrongReview:
         assert resp.status_code == 404
         assert "错题" in resp.json()["detail"]
 
+
 class TestRandomChapter:
     PRACTICE_RANDOM = "/practice/random"
     QUESTIONS_BATCH = "/questions/batch"
@@ -395,9 +497,14 @@ class TestRandomChapter:
     def test_random_combined_course_type_chapter(self, client, auth_headers, sample_questions):
         """Combined course_id + type + chapter filter should all apply simultaneously."""
         # Create a course
-        resp = client.post("/courses/", json={
-            "name": "组合筛选课程", "visibility": "private",
-        }, headers=auth_headers)
+        resp = client.post(
+            "/courses/",
+            json={
+                "name": "组合筛选课程",
+                "visibility": "private",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         # Import questions into the course
@@ -419,6 +526,7 @@ class TestRandomChapter:
         assert data["type"] == "true_false"
         assert data["chapter"] == "第一章"
         assert data["course_id"] == cid
+
 
 class TestTodayReview:
     PRACTICE_REVIEW_TODAY = "/practice/review/today"
@@ -456,14 +564,20 @@ class TestTodayReview:
         sc_q = next(q for q in questions if q["type"] == "single_choice")
         client.post("/practice/submit", json={"question_id": sc_q["id"], "user_answer": "C"}, headers=auth_headers)
 
-        client.post("/auth/register", json={
-            "username": "tr_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "tr_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "tr_iso", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_REVIEW_TODAY, headers=bh)
         data = resp.json()
         assert data["due_count"] == 0
+
 
 class TestWeakTypes:
     PRACTICE_INSIGHTS_WEAK = "/practice/insights/weak-types"
@@ -483,13 +597,23 @@ class TestWeakTypes:
 
         # sc_q: correct, correct; tf_q: wrong, wrong -> tf_q should be weak
         for _ in range(2):
-            client.post("/practice/submit", json={
-                "question_id": sc_q["id"], "user_answer": sc_q["answer"],
-            }, headers=auth_headers)
+            client.post(
+                "/practice/submit",
+                json={
+                    "question_id": sc_q["id"],
+                    "user_answer": sc_q["answer"],
+                },
+                headers=auth_headers,
+            )
         for _ in range(2):
-            client.post("/practice/submit", json={
-                "question_id": tf_q["id"], "user_answer": "错",
-            }, headers=auth_headers)
+            client.post(
+                "/practice/submit",
+                json={
+                    "question_id": tf_q["id"],
+                    "user_answer": "错",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.PRACTICE_INSIGHTS_WEAK, headers=auth_headers)
         items = resp.json()
@@ -501,13 +625,23 @@ class TestWeakTypes:
         client.post("/questions/batch", json=sample_questions, headers=auth_headers)
         questions = client.get("/questions/", headers=auth_headers).json()
         sc_q = next(q for q in questions if q["type"] == "single_choice")
-        client.post("/practice/submit", json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
-        client.post("/auth/register", json={
-            "username": "wt_iso", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "wt_iso",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "wt_iso", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_INSIGHTS_WEAK, headers=bh)

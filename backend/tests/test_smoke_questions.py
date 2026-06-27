@@ -1,24 +1,45 @@
 """Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
-import pytest
+
 
 class TestDeleteQuestion:
     def test_delete_own_question(self, client, auth_headers):
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Mine", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Mine",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
         resp = client.delete(f"/questions/{qid}", headers=auth_headers)
         assert resp.status_code == 200
 
     def test_delete_others_question_forbidden(self, client, auth_headers):
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "A's", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "A's",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
-        client.post("/auth/register", json={
-            "username": "delete_test", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "delete_test",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "delete_test", "password": "pass"})
         d_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.delete(f"/questions/{qid}", headers=d_headers)
@@ -27,6 +48,7 @@ class TestDeleteQuestion:
     def test_delete_nonexistent_question(self, client, auth_headers):
         resp = client.delete("/questions/99999", headers=auth_headers)
         assert resp.status_code == 404
+
 
 class TestManualCreateQuestion:
     QUESTIONS_URL = "/questions/"
@@ -37,12 +59,16 @@ class TestManualCreateQuestion:
         resp = client.post(self.COURSES_URL, json={"name": "My Course"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        resp = client.post(self.QUESTIONS_URL, json={
-            "course_id": cid,
-            "type": "fill_blank",
-            "question": "中国的首都是？",
-            "answer": "北京",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.QUESTIONS_URL,
+            json={
+                "course_id": cid,
+                "type": "fill_blank",
+                "question": "中国的首都是？",
+                "answer": "北京",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["source"] == "manual"
@@ -55,21 +81,41 @@ class TestManualCreateQuestion:
         resp = client.post(self.COURSES_URL, json={"name": "A's Course"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        client.post("/auth/register", json={
-            "username": "mc_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "mc_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "mc_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
-        resp = client.post(self.QUESTIONS_URL, json={
-            "course_id": cid, "type": "fill_blank", "question": "Q", "answer": "A",
-        }, headers=bh)
+        resp = client.post(
+            self.QUESTIONS_URL,
+            json={
+                "course_id": cid,
+                "type": "fill_blank",
+                "question": "Q",
+                "answer": "A",
+            },
+            headers=bh,
+        )
         assert resp.status_code == 403
 
     def test_manual_create_nonexistent_course(self, client, auth_headers):
-        resp = client.post(self.QUESTIONS_URL, json={
-            "course_id": 99999, "type": "fill_blank", "question": "Q", "answer": "A",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.QUESTIONS_URL,
+            json={
+                "course_id": 99999,
+                "type": "fill_blank",
+                "question": "Q",
+                "answer": "A",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 404
+
 
 class TestEditQuestion:
     QUESTIONS_URL = "/questions/"
@@ -77,14 +123,28 @@ class TestEditQuestion:
 
     def test_edit_question(self, client, auth_headers):
         """PATCH /questions/{id} should update fields."""
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Old Q", "answer": "Old",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Old Q",
+                    "answer": "Old",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
-        resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={
-            "question": "New Q", "answer": "New", "subject": "数学",
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"{self.QUESTIONS_URL}{qid}",
+            json={
+                "question": "New Q",
+                "answer": "New",
+                "subject": "数学",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["question"] == "New Q"
@@ -93,14 +153,27 @@ class TestEditQuestion:
 
     def test_edit_question_not_owner(self, client, auth_headers):
         """Cannot edit another user's question."""
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
-        client.post("/auth/register", json={
-            "username": "eq_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "eq_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "eq_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={"question": "Hacked"}, headers=bh)
@@ -113,9 +186,18 @@ class TestEditQuestion:
         resp = client.post("/courses/", json={"name": "C2"}, headers=auth_headers)
         c2 = resp.json()["id"]
 
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": c1,
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                    "course_id": c1,
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
         # Move to C2 (both owned)
@@ -127,15 +209,29 @@ class TestEditQuestion:
         """Changing course_id to another user's course is forbidden."""
         resp = client.post("/courses/", json={"name": "My C"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": cid,
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                    "course_id": cid,
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
         # Create course for user B
-        client.post("/auth/register", json={
-            "username": "eqc_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "eqc_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "eqc_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post("/courses/", json={"name": "B's C"}, headers=bh)
@@ -149,15 +245,24 @@ class TestEditQuestion:
         resp = client.patch(f"{self.QUESTIONS_URL}99999", json={"question": "X"}, headers=auth_headers)
         assert resp.status_code == 404
 
+
 class TestUnpublishQuestion:
     QUESTIONS_URL = "/questions/"
     QUESTIONS_BATCH = "/questions/batch"
 
     def test_unpublish_question(self, client, auth_headers):
         """POST /questions/{id}/unpublish should set visibility back to private."""
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
         # Publish
@@ -169,23 +274,44 @@ class TestUnpublishQuestion:
 
     def test_unpublish_already_private(self, client, auth_headers):
         """Unpublish already private question returns 400."""
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
         resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=auth_headers)
         assert resp.status_code == 400
 
     def test_unpublish_not_owner(self, client, auth_headers):
         """Cannot unpublish another user's question."""
-        client.post(self.QUESTIONS_BATCH, json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A",
-        }], headers=auth_headers)
+        client.post(
+            self.QUESTIONS_BATCH,
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get("/questions/", headers=auth_headers).json()[0]["id"]
 
-        client.post("/auth/register", json={
-            "username": "uq_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "uq_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "uq_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=bh)

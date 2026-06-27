@@ -1,7 +1,6 @@
 """Practice repository."""
 
-from .. import models
-from .. import crud
+from .. import crud, models
 from .base import BaseRepository
 
 

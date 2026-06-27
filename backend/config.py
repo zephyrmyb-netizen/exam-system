@@ -1,5 +1,4 @@
 import os
-import warnings
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -233,6 +232,5 @@ if IS_PRODUCTION:
 
     if _prod_errors:
         raise RuntimeError(
-            "Production configuration errors - fix the following in backend/.env:\n  - "
-            + "\n  - ".join(_prod_errors)
+            "Production configuration errors - fix the following in backend/.env:\n  - " + "\n  - ".join(_prod_errors)
         )

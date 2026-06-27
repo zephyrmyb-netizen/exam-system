@@ -2,6 +2,7 @@
 
 All upstream AI calls are mocked — no real network requests.
 """
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,8 +10,8 @@ import pytest
 from backend.main import app
 from backend.ratelimit import MemoryRateLimiter, reset_limiter_for_tests
 
-
 # ── Fixtures ────────────────────────────────────────────────────────────────
+
 
 class _NoLimitLimiter:
     """A rate limiter that never blocks. Used in tests that don't test rate limiting."""
@@ -26,6 +27,7 @@ def _override_limiter():
     # Use a fresh in-memory limiter so tests are isolated.
     limiter = MemoryRateLimiter()
     from backend.routers.chat import rate_limiter as rl_dep
+
     app.dependency_overrides[rl_dep] = lambda: limiter
     yield
     app.dependency_overrides.clear()
@@ -33,6 +35,7 @@ def _override_limiter():
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _mock_openai_response(content: str = "这是 AI 助手的回复。") -> MagicMock:
     """Return a mock OpenAI completion with the given content."""
@@ -54,6 +57,7 @@ def _mock_ai_client(content: str = "这是 AI 助手的回复。"):
 # Auth required
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestChatAuthRequired:
     """Anonymous requests must be rejected."""
 
@@ -74,13 +78,12 @@ class TestChatAuthRequired:
 # Message validation
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestChatMessageValidation:
     """Input validation for message length and content."""
 
     def test_empty_message_returns_400(self, client, auth_headers):
-        resp = client.post(
-            "/chat/", json={"message": "   "}, headers=auth_headers
-        )
+        resp = client.post("/chat/", json={"message": "   "}, headers=auth_headers)
         assert resp.status_code == 400
         assert "不能为空" in resp.json()["detail"]
 
@@ -99,6 +102,7 @@ class TestChatMessageValidation:
 # History validation
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestChatHistoryValidation:
     """Validation of history messages."""
 
@@ -115,9 +119,7 @@ class TestChatHistoryValidation:
 
     def test_too_many_history_messages_returns_400(self, client, auth_headers, monkeypatch):
         monkeypatch.setattr("backend.routers.chat.CHAT_MAX_HISTORY_MESSAGES", 2)
-        history = [
-            {"role": "user", "content": f"msg {i}"} for i in range(3)
-        ]
+        history = [{"role": "user", "content": f"msg {i}"} for i in range(3)]
         resp = client.post(
             "/chat/",
             json={"message": "hello", "history": history},
@@ -146,6 +148,7 @@ class TestChatHistoryValidation:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Rate limiting
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestChatRateLimit:
     """Per-user rate limiting enforcement."""
@@ -177,6 +180,7 @@ class TestChatRateLimit:
 # ═══════════════════════════════════════════════════════════════════════════════
 # Successful call
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestChatSuccess:
     """Happy-path chat with mocked upstream."""
@@ -211,9 +215,7 @@ class TestChatSuccess:
             lambda: _mock_ai_client("好的。"),
         )
 
-        resp = client.post(
-            "/chat/", json={"message": "什么是微积分？"}, headers=auth_headers
-        )
+        resp = client.post("/chat/", json={"message": "什么是微积分？"}, headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["reply"] == "好的。"
 
@@ -222,6 +224,7 @@ class TestChatSuccess:
 # Upstream error safety
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestChatUpstreamErrors:
     """Upstream failures must not leak API key or internal details."""
 
@@ -229,17 +232,13 @@ class TestChatUpstreamErrors:
         monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = Exception(
-            "Connection refused by upstream"
-        )
+        mock_client.chat.completions.create.side_effect = Exception("Connection refused by upstream")
         monkeypatch.setattr(
             "backend.routers.chat.get_chat_client",
             lambda: mock_client,
         )
 
-        resp = client.post(
-            "/chat/", json={"message": "你好"}, headers=auth_headers
-        )
+        resp = client.post("/chat/", json={"message": "你好"}, headers=auth_headers)
         assert resp.status_code == 502
         detail = resp.json()["detail"]
         # Must NOT leak the real exception
@@ -248,8 +247,6 @@ class TestChatUpstreamErrors:
 
     def test_missing_api_key_returns_503(self, client, auth_headers, monkeypatch):
         monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "")
-        resp = client.post(
-            "/chat/", json={"message": "你好"}, headers=auth_headers
-        )
+        resp = client.post("/chat/", json={"message": "你好"}, headers=auth_headers)
         assert resp.status_code == 503
         assert "未配置" in resp.json()["detail"]

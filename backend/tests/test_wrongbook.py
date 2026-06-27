@@ -1,5 +1,4 @@
-﻿"""Tests for wrongbook endpoints."""
-import pytest
+"""Tests for wrongbook endpoints."""
 
 
 class TestWrongBook:
@@ -23,10 +22,14 @@ class TestWrongBook:
         sc_q = self._import_and_get_question(client, auth_headers, sample_questions, "single_choice")
 
         # Submit wrong answer
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"],
-            "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         # Check wrongbook
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers)
@@ -41,10 +44,14 @@ class TestWrongBook:
 
         # Submit wrong answer twice
         for _ in range(2):
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": sc_q["id"],
-                "user_answer": "C",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": sc_q["id"],
+                    "user_answer": "C",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers)
         records = resp.json()
@@ -54,16 +61,24 @@ class TestWrongBook:
         sc_q = self._import_and_get_question(client, auth_headers, sample_questions, "single_choice")
 
         # Submit wrong answer first
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"],
-            "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         # Then correct answer
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"],
-            "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         # Wrongbook should be empty
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers)
@@ -77,10 +92,14 @@ class TestWrongBook:
 
         # Submit wrong answers for all questions
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"],
-                "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         # Paginated query
         resp = client.get(
@@ -98,10 +117,14 @@ class TestWrongBook:
         sc_q = self._import_and_get_question(client, auth_headers, sample_questions, "single_choice")
 
         # Submit wrong answer
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"],
-            "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         # Delete from wrongbook
         resp = client.delete(f"/wrongbook/{sc_q['id']}", headers=auth_headers)
@@ -115,11 +138,17 @@ class TestWrongBook:
     def test_delete_nonexistent_record(self, client, auth_headers):
         resp = client.delete("/wrongbook/99999", headers=auth_headers)
         assert resp.status_code == 404
+
     def test_wrongbook_meta(self, client, auth_headers, sample_questions):
         sc_q = self._import_and_get_question(client, auth_headers, sample_questions, "single_choice")
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get("/wrongbook/meta", headers=auth_headers)
         assert resp.status_code == 200
@@ -139,9 +168,14 @@ class TestWrongBook:
         resp = client.get("/questions/", headers=auth_headers)
         questions = resp.json()
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers, params={"keyword": "首都"})
         records = resp.json()
@@ -153,9 +187,14 @@ class TestWrongBook:
         resp = client.get("/questions/", headers=auth_headers)
         questions = resp.json()
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers, params={"type": "single_choice"})
         records = resp.json()
@@ -166,9 +205,14 @@ class TestWrongBook:
         resp = client.get("/questions/", headers=auth_headers)
         questions = resp.json()
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers, params={"subject": "数学"})
         records = resp.json()
@@ -180,9 +224,14 @@ class TestWrongBook:
         resp = client.get("/questions/", headers=auth_headers)
         questions = resp.json()
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(self.WRONGBOOK_LIST, headers=auth_headers, params={"chapter": "第二章"})
         records = resp.json()
@@ -193,9 +242,14 @@ class TestWrongBook:
         resp = client.get("/questions/", headers=auth_headers)
         questions = resp.json()
         for q in questions:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "wrong",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "wrong",
+                },
+                headers=auth_headers,
+            )
 
         resp = client.get(
             self.WRONGBOOK_LIST,

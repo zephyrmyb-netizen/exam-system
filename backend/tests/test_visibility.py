@@ -13,9 +13,14 @@ Covers all 7 permission requirements:
 
 def _register_user(client, username: str, password: str = "pass"):
     """Helper: register and login a user, return auth headers."""
-    client.post("/auth/register", json={
-        "username": username, "password": password, "invite_code": "dev-invite",
-    })
+    client.post(
+        "/auth/register",
+        json={
+            "username": username,
+            "password": password,
+            "invite_code": "dev-invite",
+        },
+    )
     r = client.post("/auth/login", json={"username": username, "password": password})
     token = r.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -25,9 +30,14 @@ class TestVisibilityIsolation:
     """User A imports → User B cannot see; User A publishes → User B CAN see."""
 
     SAMPLE_QS = [
-        {"type": "single_choice", "question": "A's secret Q?",
-         "options": {"A": "a", "B": "b"}, "answer": "A",
-         "subject": "Private", "chapter": "Ch1"},
+        {
+            "type": "single_choice",
+            "question": "A's secret Q?",
+            "options": {"A": "a", "B": "b"},
+            "answer": "A",
+            "subject": "Private",
+            "chapter": "Ch1",
+        },
     ]
 
     def test_user_b_cannot_see_user_a_private_questions(self, client):
@@ -65,9 +75,14 @@ class TestVisibilityIsolation:
         bob = _register_user(client, "bob_crs")
 
         # Alice creates a private course
-        c_resp = client.post("/courses/", json={
-            "name": "Alice's Private Course", "visibility": "private",
-        }, headers=alice)
+        c_resp = client.post(
+            "/courses/",
+            json={
+                "name": "Alice's Private Course",
+                "visibility": "private",
+            },
+            headers=alice,
+        )
         assert c_resp.status_code == 201
         cid = c_resp.json()["id"]
 
@@ -128,9 +143,15 @@ class TestVisibilityIsolation:
         cid = resp.json()["id"]
 
         qs = [
-            {"type": "single_choice", "question": f"Course Q{i}?",
-             "options": {"A": "a", "B": "b"}, "answer": "A",
-             "subject": "Test", "chapter": "Ch1", "course_id": cid}
+            {
+                "type": "single_choice",
+                "question": f"Course Q{i}?",
+                "options": {"A": "a", "B": "b"},
+                "answer": "A",
+                "subject": "Test",
+                "chapter": "Ch1",
+                "course_id": cid,
+            }
             for i in range(3)
         ]
         client.post("/questions/batch", json=qs, headers=alice)
@@ -161,7 +182,9 @@ class TestPracticeVisibility:
     """[Requirement 5] Practice endpoints only draw from the current user's visible range."""
 
     SAMPLE_Q = {
-        "type": "fill_blank", "question": "A's private question", "answer": "secret",
+        "type": "fill_blank",
+        "question": "A's private question",
+        "answer": "secret",
     }
 
     def test_user_a_can_practice_own_private_question(self, client):
@@ -204,9 +227,14 @@ class TestPracticeVisibility:
         qid = client.get("/questions/", headers=alice).json()[0]["id"]
 
         # Bob tries to submit — question is private to A, so Bob gets 404
-        resp = client.post("/practice/submit", json={
-            "question_id": qid, "user_answer": "guess",
-        }, headers=bob)
+        resp = client.post(
+            "/practice/submit",
+            json={
+                "question_id": qid,
+                "user_answer": "guess",
+            },
+            headers=bob,
+        )
         assert resp.status_code == 404
 
 
@@ -214,7 +242,9 @@ class TestWrongBookIsolation:
     """[Requirement 6] Wrong book records are isolated per user."""
 
     SAMPLE_Q = {
-        "type": "fill_blank", "question": "Shared question for wrongbook test", "answer": "correct",
+        "type": "fill_blank",
+        "question": "Shared question for wrongbook test",
+        "answer": "correct",
     }
 
     def test_wrongbook_per_user_isolation(self, client):
@@ -227,9 +257,14 @@ class TestWrongBookIsolation:
         qid = client.get("/questions/", headers=alice).json()[0]["id"]
 
         # Alice submits wrong answer
-        client.post("/practice/submit", json={
-            "question_id": qid, "user_answer": "wrong",
-        }, headers=alice)
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": qid,
+                "user_answer": "wrong",
+            },
+            headers=alice,
+        )
 
         # Alice's wrongbook has the record
         a_wb = client.get("/wrongbook/", headers=alice).json()
@@ -248,9 +283,14 @@ class TestWrongBookIsolation:
         # Alice imports and gets a wrong record
         client.post("/questions/batch", json=[self.SAMPLE_Q], headers=alice)
         qid = client.get("/questions/", headers=alice).json()[0]["id"]
-        client.post("/practice/submit", json={
-            "question_id": qid, "user_answer": "wrong",
-        }, headers=alice)
+        client.post(
+            "/practice/submit",
+            json={
+                "question_id": qid,
+                "user_answer": "wrong",
+            },
+            headers=alice,
+        )
 
         # Alice has meta
         a_meta = client.get("/wrongbook/meta", headers=alice).json()
@@ -266,7 +306,9 @@ class TestImportDefaultsPrivate:
     """[Requirement 7] Import endpoints default to private visibility."""
 
     SAMPLE_Q = {
-        "type": "fill_blank", "question": "Imported question", "answer": "ans",
+        "type": "fill_blank",
+        "question": "Imported question",
+        "answer": "ans",
     }
 
     def test_batch_import_defaults_private(self, client, auth_headers):
@@ -284,18 +326,25 @@ class TestImportDefaultsPrivate:
 
     def test_file_auto_import_defaults_private(self, client, auth_headers):
         """POST /imports/file/auto creates questions with visibility='private'."""
-        from backend.tests.test_imports import _make_docx_bytes
         import json
         from unittest.mock import MagicMock, patch
+
+        from backend.tests.test_imports import _make_docx_bytes
 
         content = _make_docx_bytes("Q: What is 1+1?\nA: 2")
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = json.dumps({
-            "questions": [{
-                "type": "fill_blank", "question": "What is 1+1?", "answer": "2",
-            }]
-        })
+        mock_response.choices[0].message.content = json.dumps(
+            {
+                "questions": [
+                    {
+                        "type": "fill_blank",
+                        "question": "What is 1+1?",
+                        "answer": "2",
+                    }
+                ]
+            }
+        )
 
         with patch("backend.routers.imports.OPENAI_API_KEY", "test-key"):
             with patch("backend.routers.imports.OpenAI") as mock_openai:
@@ -303,8 +352,13 @@ class TestImportDefaultsPrivate:
                 resp = client.post(
                     "/imports/file/auto",
                     headers=auth_headers,
-                    files={"file": ("test.docx", content,
-                                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                    files={
+                        "file": (
+                            "test.docx",
+                            content,
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        )
+                    },
                 )
         assert resp.status_code == 200
         # The question was imported to the user's default course

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend import models, schemas
 from backend.crud_base import GenericCRUD, PaginatedResult
@@ -17,7 +17,7 @@ def _create_bank(db_session, owner_id, name="测试题库"):
         owner_id=owner_id,
         name=name,
         visibility="private",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db_session.add(bank)
     db_session.commit()

@@ -15,7 +15,7 @@ else:
     _engine_kwargs.update(
         pool_size=10,
         max_overflow=20,
-        pool_recycle=1800,   # reconnect after 30 min (avoid stale PG conns)
+        pool_recycle=1800,  # reconnect after 30 min (avoid stale PG conns)
         pool_pre_ping=True,  # verify liveness before returning a conn
     )
 

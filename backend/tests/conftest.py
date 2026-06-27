@@ -1,4 +1,5 @@
 """Pytest fixtures for backend tests."""
+
 import os
 import sys
 from pathlib import Path
@@ -9,7 +10,7 @@ _proj_root = Path(__file__).resolve().parent.parent.parent
 if str(_proj_root) not in sys.path:
     sys.path.insert(0, str(_proj_root))
 
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -86,11 +87,13 @@ def _default_noop_rate_limiter():
     class _NoLimitLimiter:
         def check(self, *, key, limit, window_s=3600):
             pass
+
     noop = _NoLimitLimiter()
 
     app.dependency_overrides[chat_rl] = lambda: noop
     app.dependency_overrides[import_rl] = lambda: noop
     from backend.ratelimit import reset_limiter_for_tests
+
     reset_limiter_for_tests()
     yield
     # Don't clear here — let the client fixture handle final cleanup.
@@ -100,16 +103,22 @@ def _default_noop_rate_limiter():
 def auth_headers(client) -> dict:
     """Register and login a test user, return Authorization header."""
     # Register
-    client.post("/auth/register", json={
-        "username": "testuser",
-        "password": "testpass123",
-        "invite_code": "dev-invite",
-    })
+    client.post(
+        "/auth/register",
+        json={
+            "username": "testuser",
+            "password": "testpass123",
+            "invite_code": "dev-invite",
+        },
+    )
     # Login
-    resp = client.post("/auth/login", json={
-        "username": "testuser",
-        "password": "testpass123",
-    })
+    resp = client.post(
+        "/auth/login",
+        json={
+            "username": "testuser",
+            "password": "testpass123",
+        },
+    )
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -117,15 +126,21 @@ def auth_headers(client) -> dict:
 @pytest.fixture(scope="function")
 def auth_headers_other(client) -> dict:
     """Second user — for per-user isolation tests (rate limit, visibility)."""
-    client.post("/auth/register", json={
-        "username": "otheruser",
-        "password": "otherpass123",
-        "invite_code": "dev-invite",
-    })
-    resp = client.post("/auth/login", json={
-        "username": "otheruser",
-        "password": "otherpass123",
-    })
+    client.post(
+        "/auth/register",
+        json={
+            "username": "otheruser",
+            "password": "otherpass123",
+            "invite_code": "dev-invite",
+        },
+    )
+    resp = client.post(
+        "/auth/login",
+        json={
+            "username": "otheruser",
+            "password": "otherpass123",
+        },
+    )
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 

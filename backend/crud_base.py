@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import Session
 
@@ -40,15 +40,15 @@ class GenericCRUD(Generic[ModelType, CreateSchema, UpdateSchema]):
 
     def __init__(
         self,
-        model: Type[ModelType],
-        create_schema: Type[CreateSchema] | None = None,
-        update_schema: Type[UpdateSchema] | None = None,
+        model: type[ModelType],
+        create_schema: type[CreateSchema] | None = None,
+        update_schema: type[UpdateSchema] | None = None,
     ):
         self.model = model
         self.create_schema = create_schema
         self.update_schema = update_schema
 
-    def get_by_id(self, db: Session, id: int) -> Optional[ModelType]:
+    def get_by_id(self, db: Session, id: int) -> ModelType | None:
         return db.query(self.model).filter(self.model.id == id).first()
 
     def get_list(self, db: Session, *, skip: int = 0, limit: int = 0) -> list[ModelType]:

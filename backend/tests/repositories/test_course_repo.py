@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend import models
 from backend.repositories.course_repo import CourseRepository
@@ -17,7 +17,7 @@ def _make_bank(db_session, owner_id: int, name: str, visibility: str = "private"
         owner_id=owner_id,
         name=name,
         visibility=visibility,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db_session.add(bank)
     db_session.commit()

@@ -11,10 +11,10 @@ class TestImportTransactionSafety:
 
     def test_auto_import_no_course_on_ai_failure(self, client, auth_headers):
         """When AI parsing fails, no course should be created."""
-        import json
+
+        from unittest.mock import MagicMock, patch
 
         from backend.tests.test_imports import _make_docx_bytes
-        from unittest.mock import MagicMock, patch
 
         content = _make_docx_bytes("Invalid content that will fail AI parsing")
 
@@ -30,8 +30,13 @@ class TestImportTransactionSafety:
                     # This should fail — AI can't parse it
                     resp = client.post(
                         self.IMPORTS_AUTO,
-                        files={"file": ("test.docx", content,
-                                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+                        files={
+                            "file": (
+                                "test.docx",
+                                content,
+                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            )
+                        },
                         headers=auth_headers,
                     )
 
@@ -47,12 +52,16 @@ class TestImportTransactionSafety:
 
     def test_confirm_all_or_nothing(self, client, auth_headers):
         """When one question fails validation in confirm, nothing is imported."""
-        from unittest.mock import MagicMock, patch
 
         # Pre-create a course
-        resp = client.post(self.COURSES_URL, json={
-            "name": "Test Course", "visibility": "private",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.COURSES_URL,
+            json={
+                "name": "Test Course",
+                "visibility": "private",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         # Try to confirm with one valid and one invalid question
@@ -86,15 +95,30 @@ class TestSubmitTransactionSafety:
         sc_q = next(q for q in questions if q["type"] == "single_choice")
 
         # Submit wrong twice, then correct
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "C",
-        }, headers=auth_headers)
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "D",
-        }, headers=auth_headers)
-        client.post(self.PRACTICE_SUBMIT, json={
-            "question_id": sc_q["id"], "user_answer": "B",
-        }, headers=auth_headers)
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "C",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "D",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            self.PRACTICE_SUBMIT,
+            json={
+                "question_id": sc_q["id"],
+                "user_answer": "B",
+            },
+            headers=auth_headers,
+        )
 
         # After correct answer, wrongbook should be empty for this question
         wb = client.get("/wrongbook/", headers=auth_headers).json()
@@ -112,9 +136,14 @@ class TestSubmitTransactionSafety:
 
         # Submit 3 times
         for _ in range(3):
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": sc_q["id"], "user_answer": "B",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": sc_q["id"],
+                    "user_answer": "B",
+                },
+                headers=auth_headers,
+            )
 
         # There should be exactly one review record for this user+question
         # (UniqueConstraint prevents duplicates)

@@ -1,5 +1,5 @@
 """Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
-import pytest
+
 
 class TestLibrary:
     LIBRARY_PUBLIC = "/library/public"
@@ -30,9 +30,14 @@ class TestLibrary:
             client.post(f"/questions/{q['id']}/publish", headers=auth_headers)
 
         # Other user can see them via library
-        client.post("/auth/register", json={
-            "username": "lib_viewer", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "lib_viewer",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "lib_viewer", "password": "pass"})
         v_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"{self.LIBRARY_PUBLIC}/{cid}/questions", headers=v_headers)
@@ -44,9 +49,14 @@ class TestLibrary:
         resp = client.post("/courses/", json={"name": "Secret", "visibility": "private"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        client.post("/auth/register", json={
-            "username": "lib_spy", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "lib_spy",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "lib_spy", "password": "pass"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"{self.LIBRARY_PUBLIC}/{cid}/questions", headers=b_headers)
@@ -77,16 +87,24 @@ class TestLibrary:
 
     def test_library_keyword_search_description(self, client, auth_headers):
         """Keyword should match course description."""
-        client.post("/courses/", json={
-            "name": "数学习题集",
-            "description": "涵盖初中数学全部知识点",
-            "visibility": "public",
-        }, headers=auth_headers)
-        client.post("/courses/", json={
-            "name": "英语题库",
-            "description": "四级考试真题",
-            "visibility": "public",
-        }, headers=auth_headers)
+        client.post(
+            "/courses/",
+            json={
+                "name": "数学习题集",
+                "description": "涵盖初中数学全部知识点",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            "/courses/",
+            json={
+                "name": "英语题库",
+                "description": "四级考试真题",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.LIBRARY_PUBLIC, headers=auth_headers, params={"keyword": "初中"})
         items = resp.json()
@@ -95,12 +113,24 @@ class TestLibrary:
 
     def test_library_keyword_search_subject(self, client, auth_headers):
         """Keyword should match subject field."""
-        client.post("/courses/", json={
-            "name": "C1", "subject": "物理", "visibility": "public",
-        }, headers=auth_headers)
-        client.post("/courses/", json={
-            "name": "C2", "subject": "化学", "visibility": "public",
-        }, headers=auth_headers)
+        client.post(
+            "/courses/",
+            json={
+                "name": "C1",
+                "subject": "物理",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            "/courses/",
+            json={
+                "name": "C2",
+                "subject": "化学",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.LIBRARY_PUBLIC, headers=auth_headers, params={"keyword": "物理"})
         items = resp.json()
@@ -109,12 +139,24 @@ class TestLibrary:
 
     def test_library_subject_filter_exact(self, client, auth_headers):
         """Subject param should do exact match."""
-        client.post("/courses/", json={
-            "name": "C1", "subject": "数学", "visibility": "public",
-        }, headers=auth_headers)
-        client.post("/courses/", json={
-            "name": "C2", "subject": "物理", "visibility": "public",
-        }, headers=auth_headers)
+        client.post(
+            "/courses/",
+            json={
+                "name": "C1",
+                "subject": "数学",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            "/courses/",
+            json={
+                "name": "C2",
+                "subject": "物理",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
 
         resp = client.get(self.LIBRARY_PUBLIC, headers=auth_headers, params={"subject": "数学"})
         items = resp.json()

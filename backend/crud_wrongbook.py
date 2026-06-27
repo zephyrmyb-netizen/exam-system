@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -8,14 +6,14 @@ from .crud_common import _add_question_visibility_filter, apply_pagination
 
 
 def get_random_wrong_question(
-    db: Session, user_id: int, course_id: int | None = None, q_type: str = "",
-) -> Optional[models.Question]:
+    db: Session,
+    user_id: int,
+    course_id: int | None = None,
+    q_type: str = "",
+) -> models.Question | None:
     from random import randint
 
-    wrong_qids = (
-        db.query(models.WrongRecord.question_id)
-        .filter(models.WrongRecord.user_id == user_id)
-    )
+    wrong_qids = db.query(models.WrongRecord.question_id).filter(models.WrongRecord.user_id == user_id)
 
     base = _add_question_visibility_filter(
         db.query(models.Question).filter(models.Question.id.in_(wrong_qids)),
@@ -31,9 +29,9 @@ def get_random_wrong_question(
     max_wc = (
         db.query(func.max(models.WrongRecord.wrong_count))
         .filter(models.WrongRecord.user_id == user_id)
-        .filter(models.WrongRecord.question_id.in_(
-            db.query(models.Question.id).filter(models.Question.id.in_(wrong_qids))
-        ))
+        .filter(
+            models.WrongRecord.question_id.in_(db.query(models.Question.id).filter(models.Question.id.in_(wrong_qids)))
+        )
         .scalar()
     )
     if max_wc is None:
@@ -62,11 +60,7 @@ def get_wrong_records(
     chapter: str = "",
     q_type: str = "",
 ) -> tuple[list[models.WrongRecord], int]:
-    query = (
-        db.query(models.WrongRecord)
-        .filter(models.WrongRecord.user_id == user_id)
-        .join(models.Question)
-    )
+    query = db.query(models.WrongRecord).filter(models.WrongRecord.user_id == user_id).join(models.Question)
 
     if keyword:
         like = f"%{keyword}%"
@@ -129,17 +123,23 @@ def clear_wrong_record_if_correct(db: Session, user_id: int, question_id: int) -
 
 def get_wrongbook_meta(db: Session, user_id: int) -> dict:
     subjects = [
-        r[0] for r in db.query(models.Question.subject)
+        r[0]
+        for r in db.query(models.Question.subject)
         .join(models.WrongRecord)
         .filter(models.WrongRecord.user_id == user_id)
-        .distinct().order_by(models.Question.subject).all()
+        .distinct()
+        .order_by(models.Question.subject)
+        .all()
         if r[0]
     ]
     chapters = [
-        r[0] for r in db.query(models.Question.chapter)
+        r[0]
+        for r in db.query(models.Question.chapter)
         .join(models.WrongRecord)
         .filter(models.WrongRecord.user_id == user_id)
-        .distinct().order_by(models.Question.chapter).all()
+        .distinct()
+        .order_by(models.Question.chapter)
+        .all()
         if r[0]
     ]
     return {"subjects": subjects, "chapters": chapters}

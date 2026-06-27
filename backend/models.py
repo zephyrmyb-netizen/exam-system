@@ -1,5 +1,5 @@
-﻿import json
-from datetime import datetime, timezone
+import json
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
@@ -35,7 +35,7 @@ class QuestionBank(Base):
     description = Column(Text, nullable=True, default="")
     subject = Column(String(200), nullable=True, default="")
     visibility = Column(String(20), nullable=False, default="private", index=True)  # public / private
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     owner = relationship("User", back_populates="question_banks")
     questions = relationship("Question", back_populates="course", cascade="all, delete-orphan")
@@ -61,7 +61,7 @@ class Question(Base):
     course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="SET NULL"), nullable=True, index=True)
     visibility = Column(String(20), nullable=False, default="private", index=True)  # public / private
     source = Column(String(20), nullable=False, default="import")  # import / manual
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     subject = Column(String(200), default="默认科目")
     chapter = Column(String(200), default="默认章节")
@@ -131,11 +131,13 @@ class PracticeRecord(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="SET NULL"), nullable=True, index=True)
     course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="SET NULL"), nullable=True)
-    question_type = Column(String(50), nullable=True)  # single_choice, multiple_choice, true_false, fill_blank, short_answer
+    question_type = Column(
+        String(50), nullable=True
+    )  # single_choice, multiple_choice, true_false, fill_blank, short_answer
     is_correct = Column(Integer, nullable=False, default=0)  # 0=False, 1=True
     user_answer = Column(String(500), nullable=True, default="")
     correct_answer = Column(String(500), nullable=True, default="")
-    answered_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    answered_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="practice_records")
     question = relationship("Question")
@@ -155,9 +157,7 @@ class UserQuestionReview(Base):
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="SET NULL"), nullable=True, index=True)
     course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="SET NULL"), nullable=True)
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "question_id", name="uq_user_question_review"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "question_id", name="uq_user_question_review"),)
 
     last_reviewed_at = Column(DateTime, nullable=True)
     next_review_at = Column(DateTime, nullable=True, index=True)
@@ -165,7 +165,7 @@ class UserQuestionReview(Base):
     review_mode = Column(String(20), nullable=True, default="")  # wrong_review / spaced_repeat / suggested
     consecutive_correct = Column(Integer, nullable=False, default=0)
     consecutive_wrong = Column(Integer, nullable=False, default=0)
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="question_reviews")
     question = relationship("Question")
@@ -197,7 +197,7 @@ class Exam(Base):
     is_shuffle = Column(Integer, nullable=False, default=0)
     is_blind = Column(Integer, nullable=False, default=1)
     status = Column(String(20), nullable=False, default="draft", index=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     course = relationship("QuestionBank")
     creator = relationship("User")
@@ -228,7 +228,7 @@ class ExamSubmission(Base):
     id = Column(Integer, primary_key=True, index=True)
     exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     submitted_at = Column(DateTime, nullable=True)
     score = Column(Integer, nullable=True)
     is_passed = Column(Integer, nullable=False, default=0)
@@ -248,7 +248,7 @@ class Collaboration(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     role = Column(String(20), nullable=False, default="viewer")
     invited_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     __table_args__ = (UniqueConstraint("course_id", "user_id", name="uq_course_user_collab"),)
 
@@ -295,7 +295,7 @@ class Bookmark(Base):
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False, index=True)
     folder_name = Column(String(100), nullable=True, default="默认收藏")
     note = Column(Text, nullable=True, default="")
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     __table_args__ = (UniqueConstraint("user_id", "question_id", name="uq_user_question_bookmark"),)
 
@@ -314,6 +314,6 @@ class StudyGoal(Base):
     target_count = Column(Integer, nullable=False, default=10)
     deadline = Column(DateTime, nullable=True)
     progress = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="study_goals")

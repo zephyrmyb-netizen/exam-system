@@ -1,9 +1,10 @@
 """Public library: browse public courses and their questions."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
-from .. import crud, schemas
+from .. import crud
 from ..database import get_db
 
 router = APIRouter(prefix="/library", tags=["library"])
@@ -20,7 +21,11 @@ def list_public_courses(
 ):
     """Get all public question banks (the public library)."""
     banks, total = crud.get_public_question_banks(
-        db, page=page, page_size=page_size, keyword=keyword, subject=subject,
+        db,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
     )
     items = [b.to_dict() for b in banks]
     if page <= 0 or page_size <= 0:
@@ -50,8 +55,12 @@ def list_public_course_questions(
     questions, total = crud.get_questions(
         db,
         user_id=current_user.id,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
         course_id=course_id,
     )
     items = [q.to_dict() for q in questions]

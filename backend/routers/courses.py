@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from .. import auth as auth_module
 from .. import crud, models, schemas
 from ..database import get_db
-from ..services.course_service import CourseService
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -121,8 +120,12 @@ def list_course_questions(
     questions, total = crud.get_questions(
         db,
         user_id=current_user.id,
-        page=page, page_size=page_size,
-        keyword=keyword, subject=subject, chapter=chapter, q_type=type,
+        page=page,
+        page_size=page_size,
+        keyword=keyword,
+        subject=subject,
+        chapter=chapter,
+        q_type=type,
         course_id=course_id,
     )
     items = [q.to_dict() for q in questions]
@@ -144,7 +147,10 @@ def random_question_in_course(
     _get_accessible_course(db, course_id, current_user.id)
 
     question = crud.get_random_question_in_course(
-        db, course_id, user_id=current_user.id, q_type=type,
+        db,
+        course_id,
+        user_id=current_user.id,
+        q_type=type,
     )
     if not question:
         raise HTTPException(status_code=404, detail="该课程下暂无可用题目")

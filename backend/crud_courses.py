@@ -1,23 +1,20 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session
 from sqlalchemy import select as sa_select
+from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .crud_common import _add_bank_visibility_filter, apply_pagination
 
 
-def create_question_bank(
-    db: Session, bank_in: schemas.CourseCreate, owner_id: int
-) -> models.QuestionBank:
+def create_question_bank(db: Session, bank_in: schemas.CourseCreate, owner_id: int) -> models.QuestionBank:
     bank = models.QuestionBank(
         owner_id=owner_id,
         name=bank_in.name,
         description=bank_in.description,
         subject=bank_in.subject,
         visibility=bank_in.visibility,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(bank)
     db.commit()
@@ -39,7 +36,7 @@ def get_or_create_uncategorized_bank(db: Session, user_id: int) -> models.Questi
         name="未分类题库",
         description="自动创建的默认题库",
         visibility="private",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(bank)
     db.commit()
@@ -76,7 +73,7 @@ def resolve_course(
             name=name,
             description=f"从文件导入: {name}",
             visibility="private",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(bank)
         db.commit()
@@ -88,7 +85,10 @@ def resolve_course(
 
 
 def get_question_banks(
-    db: Session, user_id: int | None, page: int = 0, page_size: int = 0,
+    db: Session,
+    user_id: int | None,
+    page: int = 0,
+    page_size: int = 0,
 ) -> tuple[list[models.QuestionBank], int]:
     query = _add_bank_visibility_filter(db.query(models.QuestionBank), user_id)
     query = query.order_by(models.QuestionBank.created_at.desc())
@@ -96,7 +96,10 @@ def get_question_banks(
 
 
 def get_my_question_banks(
-    db: Session, user_id: int, page: int = 0, page_size: int = 0,
+    db: Session,
+    user_id: int,
+    page: int = 0,
+    page_size: int = 0,
 ) -> tuple[list[models.QuestionBank], int]:
     from sqlalchemy.orm import selectinload
 
@@ -136,7 +139,7 @@ def get_public_question_banks(
     return apply_pagination(query, page, page_size)
 
 
-def get_question_bank_by_id(db: Session, bank_id: int) -> Optional[models.QuestionBank]:
+def get_question_bank_by_id(db: Session, bank_id: int) -> models.QuestionBank | None:
     return db.query(models.QuestionBank).filter(models.QuestionBank.id == bank_id).first()
 
 
@@ -146,35 +149,29 @@ def delete_question_bank(db: Session, bank_id: int) -> bool:
         return False
 
     # Use subquery (wrapped in select() to avoid SA coercion warnings).
-    qid_subq = (
-        db.query(models.Question.id)
-        .filter(models.Question.course_id == bank_id)
-        .subquery()
-    )
+    qid_subq = db.query(models.Question.id).filter(models.Question.course_id == bank_id).subquery()
     qid_sel = sa_select(qid_subq)
 
-    db.query(models.PracticeRecord).filter(
-        models.PracticeRecord.question_id.in_(qid_sel)
-    ).update({"question_id": None}, synchronize_session=False)
-    db.query(models.PracticeRecord).filter(
-        models.PracticeRecord.course_id == bank_id
-    ).update({"course_id": None}, synchronize_session=False)
+    db.query(models.PracticeRecord).filter(models.PracticeRecord.question_id.in_(qid_sel)).update(
+        {"question_id": None}, synchronize_session=False
+    )
+    db.query(models.PracticeRecord).filter(models.PracticeRecord.course_id == bank_id).update(
+        {"course_id": None}, synchronize_session=False
+    )
 
-    db.query(models.UserQuestionReview).filter(
-        models.UserQuestionReview.question_id.in_(qid_sel)
-    ).update({"question_id": None}, synchronize_session=False)
-    db.query(models.UserQuestionReview).filter(
-        models.UserQuestionReview.course_id == bank_id
-    ).update({"course_id": None}, synchronize_session=False)
+    db.query(models.UserQuestionReview).filter(models.UserQuestionReview.question_id.in_(qid_sel)).update(
+        {"question_id": None}, synchronize_session=False
+    )
+    db.query(models.UserQuestionReview).filter(models.UserQuestionReview.course_id == bank_id).update(
+        {"course_id": None}, synchronize_session=False
+    )
 
     db.delete(bank)
     db.commit()
     return True
 
 
-def update_question_bank_visibility(
-    db: Session, bank_id: int, visibility: str
-) -> Optional[models.QuestionBank]:
+def update_question_bank_visibility(db: Session, bank_id: int, visibility: str) -> models.QuestionBank | None:
     bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == bank_id).first()
     if not bank:
         return None
@@ -185,8 +182,10 @@ def update_question_bank_visibility(
 
 
 def update_question_bank(
-    db: Session, bank_id: int, data: schemas.CourseUpdate,
-) -> Optional[models.QuestionBank]:
+    db: Session,
+    bank_id: int,
+    data: schemas.CourseUpdate,
+) -> models.QuestionBank | None:
     bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == bank_id).first()
     if not bank:
         return None

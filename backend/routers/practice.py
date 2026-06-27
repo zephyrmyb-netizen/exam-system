@@ -1,11 +1,10 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
 from ..database import get_db
 from ..routers.courses import _get_accessible_course
-
 
 router = APIRouter(prefix="/practice", tags=["practice"])
 
@@ -22,7 +21,11 @@ def random_question(
         # Validate the user has access to this course
         _get_accessible_course(db, course_id, current_user.id)
         question = crud.get_random_question_in_course(
-            db, course_id, user_id=current_user.id, q_type=type, chapter=chapter,
+            db,
+            course_id,
+            user_id=current_user.id,
+            q_type=type,
+            chapter=chapter,
         )
         if not question:
             raise HTTPException(status_code=404, detail="该课程下暂无可用题目")
@@ -111,7 +114,10 @@ def get_history(
     Each record includes question text for context.
     """
     records, total = crud.get_practice_history(
-        db, user_id=current_user.id, page=page, page_size=page_size,
+        db,
+        user_id=current_user.id,
+        page=page,
+        page_size=page_size,
     )
 
     items = []
@@ -122,17 +128,19 @@ def get_history(
             qt = r.question.question or ""
             question_text = qt[:80] + ("..." if len(qt) > 80 else "")
 
-        items.append(schemas.PracticeRecordOut(
-            id=r.id,
-            question_id=r.question_id,
-            course_id=r.course_id,
-            question_type=r.question_type,
-            question_text=question_text,
-            is_correct=bool(r.is_correct),
-            user_answer=r.user_answer or "",
-            correct_answer=r.correct_answer or "",
-            answered_at=r.answered_at.isoformat() if r.answered_at else None,
-        ))
+        items.append(
+            schemas.PracticeRecordOut(
+                id=r.id,
+                question_id=r.question_id,
+                course_id=r.course_id,
+                question_type=r.question_type,
+                question_text=question_text,
+                is_correct=bool(r.is_correct),
+                user_answer=r.user_answer or "",
+                correct_answer=r.correct_answer or "",
+                answered_at=r.answered_at.isoformat() if r.answered_at else None,
+            )
+        )
 
     return schemas.PracticeHistoryOut(
         items=items,
@@ -194,6 +202,7 @@ def review_due(
     """
     if course_id > 0:
         from ..routers.courses import _get_accessible_course
+
         _get_accessible_course(db, course_id, current_user.id)
 
     reviews = crud.get_due_reviews(
@@ -205,11 +214,14 @@ def review_due(
 
     items = []
     for rev in reviews:
-        item = {"id": rev.id, "review_level": rev.review_level,
-                "next_review_at": rev.next_review_at.isoformat() if rev.next_review_at else None,
-                "last_reviewed_at": rev.last_reviewed_at.isoformat() if rev.last_reviewed_at else None,
-                "consecutive_correct": rev.consecutive_correct,
-                "review_mode": rev.review_mode or ""}
+        item = {
+            "id": rev.id,
+            "review_level": rev.review_level,
+            "next_review_at": rev.next_review_at.isoformat() if rev.next_review_at else None,
+            "last_reviewed_at": rev.last_reviewed_at.isoformat() if rev.last_reviewed_at else None,
+            "consecutive_correct": rev.consecutive_correct,
+            "review_mode": rev.review_mode or "",
+        }
         if rev.question and rev.question_id:
             item["question"] = rev.question.to_dict()
         else:

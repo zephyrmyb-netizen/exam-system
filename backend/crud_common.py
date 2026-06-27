@@ -1,7 +1,6 @@
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -29,12 +28,12 @@ def _utc_to_local(dt: datetime) -> datetime:
     if dt is None:
         return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     tz = ZoneInfo(APP_TIMEZONE)
     return dt.astimezone(tz).replace(tzinfo=None)
 
 
-def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
+def get_user_by_username(db: Session, username: str) -> models.User | None:
     return db.query(models.User).filter(models.User.username == username).first()
 
 

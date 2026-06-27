@@ -1,5 +1,5 @@
 """Alembic environment config — reads DATABASE_URL from backend/.env."""
-import os
+
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -19,9 +19,9 @@ env_path = Path(__file__).resolve().parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path, encoding="utf-8-sig")
 
+from backend import models  # noqa: F401 — ensure all models are imported
 from backend.config import DATABASE_URL
 from backend.database import Base
-from backend import models  # noqa: F401 — ensure all models are imported
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)

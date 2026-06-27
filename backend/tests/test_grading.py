@@ -1,4 +1,5 @@
 """Tests for improved fill_blank and short_answer grading rules."""
+
 from backend.utils import check_fill_blank_answer, check_short_answer_answer
 
 

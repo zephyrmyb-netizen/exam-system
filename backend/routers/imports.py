@@ -3,7 +3,8 @@ import time
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
-from .. import auth as auth_module, schemas
+from .. import auth as auth_module
+from .. import schemas
 from ..config import IMPORT_RATE_LIMIT_PER_HOUR
 from ..crud import derive_course_name_from_filename
 from ..database import get_db

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from backend import crud, models
 from backend.services.practice_service import PracticeService
@@ -18,7 +18,7 @@ def _make_bank(db_session, owner_id: int) -> models.QuestionBank:
         owner_id=owner_id,
         name="Practice service bank",
         visibility="private",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db_session.add(bank)
     db_session.commit()

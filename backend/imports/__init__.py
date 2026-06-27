@@ -4,6 +4,24 @@ The orchestrator keeps compatibility with the previous service module while
 smaller modules expose the main responsibility groups for new code.
 """
 
+from .ai_client_calls import (
+    OPENAI_API_KEY,
+    OPENAI_BASE_URL,
+    OpenAI,
+    _build_import_client,
+    call_ai_parse,
+    call_ai_parse_chunk,
+    safe_ai_error_detail,
+)
+from .ai_extractor import (
+    build_ai_prompt,
+    build_ai_repair_prompt,
+    chunk_document_text,
+    deduplicate_questions,
+    extract_questions_from_ai_response,
+    json_candidates_from_text,
+    question_items_from_parsed_json,
+)
 from .file_parser import (
     ALLOWED_EXTENSIONS,
     MAX_FILE_SIZE,
@@ -15,35 +33,17 @@ from .file_parser import (
     save_upload_to_temp,
     validate_upload,
 )
-from .ai_extractor import (
-    build_ai_prompt,
-    build_ai_repair_prompt,
-    chunk_document_text,
-    deduplicate_questions,
-    extract_questions_from_ai_response,
-    json_candidates_from_text,
-    question_items_from_parsed_json,
-)
-from .ai_client_calls import (
-    OPENAI_API_KEY,
-    OPENAI_BASE_URL,
-    OpenAI,
-    _build_import_client,
-    call_ai_parse,
-    call_ai_parse_chunk,
-    safe_ai_error_detail,
-)
-from .import_validator import (
-    ensure_questions_found,
-    validate_imported_questions,
-    validate_question_item,
-)
 from .import_orchestrator import (
     build_timing,
     elapsed_ms,
     persist_imported_questions,
     preview_import_from_text,
     resolve_target_course,
+)
+from .import_validator import (
+    ensure_questions_found,
+    validate_imported_questions,
+    validate_question_item,
 )
 
 __all__ = [

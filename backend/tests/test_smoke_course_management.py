@@ -1,5 +1,5 @@
 """Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
-import pytest
+
 
 class TestDeleteCourseComplete:
     """[Goal] Comprehensive course deletion tests: cascade, history, isolation."""
@@ -11,9 +11,14 @@ class TestDeleteCourseComplete:
     LIBRARY_PUBLIC = "/library/public"
 
     def _register_user(self, client, username):
-        client.post("/auth/register", json={
-            "username": username, "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": username,
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": username, "password": "pass"})
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -33,8 +38,7 @@ class TestDeleteCourseComplete:
         """Deleting a course should cascade-delete its questions."""
         resp = client.post(self.COURSES_URL, json={"name": "With Qs"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         # Verify questions exist
         before = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()
@@ -56,15 +60,19 @@ class TestDeleteCourseComplete:
         """Wrong records should be cleaned up when course is deleted."""
         resp = client.post(self.COURSES_URL, json={"name": "Wrong Me"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         questions = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()
         # Submit wrong answers
         for q in questions[:2]:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": "WRONG",
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": "WRONG",
+                },
+                headers=auth_headers,
+            )
 
         # Verify wrongbook has entries
         wb = client.get("/wrongbook/", headers=auth_headers).json()
@@ -82,15 +90,19 @@ class TestDeleteCourseComplete:
         """Practice history should survive course deletion without errors."""
         resp = client.post(self.COURSES_URL, json={"name": "History Keep"}, headers=auth_headers)
         cid = resp.json()["id"]
-        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers,
-                    params={"course_id": cid})
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers, params={"course_id": cid})
 
         questions = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()
         # Submit answers
         for q in questions[:2]:
-            client.post(self.PRACTICE_SUBMIT, json={
-                "question_id": q["id"], "user_answer": q["answer"],
-            }, headers=auth_headers)
+            client.post(
+                self.PRACTICE_SUBMIT,
+                json={
+                    "question_id": q["id"],
+                    "user_answer": q["answer"],
+                },
+                headers=auth_headers,
+            )
 
         # Verify practice history has entries
         hist = client.get(self.PRACTICE_HISTORY, headers=auth_headers).json()
@@ -105,9 +117,14 @@ class TestDeleteCourseComplete:
 
     def test_delete_public_course_removed_from_library(self, client, auth_headers):
         """Deleting a public course should remove it from the public library."""
-        resp = client.post(self.COURSES_URL, json={
-            "name": "Public Delete", "visibility": "public",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.COURSES_URL,
+            json={
+                "name": "Public Delete",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         # Exists in library
@@ -149,6 +166,7 @@ class TestDeleteCourseComplete:
         mine = client.get("/courses/mine", headers=auth_headers).json()
         assert all(c["id"] != cid for c in mine)
 
+
 class TestEditCourse:
     COURSES_URL = "/courses/"
 
@@ -157,9 +175,15 @@ class TestEditCourse:
         resp = client.post(self.COURSES_URL, json={"name": "Old"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        resp = client.patch(f"{self.COURSES_URL}{cid}", json={
-            "name": "New", "description": "Desc", "subject": "Math",
-        }, headers=auth_headers)
+        resp = client.patch(
+            f"{self.COURSES_URL}{cid}",
+            json={
+                "name": "New",
+                "description": "Desc",
+                "subject": "Math",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "New"
@@ -178,9 +202,14 @@ class TestEditCourse:
         resp = client.post(self.COURSES_URL, json={"name": "A's"}, headers=auth_headers)
         cid = resp.json()["id"]
 
-        client.post("/auth/register", json={
-            "username": "ec_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "ec_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "ec_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "Hacked"}, headers=bh)
@@ -188,9 +217,15 @@ class TestEditCourse:
 
     def test_edit_course_partial(self, client, auth_headers):
         """Only name changed, other fields unchanged."""
-        resp = client.post(self.COURSES_URL, json={
-            "name": "Old", "description": "Old Desc", "subject": "Old Subj",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.COURSES_URL,
+            json={
+                "name": "Old",
+                "description": "Old Desc",
+                "subject": "Old Subj",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "New"}, headers=auth_headers)
@@ -200,20 +235,35 @@ class TestEditCourse:
         assert data["description"] == "Old Desc"
         assert data["subject"] == "Old Subj"
 
+
 class TestUnpublishCourse:
     COURSES_URL = "/courses/"
 
     def test_unpublish_course(self, client, auth_headers):
         """POST /courses/{id}/unpublish sets course and questions to private."""
-        resp = client.post(self.COURSES_URL, json={
-            "name": "Public", "visibility": "public",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.COURSES_URL,
+            json={
+                "name": "Public",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
         # Add a public question
-        client.post("/questions/batch", json=[{
-            "type": "fill_blank", "question": "Q", "answer": "A", "course_id": cid,
-        }], headers=auth_headers)
+        client.post(
+            "/questions/batch",
+            json=[
+                {
+                    "type": "fill_blank",
+                    "question": "Q",
+                    "answer": "A",
+                    "course_id": cid,
+                }
+            ],
+            headers=auth_headers,
+        )
         qid = client.get(f"/courses/{cid}/questions", headers=auth_headers).json()[0]["id"]
         client.post(f"/questions/{qid}/publish", headers=auth_headers)
 
@@ -235,14 +285,24 @@ class TestUnpublishCourse:
 
     def test_unpublish_not_owner(self, client, auth_headers):
         """Cannot unpublish another user's course."""
-        resp = client.post(self.COURSES_URL, json={
-            "name": "A's", "visibility": "public",
-        }, headers=auth_headers)
+        resp = client.post(
+            self.COURSES_URL,
+            json={
+                "name": "A's",
+                "visibility": "public",
+            },
+            headers=auth_headers,
+        )
         cid = resp.json()["id"]
 
-        client.post("/auth/register", json={
-            "username": "uc_other", "password": "pass", "invite_code": "dev-invite",
-        })
+        client.post(
+            "/auth/register",
+            json={
+                "username": "uc_other",
+                "password": "pass",
+                "invite_code": "dev-invite",
+            },
+        )
         r = client.post("/auth/login", json={"username": "uc_other", "password": "pass"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=bh)

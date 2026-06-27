@@ -10,6 +10,7 @@ The clients read their credentials from ``config`` at build time; if the
 environment config is changed at runtime, call ``rebuild_clients()`` to
 pick up the new values.
 """
+
 from __future__ import annotations
 
 import threading

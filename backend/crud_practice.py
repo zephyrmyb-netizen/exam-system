@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from random import randint
-from typing import Optional
 
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
@@ -31,7 +30,7 @@ def create_practice_record(
         is_correct=1 if is_correct else 0,
         user_answer=user_answer,
         correct_answer=correct_answer,
-        answered_at=datetime.now(timezone.utc),
+        answered_at=datetime.now(UTC),
     )
     db.add(record)
     db.flush()
@@ -41,25 +40,19 @@ def create_practice_record(
 def get_practice_stats(db: Session, user_id: int) -> dict:
     from zoneinfo import ZoneInfo
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     local_tz = ZoneInfo(APP_TIMEZONE)
     local_midnight = datetime.now(local_tz).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_start = local_midnight.astimezone(timezone.utc)
+    today_start = local_midnight.astimezone(UTC)
     seven_days_ago = now_utc - timedelta(days=7)
 
     # Merge multiple COUNT queries into a single aggregation for efficiency.
     row = (
         db.query(
             func.count(models.PracticeRecord.id).label("total"),
-            func.sum(
-                case((models.PracticeRecord.is_correct == 1, 1), else_=0)
-            ).label("correct"),
-            func.sum(
-                case((models.PracticeRecord.answered_at >= today_start, 1), else_=0)
-            ).label("today"),
-            func.sum(
-                case((models.PracticeRecord.answered_at >= seven_days_ago, 1), else_=0)
-            ).label("recent_7d"),
+            func.sum(case((models.PracticeRecord.is_correct == 1, 1), else_=0)).label("correct"),
+            func.sum(case((models.PracticeRecord.answered_at >= today_start, 1), else_=0)).label("today"),
+            func.sum(case((models.PracticeRecord.answered_at >= seven_days_ago, 1), else_=0)).label("recent_7d"),
         )
         .filter(models.PracticeRecord.user_id == user_id)
         .first()
@@ -110,7 +103,9 @@ def get_practice_history(
 
 
 def get_practice_stats_by_course(
-    db: Session, user_id: int, course_ids: list[int],
+    db: Session,
+    user_id: int,
+    course_ids: list[int],
 ) -> dict[int, dict]:
     if not course_ids:
         return {}
@@ -139,14 +134,13 @@ def get_practice_stats_by_course(
 
 
 def get_today_review_summary(db: Session, user_id: int) -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     due_count = (
         db.query(models.UserQuestionReview)
         .filter(models.UserQuestionReview.user_id == user_id)
         .filter(
-            (models.UserQuestionReview.next_review_at <= now)
-            | (models.UserQuestionReview.next_review_at.is_(None))
+            (models.UserQuestionReview.next_review_at <= now) | (models.UserQuestionReview.next_review_at.is_(None))
         )
         .count()
     )
@@ -176,12 +170,14 @@ def get_today_review_summary(db: Session, user_id: int) -> dict:
         if stats["total"] > 0:
             error_rate = round(stats["wrong"] / stats["total"], 4)
             if error_rate >= 0.4:
-                weak_types.append({
-                    "question_type": qt,
-                    "total_attempts": stats["total"],
-                    "wrong_attempts": stats["wrong"],
-                    "error_rate": error_rate,
-                })
+                weak_types.append(
+                    {
+                        "question_type": qt,
+                        "total_attempts": stats["total"],
+                        "wrong_attempts": stats["wrong"],
+                        "error_rate": error_rate,
+                    }
+                )
 
     weak_types.sort(key=lambda x: x["error_rate"], reverse=True)
 
@@ -204,7 +200,9 @@ def get_today_review_summary(db: Session, user_id: int) -> dict:
 
 
 def get_weak_types(
-    db: Session, user_id: int, recent_n: int = 50,
+    db: Session,
+    user_id: int,
+    recent_n: int = 50,
 ) -> list[dict]:
     recent = (
         db.query(models.PracticeRecord)
@@ -235,20 +233,25 @@ def get_weak_types(
         if stats["total"] >= 2:
             rate = round(stats["wrong"] / stats["total"], 4)
             if rate > overall_rate or rate >= 0.4:
-                weak_types.append({
-                    "question_type": qt,
-                    "total_attempts": stats["total"],
-                    "wrong_attempts": stats["wrong"],
-                    "error_rate": rate,
-                })
+                weak_types.append(
+                    {
+                        "question_type": qt,
+                        "total_attempts": stats["total"],
+                        "wrong_attempts": stats["wrong"],
+                        "error_rate": rate,
+                    }
+                )
 
     weak_types.sort(key=lambda x: x["error_rate"], reverse=True)
     return weak_types
 
 
 def get_random_question(
-    db: Session, user_id: int | None = None, q_type: str = "", chapter: str = "",
-) -> Optional[models.Question]:
+    db: Session,
+    user_id: int | None = None,
+    q_type: str = "",
+    chapter: str = "",
+) -> models.Question | None:
     """Return a random question visible to *user_id*, using count+offset.
 
     Avoids ``ORDER BY RANDOM()`` which forces a full-table sort. Instead
@@ -266,8 +269,12 @@ def get_random_question(
 
 
 def get_random_question_in_course(
-    db: Session, course_id: int, user_id: int | None = None, q_type: str = "", chapter: str = "",
-) -> Optional[models.Question]:
+    db: Session,
+    course_id: int,
+    user_id: int | None = None,
+    q_type: str = "",
+    chapter: str = "",
+) -> models.Question | None:
     """Random question in a course, using count+offset instead of ORDER BY RANDOM()."""
     query = _add_question_visibility_filter(
         db.query(models.Question).filter(models.Question.course_id == course_id),
@@ -293,7 +300,7 @@ def check_answer(question: models.Question, user_answer: str) -> bool:
 
 def _compute_review_state(
     is_correct: bool,
-    current: Optional[models.UserQuestionReview],
+    current: models.UserQuestionReview | None,
     now: datetime,
 ) -> dict:
     if current is None:
@@ -345,7 +352,7 @@ def upsert_user_question_review(
     course_id: int | None,
     is_correct: bool,
 ) -> models.UserQuestionReview:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     current = (
         db.query(models.UserQuestionReview)
@@ -384,14 +391,13 @@ def get_due_reviews(
     course_id: int | None = None,
     limit: int = 20,
 ) -> list[models.UserQuestionReview]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     query = (
         db.query(models.UserQuestionReview)
         .filter(models.UserQuestionReview.user_id == user_id)
         .filter(
-            (models.UserQuestionReview.next_review_at <= now)
-            | (models.UserQuestionReview.next_review_at.is_(None))
+            (models.UserQuestionReview.next_review_at <= now) | (models.UserQuestionReview.next_review_at.is_(None))
         )
     )
 
@@ -407,8 +413,10 @@ def get_due_reviews(
 
 
 def get_user_question_review(
-    db: Session, user_id: int, question_id: int,
-) -> Optional[models.UserQuestionReview]:
+    db: Session,
+    user_id: int,
+    question_id: int,
+) -> models.UserQuestionReview | None:
     return (
         db.query(models.UserQuestionReview)
         .filter(

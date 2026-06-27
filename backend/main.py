@@ -1,5 +1,3 @@
-import logging
-import sys
 import warnings
 from contextlib import asynccontextmanager
 
@@ -8,12 +6,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import (
-    CORS_IS_WILDCARD,
-    CORS_ORIGINS,
-    IS_PRODUCTION,
     _IS_DEFAULT_INVITE,
     _IS_DEFAULT_SECRET,
     _RAW_CORS,
+    CORS_IS_WILDCARD,
+    CORS_ORIGINS,
+    IS_PRODUCTION,
 )
 from .database import Base, engine
 from .logging_config import configure_logging
@@ -41,7 +39,7 @@ if not IS_PRODUCTION:
         _warnings.append(
             "SECRET_KEY is using the default value. "
             "This is fine for local development, but set a unique key for production.\n"
-            "  Generate a random key: python -c \"import secrets; print(secrets.token_urlsafe(48))\"\n"
+            '  Generate a random key: python -c "import secrets; print(secrets.token_urlsafe(48))"\n'
             "  Add to backend/.env: SECRET_KEY=<your-generated-key>\n"
             "  Set APP_ENV=production when deploying."
         )
@@ -63,7 +61,7 @@ if not IS_PRODUCTION:
 
     for msg in _warnings:
         logger.warning(msg)
-        warnings.warn(msg)
+        warnings.warn(msg, stacklevel=2)
 
 # CORS — origins read from config (env CORS_ORIGINS, fallback ["*"])
 # When origins is a wildcard, credentials MUST be disabled — browsers

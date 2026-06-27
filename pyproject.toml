@@ -10,4 +10,14 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-ignore = ["E501"]
+ignore = [
+  "E501",
+  # FastAPI intentionally uses Depends/File/Query in function defaults.
+  "B008",
+  # Keep exception-chain cleanup as a dedicated backend hardening pass.
+  "B904",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/migrations/env.py" = ["E402"]
+"backend/tests/conftest.py" = ["E402"]
