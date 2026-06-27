@@ -1,0 +1,5 @@
+/*
+ * Phase 1 CSS split scaffold.
+ * Keep global rules in ../style.css for now; later phases can move reset,
+ * tokens, and page-neutral base styles here in small reviewed patches.
+ */
