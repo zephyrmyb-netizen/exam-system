@@ -18,6 +18,17 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.10.1-layered-courses-api",
+    version: "v1.10.1",
+    date: "2026-06-27",
+    type: "优化",
+    title: "补齐课程接口分层示范",
+    items: [
+      "新增独立的课程 API 薄路由示范，读取课程列表、我的课程和课程详情时走 service 层。",
+      "补充课程 API 层独立测试，确保新旧路由共存时不影响现有接口。",
+    ],
+  },
+  {
     id: "v1.10.0-phase2-architecture",
     version: "v1.10.0",
     date: "2026-06-27",

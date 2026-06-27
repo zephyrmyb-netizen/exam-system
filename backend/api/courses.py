@@ -1,8 +1,67 @@
-"""Compatibility import for the Phase 2 api package.
+"""Layered course API router.
 
-The stable public router still lives in backend.routers.courses.
+This router is intentionally not mounted in ``backend.main`` yet. It is a
+Phase 2 migration template that proves read-only course endpoints can go
+through the service layer while the stable legacy router keeps serving users.
 """
 
-from ..routers.courses import router
+from typing import Annotated
 
-__all__ = ["router"]
+from fastapi import APIRouter, Depends, Query
+
+from ..auth import get_current_user
+from ..models import User
+from ..services.course_service import CourseService
+from .deps import get_course_service
+
+router = APIRouter(prefix="/courses", tags=["courses"])
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+CourseServiceDep = Annotated[CourseService, Depends(get_course_service)]
+PageParam = Annotated[int, Query(ge=0)]
+
+
+@router.get("/")
+def list_courses(
+    current_user: CurrentUser,
+    service: CourseServiceDep,
+    page: PageParam = 0,
+    page_size: PageParam = 0,
+):
+    banks, total = service.list_visible(
+        user_id=current_user.id,
+        page=page,
+        page_size=page_size,
+    )
+    items = [bank.to_dict() for bank in banks]
+    if page <= 0 or page_size <= 0:
+        return items
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/mine")
+def list_my_courses(
+    current_user: CurrentUser,
+    service: CourseServiceDep,
+    page: PageParam = 0,
+    page_size: PageParam = 0,
+):
+    banks, total = service.list_owned(
+        user_id=current_user.id,
+        page=page,
+        page_size=page_size,
+    )
+    items = [bank.to_dict() for bank in banks]
+    if page <= 0 or page_size <= 0:
+        return items
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/{course_id}")
+def get_course(
+    course_id: int,
+    current_user: CurrentUser,
+    service: CourseServiceDep,
+):
+    bank = service.get_accessible_course(course_id, current_user.id)
+    return bank.to_dict()
