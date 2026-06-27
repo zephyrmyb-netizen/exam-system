@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from . import models
-from .crud_common import _add_question_visibility_filter
+from .crud_common import _add_question_visibility_filter, apply_pagination
 
 
 def get_random_wrong_question(
@@ -78,14 +78,8 @@ def get_wrong_records(
     if q_type:
         query = query.filter(models.Question.type == q_type)
 
-    total = query.count()
     query = query.order_by(models.WrongRecord.id.desc())
-
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def upsert_wrong_record(db: Session, user_id: int, question_id: int, user_answer: str) -> models.WrongRecord:
