@@ -1,4 +1,5 @@
-import { computed, ref, type Ref, type ComputedRef } from "vue";
+import { type ComputedRef, type Ref } from "vue";
+import { defineStore, storeToRefs } from "pinia";
 import { previewFile } from "../api/imports";
 import { getErrorMessage } from "../api/request";
 import type { ImportPreviewResponse, ImportTiming } from "../types";
@@ -30,50 +31,7 @@ export interface AiImportTaskReturn {
   reset: () => void;
 }
 
-const status = ref<TaskStatus>("idle");
-const mode = ref<TaskMode>("preview");
-const fileRef = ref<File | null>(null);
-const fileName = ref<string>("");
-const courseId = ref<number>(0);
-const courseName = ref<string>("");
-const startedAt = ref<number | null>(null);
-const elapsedSeconds = ref<number>(0);
-const estimatedSeconds = 90;
-const previewData = ref<ImportPreviewResponse | null>(null);
-const timing = ref<ImportTiming | null>(null);
-const importedCount = ref<number>(0);
-const message = ref<string>("");
-const error = ref<string>("");
-const resultCourseId = ref<number | null>(null);
-const resultCourseName = ref<string>("");
-
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
-
-const progressTitle = computed<string>(() => {
-  if (status.value === "running") {
-    if (elapsedSeconds.value < 3) return "正在读取文档";
-    return "AI 正在解析题目，请稍候";
-  }
-  if (status.value === "success") return "AI 解析完成";
-  if (status.value === "error") return "AI 解析失败";
-  return "AI 导入";
-});
-
-const progressDetail = computed<string>(() => {
-  if (status.value === "running") {
-    if (elapsedSeconds.value < 3) {
-      return "正在上传并提取文档文字，请稍候。";
-    }
-    if (elapsedSeconds.value < 60) {
-      return "AI 正在导入题目，请等待约 30 秒；大文件或模型繁忙时可能需要更久。";
-    }
-    return "AI 仍在处理，大文件可能超过 1 分钟；切到其他页面也会继续，回来后可查看进度。";
-  }
-  if (status.value === "success" && timing.value) {
-    return `本次用时 ${formatDuration(timing.value.total_ms)}，其中 AI 生成 ${formatDuration(timing.value.ai_ms)}。`;
-  }
-  return "";
-});
 
 function formatDuration(ms: number | undefined): string {
   const value = Number(ms || 0);
@@ -88,91 +46,142 @@ function clearElapsedTimer(): void {
   }
 }
 
-function startElapsedTimer(): void {
-  clearElapsedTimer();
-  elapsedTimer = setInterval(() => {
-    if (startedAt.value !== null) {
-      elapsedSeconds.value = Math.floor((Date.now() - startedAt.value) / 1000);
-    }
-  }, 1000);
-}
+export const useAiImportTaskStore = defineStore("aiImportTask", {
+  state: () => ({
+    status: "idle" as TaskStatus,
+    mode: "preview" as TaskMode,
+    fileRef: null as File | null,
+    fileName: "",
+    courseId: 0,
+    courseName: "",
+    startedAt: null as number | null,
+    elapsedSeconds: 0,
+    estimatedSeconds: 90,
+    previewData: null as ImportPreviewResponse | null,
+    timing: null as ImportTiming | null,
+    importedCount: 0,
+    message: "",
+    error: "",
+    resultCourseId: null as number | null,
+    resultCourseName: "",
+  }),
+  getters: {
+    progressTitle(state): string {
+      if (state.status === "running") {
+        if (state.elapsedSeconds < 3) return "正在读取文档";
+        return "AI 正在解析题目，请稍等";
+      }
+      if (state.status === "success") return "AI 解析完成";
+      if (state.status === "error") return "AI 解析失败";
+      return "AI 导入";
+    },
 
-function reset(): void {
-  clearElapsedTimer();
-  status.value = "idle";
-  mode.value = "preview";
-  fileRef.value = null;
-  fileName.value = "";
-  courseId.value = 0;
-  courseName.value = "";
-  startedAt.value = null;
-  elapsedSeconds.value = 0;
-  previewData.value = null;
-  timing.value = null;
-  importedCount.value = 0;
-  message.value = "";
-  error.value = "";
-  resultCourseId.value = null;
-  resultCourseName.value = "";
-}
+    progressDetail(state): string {
+      if (state.status === "running") {
+        if (state.elapsedSeconds < 3) {
+          return "正在上传并提取文档文字，请稍候。";
+        }
+        if (state.elapsedSeconds < 60) {
+          return "AI 正在导入题目，请等待约 30 秒；大文件或模型繁忙时可能更久。";
+        }
+        return "AI 仍在处理，大文件可能超过 1 分钟；切到其他页面也会继续，回来后可查看进度。";
+      }
+      if (state.status === "success" && state.timing) {
+        return `本次用时 ${formatDuration(state.timing.total_ms)}，其中 AI 生成 ${formatDuration(state.timing.ai_ms)}。`;
+      }
+      return "";
+    },
+  },
+  actions: {
+    startElapsedTimer(): void {
+      clearElapsedTimer();
+      elapsedTimer = setInterval(() => {
+        if (this.startedAt !== null) {
+          this.elapsedSeconds = Math.floor((Date.now() - this.startedAt) / 1000);
+        }
+      }, 1000);
+    },
 
-async function startPreview(file: File, params: Record<string, string | number> = {}): Promise<void> {
-  if (status.value === "running") return;
+    reset(): void {
+      clearElapsedTimer();
+      this.status = "idle";
+      this.mode = "preview";
+      this.fileRef = null;
+      this.fileName = "";
+      this.courseId = 0;
+      this.courseName = "";
+      this.startedAt = null;
+      this.elapsedSeconds = 0;
+      this.previewData = null;
+      this.timing = null;
+      this.importedCount = 0;
+      this.message = "";
+      this.error = "";
+      this.resultCourseId = null;
+      this.resultCourseName = "";
+    },
 
-  reset();
-  status.value = "running";
-  mode.value = "preview";
-  fileRef.value = file || null;
-  fileName.value = file?.name || "";
-  courseId.value = Number(params.course_id || 0);
-  courseName.value = (params.course_name as string) || "";
-  startedAt.value = Date.now();
-  startElapsedTimer();
+    async startPreview(file: File, params: Record<string, string | number> = {}): Promise<void> {
+      if (this.status === "running") return;
 
-  try {
-    const data = await previewFile(file, params);
-    previewData.value = data;
-    timing.value = data?.timing || null;
-    message.value = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
-    status.value = "success";
-  } catch (err: unknown) {
-    error.value = getErrorMessage(err, "AI 解析失败，请检查网络后重试");
-    status.value = "error";
-  } finally {
-    clearElapsedTimer();
-  }
-}
+      this.reset();
+      this.status = "running";
+      this.mode = "preview";
+      this.fileRef = file || null;
+      this.fileName = file?.name || "";
+      this.courseId = Number(params.course_id || 0);
+      this.courseName = (params.course_name as string) || "";
+      this.startedAt = Date.now();
+      this.startElapsedTimer();
 
-function markImported(result: { imported_count?: number; course_id?: number | null; course_name?: string }): void {
-  importedCount.value = result?.imported_count || 0;
-  resultCourseId.value = result?.course_id ?? null;
-  resultCourseName.value = result?.course_name || "";
-  courseName.value = result?.course_name || courseName.value;
-  message.value = `导入成功，已导入 ${importedCount.value} 道题。`;
-}
+      try {
+        const data = await previewFile(file, params);
+        this.previewData = data;
+        this.timing = data?.timing || null;
+        this.message = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
+        this.status = "success";
+      } catch (err: unknown) {
+        this.error = getErrorMessage(err, "AI 解析失败，请检查网络后重试");
+        this.status = "error";
+      } finally {
+        clearElapsedTimer();
+      }
+    },
+
+    markImported(result: { imported_count?: number; course_id?: number | null; course_name?: string }): void {
+      this.importedCount = result?.imported_count || 0;
+      this.resultCourseId = result?.course_id ?? null;
+      this.resultCourseName = result?.course_name || "";
+      this.courseName = result?.course_name || this.courseName;
+      this.message = `导入成功，已导入 ${this.importedCount} 道题。`;
+    },
+  },
+});
 
 export function useAiImportTask(): AiImportTaskReturn {
+  const store = useAiImportTaskStore();
+  const refs = storeToRefs(store);
   return {
-    status,
-    mode,
-    fileRef,
-    fileName,
-    courseId,
-    courseName,
-    startedAt,
-    elapsedSeconds,
-    estimatedSeconds,
-    previewData,
-    timing,
-    importedCount,
-    message,
-    error,
-    resultCourseId,
-    resultCourseName,
-    progressTitle,
-    progressDetail,
-    startPreview,
-    markImported,
-    reset,
+    status: refs.status,
+    mode: refs.mode,
+    fileRef: refs.fileRef,
+    fileName: refs.fileName,
+    courseId: refs.courseId,
+    courseName: refs.courseName,
+    startedAt: refs.startedAt,
+    elapsedSeconds: refs.elapsedSeconds,
+    estimatedSeconds: store.estimatedSeconds,
+    previewData: refs.previewData,
+    timing: refs.timing,
+    importedCount: refs.importedCount,
+    message: refs.message,
+    error: refs.error,
+    resultCourseId: refs.resultCourseId,
+    resultCourseName: refs.resultCourseName,
+    progressTitle: refs.progressTitle as ComputedRef<string>,
+    progressDetail: refs.progressDetail as ComputedRef<string>,
+    startPreview: store.startPreview,
+    markImported: store.markImported,
+    reset: store.reset,
   };
 }
