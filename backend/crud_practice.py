@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from . import models
 from .config import APP_TIMEZONE
-from .crud_common import _add_question_visibility_filter
+from .crud_common import _add_question_visibility_filter, apply_pagination
 from .utils import check_fill_blank_answer, check_short_answer_answer, normalize_answer
 
 _REVIEW_INTERVALS = [1, 3, 7, 14, 30]
@@ -105,12 +105,8 @@ def get_practice_history(
         .filter(models.PracticeRecord.user_id == user_id)
         .options(joinedload(models.PracticeRecord.question))
     )
-    total = query.count()
     query = query.order_by(models.PracticeRecord.answered_at.desc())
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_practice_stats_by_course(

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select as sa_select
 
 from . import models, schemas
-from .crud_common import _add_bank_visibility_filter
+from .crud_common import _add_bank_visibility_filter, apply_pagination
 
 
 def create_question_bank(
@@ -91,12 +91,8 @@ def get_question_banks(
     db: Session, user_id: int | None, page: int = 0, page_size: int = 0,
 ) -> tuple[list[models.QuestionBank], int]:
     query = _add_bank_visibility_filter(db.query(models.QuestionBank), user_id)
-    total = query.count()
     query = query.order_by(models.QuestionBank.created_at.desc())
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_my_question_banks(
@@ -108,13 +104,9 @@ def get_my_question_banks(
         db.query(models.QuestionBank)
         .filter(models.QuestionBank.owner_id == user_id)
         .options(selectinload(models.QuestionBank.questions))
+        .order_by(models.QuestionBank.created_at.desc())
     )
-    total = query.count()
-    query = query.order_by(models.QuestionBank.created_at.desc())
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_public_question_banks(
@@ -140,14 +132,8 @@ def get_public_question_banks(
     if subject:
         query = query.filter(models.QuestionBank.subject == subject)
 
-    total = query.count()
     query = query.order_by(models.QuestionBank.created_at.desc())
-
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_question_bank_by_id(db: Session, bank_id: int) -> Optional[models.QuestionBank]:

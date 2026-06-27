@@ -90,3 +90,14 @@ def derive_course_name_from_filename(filename: str) -> str:
 
     name = name[:80].strip()
     return name if name else "未分类题库"
+
+
+def apply_pagination(query, page: int, page_size: int):
+    """Apply offset/limit pagination to a SQLAlchemy query.
+
+    Returns (items, total). When page or page_size <= 0, returns all rows.
+    """
+    total = query.count()
+    if page > 0 and page_size > 0:
+        query = query.offset((page - 1) * page_size).limit(page_size)
+    return query.all(), total

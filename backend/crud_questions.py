@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .crud_common import _add_question_visibility_filter
+from .crud_common import _add_question_visibility_filter, apply_pagination
 from .utils import normalize_answer
 
 
@@ -33,14 +33,8 @@ def get_questions(
     if course_id is not None:
         query = query.filter(models.Question.course_id == course_id)
 
-    total = query.count()
     query = query.order_by(models.Question.id.desc())
-
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_question_by_id(db: Session, question_id: int) -> Optional[models.Question]:
@@ -197,14 +191,8 @@ def get_public_questions(
     if course_id is not None:
         query = query.filter(models.Question.course_id == course_id)
 
-    total = query.count()
     query = query.order_by(models.Question.id.desc())
-
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_my_questions(
@@ -232,14 +220,8 @@ def get_my_questions(
     if course_id is not None:
         query = query.filter(models.Question.course_id == course_id)
 
-    total = query.count()
     query = query.order_by(models.Question.id.desc())
-
-    if page > 0 and page_size > 0:
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
-
-    return query.all(), total
+    return apply_pagination(query, page, page_size)
 
 
 def get_question_meta(db: Session, user_id: int | None = None) -> dict:
