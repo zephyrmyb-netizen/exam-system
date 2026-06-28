@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.14.0-phase4-export-bookmark",
+    version: "v1.14.0",
+    date: "2026-06-29",
+    type: "新增",
+    title: "补齐导出与收藏能力",
+    items: [
+      "新增题库 JSON / Excel 导出接口，方便备份、迁移和后续资料管理。",
+      "新增个人刷题历史 CSV 导出接口，后续可用于学习复盘和数据分析。",
+      "新增题目收藏接口，支持收藏夹、备注、幂等更新和用户隔离。",
+    ],
+  },
+  {
     id: "v1.13.0-phase4-recommend-analytics",
     version: "v1.13.0",
     date: "2026-06-28",
