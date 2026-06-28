@@ -11,6 +11,7 @@ from ..models import User
 from ..services.analytics_service import AnalyticsService
 from ..services.course_service import CourseService
 from ..services.exam_service import ExamService
+from ..services.export_service import ExportService
 from ..services.permission_service import PermissionService
 from ..services.practice_service import PracticeService
 from ..services.recommendation_service import RecommendationService
@@ -45,6 +46,10 @@ def get_recommendation_service(db: DbSession) -> RecommendationService:
 
 def get_analytics_service(db: DbSession) -> AnalyticsService:
     return AnalyticsService(db)
+
+
+def get_export_service(db: DbSession) -> ExportService:
+    return ExportService(db)
 
 
 def require_permission(permission: str):
