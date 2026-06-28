@@ -10,6 +10,7 @@ structlog>=24.4.0
 python-multipart>=0.0.9
 python-docx>=1.1.2
 python-pptx>=1.0.2
+openpyxl>=3.1.5
 openai>=1.0.0
 alembic>=1.14.0
 redis>=5.2.0  # optional; only needed when REDIS_URL is set for multi-worker rate limiting

@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import admin, analytics, exams, recommendations, tags
+from .api import admin, analytics, exams, exports, recommendations, tags
 from .config import (
     _IS_DEFAULT_INVITE,
     _IS_DEFAULT_SECRET,
@@ -90,3 +90,4 @@ app.include_router(admin.router)
 app.include_router(tags.router)
 app.include_router(recommendations.router)
 app.include_router(analytics.router)
+app.include_router(exports.router)
