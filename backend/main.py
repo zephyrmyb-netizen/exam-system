@@ -5,6 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import exams
 from .config import (
     _IS_DEFAULT_INVITE,
     _IS_DEFAULT_SECRET,
@@ -84,3 +85,4 @@ app.include_router(imports.router)
 app.include_router(courses.router)
 app.include_router(library.router)
 app.include_router(chat.router)
+app.include_router(exams.router)

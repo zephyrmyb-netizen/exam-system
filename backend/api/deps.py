@@ -9,6 +9,7 @@ from ..auth import get_current_user
 from ..database import get_db
 from ..models import User
 from ..services.course_service import CourseService
+from ..services.exam_service import ExamService
 from ..services.permission_service import PermissionService
 from ..services.practice_service import PracticeService
 
@@ -21,6 +22,10 @@ def get_course_service(db: DbSession) -> CourseService:
 
 def get_practice_service(db: DbSession) -> PracticeService:
     return PracticeService(db)
+
+
+def get_exam_service(db: DbSession) -> ExamService:
+    return ExamService(db)
 
 
 def get_permission_service(db: DbSession) -> PermissionService:

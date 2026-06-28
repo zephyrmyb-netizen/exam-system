@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.1-phase3-exam-backend",
+    version: "v1.11.1",
+    date: "2026-06-28",
+    type: "新增",
+    title: "接入后端考试模式闭环",
+    items: [
+      "新增考试创建、发布、开始答题和提交评分接口，后续前端考试页可以直接接入。",
+      "补齐考试 schema、repository、service 和 API 测试，覆盖发布考试、学生答题和自动判分。",
+      "考试模式保持独立路由，不影响现有题库、刷题和 AI 导入流程。",
+    ],
+  },
+  {
     id: "v1.11.0-phase3-rbac-foundation",
     version: "v1.11.0",
     date: "2026-06-28",
