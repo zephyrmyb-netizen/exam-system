@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.13.0-phase4-recommend-analytics",
+    version: "v1.13.0",
+    date: "2026-06-28",
+    type: "新增",
+    title: "接入智能推荐与学习分析接口",
+    items: [
+      "新增今日推荐接口，综合薄弱知识点、薄弱题型和到期复习，给后续首页推荐卡片提供真实数据。",
+      "新增薄弱题目接口，按个人错题记录排序，方便后续做针对性练习入口。",
+      "新增学习分析接口，支持每日刷题趋势、题型正确率、连续学习天数、课程统计和考试分数分布。",
+    ],
+  },
+  {
     id: "v1.12.0-phase4-tags",
     version: "v1.12.0",
     date: "2026-06-28",

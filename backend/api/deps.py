@@ -8,10 +8,12 @@ from sqlalchemy.orm import Session
 from ..auth import get_current_user
 from ..database import get_db
 from ..models import User
+from ..services.analytics_service import AnalyticsService
 from ..services.course_service import CourseService
 from ..services.exam_service import ExamService
 from ..services.permission_service import PermissionService
 from ..services.practice_service import PracticeService
+from ..services.recommendation_service import RecommendationService
 from ..services.tag_service import TagService
 
 DbSession = Annotated[Session, Depends(get_db)]
@@ -35,6 +37,14 @@ def get_permission_service(db: DbSession) -> PermissionService:
 
 def get_tag_service(db: DbSession) -> TagService:
     return TagService(db)
+
+
+def get_recommendation_service(db: DbSession) -> RecommendationService:
+    return RecommendationService(db)
+
+
+def get_analytics_service(db: DbSession) -> AnalyticsService:
+    return AnalyticsService(db)
 
 
 def require_permission(permission: str):
