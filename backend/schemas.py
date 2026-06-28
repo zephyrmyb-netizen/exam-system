@@ -396,6 +396,39 @@ class PracticeHistoryOut(BaseModel):
     page_size: int = 20
 
 
+# -- Bookmarks ---------------------------------------------------------------
+
+
+class BookmarkCreate(BaseModel):
+    question_id: int
+    folder_name: str = "Default"
+    note: str = ""
+
+
+class BookmarkOut(BaseModel):
+    id: int
+    question_id: int
+    folder_name: str = ""
+    note: str = ""
+    created_at: str | None = None
+    question: QuestionOut | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
+
+class BookmarkListOut(BaseModel):
+    items: list[BookmarkOut] = []
+    total: int = 0
+    folders: list[str] = []
+
+
 # -- Knowledge Tags ----------------------------------------------------------
 
 
