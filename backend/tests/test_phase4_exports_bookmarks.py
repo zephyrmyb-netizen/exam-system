@@ -114,3 +114,87 @@ def test_export_api_downloads_practice_history(client, auth_headers):
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/csv")
+
+
+def test_bookmarks_api_requires_login(client):
+    response = client.get("/bookmarks/")
+
+    assert response.status_code == 401
+
+
+def test_bookmarks_api_adds_lists_and_removes_bookmark(client, auth_headers):
+    course_resp = client.post("/courses/", headers=auth_headers, json={"name": "Java"})
+    question_resp = client.post(
+        "/questions/",
+        headers=auth_headers,
+        json={
+            "course_id": course_resp.json()["id"],
+            "type": "single_choice",
+            "question": "What is JVM?",
+            "options": {"A": "Java Virtual Machine", "B": "JavaScript"},
+            "answer": "A",
+        },
+    )
+    question_id = question_resp.json()["id"]
+
+    add_resp = client.post(
+        "/bookmarks/",
+        headers=auth_headers,
+        json={"question_id": question_id, "folder_name": "重点", "note": "复习 JVM"},
+    )
+    assert add_resp.status_code == 201
+    assert add_resp.json()["question_id"] == question_id
+
+    list_resp = client.get("/bookmarks/", headers=auth_headers)
+    assert list_resp.status_code == 200
+    payload = list_resp.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["question"]["question"] == "What is JVM?"
+    assert payload["folders"] == ["重点"]
+
+    delete_resp = client.delete(f"/bookmarks/{question_id}", headers=auth_headers)
+    assert delete_resp.status_code == 200
+    assert client.get("/bookmarks/", headers=auth_headers).json()["total"] == 0
+
+
+def test_bookmark_add_is_idempotent_and_updates_folder(client, auth_headers):
+    course_id = client.post("/courses/", headers=auth_headers, json={"name": "Java"}).json()["id"]
+    client.post(
+        "/questions/",
+        headers=auth_headers,
+        json={
+            "course_id": course_id,
+            "type": "fill_blank",
+            "question": "Java bytecode runs on ___.",
+            "answer": "JVM",
+        },
+    )
+    question_id = client.get("/questions/", headers=auth_headers).json()[0]["id"]
+
+    first = client.post("/bookmarks/", headers=auth_headers, json={"question_id": question_id, "folder_name": "A"})
+    second = client.post("/bookmarks/", headers=auth_headers, json={"question_id": question_id, "folder_name": "B"})
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    payload = client.get("/bookmarks/", headers=auth_headers).json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["folder_name"] == "B"
+
+
+def test_bookmarks_are_user_scoped(client, auth_headers, auth_headers_other):
+    course_id = client.post("/courses/", headers=auth_headers, json={"name": "Java"}).json()["id"]
+    create_resp = client.post(
+        "/questions/",
+        headers=auth_headers,
+        json={
+            "course_id": course_id,
+            "type": "short_answer",
+            "question": "Explain JVM",
+            "answer": "Java Virtual Machine",
+        },
+    )
+    question_id = create_resp.json()["id"]
+    client.post("/bookmarks/", headers=auth_headers, json={"question_id": question_id})
+
+    assert client.get("/bookmarks/", headers=auth_headers).json()["total"] == 1
+    assert client.get("/bookmarks/", headers=auth_headers_other).json()["total"] == 0

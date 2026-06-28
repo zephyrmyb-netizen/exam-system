@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..auth import get_current_user
 from ..database import get_db
 from ..models import User
+from ..repositories import BookmarkRepository
 from ..services.analytics_service import AnalyticsService
 from ..services.course_service import CourseService
 from ..services.exam_service import ExamService
@@ -50,6 +51,10 @@ def get_analytics_service(db: DbSession) -> AnalyticsService:
 
 def get_export_service(db: DbSession) -> ExportService:
     return ExportService(db)
+
+
+def get_bookmark_repo(db: DbSession) -> BookmarkRepository:
+    return BookmarkRepository(db)
 
 
 def require_permission(permission: str):
