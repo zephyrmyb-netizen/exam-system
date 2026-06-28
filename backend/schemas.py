@@ -396,6 +396,43 @@ class PracticeHistoryOut(BaseModel):
     page_size: int = 20
 
 
+# -- Knowledge Tags ----------------------------------------------------------
+
+
+class TagCreate(BaseModel):
+    name: str
+    color: str = ""
+    parent_id: int | None = None
+
+
+class TagOut(BaseModel):
+    id: int
+    name: str
+    color: str = ""
+    parent_id: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TagListOut(BaseModel):
+    items: list[TagOut] = []
+    total: int = 0
+    page: int = 0
+    page_size: int = 0
+
+
+class QuestionTagAssign(BaseModel):
+    tag_names: list[str] = []
+
+
+class TagAccuracyOut(BaseModel):
+    tag_id: int
+    tag_name: str
+    total_count: int = 0
+    correct_count: int = 0
+    accuracy_rate: float = 0.0
+
+
 # -- Exam --------------------------------------------------------------------
 
 
