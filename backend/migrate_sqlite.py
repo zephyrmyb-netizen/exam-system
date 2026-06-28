@@ -6,7 +6,7 @@ Usage:
     backend\.venv\Scripts\python.exe backend\migrate_sqlite.py
 
 What it does:
-1. Backs up backend/exam_system.db to backend/exam_system.backup-<timestamp>.db
+1. Backs up backend/xuexibao.db to backend/xuexibao.backup-<timestamp>.db
 2. Adds missing columns to the questions table if needed
 3. Creates the question_banks table if missing
 4. Creates the practice_records table if missing
@@ -20,7 +20,7 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "exam_system.db"
+DB_PATH = Path(__file__).resolve().parent / "xuexibao.db"
 
 
 def _add_unique_constraint_if_missing(cur, table, constraint_name, columns):
@@ -73,7 +73,7 @@ def main():
 
     # ── 1. Backup ───────────────────────────────────────────────────────
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    backup_path = DB_PATH.parent / f"exam_system.backup-{timestamp}.db"
+    backup_path = DB_PATH.parent / f"xuexibao.backup-{timestamp}.db"
     shutil.copy2(DB_PATH, backup_path)
     print(f"[INFO] Backup created: {backup_path}")
 

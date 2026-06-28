@@ -90,9 +90,6 @@ async function handleLogin() {
     </CardContent>
 
     <CardFooter class="flex-col p-0 pt-5">
-      <p class="invite-hint">
-        首次使用请先注册，开发邀请码请在后端 .env 中配置。
-      </p>
       <p class="auth-switch">
         还没有账号？
         <router-link :to="{ name: 'register' }">去注册</router-link>
@@ -145,13 +142,5 @@ async function handleLogin() {
 
 .input-suffix:hover {
   color: var(--text-secondary);
-}
-
-.invite-hint {
-  margin: var(--space-1) 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  line-height: 1.6;
-  text-align: center;
 }
 </style>

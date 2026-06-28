@@ -9,7 +9,7 @@
 services:
   backend:
     environment:
-      - DATABASE_URL=postgresql://exam_user:${DB_PASSWORD:-change_me}@postgres:5432/exam_system
+      - DATABASE_URL=postgresql://xuexibao_user:${DB_PASSWORD:-change_me}@postgres:5432/xuexibao
       - REDIS_URL=redis://redis:6379/0
       - APP_ENV=production
     depends_on:
@@ -21,16 +21,16 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: exam_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
-      POSTGRES_DB: exam_system
+    POSTGRES_USER: xuexibao_user
+    POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+    POSTGRES_DB: xuexibao
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U exam_user -d exam_system"]
+      test: ["CMD-SHELL", "pg_isready -U xuexibao_user -d xuexibao"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -161,7 +161,7 @@ onMounted(() => fetchAll());
     <Card class="border-slate-200 bg-white">
       <CardContent class="space-y-3 p-4">
         <div class="flex items-center justify-between text-sm font-bold text-slate-500">
-          <span>Exam System</span>
+          <span>学习宝</span>
           <span>{{ appVersion }}</span>
         </div>
         <Button variant="outline" class="w-full justify-start text-rose-600" @click="handleLogout">

@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from "axios";
 
-const TOKEN_KEY = "exam_system_token";
-const AUTH_EVENT = "exam-system-auth-change";
+const TOKEN_KEY = "xuexibao_token";
+const AUTH_EVENT = "xuexibao-auth-change";
 let memoryToken = "";
 
 function getDefaultApiBaseUrl(): string {

@@ -38,9 +38,9 @@ services:
 #    image: postgres:16-alpine
 #    profiles: ["full"]
 #    environment:
-#      POSTGRES_USER: exam_user
+#      POSTGRES_USER: xuexibao_user
 #      POSTGRES_PASSWORD: change_me
-#      POSTGRES_DB: exam_system
+#      POSTGRES_DB: xuexibao
 #    ports:
 #      - "5432:5432"
 #    volumes:

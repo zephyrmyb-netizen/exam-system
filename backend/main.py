@@ -20,7 +20,7 @@ from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
 
 configure_logging()
-logger = structlog.get_logger("exam_system")
+logger = structlog.get_logger("xuexibao")
 
 
 @asynccontextmanager
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Exam System API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="学习宝 API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(RequestIDMiddleware)
 
 # ── Startup warnings (development only — production errors are raised in config.py) ─

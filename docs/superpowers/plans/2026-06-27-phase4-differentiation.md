@@ -2133,9 +2133,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
-        name: "考前刷题复习系统",
-        short_name: "刷题",
-        description: "AI 驱动的考前复习与考试平台",
+        name: "学习宝",
+	        short_name: "学习宝",
+	        description: "AI 驱动的智能学习平台",
         theme_color: "#3b82f6",
         background_color: "#f4f6fb",
         display: "standalone",

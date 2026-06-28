@@ -63,9 +63,9 @@ foreach ($cacheDir in $pycacheDirs) {
   Remove-PathIfExists -Path $cacheDir -Recurse
 }
 
-if ($IncludeBackupDbs) {
-  Remove-ByPattern -Base $backend -Filter "exam_system.backup-*.db"
-}
+# Always clean backup DB files (pattern: any-prefix.backup-*.db).
+# These are local SQLite backups that accumulate quickly and are not version-controlled.
+Remove-ByPattern -Base $backend -Filter "*.backup-*.db"
 
 if ($IncludeDuplicateVenv) {
   $preferredVenv = Join-Path $backend ".venv"
@@ -78,7 +78,7 @@ if ($IncludeDuplicateVenv) {
 }
 
 if ($IncludeRootDb) {
-  Remove-PathIfExists -Path (Join-Path $root "exam_system.db")
+  Remove-PathIfExists -Path (Join-Path $root "xuexibao.db")
 }
 
 Write-Host "Done."
