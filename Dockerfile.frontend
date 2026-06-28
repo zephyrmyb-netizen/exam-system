@@ -1,6 +1,6 @@
 # Frontend Dockerfile
-# Build: docker build -t exam-frontend -f Dockerfile.frontend .
-# Run:   docker run -p 80:80 exam-frontend
+# Build: docker build -t xuexibao-frontend -f Dockerfile.frontend .
+# Run:   docker run -p 80:80 xuexibao-frontend
 
 FROM node:20-alpine AS build
 WORKDIR /app

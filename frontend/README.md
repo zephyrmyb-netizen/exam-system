@@ -1,4 +1,4 @@
-# 考前刷题复习系统 — 前端
+# 学习宝 — 前端
 
 Vue 3 + Vite + Vue Router + Axios，对接 FastAPI 后端。
 

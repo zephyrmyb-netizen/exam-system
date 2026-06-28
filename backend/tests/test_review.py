@@ -152,7 +152,7 @@ class TestMigrationIdempotent:
     """Test running migrate_sqlite.py multiple times on the real DB."""
 
     @pytest.mark.skipif(
-        not (Path(__file__).resolve().parent.parent / "exam_system.db").exists(),
+        not (Path(__file__).resolve().parent.parent / "xuexibao.db").exists(),
         reason="Real database not found — skip integration migration test",
     )
     def test_migration_idempotent(self):

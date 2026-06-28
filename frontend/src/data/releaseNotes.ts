@@ -18,6 +18,17 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.5-rename-xuexibao",
+    version: "v1.11.5",
+    date: "2026-06-28",
+    type: "优化",
+    title: "项目更名为学习宝",
+    items: [
+      "统一应用标题、登录页品牌、文档标题和启动脚本命名为学习宝。",
+      "同步前端包名与 lockfile，减少后续维护时的新旧名称混用。",
+    ],
+  },
+  {
     id: "v1.11.4-phase3-leaderboard-heatmap",
     version: "v1.11.4",
     date: "2026-06-28",

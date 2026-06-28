@@ -18,9 +18,7 @@
             </defs>
           </svg>
         </div>
-        <p class="auth-eyebrow">AI 智能练习</p>
-        <h1>考前复习系统</h1>
-        <p class="auth-tagline">导入资料 · 智能出题 · 错题复盘</p>
+        <h1>学习宝</h1>
       </div>
       <router-view />
     </div>
@@ -66,15 +64,6 @@
   height: 48px;
 }
 
-.auth-eyebrow {
-  margin: 0;
-  color: var(--primary);
-  font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .auth-brand h1 {
   margin: 8px 0 0;
   font-size: var(--text-2xl);
@@ -82,13 +71,6 @@
   letter-spacing: -0.02em;
   line-height: 1.25;
   color: var(--text-main);
-}
-
-.auth-tagline {
-  margin: 6px 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: 1.5;
 }
 
 @media (max-width: 420px) {

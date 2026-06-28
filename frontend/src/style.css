@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Design System — Exam System
+   Design System — 学习宝
    Mobile-first, clean hierarchy, breathing room.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -294,7 +294,104 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Buttons
+   UI Components — Button (Vue Component)
+   ═══════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: transform var(--ease-out), background-color var(--ease-out),
+              border-color var(--ease-out), box-shadow var(--ease-out),
+              color var(--ease-out), opacity var(--ease-out);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn--default {
+  padding: 12px 18px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border: 1px solid rgba(37, 99, 235, 0.7);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn--default:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+}
+
+.btn--secondary {
+  padding: 10px 14px;
+  color: var(--text-main);
+  background: var(--surface-muted);
+  border: 1px solid var(--line-soft);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.btn--ghost {
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.btn--outline {
+  padding: 10px 14px;
+  color: var(--text-main);
+  background: transparent;
+  border: 1px solid var(--line-soft);
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.btn--danger {
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--rose);
+  border: 1px solid rgba(225, 29, 72, 0.7);
+}
+
+.btn--danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
+}
+
+.btn--sm {
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.btn--md {
+  height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-base);
+}
+
+.btn--lg {
+  height: 56px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Buttons (Legacy Global Classes)
    ═══════════════════════════════════════════════════════════ */
 
 .nav-button,

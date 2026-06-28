@@ -27,7 +27,7 @@ from fastapi import HTTPException
 
 from .config import REDIS_URL
 
-logger = logging.getLogger("exam_system.ratelimit")
+logger = logging.getLogger("xuexibao.ratelimit")
 
 
 class RateLimiter(Protocol):

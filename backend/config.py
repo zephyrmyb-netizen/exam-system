@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 from dotenv import dotenv_values
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # ── Load .env ───────────────────────────────────────────────────────────────
 _backend_dir = Path(__file__).resolve().parent
@@ -77,40 +76,10 @@ if os.getenv("SKIP_DOTENV", "").lower() not in {"1", "true", "yes"}:
     _apply_env_values(_dotenv_values)
 
 
-class AppSettings(BaseSettings):
-    """Typed environment snapshot.
-
-    Keep module-level constants below for existing imports, but centralize
-    environment parsing here so new code has a typed settings object.
-    """
-
-    model_config = SettingsConfigDict(extra="ignore")
-
-    app_env: str = "development"
-    app_timezone: str = "Asia/Shanghai"
-    database_url: str = f"sqlite:///{_backend_dir / 'exam_system.db'}"
-    secret_key: str = "change-this-secret-key-in-production"
-    access_token_expire_minutes: int = 1440
-    cors_origins: str = ""
-    invite_code: str = "dev-invite"
-    openai_api_key: str = ""
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o-mini"
-    chat_rate_limit_per_hour: int = 20
-    chat_max_message_length: int = 4000
-    chat_max_history_messages: int = 20
-    chat_max_history_total_length: int = 20000
-    chat_upstream_timeout: float = 90
-    import_upstream_timeout: float = 90
-    import_chunk_size: int = 5000
-    import_max_chunks: int = 3
-    import_rate_limit_per_hour: int = 10
-    redis_url: str = ""
-
-
-SETTINGS = AppSettings()
-
 # ── Environment ─────────────────────────────────────────────────────────────
+# All configuration is read from module-level os.getenv() constants below.
+# These constants are the single authoritative source of truth imported by
+# the rest of the application (auth.py, database.py, routers, services, etc.).
 APP_ENV = os.getenv("APP_ENV", "").lower() or os.getenv("ENV", "").lower() or "development"
 IS_PRODUCTION = APP_ENV == "production"
 
@@ -120,7 +89,7 @@ APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Asia/Shanghai")
 
 # ── Database ────────────────────────────────────────────────────────────────
 # Default to an absolute path so the DB always lands in backend/ regardless of CWD
-_default_db_path = _backend_dir / "exam_system.db"
+_default_db_path = _backend_dir / "xuexibao.db"
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_default_db_path.as_posix()}")
 
 # ── JWT ─────────────────────────────────────────────────────────────────────

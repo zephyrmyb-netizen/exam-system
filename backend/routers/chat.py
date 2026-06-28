@@ -18,7 +18,7 @@ from ..models import User
 from ..ratelimit import RateLimiter, get_limiter
 from ..services.ai_client import get_chat_client
 
-logger = logging.getLogger("exam_system.chat")
+logger = logging.getLogger("xuexibao.chat")
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 

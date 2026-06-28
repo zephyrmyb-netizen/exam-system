@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Exam System smoke test - verifies core API endpoints respond as expected.
+    学习宝 smoke test - verifies core API endpoints respond as expected.
     Run from project root while backend is running on http://127.0.0.1:8000
 .NOTES
     Usage: powershell -ExecutionPolicy Bypass .\scripts\smoke_test.ps1
@@ -31,7 +31,7 @@ function Check($n, $label, $method, $path, $body, $exp, $token) {
     }
 }
 
-Write-Host "=== Exam System Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== 学习宝 Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Backend: $BASE`n"
 
 # 1. Health

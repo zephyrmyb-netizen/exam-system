@@ -93,7 +93,7 @@ def list_questions(
         q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
-    items = [q.to_dict() for q in questions]
+    items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
     if page <= 0 or page_size <= 0:
         return items
@@ -125,7 +125,7 @@ def list_my_questions(
         q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
-    items = [q.to_dict() for q in questions]
+    items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
     if page <= 0 or page_size <= 0:
         return items
@@ -156,7 +156,7 @@ def list_public_questions(
         q_type=type,
         course_id=course_id if course_id > 0 else None,
     )
-    items = [q.to_dict() for q in questions]
+    items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
     if page <= 0 or page_size <= 0:
         return items
@@ -198,7 +198,7 @@ def create_question(
         raise HTTPException(status_code=403, detail="只能在自己的课程下创建题目")
 
     question = crud.create_single_question(db, body, current_user.id)
-    return question.to_dict()
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
 # ── Edit question ──────────────────────────────────────────────────────────
@@ -233,7 +233,7 @@ def update_question(
         raise HTTPException(status_code=400, detail=str(e))
     if not updated:
         raise HTTPException(status_code=404, detail="题目不存在")
-    return updated.to_dict()
+    return schemas.QuestionOut.model_validate(updated).model_dump()
 
 
 # ── Unpublish question ─────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ def unpublish_question(
     if question.visibility == "private":
         raise HTTPException(status_code=400, detail="该题目已为私有")
     updated = crud.update_question_visibility(db, question_id, "private")
-    return updated.to_dict()
+    return schemas.QuestionOut.model_validate(updated).model_dump()
 
 
 # ── Publish question ───────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ def publish_question(
         raise HTTPException(status_code=400, detail="该题目已发布")
 
     updated = crud.update_question_visibility(db, question_id, "public")
-    return updated.to_dict()
+    return schemas.QuestionOut.model_validate(updated).model_dump()
 
 
 @router.get("/meta")

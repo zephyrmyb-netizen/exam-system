@@ -1,4 +1,4 @@
-# Exam System Backend
+# 学习宝 Backend
 
 FastAPI + SQLAlchemy + SQLite/PostgreSQL + JWT 认证后端。
 
@@ -108,7 +108,7 @@ API 文档自动生成于 http://127.0.0.1:8000/docs
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `APP_ENV` | `development` | 运行环境：`development`（开发）或 `production`（生产） |
-| `DATABASE_URL` | `sqlite:///./exam_system.db` | 数据库连接（开发用 SQLite，生产用 PostgreSQL） |
+| `DATABASE_URL` | `sqlite:///./xuexibao.db` | 数据库连接（开发用 SQLite，生产用 PostgreSQL） |
 | `SECRET_KEY` | `change-this-secret-key-in-production` | JWT 签名密钥（**生产环境必须修改**） |
 | `CORS_ORIGINS` | （空 → 允许所有） | 逗号分隔的允许跨域来源，如 `http://localhost:5173,http://192.168.1.8:5173` |
 | `INVITE_CODE` | `dev-invite` | 注册邀请码（生产环境请修改） |
@@ -154,11 +154,11 @@ SECRET_KEY=<你生成的随机字符串>
 
 ### SQLite（开发环境）
 
-默认使用 SQLite，数据库文件生成在 `backend/exam_system.db`。零配置即可运行，适合单人本地开发和测试。
+默认使用 SQLite，数据库文件生成在 `backend/xuexibao.db`。零配置即可运行，适合单人本地开发和测试。
 
 ```bash
 # 重置数据库：删除 db 文件后重启后端即可
-del backend\exam_system.db
+del backend\xuexibao.db
 ```
 
 ### PostgreSQL（生产环境）
@@ -170,7 +170,7 @@ del backend\exam_system.db
 pip install psycopg2-binary
 
 # 2. 修改 .env
-# DATABASE_URL=postgresql://用户名:密码@localhost:5432/exam_system
+# DATABASE_URL=postgresql://用户名:密码@localhost:5432/xuexibao
 ```
 
 ## AI 接口配置
@@ -195,7 +195,7 @@ OPENAI_MODEL=mimo-v2.5
 
 > ⚠️ **安全警告**（提交公开仓库前必读）：
 > - ✅ **`backend/.env` 不要提交** — 已在 `.gitignore` 中忽略
-> - ✅ **`backend/exam_system.db` 不要提交** — 包含真实数据
+> - ✅ **`backend/xuexibao.db` 不要提交** — 包含真实数据
 > - ✅ **`uploads/` 不要提交** — 用户上传的文件不应进入仓库
 > - ✅ **不要截图、日志或视频中暴露 API Key / SECRET_KEY / 数据库内容**
 > - ✅ **公开仓库前运行 `git status` 和 `git grep -n "sk-"` 检查**
@@ -206,7 +206,7 @@ OPENAI_MODEL=mimo-v2.5
 
 ```markdown
 - [ ] `.env` 文件未被 Git 跟踪
-- [ ] `backend/exam_system.db` 未被跟踪
+- [ ] `backend/xuexibao.db` 未被跟踪
 - [ ] `uploads/` 未被跟踪
 - [ ] `.env.example` 中不含真实的 API Key（应使用 `<your-api-key>` 占位）
 - [ ] 生产环境已设置随机 `SECRET_KEY`

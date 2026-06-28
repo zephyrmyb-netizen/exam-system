@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 
 export type ThemeMode = "light" | "dark";
 
-const STORAGE_KEY = "exam-system-theme";
+const STORAGE_KEY = "xuexibao-theme";
 
 export const useThemeStore = defineStore("theme", {
   state: () => ({

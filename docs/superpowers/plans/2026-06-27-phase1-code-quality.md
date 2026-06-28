@@ -927,7 +927,7 @@ def test_configure_logging_returns_logger():
 def test_configure_logging_is_idempotent():
     logger1 = configure_logging()
     logger2 = configure_logging()
-    assert logger1.name == logger2.name == "exam_system"
+    assert logger1.name == logger2.name == "xuexibao"
 ```
 
 - [ ] **Step 5: 运行测试确认失败**
@@ -980,7 +980,7 @@ def configure_logging() -> logging.Logger:
         format="%(message)s",
     )
 
-    return structlog.get_logger("exam_system")
+    return structlog.get_logger("xuexibao")
 ```
 
 - [ ] **Step 7: 运行日志测试**
@@ -1029,7 +1029,7 @@ from .logging_config import configure_logging
 from .middleware.request_id import RequestIdMiddleware
 ```
 
-2. 替换 `logger = logging.getLogger("exam_system")` 为：
+2. 替换 `logger = logging.getLogger("xuexibao")` 为：
 ```python
 logger = configure_logging()
 ```

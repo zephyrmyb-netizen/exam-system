@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from .utils import VALID_QUESTION_TYPES, normalize_answer
 
@@ -98,6 +99,48 @@ class CourseOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _compute_course_fields(cls, data: Any) -> Any:
+        """Derive question_count from the ORM questions relationship.
+
+        When data is an ORM object (from_attributes=True), build an enriched
+        dict so that question_count can be computed from the loaded
+        questions relationship.
+        """
+        if hasattr(data, "questions") and not isinstance(data, dict):
+            try:
+                questions = data.questions
+                question_count = len(questions) if isinstance(questions, list) else 0
+            except Exception:
+                question_count = 0
+            return {
+                "id": data.id,
+                "owner_id": data.owner_id,
+                "name": data.name,
+                "description": data.description,
+                "subject": data.subject or "",
+                "visibility": data.visibility,
+                "created_at": data.created_at,
+                "question_count": question_count,
+            }
+        if isinstance(data, dict) and "question_count" not in data:
+            # Called with a pre-built dict (e.g. after to_dict-like enrichment)
+            data.setdefault("question_count", 0)
+        return data
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _none_to_empty_description(cls, v: Any) -> str:
+        return v if v is not None else ""
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
 
 class CourseUpdate(BaseModel):
     """Fields allowed when editing a course."""
@@ -188,6 +231,31 @@ class QuestionOut(BaseModel):
     difficulty: str
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def _parse_options_json(cls, v: Any) -> dict[str, Any] | None:
+        """Deserialize JSON text stored in the ORM Text column."""
+        if isinstance(v, str):
+            import json
+
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+
+    @field_validator("analysis", mode="before")
+    @classmethod
+    def _none_to_empty_analysis(cls, v: Any) -> str:
+        return v if v is not None else ""
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class BatchImportResponse(BaseModel):

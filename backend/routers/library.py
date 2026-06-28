@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
-from .. import crud
+from .. import crud, schemas
 from ..database import get_db
 
 router = APIRouter(prefix="/library", tags=["library"])
@@ -27,7 +27,7 @@ def list_public_courses(
         keyword=keyword,
         subject=subject,
     )
-    items = [b.to_dict() for b in banks]
+    items = [schemas.CourseOut.model_validate(b).model_dump() for b in banks]
     if page <= 0 or page_size <= 0:
         return items
     return {"total": total, "page": page, "page_size": page_size, "items": items}
@@ -63,7 +63,7 @@ def list_public_course_questions(
         q_type=type,
         course_id=course_id,
     )
-    items = [q.to_dict() for q in questions]
+    items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
     if page <= 0 or page_size <= 0:
         return items

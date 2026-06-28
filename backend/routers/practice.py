@@ -33,7 +33,7 @@ def random_question(
         question = crud.get_random_question(db, user_id=current_user.id, q_type=type, chapter=chapter)
         if not question:
             raise HTTPException(status_code=404, detail="题库为空，请先导入题目")
-    return question.to_dict()
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
 @router.post("/submit", response_model=schemas.SubmitResponse)
@@ -173,7 +173,7 @@ def review_wrong_question(
     )
     if not question:
         raise HTTPException(status_code=404, detail="暂无错题，继续加油！")
-    return question.to_dict()
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
 # ── Review: Today's review suggestion ──────────────────────────────────────
@@ -223,7 +223,7 @@ def review_due(
             "review_mode": rev.review_mode or "",
         }
         if rev.question and rev.question_id:
-            item["question"] = rev.question.to_dict()
+            item["question"] = schemas.QuestionOut.model_validate(rev.question).model_dump()
         else:
             item["question"] = None
         items.append(item)
