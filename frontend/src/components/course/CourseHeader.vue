@@ -1,6 +1,7 @@
 <script setup>
 import {
   BookOpen,
+  Download,
   Globe,
   Layers,
   Lock,
@@ -35,7 +36,7 @@ defineProps({
   },
 });
 
-defineEmits(["practice", "import", "edit", "publish", "unpublish", "delete"]);
+defineEmits(["practice", "import", "edit", "publish", "unpublish", "export", "delete"]);
 </script>
 
 <template>
@@ -82,6 +83,10 @@ defineEmits(["practice", "import", "edit", "publish", "unpublish", "delete"]);
       <button v-if="isOwner" class="ghost-button" type="button" @click="$emit('edit')">
         <Pencil :size="15" :stroke-width="2.5" />
         编辑
+      </button>
+      <button v-if="isOwner" class="ghost-button" type="button" @click="$emit('export')">
+        <Download :size="15" :stroke-width="2.5" />
+        导出
       </button>
       <button
         v-if="isOwner && course.visibility === 'private'"

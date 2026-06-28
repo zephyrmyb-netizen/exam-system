@@ -205,6 +205,21 @@ export interface ScoreBucket {
   count: number;
 }
 
+export interface Bookmark {
+  id: number;
+  question_id: number;
+  folder_name: string;
+  note: string;
+  created_at: string | null;
+  question?: Question | null;
+}
+
+export interface BookmarkList {
+  items: Bookmark[];
+  total: number;
+  folders: string[];
+}
+
 export interface DueReviewItem {
   id: number;
   review_level: number;
