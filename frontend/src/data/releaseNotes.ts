@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.4-phase3-leaderboard-heatmap",
+    version: "v1.11.4",
+    date: "2026-06-28",
+    type: "新增",
+    title: "补齐考试排行榜与学习热力图",
+    items: [
+      "新增考试排行榜接口与前端页面，考试详情和结果页可以查看已提交成绩排序。",
+      "补齐协作记录 repository 骨架，为后续题库协作管理保留稳定数据访问层。",
+      "首页学习概览新增近 7 日练习热力图骨架，让学习数据入口更完整。",
+    ],
+  },
+  {
     id: "v1.11.3-phase3-exam-frontend",
     version: "v1.11.3",
     date: "2026-06-28",

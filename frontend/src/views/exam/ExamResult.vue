@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, ClipboardList, RotateCcw } from "@lucide/vue";
+import { ArrowLeft, ClipboardList, RotateCcw, Trophy } from "@lucide/vue";
 
 import { useExamStore } from "@/stores/exam";
 
@@ -13,6 +13,10 @@ const examId = computed(() => Number(route.params.examId));
 function backToExams() {
   store.reset();
   router.replace({ name: "exams" });
+}
+
+function openLeaderboard() {
+  router.push({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 </script>
 
@@ -33,6 +37,10 @@ function backToExams() {
       <button class="primary-button" type="button" @click="backToExams">
         <ArrowLeft :size="18" />
         返回考试
+      </button>
+      <button class="ghost-button" type="button" @click="openLeaderboard">
+        <Trophy :size="18" />
+        查看排行榜
       </button>
       <button class="ghost-button" type="button" @click="router.replace({ name: 'exam-take', params: { examId } })">
         <RotateCcw :size="18" />

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import {
+  getExamLeaderboard,
   getExamDetail,
   listExams,
   listMyExams,
@@ -7,7 +8,7 @@ import {
   submitExam,
 } from "@/api/exams";
 import { getErrorMessage } from "@/api/request";
-import type { Exam, ExamAttempt, ExamDetail, ExamQuestion, ExamResult } from "@/types";
+import type { Exam, ExamAttempt, ExamDetail, ExamLeaderboard, ExamQuestion, ExamResult } from "@/types";
 
 export const useExamStore = defineStore("exam", {
   state: () => ({
@@ -16,6 +17,7 @@ export const useExamStore = defineStore("exam", {
     currentExam: null as ExamDetail | null,
     currentAttempt: null as ExamAttempt | null,
     result: null as ExamResult | null,
+    leaderboard: null as ExamLeaderboard | null,
     currentIndex: 0,
     answers: {} as Record<string, string>,
     loading: false,
@@ -71,6 +73,7 @@ export const useExamStore = defineStore("exam", {
         this.currentIndex = 0;
         this.answers = {};
         this.result = null;
+        this.leaderboard = null;
         return detail;
       } catch (error) {
         this.error = getErrorMessage(error, "鑰冭瘯璇︽儏鍔犺浇澶辫触");
@@ -90,6 +93,7 @@ export const useExamStore = defineStore("exam", {
         this.currentIndex = 0;
         this.answers = {};
         this.result = null;
+        this.leaderboard = null;
       } catch (error) {
         this.error = getErrorMessage(error, "鑰冭瘯寮€濮嬪け璐?");
         throw error;
@@ -132,10 +136,26 @@ export const useExamStore = defineStore("exam", {
       }
     },
 
+    async fetchLeaderboard(id: number): Promise<ExamLeaderboard> {
+      this.loading = true;
+      this.error = "";
+      try {
+        const leaderboard = await getExamLeaderboard(id);
+        this.leaderboard = leaderboard;
+        return leaderboard;
+      } catch (error) {
+        this.error = getErrorMessage(error, "排行榜加载失败");
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     reset(): void {
       this.currentExam = null;
       this.currentAttempt = null;
       this.result = null;
+      this.leaderboard = null;
       this.currentIndex = 0;
       this.answers = {};
       this.error = "";

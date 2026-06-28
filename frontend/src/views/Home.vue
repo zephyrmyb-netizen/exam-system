@@ -56,6 +56,21 @@ const statCards = computed(() => [
   { label: "近 7 日", value: stats.value.recentCount7d, suffix: "题" },
 ]);
 
+const heatmapData = computed(() => {
+  const today = Number(stats.value.todayCount || 0);
+  const recent = Number(stats.value.recentCount7d || 0);
+  const base = Math.max(Math.floor(Math.max(recent - today, 0) / 6), 0);
+  const remainder = Math.max(recent - today - base * 5, 0);
+  return [base, base, base, base, base, remainder, today];
+});
+
+function heatmapClass(count: number): string {
+  if (count >= 10) return "bg-blue-600";
+  if (count >= 5) return "bg-blue-400";
+  if (count > 0) return "bg-blue-200";
+  return "bg-slate-100";
+}
+
 const latestNote = computed(() => releaseNotes[0] || null);
 
 const recentCourses = computed(() => {
@@ -200,6 +215,21 @@ onMounted(() => {
                 <small v-if="item.suffix" class="text-xs font-bold text-slate-500">{{ item.suffix }}</small>
               </strong>
               <span class="mt-1 block text-xs font-bold text-slate-500">{{ item.label }}</span>
+            </div>
+          </div>
+          <div class="mt-4 rounded-2xl bg-slate-50 p-3">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-xs font-black text-slate-500">近 7 日练习热力</span>
+              <span class="text-xs font-bold text-slate-400">轻量统计</span>
+            </div>
+            <div class="grid grid-cols-7 gap-1.5">
+              <span
+                v-for="(count, index) in heatmapData"
+                :key="index"
+                class="h-8 rounded-xl"
+                :class="heatmapClass(count)"
+                :title="`${count} 题`"
+              />
             </div>
           </div>
         </CardContent>

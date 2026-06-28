@@ -3,6 +3,7 @@ import type {
   ExamAttempt,
   ExamCreate,
   ExamDetail,
+  ExamLeaderboard,
   ExamResult,
   ExamSubmissionCreate,
   PaginatedResponse,
@@ -35,4 +36,8 @@ export function startExam(id: number): Promise<ExamAttempt> {
 
 export function submitExam(id: number, payload: ExamSubmissionCreate): Promise<ExamResult> {
   return request.post(`/exams/${id}/submit`, payload).then(({ data }) => data as ExamResult);
+}
+
+export function getExamLeaderboard(id: number): Promise<ExamLeaderboard> {
+  return request.get(`/exams/${id}/leaderboard`).then(({ data }) => data as ExamLeaderboard);
 }

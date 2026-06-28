@@ -276,6 +276,21 @@ export interface ExamResult {
   submitted_at: string | null;
 }
 
+export interface ExamLeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  score: number;
+  total_score: number;
+  submitted_at: string | null;
+}
+
+export interface ExamLeaderboard {
+  exam_id: number;
+  entries: ExamLeaderboardEntry[];
+  total: number;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;

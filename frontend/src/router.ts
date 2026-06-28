@@ -84,6 +84,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: "创建考试", description: "从题库选择题目组卷。", navKey: "home", parent: "exams", requiresPermission: "exam:create" },
       },
       {
+        path: "exams/:examId/leaderboard",
+        name: "exam-leaderboard",
+        component: () => import("./views/exam/ExamLeaderboard.vue"),
+        meta: { title: "考试排行榜", navKey: "home", parent: "exam-detail", requiresPermission: "exam:view_leaderboard" },
+      },
+      {
         path: "exams/:examId",
         name: "exam-detail",
         component: () => import("./views/exam/ExamDetail.vue"),
