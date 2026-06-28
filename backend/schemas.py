@@ -433,6 +433,57 @@ class TagAccuracyOut(BaseModel):
     accuracy_rate: float = 0.0
 
 
+# -- Recommendation & Analytics ---------------------------------------------
+
+
+class WeakTagOut(BaseModel):
+    tag_id: int
+    tag_name: str
+    total_count: int = 0
+    correct_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class TodayRecommendationOut(BaseModel):
+    weak_tags: list[WeakTagOut] = []
+    weak_types: list["WeakTypeOut"] = []
+    due_count: int = 0
+    due_question_ids: list[int] = []
+    recommended_modes: list[str] = []
+
+
+class DailyActivityOut(BaseModel):
+    date: str
+    count: int = 0
+
+
+class TypeDistributionOut(BaseModel):
+    question_type: str
+    total_count: int = 0
+    correct_count: int = 0
+    wrong_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class StreakOut(BaseModel):
+    current_streak: int = 0
+    longest_streak: int = 0
+    last_practiced_date: str | None = None
+
+
+class CourseAnalyticsOut(BaseModel):
+    course_id: int
+    course_name: str
+    question_count: int = 0
+    practice_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class ScoreBucketOut(BaseModel):
+    label: str
+    count: int = 0
+
+
 # -- Exam --------------------------------------------------------------------
 
 
