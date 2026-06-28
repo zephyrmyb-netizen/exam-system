@@ -207,6 +207,73 @@ export interface User {
   id: number;
   username: string;
   role: string;
+  permissions?: string[];
+}
+
+export type RoleName = "student" | "teacher" | "admin";
+
+export interface Exam {
+  id: number;
+  title: string;
+  description: string;
+  course_id: number;
+  creator_id: number;
+  time_limit: number;
+  total_score: number;
+  is_shuffle: boolean;
+  is_blind: boolean;
+  status: "draft" | "published" | string;
+  question_count: number;
+  created_at: string | null;
+}
+
+export interface ExamQuestion {
+  id: number;
+  question_id: number;
+  question_type: QuestionType | string;
+  question: string;
+  options: Record<string, string> | null;
+  score: number;
+  order_index: number;
+}
+
+export interface ExamDetail extends Exam {
+  questions: ExamQuestion[];
+}
+
+export interface ExamCreate {
+  title: string;
+  course_id: number;
+  description?: string;
+  time_limit?: number;
+  total_score?: number;
+  is_shuffle?: boolean;
+  is_blind?: boolean;
+  question_ids?: number[];
+}
+
+export interface ExamAttempt {
+  id: number;
+  exam_id: number;
+  user_id: number;
+  started_at: string | null;
+  submitted_at: string | null;
+  score: number | null;
+}
+
+export interface ExamSubmissionCreate {
+  answers: Record<string, string>;
+}
+
+export interface ExamResult {
+  exam_id: number;
+  submission_id: number;
+  score: number;
+  total_score: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy_rate: number;
+  submitted_at: string | null;
 }
 
 export interface LoginRequest {

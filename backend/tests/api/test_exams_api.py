@@ -103,3 +103,40 @@ def test_exam_api_lists_only_published_exams(db_session):
     ids = {item["id"] for item in response.json()["items"]}
     assert published_id in ids
     assert draft_id not in ids
+
+
+def test_exam_api_detail_returns_published_questions(db_session):
+    user = _make_user(db_session, username="exam_detail_teacher", role_name="teacher")
+    course = _make_course(db_session, user.id)
+    question = _make_question(db_session, user.id, course.id)
+    client = TestClient(_make_app(db_session, user))
+    exam_id = client.post(
+        "/exams/",
+        json={"title": "Detail Exam", "course_id": course.id, "question_ids": [question.id]},
+    ).json()["id"]
+    client.post(f"/exams/{exam_id}/publish")
+
+    response = client.get(f"/exams/{exam_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == exam_id
+    assert data["questions"][0]["question_id"] == question.id
+    assert data["questions"][0]["options"] == {"A": "1", "B": "2"}
+
+
+def test_exam_api_detail_hides_draft_from_other_users(db_session):
+    teacher = _make_user(db_session, username="exam_draft_teacher", role_name="teacher")
+    student = _make_user(db_session, username="exam_draft_student")
+    course = _make_course(db_session, teacher.id)
+    question = _make_question(db_session, teacher.id, course.id)
+    teacher_client = TestClient(_make_app(db_session, teacher))
+    exam_id = teacher_client.post(
+        "/exams/",
+        json={"title": "Draft Detail", "course_id": course.id, "question_ids": [question.id]},
+    ).json()["id"]
+    student_client = TestClient(_make_app(db_session, student))
+
+    response = student_client.get(f"/exams/{exam_id}")
+
+    assert response.status_code == 404

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, CheckCircle, Home, Library, Plus, Sparkles, User } from "@lucide/vue";
+import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sparkles, Sun, User } from "@lucide/vue";
 
 import { getAuthEventName, getToken } from "../api/request";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
+import { useThemeStore } from "../stores/theme";
 
 const route = useRoute();
 const router = useRouter();
 const { fetchProfile } = useAuth();
+const theme = useThemeStore();
 
 const {
   status: aiStatus,
@@ -115,9 +117,15 @@ onUnmounted(() => {
         <ArrowLeft :size="18" :stroke-width="2.5" />
         <span>返回</span>
       </button>
-      <div class="page-intro">
-        <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
-        <h1>{{ route.meta?.title || "" }}</h1>
+      <div class="header-row">
+        <div class="page-intro">
+          <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
+          <h1>{{ route.meta?.title || "" }}</h1>
+        </div>
+        <button class="theme-toggle" type="button" aria-label="切换主题" @click="theme.toggle()">
+          <Sun v-if="theme.mode === 'dark'" :size="18" :stroke-width="2.4" />
+          <Moon v-else :size="18" :stroke-width="2.4" />
+        </button>
       </div>
     </header>
 
@@ -146,7 +154,11 @@ onUnmounted(() => {
     </div>
 
     <main class="app-main">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
 
     <nav class="bottom-nav" aria-label="主导航">
@@ -193,6 +205,25 @@ onUnmounted(() => {
   background: var(--surface);
   color: var(--text-main);
   font-weight: 800;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-main);
 }
 
 .ai-task-banner {
