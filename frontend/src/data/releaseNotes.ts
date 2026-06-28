@@ -18,6 +18,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.3-phase3-exam-frontend",
+    version: "v1.11.3",
+    date: "2026-06-28",
+    type: "新增",
+    title: "接入前端考试模式",
+    items: [
+      "新增考试列表、考试详情、创建考试、考试答题和考试结果页面。",
+      "首页快捷入口接入正式考试，教师和管理员可从题库组卷并发布考试。",
+      "考试答题页支持题号跳转、进度展示、左右键和滑动切题、数字键选择选项。",
+      "新增管理后台总览和用户角色管理页面，并在通用页头接入主题切换。",
+    ],
+  },
+  {
     id: "v1.11.2-phase3-admin-api",
     version: "v1.11.2",
     date: "2026-06-28",

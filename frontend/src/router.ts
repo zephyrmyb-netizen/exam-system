@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 import { getToken } from "./api/request";
 import AppLayout from "./layouts/AppLayout.vue";
 import AuthLayout from "./layouts/AuthLayout.vue";
+import { useAuthStore } from "./stores/auth";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -71,6 +72,48 @@ const routes: RouteRecordRaw[] = [
         meta: { title: "练习记录", description: "查看历史练习详情。", navKey: "", parent: "mine" },
       },
       {
+        path: "exams",
+        name: "exams",
+        component: () => import("./views/exam/ExamList.vue"),
+        meta: { title: "考试", description: "选择已发布考试并开始作答。", navKey: "home" },
+      },
+      {
+        path: "exams/new",
+        name: "exam-create",
+        component: () => import("./views/exam/ExamCreate.vue"),
+        meta: { title: "创建考试", description: "从题库选择题目组卷。", navKey: "home", parent: "exams", requiresPermission: "exam:create" },
+      },
+      {
+        path: "exams/:examId",
+        name: "exam-detail",
+        component: () => import("./views/exam/ExamDetail.vue"),
+        meta: { title: "考试详情", navKey: "home", parent: "exams" },
+      },
+      {
+        path: "exams/:examId/take",
+        name: "exam-take",
+        component: () => import("./views/exam/ExamTake.vue"),
+        meta: { title: "考试答题", navKey: "home", parent: "exam-detail" },
+      },
+      {
+        path: "exams/:examId/result",
+        name: "exam-result",
+        component: () => import("./views/exam/ExamResult.vue"),
+        meta: { title: "考试结果", navKey: "home", parent: "exams" },
+      },
+      {
+        path: "admin",
+        name: "admin-dashboard",
+        component: () => import("./views/admin/AdminDashboard.vue"),
+        meta: { title: "管理后台", navKey: "mine", parent: "mine", requiresPermission: "stats:view_global" },
+      },
+      {
+        path: "admin/users",
+        name: "admin-users",
+        component: () => import("./views/admin/AdminUsers.vue"),
+        meta: { title: "用户角色", navKey: "mine", parent: "admin-dashboard", requiresPermission: "user:manage" },
+      },
+      {
         path: "mine",
         name: "mine",
         component: () => import("./views/Mine.vue"),
@@ -125,7 +168,7 @@ const router = createRouter({
   },
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const token = getToken();
 
   if (to.matched.some((route) => route.meta.requiresAuth) && !token) {
@@ -144,6 +187,16 @@ router.beforeEach((to) => {
       return { path: redirect };
     }
     return { name: "home" };
+  }
+
+  const requiredPermission = to.matched
+    .map((route) => route.meta.requiresPermission)
+    .find((permission): permission is string => typeof permission === "string");
+
+  if (requiredPermission && token) {
+    const auth = useAuthStore();
+    if (!auth.user) await auth.fetchProfile();
+    if (!auth.can(requiredPermission)) return { name: "home" };
   }
 });
 

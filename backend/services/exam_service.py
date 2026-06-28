@@ -73,6 +73,14 @@ class ExamService:
     ) -> tuple[list[models.Exam], int]:
         return self.exam_repo.list_created(creator_id=creator_id, page=page, page_size=page_size)
 
+    def get_detail(self, exam_id: int, user_id: int) -> models.Exam:
+        exam = self.exam_repo.get_by_id_with_questions(exam_id)
+        if exam is None:
+            raise HTTPException(status_code=404, detail="Exam not found")
+        if exam.status != "published" and exam.creator_id != user_id:
+            raise HTTPException(status_code=404, detail="Exam not found")
+        return exam
+
     def start_attempt(self, exam_id: int, user_id: int) -> models.ExamSubmission:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None or exam.status != "published":

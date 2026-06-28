@@ -357,6 +357,20 @@ class ExamOut(BaseModel):
     created_at: str | None = None
 
 
+class ExamQuestionOut(BaseModel):
+    id: int
+    question_id: int
+    question_type: str
+    question: str
+    options: dict[str, str] | None = None
+    score: int = 1
+    order_index: int = 0
+
+
+class ExamDetailOut(ExamOut):
+    questions: list[ExamQuestionOut] = []
+
+
 class ExamAttemptOut(BaseModel):
     id: int
     exam_id: int

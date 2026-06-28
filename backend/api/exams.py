@@ -1,5 +1,6 @@
 """Layered exam API router."""
 
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -30,6 +31,39 @@ def _exam_out(exam: models.Exam) -> schemas.ExamOut:
         status=exam.status,
         question_count=len(exam.questions or []),
         created_at=exam.created_at.isoformat() if exam.created_at else None,
+    )
+
+
+def _question_options(question: models.Question) -> dict[str, str] | None:
+    if not question.options:
+        return None
+    if isinstance(question.options, dict):
+        return question.options
+    try:
+        parsed = json.loads(question.options)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _exam_detail_out(exam: models.Exam) -> schemas.ExamDetailOut:
+    base = _exam_out(exam).model_dump()
+    questions = sorted(exam.questions or [], key=lambda item: item.order_index)
+    return schemas.ExamDetailOut(
+        **base,
+        questions=[
+            schemas.ExamQuestionOut(
+                id=exam_question.id,
+                question_id=exam_question.question_id,
+                question_type=exam_question.question.type,
+                question=exam_question.question.question,
+                options=_question_options(exam_question.question),
+                score=exam_question.score,
+                order_index=exam_question.order_index,
+            )
+            for exam_question in questions
+            if exam_question.question is not None
+        ],
     )
 
 
@@ -83,6 +117,15 @@ def list_my_exams(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/{exam_id}", response_model=schemas.ExamDetailOut)
+def get_exam_detail(
+    exam_id: int,
+    current_user: CurrentUser,
+    service: ExamServiceDep,
+):
+    return _exam_detail_out(service.get_detail(exam_id, current_user.id))
 
 
 @router.post("/{exam_id}/publish", response_model=schemas.ExamOut)

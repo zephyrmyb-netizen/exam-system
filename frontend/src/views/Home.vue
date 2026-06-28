@@ -89,10 +89,10 @@ const heroActions = [
     to: "/practice",
   },
   {
-    label: "错题本",
-    desc: "集中复盘易错题",
+    label: "正式考试",
+    desc: "选择考试并提交成绩",
     icon: Target,
-    to: "/wrongbook",
+    to: "/exams",
   },
   {
     label: "学习概览",
