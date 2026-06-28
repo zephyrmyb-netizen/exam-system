@@ -103,6 +103,8 @@ class TestAuth:
         resp = client.get("/auth/me", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["username"] == "testuser"
+        assert resp.json()["role"] == "student"
+        assert resp.json()["permissions"] == []
 
     def test_me_unauthorized(self, client):
         resp = client.get("/auth/me")

@@ -23,6 +23,18 @@ class User(Base):
     bookmarks = relationship("Bookmark", cascade="all, delete-orphan")
     study_goals = relationship("StudyGoal", cascade="all, delete-orphan")
 
+    @property
+    def role(self) -> str:
+        """Public role name used by API schemas; missing roles behave as students."""
+        if self.role_ref is None:
+            return "student"
+        return self.role_ref.name
+
+    @property
+    def permissions(self) -> list[str]:
+        """Schema-friendly placeholder; populated by permission-aware endpoints later."""
+        return []
+
 
 class QuestionBank(Base):
     """A named collection of questions (a "course" or "question bank")."""

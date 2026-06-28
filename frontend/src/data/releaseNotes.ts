@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.0-phase3-rbac-foundation",
+    version: "v1.11.0",
+    date: "2026-06-28",
+    type: "新增",
+    title: "补齐 Phase 3 权限地基",
+    items: [
+      "用户信息接口现在会返回默认学生角色和权限字段，为后续教师、管理员和考试模式做准备。",
+      "新增后端 RBAC 权限服务，明确学生、教师、管理员的基础权限边界。",
+      "Layered 课程 API 新增带权限校验的创建题库示范接口，并补充权限隔离测试。",
+    ],
+  },
+  {
     id: "v1.10.2-backend-ruff-baseline",
     version: "v1.10.2",
     date: "2026-06-27",
