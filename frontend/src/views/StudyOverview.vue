@@ -3,13 +3,27 @@ import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { typeLabel } from "../utils/question";
+import ActivityTrendChart from "../components/charts/ActivityTrendChart.vue";
+import TagMasteryChart from "../components/charts/TagMasteryChart.vue";
+import TypeAccuracyChart from "../components/charts/TypeAccuracyChart.vue";
 import {
   TrendingUp, Target, Zap, BookMarked, RefreshCw, Clock,
   BookOpen,
 } from "@lucide/vue";
 
 const router = useRouter();
-const { stats, review, loading, errorMessage, fetchAll } = useStudyOverview();
+const {
+  stats,
+  review,
+  activity,
+  typeDistribution,
+  tagAccuracy,
+  streak,
+  recommendation,
+  loading,
+  errorMessage,
+  fetchAll,
+} = useStudyOverview();
 
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
@@ -23,6 +37,12 @@ const accuracyColor = computed(() => {
   if (rate >= 0.8) return "green";
   if (rate >= 0.5) return "amber";
   return "rose";
+});
+
+const recommendedText = computed(() => {
+  const modes = recommendation.value?.recommended_modes || review.value.recommendedModes || [];
+  if (!modes.length) return "按题库继续练习";
+  return modes.slice(0, 2).join(" / ");
 });
 
 onMounted(() => fetchAll());
@@ -66,6 +86,27 @@ onMounted(() => fetchAll());
         <span class="stat-val blue">{{ stats.coursesCount !== null ? stats.coursesCount : "--" }}</span>
         <span class="stat-lbl">我的题库</span>
       </div>
+    </div>
+
+    <div class="insight-strip">
+      <div class="insight-card">
+        <span class="insight-label">连续学习</span>
+        <strong>{{ streak.current_streak }} 天</strong>
+        <small>最长 {{ streak.longest_streak }} 天</small>
+      </div>
+      <div class="insight-card">
+        <span class="insight-label">今日建议</span>
+        <strong>{{ recommendedText }}</strong>
+        <small>{{ recommendation?.due_count ?? review.dueCount ?? 0 }} 题待复习</small>
+      </div>
+    </div>
+
+    <p class="section-label">学习趋势</p>
+    <ActivityTrendChart :items="activity" />
+
+    <div class="chart-grid">
+      <TypeAccuracyChart :items="typeDistribution" />
+      <TagMasteryChart :items="tagAccuracy" />
     </div>
 
     <!-- Review & Weak Types -->
@@ -174,6 +215,43 @@ onMounted(() => fetchAll());
 .amber .stat-val { color: var(--amber); }
 .rose .stat-val { color: var(--rose); }
 
+.insight-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.insight-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--surface), var(--primary-soft));
+}
+
+.insight-label,
+.insight-card small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.insight-card strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--text-md);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
 /* ── Review Card ── */
 .review-card {
   display: grid;
@@ -245,6 +323,9 @@ onMounted(() => fetchAll());
   .stat-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+  .chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .stat-val {
     font-size: 1.375rem;
   }
@@ -260,6 +341,9 @@ onMounted(() => fetchAll());
   }
   .stat-val {
     font-size: 1rem;
+  }
+  .insight-strip {
+    grid-template-columns: 1fr;
   }
 }
 </style>
