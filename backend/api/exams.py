@@ -154,3 +154,12 @@ def submit_exam(
     service: ExamServiceDep,
 ):
     return service.submit_exam(exam_id, current_user.id, body)
+
+
+@router.get("/{exam_id}/leaderboard", response_model=schemas.ExamLeaderboardOut)
+def get_leaderboard(
+    exam_id: int,
+    current_user: Annotated[models.User, Depends(require_permission("exam:view_leaderboard"))],
+    service: ExamServiceDep,
+):
+    return service.get_leaderboard(exam_id, current_user.id)

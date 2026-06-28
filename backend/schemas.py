@@ -395,6 +395,21 @@ class ExamResultOut(BaseModel):
     submitted_at: str | None = None
 
 
+class ExamLeaderboardEntry(BaseModel):
+    rank: int
+    user_id: int
+    username: str
+    score: int
+    total_score: int
+    submitted_at: str | None = None
+
+
+class ExamLeaderboardOut(BaseModel):
+    exam_id: int
+    entries: list[ExamLeaderboardEntry] = []
+    total: int = 0
+
+
 class ExamListOut(BaseModel):
     items: list[ExamOut] = []
     total: int = 0

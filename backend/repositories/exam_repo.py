@@ -119,3 +119,18 @@ class ExamRepository(BaseRepository[models.Exam]):
         self.db.commit()
         self.db.refresh(submission)
         return submission
+
+    def list_submitted(self, exam_id: int) -> list[models.ExamSubmission]:
+        return (
+            self.db.query(models.ExamSubmission)
+            .options(selectinload(models.ExamSubmission.user))
+            .filter(
+                models.ExamSubmission.exam_id == exam_id,
+                models.ExamSubmission.submitted_at.isnot(None),
+            )
+            .order_by(
+                models.ExamSubmission.score.desc(),
+                models.ExamSubmission.submitted_at.asc(),
+            )
+            .all()
+        )

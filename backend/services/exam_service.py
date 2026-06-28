@@ -136,6 +136,25 @@ class ExamService:
             submitted_at=submitted.submitted_at.isoformat() if submitted.submitted_at else None,
         )
 
+    def get_leaderboard(self, exam_id: int, user_id: int) -> schemas.ExamLeaderboardOut:
+        exam = self.exam_repo.get_by_id_with_questions(exam_id)
+        if exam is None or (exam.status != "published" and exam.creator_id != user_id):
+            raise HTTPException(status_code=404, detail="Exam not found")
+
+        entries = []
+        for index, submission in enumerate(self.exam_repo.list_submitted(exam_id), start=1):
+            entries.append(
+                schemas.ExamLeaderboardEntry(
+                    rank=index,
+                    user_id=submission.user_id,
+                    username=submission.user.username if submission.user else f"user-{submission.user_id}",
+                    score=submission.score or 0,
+                    total_score=exam.total_score,
+                    submitted_at=submission.submitted_at.isoformat() if submission.submitted_at else None,
+                )
+            )
+        return schemas.ExamLeaderboardOut(exam_id=exam_id, entries=entries, total=len(entries))
+
     def _score_per_question(self, exam: models.Exam) -> int:
         if not exam.questions:
             return 0

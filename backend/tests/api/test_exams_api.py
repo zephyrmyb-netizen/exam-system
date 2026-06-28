@@ -140,3 +140,52 @@ def test_exam_api_detail_hides_draft_from_other_users(db_session):
     response = student_client.get(f"/exams/{exam_id}")
 
     assert response.status_code == 404
+
+
+def test_exam_api_leaderboard_returns_submitted_scores_sorted(db_session):
+    teacher = _make_user(db_session, username="leaderboard_teacher", role_name="teacher")
+    student_a = _make_user(db_session, username="leaderboard_student_a")
+    student_b = _make_user(db_session, username="leaderboard_student_b")
+    course = _make_course(db_session, teacher.id)
+    question = _make_question(db_session, teacher.id, course.id)
+    teacher_client = TestClient(_make_app(db_session, teacher))
+    exam_id = teacher_client.post(
+        "/exams/",
+        json={"title": "Leaderboard Exam", "course_id": course.id, "question_ids": [question.id], "total_score": 10},
+    ).json()["id"]
+    teacher_client.post(f"/exams/{exam_id}/publish")
+
+    student_a_client = TestClient(_make_app(db_session, student_a))
+    student_b_client = TestClient(_make_app(db_session, student_b))
+    student_a_client.post(f"/exams/{exam_id}/start")
+    student_a_client.post(f"/exams/{exam_id}/submit", json={"answers": {str(question.id): "A"}})
+    student_b_client.post(f"/exams/{exam_id}/start")
+    student_b_client.post(f"/exams/{exam_id}/submit", json={"answers": {str(question.id): "B"}})
+
+    response = student_a_client.get(f"/exams/{exam_id}/leaderboard")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["exam_id"] == exam_id
+    assert data["total"] == 2
+    assert [entry["username"] for entry in data["entries"]] == [student_b.username, student_a.username]
+    assert [entry["score"] for entry in data["entries"]] == [10, 0]
+    assert data["entries"][0]["rank"] == 1
+    assert data["entries"][0]["total_score"] == 10
+
+
+def test_exam_api_leaderboard_hides_draft_from_other_users(db_session):
+    teacher = _make_user(db_session, username="leaderboard_draft_teacher", role_name="teacher")
+    student = _make_user(db_session, username="leaderboard_draft_student")
+    course = _make_course(db_session, teacher.id)
+    question = _make_question(db_session, teacher.id, course.id)
+    teacher_client = TestClient(_make_app(db_session, teacher))
+    exam_id = teacher_client.post(
+        "/exams/",
+        json={"title": "Draft Leaderboard", "course_id": course.id, "question_ids": [question.id]},
+    ).json()["id"]
+    student_client = TestClient(_make_app(db_session, student))
+
+    response = student_client.get(f"/exams/{exam_id}/leaderboard")
+
+    assert response.status_code == 404

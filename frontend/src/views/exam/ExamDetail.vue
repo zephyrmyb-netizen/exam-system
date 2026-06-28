@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Clock, FileQuestion, Play } from "@lucide/vue";
+import { Clock, FileQuestion, Play, Trophy } from "@lucide/vue";
 
 import { useExamStore } from "@/stores/exam";
 
@@ -12,6 +12,10 @@ const examId = computed(() => Number(route.params.examId));
 
 function start() {
   router.push({ name: "exam-take", params: { examId: examId.value } });
+}
+
+function openLeaderboard() {
+  router.push({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 
 onMounted(() => {
@@ -49,6 +53,10 @@ onMounted(() => {
       <button class="start-button" type="button" :disabled="!store.currentExam.questions.length" @click="start">
         <Play :size="18" />
         开始考试
+      </button>
+      <button class="leaderboard-button" type="button" @click="openLeaderboard">
+        <Trophy :size="18" />
+        查看排行榜
       </button>
     </article>
   </section>
@@ -100,5 +108,19 @@ h1 { color: var(--text-main); font-size: clamp(30px, 8vw, 46px); line-height: 1.
   font-size: var(--text-lg);
   font-weight: 900;
   box-shadow: var(--shadow-primary);
+}
+.leaderboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text-main);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 900;
 }
 </style>

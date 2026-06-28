@@ -31,6 +31,20 @@ vi.mock("@/api/exams", () => ({
   })),
   listExams: vi.fn(async () => ({ items: [], total: 0, page: 1, page_size: 20 })),
   listMyExams: vi.fn(async () => ({ items: [], total: 0, page: 1, page_size: 20 })),
+  getExamLeaderboard: vi.fn(async () => ({
+    exam_id: 1,
+    total: 1,
+    entries: [
+      {
+        rank: 1,
+        user_id: 1,
+        username: "student",
+        score: 100,
+        total_score: 100,
+        submitted_at: null,
+      },
+    ],
+  })),
   startExam: vi.fn(async () => ({
     id: 2,
     exam_id: 1,
@@ -72,5 +86,12 @@ describe("exam store", () => {
     expect(store.answeredCount).toBe(1);
     expect(result.score).toBe(100);
     expect(store.result?.accuracy_rate).toBe(100);
+  });
+
+  it("loads exam leaderboard", async () => {
+    const store = useExamStore();
+    const leaderboard = await store.fetchLeaderboard(1);
+    expect(leaderboard.total).toBe(1);
+    expect(store.leaderboard?.entries[0].rank).toBe(1);
   });
 });

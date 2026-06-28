@@ -29,6 +29,7 @@ _STUDENT_PERMISSIONS = {
     "chat:use",
     "import:use",
     "bookmark:manage",
+    "exam:view_leaderboard",
 }
 
 _TEACHER_PERMISSIONS = _STUDENT_PERMISSIONS | {
