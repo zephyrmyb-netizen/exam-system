@@ -57,7 +57,8 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
-    role: str = "user"
+    role: str = "student"
+    permissions: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)
 
