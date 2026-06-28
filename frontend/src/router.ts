@@ -138,6 +138,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: "更新公告", navKey: "mine", parent: "mine" },
       },
       {
+        path: "bookmarks",
+        name: "bookmarks",
+        component: () => import("./views/bookmark/BookmarkList.vue"),
+        meta: { title: "我的收藏", navKey: "mine", parent: "mine" },
+      },
+      {
         path: "chat",
         name: "chat",
         component: () => import("./views/Chat.vue"),
