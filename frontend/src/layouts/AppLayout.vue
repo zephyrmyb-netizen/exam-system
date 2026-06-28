@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sparkles, Sun, User 
 
 import { getAuthEventName, getToken } from "../api/request";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
+import GlobalSearch from "../components/search/GlobalSearch.vue";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
@@ -22,6 +23,7 @@ const {
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
+const searchRef = ref<InstanceType<typeof GlobalSearch> | null>(null);
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
@@ -97,15 +99,24 @@ function goToImportTab() {
   router.replace({ path: "/import" });
 }
 
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    searchRef.value?.open();
+  }
+}
+
 onMounted(() => {
   if (getToken()) fetchProfile();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
+  window.addEventListener("keydown", handleGlobalKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
+  window.removeEventListener("keydown", handleGlobalKeydown);
   if (successTimer) clearTimeout(successTimer);
 });
 </script>
@@ -178,6 +189,7 @@ onUnmounted(() => {
     </nav>
 
     <ConfirmDialog />
+    <GlobalSearch ref="searchRef" />
   </div>
 </template>
 
