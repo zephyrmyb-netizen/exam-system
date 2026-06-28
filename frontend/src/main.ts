@@ -14,3 +14,11 @@ app.use(createPinia());
 app.use(router);
 app.use(i18n);
 app.mount("#app");
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // PWA support is progressive; app usage should not depend on service worker registration.
+    });
+  });
+}

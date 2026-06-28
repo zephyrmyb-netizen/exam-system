@@ -18,6 +18,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.15.0-phase4-frontend-tools",
+    version: "v1.15.0",
+    date: "2026-06-29",
+    type: "新增",
+    title: "补齐全局搜索、收藏、导出和离线基础",
+    items: [
+      "新增全局搜索入口，支持通过快捷键快速查找题库与题目。",
+      "新增我的收藏页面，并在课程详情补齐题库导出入口。",
+      "新增 PWA 基础配置和离线队列骨架，为后续离线刷题与自动同步打基础。",
+      "修正网页标题与应用清单为学习宝，避免安装到桌面后显示乱码。",
+    ],
+  },
+  {
     id: "v1.14.0-phase4-export-bookmark",
     version: "v1.14.0",
     date: "2026-06-29",
