@@ -1,7 +1,8 @@
 import { ref, type Ref } from "vue";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
+import { getDailyActivity, getStreak, getTagAccuracy, getTodayRecommendation, getTypeDistribution } from "../api/analytics";
 import request, { getErrorMessage } from "../api/request";
-import type { WeakType } from "../types";
+import type { DailyActivity, Streak, TagAccuracy, TodayRecommendation, TypeDistribution, WeakType } from "../types";
 
 interface OverviewStats {
   todayCount: number | null;
@@ -23,6 +24,11 @@ interface OverviewReview {
 export interface UseStudyOverviewReturn {
   stats: Ref<OverviewStats>;
   review: Ref<OverviewReview>;
+  activity: Ref<DailyActivity[]>;
+  typeDistribution: Ref<TypeDistribution[]>;
+  tagAccuracy: Ref<TagAccuracy[]>;
+  streak: Ref<Streak>;
+  recommendation: Ref<TodayRecommendation | null>;
   loading: Ref<boolean>;
   errorMessage: Ref<string>;
   fetchAll: () => Promise<void>;
@@ -45,6 +51,16 @@ const review = ref<OverviewReview>({
   recommendedModes: [],
 });
 
+const activity = ref<DailyActivity[]>([]);
+const typeDistribution = ref<TypeDistribution[]>([]);
+const tagAccuracy = ref<TagAccuracy[]>([]);
+const streak = ref<Streak>({
+  current_streak: 0,
+  longest_streak: 0,
+  last_practiced_date: null,
+});
+const recommendation = ref<TodayRecommendation | null>(null);
+
 const loading = ref(false);
 const errorMessage = ref("");
 
@@ -55,11 +71,26 @@ export function useStudyOverview(): UseStudyOverviewReturn {
     errorMessage.value = "";
 
     try {
-      const [statsResult, coursesResult, reviewResult, weakResult] = await Promise.allSettled([
+      const [
+        statsResult,
+        coursesResult,
+        reviewResult,
+        weakResult,
+        activityResult,
+        typeDistributionResult,
+        tagAccuracyResult,
+        streakResult,
+        recommendationResult,
+      ] = await Promise.allSettled([
         getPracticeStats(),
         request.get("/courses/mine"),
         getTodayReview(),
         getWeakTypes(),
+        getDailyActivity(14),
+        getTypeDistribution(),
+        getTagAccuracy(),
+        getStreak(),
+        getTodayRecommendation(),
       ]);
 
       if (statsResult.status === "fulfilled") {
@@ -89,7 +120,37 @@ export function useStudyOverview(): UseStudyOverviewReturn {
         review.value.weakTypes = Array.isArray(weakResult.value) ? weakResult.value.slice(0, 8) as WeakType[] : [];
       }
 
-      const firstRejected = [statsResult, coursesResult, reviewResult, weakResult].find(
+      if (activityResult.status === "fulfilled") {
+        activity.value = Array.isArray(activityResult.value) ? activityResult.value : [];
+      }
+
+      if (typeDistributionResult.status === "fulfilled") {
+        typeDistribution.value = Array.isArray(typeDistributionResult.value) ? typeDistributionResult.value : [];
+      }
+
+      if (tagAccuracyResult.status === "fulfilled") {
+        tagAccuracy.value = Array.isArray(tagAccuracyResult.value) ? tagAccuracyResult.value.slice(0, 8) : [];
+      }
+
+      if (streakResult.status === "fulfilled") {
+        streak.value = streakResult.value;
+      }
+
+      if (recommendationResult.status === "fulfilled") {
+        recommendation.value = recommendationResult.value;
+      }
+
+      const firstRejected = [
+        statsResult,
+        coursesResult,
+        reviewResult,
+        weakResult,
+        activityResult,
+        typeDistributionResult,
+        tagAccuracyResult,
+        streakResult,
+        recommendationResult,
+      ].find(
         (result) => result.status === "rejected",
       );
       if (firstRejected) {
@@ -102,5 +163,16 @@ export function useStudyOverview(): UseStudyOverviewReturn {
     }
   }
 
-  return { stats, review, loading, errorMessage, fetchAll };
+  return {
+    stats,
+    review,
+    activity,
+    typeDistribution,
+    tagAccuracy,
+    streak,
+    recommendation,
+    loading,
+    errorMessage,
+    fetchAll,
+  };
 }

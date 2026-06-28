@@ -151,6 +151,60 @@ export interface WeakType {
   error_rate: number;
 }
 
+export interface DailyActivity {
+  date: string;
+  count: number;
+}
+
+export interface TypeDistribution {
+  question_type: string;
+  total_count: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy_rate: number;
+}
+
+export interface Streak {
+  current_streak: number;
+  longest_streak: number;
+  last_practiced_date: string | null;
+}
+
+export interface TagAccuracy {
+  tag_id: number;
+  tag_name: string;
+  total_count: number;
+  correct_count: number;
+  accuracy_rate: number;
+}
+
+export interface TodayRecommendation {
+  weak_tags: Array<{
+    tag_id: number;
+    tag_name: string;
+    total_count: number;
+    correct_count: number;
+    accuracy_rate: number;
+  }>;
+  weak_types: WeakType[];
+  due_count: number;
+  due_question_ids: number[];
+  recommended_modes: string[];
+}
+
+export interface CourseAnalytics {
+  course_id: number;
+  course_name: string;
+  question_count: number;
+  practice_count: number;
+  accuracy_rate: number;
+}
+
+export interface ScoreBucket {
+  label: string;
+  count: number;
+}
+
 export interface DueReviewItem {
   id: number;
   review_level: number;
