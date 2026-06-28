@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.11.2-phase3-admin-api",
+    version: "v1.11.2",
+    date: "2026-06-28",
+    type: "新增",
+    title: "补齐管理后台基础接口",
+    items: [
+      "新增管理员用户列表、角色修改和全局统计接口。",
+      "普通学生访问管理后台接口会被权限系统拦截，避免越权操作。",
+      "补充管理后台 API 测试，覆盖角色调整和平台数据统计。",
+    ],
+  },
+  {
     id: "v1.11.1-phase3-exam-backend",
     version: "v1.11.1",
     date: "2026-06-28",

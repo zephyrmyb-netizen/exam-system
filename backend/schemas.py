@@ -388,6 +388,32 @@ class ExamListOut(BaseModel):
     page_size: int = 20
 
 
+# -- Admin -------------------------------------------------------------------
+
+
+class AdminUserOut(BaseModel):
+    id: int
+    username: str
+    role: str = "student"
+
+
+class AdminUserListOut(BaseModel):
+    items: list[AdminUserOut] = []
+    total: int = 0
+
+
+class AdminRoleUpdate(BaseModel):
+    role: str
+
+
+class AdminStatsOut(BaseModel):
+    user_count: int = 0
+    course_count: int = 0
+    question_count: int = 0
+    exam_count: int = 0
+    submission_count: int = 0
+
+
 # -- Review & Insights ------------------------------------------------------
 
 
