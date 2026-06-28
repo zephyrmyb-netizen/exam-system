@@ -12,6 +12,7 @@ from ..services.course_service import CourseService
 from ..services.exam_service import ExamService
 from ..services.permission_service import PermissionService
 from ..services.practice_service import PracticeService
+from ..services.tag_service import TagService
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -30,6 +31,10 @@ def get_exam_service(db: DbSession) -> ExamService:
 
 def get_permission_service(db: DbSession) -> PermissionService:
     return PermissionService(db)
+
+
+def get_tag_service(db: DbSession) -> TagService:
+    return TagService(db)
 
 
 def require_permission(permission: str):

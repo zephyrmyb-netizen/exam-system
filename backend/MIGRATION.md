@@ -33,6 +33,8 @@ This script:
 
 **Run this every time you modify `models.py` fields and want to keep your existing data.**
 
+Phase 4 note: the script also creates the `tags` and `question_tags` tables when they are missing.
+
 ## Restoring From Backup
 
 ```bash

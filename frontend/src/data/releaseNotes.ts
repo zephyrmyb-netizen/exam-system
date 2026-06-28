@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.12.0-phase4-tags",
+    version: "v1.12.0",
+    date: "2026-06-28",
+    type: "新增",
+    title: "接入知识点标签基础能力",
+    items: [
+      "新增标签管理接口，可创建、搜索并复用知识点标签。",
+      "支持给自己的题目绑定知识点标签，为后续弱项推荐和学习分析打基础。",
+      "新增按标签统计正确率的后端能力，后续可用于学习概览和智能推荐。",
+    ],
+  },
+  {
     id: "v1.11.5-rename-xuexibao",
     version: "v1.11.5",
     date: "2026-06-28",

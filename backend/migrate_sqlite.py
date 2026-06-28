@@ -204,6 +204,46 @@ def main():
         )
 
         # ── 6. Handle old questions with NULL owner_id ─────────────────
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tags'")
+        if not cur.fetchone():
+            cur.execute("""
+                CREATE TABLE tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(100) NOT NULL,
+                    color VARCHAR(20) DEFAULT '',
+                    parent_id INTEGER REFERENCES tags(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX ix_tags_name ON tags(name)")
+            cur.execute("CREATE INDEX ix_tags_parent_id ON tags(parent_id)")
+            conn.commit()
+            print("[INFO] Created tags table (was missing).")
+        else:
+            print("[INFO] tags table already exists.")
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='question_tags'")
+        if not cur.fetchone():
+            cur.execute("""
+                CREATE TABLE question_tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+                    tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("CREATE INDEX ix_question_tags_question_id ON question_tags(question_id)")
+            cur.execute("CREATE INDEX ix_question_tags_tag_id ON question_tags(tag_id)")
+            conn.commit()
+            print("[INFO] Created question_tags table (was missing).")
+        else:
+            print("[INFO] question_tags table already exists.")
+
+        _add_unique_constraint_if_missing(
+            cur,
+            "question_tags",
+            "uq_question_tag",
+            "question_id, tag_id",
+        )
+
         cur.execute("SELECT COUNT(*) FROM questions WHERE owner_id IS NULL")
         unowned = cur.fetchone()[0]
         print(f"[INFO] Questions without owner_id: {unowned}")
@@ -277,6 +317,12 @@ def main():
 
         cur.execute("SELECT COUNT(*) FROM user_question_reviews")
         print(f"user_question_reviews rows: {cur.fetchone()[0]}")
+
+        cur.execute("SELECT COUNT(*) FROM tags")
+        print(f"tags rows: {cur.fetchone()[0]}")
+
+        cur.execute("SELECT COUNT(*) FROM question_tags")
+        print(f"question_tags rows: {cur.fetchone()[0]}")
 
         cur.execute("SELECT COUNT(*) FROM questions WHERE owner_id IS NOT NULL")
         assigned = cur.fetchone()[0]
