@@ -328,6 +328,66 @@ class PracticeHistoryOut(BaseModel):
     page_size: int = 20
 
 
+# -- Exam --------------------------------------------------------------------
+
+
+class ExamCreate(BaseModel):
+    title: str
+    course_id: int
+    description: str = ""
+    time_limit: int = 60
+    total_score: int = 100
+    is_shuffle: bool = False
+    is_blind: bool = True
+    question_ids: list[int] = []
+
+
+class ExamOut(BaseModel):
+    id: int
+    title: str
+    description: str = ""
+    course_id: int
+    creator_id: int
+    time_limit: int = 60
+    total_score: int = 100
+    is_shuffle: bool = False
+    is_blind: bool = True
+    status: str = "draft"
+    question_count: int = 0
+    created_at: str | None = None
+
+
+class ExamAttemptOut(BaseModel):
+    id: int
+    exam_id: int
+    user_id: int
+    started_at: str | None = None
+    submitted_at: str | None = None
+    score: int | None = None
+
+
+class ExamSubmissionCreate(BaseModel):
+    answers: dict[str, str] = {}
+
+
+class ExamResultOut(BaseModel):
+    exam_id: int
+    submission_id: int
+    score: int = 0
+    total_score: int = 0
+    correct_count: int = 0
+    wrong_count: int = 0
+    accuracy_rate: float = 0.0
+    submitted_at: str | None = None
+
+
+class ExamListOut(BaseModel):
+    items: list[ExamOut] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+
+
 # -- Review & Insights ------------------------------------------------------
 
 
