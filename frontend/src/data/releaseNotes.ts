@@ -18,6 +18,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v1.15.1-study-overview-charts",
+    version: "v1.15.1",
+    date: "2026-06-29",
+    type: "优化",
+    title: "学习概览补齐热力图与课程分析",
+    items: [
+      "学习概览新增刷题热力图和课程使用统计，让学习数据更接近完整仪表盘。",
+      "清理学习概览与图表组件中的乱码文案，移动端查看更自然。",
+      "教师课程统计接口改为可选展示，普通用户权限不足时不会影响学习概览加载。",
+    ],
+  },
+  {
     id: "v1.15.0-phase4-frontend-tools",
     version: "v1.15.0",
     date: "2026-06-29",
