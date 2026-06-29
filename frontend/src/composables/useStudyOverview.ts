@@ -1,8 +1,23 @@
 import { ref, type Ref } from "vue";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
-import { getDailyActivity, getStreak, getTagAccuracy, getTodayRecommendation, getTypeDistribution } from "../api/analytics";
+import {
+  getDailyActivity,
+  getStreak,
+  getTagAccuracy,
+  getTeacherCourseAnalytics,
+  getTodayRecommendation,
+  getTypeDistribution,
+} from "../api/analytics";
 import request, { getErrorMessage } from "../api/request";
-import type { DailyActivity, Streak, TagAccuracy, TodayRecommendation, TypeDistribution, WeakType } from "../types";
+import type {
+  CourseAnalytics,
+  DailyActivity,
+  Streak,
+  TagAccuracy,
+  TodayRecommendation,
+  TypeDistribution,
+  WeakType,
+} from "../types";
 
 interface OverviewStats {
   todayCount: number | null;
@@ -27,6 +42,7 @@ export interface UseStudyOverviewReturn {
   activity: Ref<DailyActivity[]>;
   typeDistribution: Ref<TypeDistribution[]>;
   tagAccuracy: Ref<TagAccuracy[]>;
+  courseAnalytics: Ref<CourseAnalytics[]>;
   streak: Ref<Streak>;
   recommendation: Ref<TodayRecommendation | null>;
   loading: Ref<boolean>;
@@ -54,6 +70,7 @@ const review = ref<OverviewReview>({
 const activity = ref<DailyActivity[]>([]);
 const typeDistribution = ref<TypeDistribution[]>([]);
 const tagAccuracy = ref<TagAccuracy[]>([]);
+const courseAnalytics = ref<CourseAnalytics[]>([]);
 const streak = ref<Streak>({
   current_streak: 0,
   longest_streak: 0,
@@ -81,6 +98,7 @@ export function useStudyOverview(): UseStudyOverviewReturn {
         tagAccuracyResult,
         streakResult,
         recommendationResult,
+        courseAnalyticsResult,
       ] = await Promise.allSettled([
         getPracticeStats(),
         request.get("/courses/mine"),
@@ -91,6 +109,7 @@ export function useStudyOverview(): UseStudyOverviewReturn {
         getTagAccuracy(),
         getStreak(),
         getTodayRecommendation(),
+        getTeacherCourseAnalytics(),
       ]);
 
       if (statsResult.status === "fulfilled") {
@@ -140,6 +159,10 @@ export function useStudyOverview(): UseStudyOverviewReturn {
         recommendation.value = recommendationResult.value;
       }
 
+      if (courseAnalyticsResult.status === "fulfilled") {
+        courseAnalytics.value = Array.isArray(courseAnalyticsResult.value) ? courseAnalyticsResult.value.slice(0, 6) : [];
+      }
+
       const firstRejected = [
         statsResult,
         coursesResult,
@@ -169,6 +192,7 @@ export function useStudyOverview(): UseStudyOverviewReturn {
     activity,
     typeDistribution,
     tagAccuracy,
+    courseAnalytics,
     streak,
     recommendation,
     loading,

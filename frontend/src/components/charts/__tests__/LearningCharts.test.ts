@@ -2,6 +2,8 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import ActivityTrendChart from "../ActivityTrendChart.vue";
+import CourseAnalyticsChart from "../CourseAnalyticsChart.vue";
+import HeatmapChart from "../HeatmapChart.vue";
 import TagMasteryChart from "../TagMasteryChart.vue";
 import TypeAccuracyChart from "../TypeAccuracyChart.vue";
 
@@ -47,5 +49,35 @@ describe("phase4 learning charts", () => {
     expect(wrapper.text()).toContain("JVM");
     expect(wrapper.text()).toContain("75%");
     expect(wrapper.find("[data-test='tag-row']").exists()).toBe(true);
+  });
+
+  it("renders activity heatmap cells", () => {
+    const wrapper = mount(HeatmapChart, {
+      props: {
+        items: [
+          { date: "2026-06-28", count: 0 },
+          { date: "2026-06-29", count: 6 },
+        ],
+      },
+    });
+
+    expect(wrapper.text()).toContain("刷题热力");
+    expect(wrapper.text()).toContain("6 题");
+    expect(wrapper.findAll("[data-test='heatmap-cell']")).toHaveLength(2);
+  });
+
+  it("renders course analytics rows", () => {
+    const wrapper = mount(CourseAnalyticsChart, {
+      props: {
+        items: [
+          { course_id: 1, course_name: "Java", question_count: 20, practice_count: 8, accuracy_rate: 0.625 },
+        ],
+      },
+    });
+
+    expect(wrapper.text()).toContain("课程使用");
+    expect(wrapper.text()).toContain("Java");
+    expect(wrapper.text()).toContain("62.5%");
+    expect(wrapper.find("[data-test='course-row']").exists()).toBe(true);
   });
 });
