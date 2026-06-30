@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ChevronLeft, ChevronRight, Send } from "@lucide/vue";
+import { ArrowLeft, ChevronLeft, ChevronRight, Send } from "@lucide/vue";
 
 import ExamQuestionCard from "@/components/exam/ExamQuestionCard.vue";
 import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
@@ -24,8 +24,12 @@ function answer(value: string) {
 }
 
 async function submit() {
-  const result = await store.submitCurrentExam();
-  router.replace({ name: "exam-result", params: { examId: result.exam_id } });
+  try {
+    const result = await store.submitCurrentExam();
+    router.replace({ name: "exam-result", params: { examId: result.exam_id } });
+  } catch {
+    // store.error 已由 store 设置，留在当前页让用户重试
+  }
 }
 
 function selectOption(index: number) {
@@ -60,9 +64,15 @@ onUnmounted(() => {
 <template>
   <section ref="pageRef" class="exam-take-page">
     <p v-if="store.loading" class="info-message">正在进入考试...</p>
-    <p v-if="store.error" class="error-message">{{ store.error }}</p>
 
-    <template v-if="store.currentExam && store.currentQuestion">
+    <div v-else-if="store.error" class="empty-panel">
+      <p class="error-message">{{ store.error }}</p>
+      <button type="button" class="back-btn" @click="router.push({ name: 'exams' })">
+        <ArrowLeft :size="16" /> 返回考试列表
+      </button>
+    </div>
+
+    <template v-else-if="store.currentExam && store.currentQuestion">
       <div class="exam-topbar">
         <div>
           <span>{{ store.currentExam.title }}</span>
@@ -112,6 +122,27 @@ onUnmounted(() => {
 
 <style scoped>
 .exam-take-page { display: grid; gap: var(--space-4); }
+.empty-panel {
+  display: grid;
+  gap: var(--space-4);
+  place-items: center;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 .exam-topbar {
   position: sticky;
   top: 0;

@@ -146,11 +146,11 @@ async function handleRegister() {
 
 .input-suffix {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border: none;
   border-radius: var(--radius-sm);

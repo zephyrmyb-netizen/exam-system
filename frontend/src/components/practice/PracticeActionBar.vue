@@ -1,4 +1,5 @@
 <script setup>
+import { onMounted, onUnmounted, ref } from "vue";
 import { Send, Shuffle } from "@lucide/vue";
 
 defineProps({
@@ -10,10 +11,31 @@ defineProps({
 });
 
 defineEmits(["submit", "skip"]);
+
+const keyboardOffset = ref(0);
+
+function handleViewportResize() {
+  if (window.visualViewport) {
+    const diff = window.innerHeight - window.visualViewport.height;
+    keyboardOffset.value = diff > 120 ? diff : 0;
+  }
+}
+
+onMounted(() => {
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+  }
+});
+
+onUnmounted(() => {
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener("resize", handleViewportResize);
+  }
+});
 </script>
 
 <template>
-  <div v-if="!result" class="practice-action-bar">
+  <div v-if="!result" class="practice-action-bar" :style="{ bottom: keyboardOffset ? `${keyboardOffset}px` : 'var(--practice-sticky-bottom)' }">
     <p v-if="!hasAnswerSelected && !submitting && answerHint" class="practice-action-bar__hint">
       {{ answerHint }}
     </p>

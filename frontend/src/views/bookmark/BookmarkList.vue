@@ -100,7 +100,7 @@ onMounted(() => {
 .bookmark-hero p { margin: 0; color: var(--text-muted); font-size: var(--text-xs); font-weight: 800; }
 .bookmark-hero h1 { margin: 2px 0 0; color: var(--text-main); font-size: var(--text-2xl); font-weight: 900; }
 .folder-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.folder-tabs button { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-full); background: var(--surface); color: var(--text-muted); font-weight: 800; white-space: nowrap; }
+.folder-tabs button { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-soft); border-radius: var(--radius-full); background: var(--surface); color: var(--text-muted); font-weight: 800; white-space: nowrap; }
 .folder-tabs button.active { border-color: var(--line-accent); background: var(--primary-soft); color: var(--primary-strong); }
 .bookmark-list { display: grid; gap: var(--space-3); }
 .bookmark-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; padding: var(--space-3); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); }

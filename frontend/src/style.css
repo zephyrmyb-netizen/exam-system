@@ -52,6 +52,7 @@
 
   --text-xs: 0.6875rem;    /* 11px */
   --text-sm: 0.8125rem;    /* 13px */
+  --text-md: 0.875rem;     /* 14px */
   --text-base: 0.9375rem;  /* 15px */
   --text-lg: 1.125rem;     /* 18px */
   --text-xl: 1.375rem;     /* 22px */
@@ -108,12 +109,16 @@
    Reset & Base
    ═══════════════════════════════════════════════════════════ */
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
 html {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   background: var(--page-bg);
 }
 
@@ -123,8 +128,10 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   background: var(--page-bg);
   color: var(--text-main);
+  padding-top: env(safe-area-inset-top);
 }
 
 button, textarea, input, select, a {
@@ -780,8 +787,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .icon-button {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
   background: var(--surface);
@@ -1476,6 +1483,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   min-height: 0;
   padding: var(--space-4);
   overflow-y: auto;
+  overscroll-behavior: contain;
   scroll-behavior: smooth;
 }
 

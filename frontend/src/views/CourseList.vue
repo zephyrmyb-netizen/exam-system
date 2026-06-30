@@ -31,9 +31,17 @@ const confirmDialog = useConfirmDialog();
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const successMessage = ref("");
 const deleteLoading = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const searchText = ref("");
+
+function flashSuccess(msg: string) {
+  successMessage.value = msg;
+  setTimeout(() => {
+    successMessage.value = "";
+  }, 2500);
+}
 
 const showForm = ref(false);
 const editingCourse = ref<Course | null>(null);
@@ -106,9 +114,11 @@ async function handleSave() {
     if (editingCourse.value) {
       const { data } = await request.patch<Course>(`/courses/${editingCourse.value.id}`, payload);
       Object.assign(editingCourse.value, data);
+      flashSuccess("题库已更新");
     } else {
       const { data } = await request.post<Course>("/courses/", { ...payload, visibility: "private" });
       courses.value.unshift(data);
+      flashSuccess("题库已创建");
     }
 
     closeForm();
@@ -150,6 +160,7 @@ async function deleteCourse(course: Course) {
   try {
     await request.delete(`/courses/${course.id}`);
     courses.value = courses.value.filter((item) => item.id !== course.id);
+    flashSuccess("题库已删除");
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "删除失败");
   } finally {
@@ -165,9 +176,11 @@ async function togglePublish(course: Course) {
     if (course.visibility === "public") {
       const { data } = await request.post<Course>(`/courses/${course.id}/unpublish`);
       course.visibility = data.visibility || "private";
+      flashSuccess("已取消发布");
     } else {
       const { data } = await request.post<Course>(`/courses/${course.id}/publish`);
       course.visibility = data.visibility || "public";
+      flashSuccess("已发布到公共题库");
     }
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "操作失败");
@@ -203,6 +216,7 @@ onMounted(fetchCourses);
 
     <p v-if="loading" class="status-banner status-banner--info">题库加载中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
+    <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
     <Card v-if="courses.length > 0" class="border-slate-200 bg-white">
       <CardContent class="flex items-center gap-3 p-3">

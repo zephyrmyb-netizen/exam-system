@@ -3,7 +3,7 @@
 import json
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import models, schemas
 from ..auth import get_current_user
@@ -84,7 +84,12 @@ def create_exam(
     current_user: Annotated[models.User, Depends(require_permission("exam:create"))],
     service: ExamServiceDep,
 ):
-    return _exam_out(service.create_exam(body, creator_id=current_user.id))
+    try:
+        return _exam_out(service.create_exam(body, creator_id=current_user.id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="创建考试失败，请稍后重试") from exc
 
 
 @router.get("/", response_model=schemas.ExamListOut)
@@ -94,13 +99,18 @@ def list_exams(
     page: PageParam = 1,
     page_size: PageParam = 20,
 ):
-    exams, total = service.list_published(page=page, page_size=page_size)
-    return schemas.ExamListOut(
-        items=[_exam_out(exam) for exam in exams],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
+    try:
+        exams, total = service.list_published(page=page, page_size=page_size)
+        return schemas.ExamListOut(
+            items=[_exam_out(exam) for exam in exams],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="获取考试列表失败，请稍后重试") from exc
 
 
 @router.get("/mine", response_model=schemas.ExamListOut)
@@ -110,13 +120,18 @@ def list_my_exams(
     page: PageParam = 1,
     page_size: PageParam = 20,
 ):
-    exams, total = service.list_created(creator_id=current_user.id, page=page, page_size=page_size)
-    return schemas.ExamListOut(
-        items=[_exam_out(exam) for exam in exams],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
+    try:
+        exams, total = service.list_created(creator_id=current_user.id, page=page, page_size=page_size)
+        return schemas.ExamListOut(
+            items=[_exam_out(exam) for exam in exams],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="获取我的考试失败，请稍后重试") from exc
 
 
 @router.get("/{exam_id}", response_model=schemas.ExamDetailOut)
@@ -125,7 +140,12 @@ def get_exam_detail(
     current_user: CurrentUser,
     service: ExamServiceDep,
 ):
-    return _exam_detail_out(service.get_detail(exam_id, current_user.id))
+    try:
+        return _exam_detail_out(service.get_detail(exam_id, current_user.id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="获取考试详情失败，请稍后重试") from exc
 
 
 @router.post("/{exam_id}/publish", response_model=schemas.ExamOut)
@@ -134,7 +154,12 @@ def publish_exam(
     current_user: Annotated[models.User, Depends(require_permission("exam:publish"))],
     service: ExamServiceDep,
 ):
-    return _exam_out(service.publish_exam(exam_id, current_user.id))
+    try:
+        return _exam_out(service.publish_exam(exam_id, current_user.id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="发布考试失败，请稍后重试") from exc
 
 
 @router.post("/{exam_id}/start", response_model=schemas.ExamAttemptOut)
@@ -143,7 +168,12 @@ def start_exam(
     current_user: CurrentUser,
     service: ExamServiceDep,
 ):
-    return _attempt_out(service.start_attempt(exam_id, current_user.id))
+    try:
+        return _attempt_out(service.start_attempt(exam_id, current_user.id))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="开始考试失败，请稍后重试") from exc
 
 
 @router.post("/{exam_id}/submit", response_model=schemas.ExamResultOut)
@@ -153,7 +183,12 @@ def submit_exam(
     current_user: CurrentUser,
     service: ExamServiceDep,
 ):
-    return service.submit_exam(exam_id, current_user.id, body)
+    try:
+        return service.submit_exam(exam_id, current_user.id, body)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="交卷失败，请稍后重试") from exc
 
 
 @router.get("/{exam_id}/leaderboard", response_model=schemas.ExamLeaderboardOut)
@@ -162,4 +197,9 @@ def get_leaderboard(
     current_user: Annotated[models.User, Depends(require_permission("exam:view_leaderboard"))],
     service: ExamServiceDep,
 ):
-    return service.get_leaderboard(exam_id, current_user.id)
+    try:
+        return service.get_leaderboard(exam_id, current_user.id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="获取排行榜失败，请稍后重试") from exc

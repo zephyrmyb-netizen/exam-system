@@ -149,48 +149,48 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-5 pb-24">
-    <section class="rounded-[28px] bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 p-5 text-white shadow-xl shadow-blue-500/20">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-sm font-semibold text-white/75">{{ dateText }}</p>
-          <h1 class="mt-2 text-4xl font-black leading-tight tracking-normal">
+  <section class="space-y-3">
+    <!-- Hero -->
+    <section class="rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 p-3.5 text-white shadow-lg shadow-blue-500/20">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-[11px] font-semibold text-white/70">{{ dateText }}</p>
+          <h1 class="mt-0.5 text-xl font-black leading-tight">
             {{ usernameText }}，开始复习吧
           </h1>
         </div>
         <button
-          class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur"
+          class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 active:bg-white/25"
           type="button"
           aria-label="更新公告"
           @click="router.push('/announcements?from=home')"
         >
-          <Megaphone :size="20" :stroke-width="2.4" />
+          <Megaphone :size="16" :stroke-width="2.4" />
         </button>
       </div>
 
       <button
-        class="mt-5 flex min-h-14 w-full items-center gap-3 rounded-full bg-white px-5 text-left text-base font-bold text-slate-500 shadow-sm"
+        class="mt-3 flex h-10 w-full items-center gap-2.5 rounded-2xl bg-white px-3.5 text-left text-[13px] font-bold text-slate-400"
         type="button"
         @click="router.push('/courses')"
       >
-        <Search :size="21" :stroke-width="2.4" />
+        <Search :size="16" :stroke-width="2.4" />
         <span>搜索题库、课程、题目</span>
       </button>
 
-      <div class="mt-5 grid grid-cols-4 gap-3">
+      <div class="mt-3 grid grid-cols-4 gap-1.5">
         <button
           v-for="item in heroActions"
           :key="item.label"
-          class="relative grid min-h-24 place-items-center gap-1 rounded-2xl border border-white/20 bg-white/12 px-2 py-3 text-center backdrop-blur transition active:scale-[0.98]"
+          class="relative grid min-h-[60px] place-items-center gap-0.5 rounded-xl border border-white/15 bg-white/10 px-1 py-2 text-center active:bg-white/20"
           type="button"
           @click="goTo(item.to)"
         >
-          <span v-if="item.badge" class="absolute -top-2 right-2 rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-blue-900">
+          <span v-if="item.badge" class="absolute -top-1.5 right-1 rounded-full bg-amber-300 px-1 py-px text-[8px] font-black leading-tight text-blue-900">
             {{ item.badge }}
           </span>
-          <component :is="item.icon" :size="24" :stroke-width="2.25" />
-          <strong class="text-sm font-black leading-tight">{{ item.label }}</strong>
-          <small class="hidden text-[10px] leading-tight text-white/70 sm:block">{{ item.desc }}</small>
+          <component :is="item.icon" :size="19" :stroke-width="2.3" />
+          <strong class="text-[11px] font-black leading-tight">{{ item.label }}</strong>
         </button>
       </div>
     </section>
@@ -198,35 +198,32 @@ onMounted(() => {
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <Card class="overflow-hidden border-slate-200 bg-white">
+    <!-- 学习概览（紧凑） -->
+    <Card class="overflow-hidden border-slate-200 bg-white shadow-sm">
       <button class="block w-full text-left" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
-        <CardHeader class="flex flex-row items-center justify-between gap-4">
-          <div>
-            <p class="text-sm font-bold text-slate-400">我的学习空间</p>
-            <CardTitle class="mt-1 text-3xl text-slate-950">学习概览</CardTitle>
+        <CardContent class="p-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-black text-slate-950">学习概览</h2>
+            <ChevronRight :size="15" :stroke-width="2.5" class="text-slate-300" />
           </div>
-          <ChevronRight :size="22" :stroke-width="2.5" class="text-slate-400" />
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-4 gap-2">
-            <div v-for="item in statCards" :key="item.label" class="rounded-2xl bg-slate-50 px-2 py-3 text-center">
-              <strong class="block text-lg font-black text-slate-950">
-                {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
-                <small v-if="item.suffix" class="text-xs font-bold text-slate-500">{{ item.suffix }}</small>
-              </strong>
-              <span class="mt-1 block text-xs font-bold text-slate-500">{{ item.label }}</span>
+          <div class="mt-2 grid grid-cols-4 gap-1.5">
+            <div v-for="item in statCards" :key="item.label" class="rounded-lg bg-slate-50 px-1 py-1.5 text-center">
+              <div class="flex items-baseline justify-center gap-0.5">
+                <strong class="text-sm font-black text-slate-950">
+                  {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
+                </strong>
+                <small v-if="item.suffix" class="text-[9px] font-bold text-slate-400">{{ item.suffix }}</small>
+              </div>
+              <span class="mt-0.5 block text-[10px] font-bold text-slate-500">{{ item.label }}</span>
             </div>
           </div>
-          <div class="mt-4 rounded-2xl bg-slate-50 p-3">
-            <div class="mb-2 flex items-center justify-between">
-              <span class="text-xs font-black text-slate-500">近 7 日练习热力</span>
-              <span class="text-xs font-bold text-slate-400">轻量统计</span>
-            </div>
-            <div class="grid grid-cols-7 gap-1.5">
+          <div class="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5">
+            <span class="text-[10px] font-bold text-slate-400">7日</span>
+            <div class="flex flex-1 gap-1">
               <span
                 v-for="(count, index) in heatmapData"
                 :key="index"
-                class="h-8 rounded-xl"
+                class="h-4 flex-1 rounded"
                 :class="heatmapClass(count)"
                 :title="`${count} 题`"
               />
@@ -236,11 +233,11 @@ onMounted(() => {
       </button>
     </Card>
 
-    <section class="space-y-3">
+    <section class="space-y-2">
       <div class="flex items-end justify-between gap-3">
         <div>
-          <p class="text-sm font-bold text-slate-400">我的学习空间</p>
-          <h2 class="text-3xl font-black text-slate-950">最近题库</h2>
+          <p class="text-xs font-bold text-slate-400">我的学习空间</p>
+          <h2 class="text-2xl font-black text-slate-950">最近题库</h2>
         </div>
         <Button variant="ghost" size="sm" @click="router.push('/courses')">
           查看全部
@@ -252,10 +249,10 @@ onMounted(() => {
       <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
 
       <Card v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="border-dashed border-slate-200 bg-white">
-        <CardContent class="grid place-items-center gap-3 py-10 text-center">
-          <BookOpen :size="42" :stroke-width="1.7" class="text-slate-300" />
+        <CardContent class="grid place-items-center gap-3 py-8 text-center">
+          <BookOpen :size="36" :stroke-width="1.7" class="text-slate-300" />
           <div>
-            <strong class="text-lg font-black text-slate-900">还没有可练习题库</strong>
+            <strong class="text-base font-black text-slate-900">还没有可练习题库</strong>
             <p class="mt-1 text-sm font-semibold text-slate-500">导入资料后，这里会显示最近学习的题库。</p>
           </div>
           <div class="flex gap-2">
@@ -265,17 +262,17 @@ onMounted(() => {
         </CardContent>
       </Card>
 
-      <div v-if="recentCourses.length > 0" class="space-y-3">
+      <div v-if="recentCourses.length > 0" class="space-y-2">
         <Card v-for="course in recentCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
-          <CardContent class="p-4">
+          <CardContent class="p-3">
             <div class="flex items-center gap-3">
               <button class="flex min-w-0 flex-1 items-center gap-3 text-left" type="button" @click="goTo(`/courses/${course.id}`)">
-                <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                  <BookOpen :size="22" :stroke-width="2.2" />
+                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                  <BookOpen :size="20" :stroke-width="2.2" />
                 </span>
                 <span class="min-w-0">
-                  <strong class="block truncate text-base font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
-                  <small class="mt-1 block text-sm font-semibold text-slate-500">
+                  <strong class="block truncate text-sm font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
+                  <small class="mt-0.5 block text-xs font-semibold text-slate-500">
                     {{ course.question_count ?? 0 }} 题 · {{ course.visibility === "public" ? "公开" : "私有" }} · {{ formatCourseDate(course) }}
                   </small>
                 </span>
@@ -288,10 +285,10 @@ onMounted(() => {
     </section>
 
     <Card v-if="latestNote" class="border-blue-100 bg-blue-50/70">
-      <CardContent class="flex items-center justify-between gap-3 p-4">
+      <CardContent class="flex items-center justify-between gap-3 p-3">
         <div class="min-w-0">
-          <p class="text-xs font-black text-blue-600">最新公告 {{ latestNote.version }}</p>
-          <h3 class="mt-1 truncate text-base font-black text-slate-950">{{ latestNote.title }}</h3>
+          <p class="text-[11px] font-black text-blue-600">最新公告 {{ latestNote.version }}</p>
+          <h3 class="mt-0.5 truncate text-sm font-black text-slate-950">{{ latestNote.title }}</h3>
         </div>
         <Button variant="outline" size="sm" @click="router.push('/announcements?from=home')">查看</Button>
       </CardContent>

@@ -90,7 +90,7 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
@@ -114,7 +114,7 @@ async def preview_import(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
@@ -124,7 +124,7 @@ async def preview_import(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"AI 解析失败: {exc}") from exc
+        raise HTTPException(status_code=502, detail="AI 解析失败，请稍后重试") from exc
 
     all_warnings = extract_warnings + ai_warnings
     total_valid = len(questions)
@@ -217,7 +217,7 @@ async def import_file_auto(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="导入失败，请稍后重试") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
