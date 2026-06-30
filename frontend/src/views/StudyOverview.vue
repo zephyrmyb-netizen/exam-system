@@ -1,20 +1,41 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import {
+  BookMarked,
+  BookOpen,
+  Clock,
+  RefreshCw,
+  Target,
+  TrendingUp,
+  Zap,
+} from "@lucide/vue";
+import ActivityTrendChart from "../components/charts/ActivityTrendChart.vue";
+import CourseAnalyticsChart from "../components/charts/CourseAnalyticsChart.vue";
+import HeatmapChart from "../components/charts/HeatmapChart.vue";
+import TagMasteryChart from "../components/charts/TagMasteryChart.vue";
+import TypeAccuracyChart from "../components/charts/TypeAccuracyChart.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { typeLabel } from "../utils/question";
-import {
-  TrendingUp, Target, Zap, BookMarked, RefreshCw, Clock,
-  BookOpen,
-} from "@lucide/vue";
 
 const router = useRouter();
-const { stats, review, loading, errorMessage, fetchAll } = useStudyOverview();
+const {
+  stats,
+  review,
+  activity,
+  typeDistribution,
+  tagAccuracy,
+  courseAnalytics,
+  streak,
+  recommendation,
+  loading,
+  errorMessage,
+  fetchAll,
+} = useStudyOverview();
 
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
-  if (rate === null) return "--";
-  return `${(rate * 100).toFixed(1)}%`;
+  return rate === null ? "--" : `${(rate * 100).toFixed(1)}%`;
 });
 
 const accuracyColor = computed(() => {
@@ -25,15 +46,20 @@ const accuracyColor = computed(() => {
   return "rose";
 });
 
+const recommendedText = computed(() => {
+  const modes = recommendation.value?.recommended_modes || review.value.recommendedModes || [];
+  if (!modes.length) return "按题库继续练习";
+  return modes.slice(0, 2).join(" / ");
+});
+
 onMounted(() => fetchAll());
 </script>
 
 <template>
   <section class="overview-page">
-    <p v-if="loading" class="status-banner status-banner--info">更新中...</p>
+    <p v-if="loading" class="status-banner status-banner--info">正在更新学习数据...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <!-- Learning Stats -->
     <p class="section-label">学习数据</p>
     <div class="stat-grid">
       <div class="stat-card">
@@ -59,7 +85,7 @@ onMounted(() => fetchAll());
       <div class="stat-card">
         <Clock :size="16" :stroke-width="2.5" class="stat-icon amber" />
         <span class="stat-val amber">{{ stats.recentCount7d !== null ? stats.recentCount7d : "--" }}</span>
-        <span class="stat-lbl">近 7 天练习</span>
+        <span class="stat-lbl">近 7 天</span>
       </div>
       <div class="stat-card">
         <BookOpen :size="16" :stroke-width="2.5" class="stat-icon blue" />
@@ -68,7 +94,30 @@ onMounted(() => fetchAll());
       </div>
     </div>
 
-    <!-- Review & Weak Types -->
+    <div class="insight-strip">
+      <div class="insight-card">
+        <span class="insight-label">连续学习</span>
+        <strong>{{ streak.current_streak }} 天</strong>
+        <small>最长 {{ streak.longest_streak }} 天</small>
+      </div>
+      <div class="insight-card">
+        <span class="insight-label">今日建议</span>
+        <strong>{{ recommendedText }}</strong>
+        <small>{{ recommendation?.due_count ?? review.dueCount ?? 0 }} 题待复习</small>
+      </div>
+    </div>
+
+    <p class="section-label">学习趋势</p>
+    <ActivityTrendChart :items="activity" />
+    <HeatmapChart :items="activity" />
+
+    <div class="chart-grid">
+      <TypeAccuracyChart :items="typeDistribution" />
+      <TagMasteryChart :items="tagAccuracy" />
+    </div>
+
+    <CourseAnalyticsChart v-if="courseAnalytics.length" :items="courseAnalytics" />
+
     <p class="section-label">复习建议</p>
     <div class="review-card">
       <div class="review-row">
@@ -79,12 +128,12 @@ onMounted(() => fetchAll());
         <span class="review-lbl">错题数</span>
         <span class="review-val">{{ review.wrongCount }} 题</span>
       </div>
-      <div v-if="review.weakTypes.length > 0" class="review-row">
+      <div v-if="review.weakTypes.length > 0" class="review-row review-row--stack">
         <span class="review-lbl">薄弱题型</span>
         <span class="review-tags">
-          <span v-for="wt in review.weakTypes" :key="wt.question_type" class="weak-chip">
-            {{ typeLabel(wt.question_type) }}
-            <span class="weak-rate">{{ (wt.error_rate * 100).toFixed(0) }}%</span>
+          <span v-for="weakType in review.weakTypes" :key="weakType.question_type" class="weak-chip">
+            {{ typeLabel(weakType.question_type) }}
+            <span class="weak-rate">{{ (weakType.error_rate * 100).toFixed(0) }}%</span>
           </span>
         </span>
       </div>
@@ -95,11 +144,11 @@ onMounted(() => fetchAll());
           type="button"
           @click="router.push('/practice/due')"
         >
-          <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:4px" />
+          <RefreshCw :size="15" :stroke-width="2.5" />
           到期复习
         </button>
         <button class="ghost-button" type="button" @click="router.push('/practice/wrong')">
-          <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:4px" />
+          <RefreshCw :size="15" :stroke-width="2.5" />
           错题强化
         </button>
         <button class="ghost-button" type="button" @click="router.push('/practice')">
@@ -125,7 +174,6 @@ onMounted(() => fetchAll());
   letter-spacing: 0.08em;
 }
 
-/* ── Stat Grid ── */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -136,9 +184,9 @@ onMounted(() => fetchAll());
   display: grid;
   gap: 3px;
   padding: var(--space-3) 8px;
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 1px solid var(--line-soft);
   text-align: center;
 }
 
@@ -153,9 +201,9 @@ onMounted(() => fetchAll());
 .stat-icon.green { color: var(--emerald); }
 
 .stat-val {
+  color: var(--text-main);
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--text-main);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -165,8 +213,8 @@ onMounted(() => fetchAll());
 .stat-val.green { color: var(--emerald); }
 
 .stat-lbl {
-  font-size: 10px;
   color: var(--text-muted);
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -174,7 +222,43 @@ onMounted(() => fetchAll());
 .amber .stat-val { color: var(--amber); }
 .rose .stat-val { color: var(--rose); }
 
-/* ── Review Card ── */
+.insight-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.insight-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--surface), var(--primary-soft));
+}
+
+.insight-label,
+.insight-card small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.insight-card strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--text-md);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .review-card {
   display: grid;
   gap: var(--space-3);
@@ -191,22 +275,22 @@ onMounted(() => fetchAll());
   gap: var(--space-2);
 }
 
-.review-lbl {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: #92400e;
+.review-row--stack {
+  align-items: flex-start;
 }
 
+.review-lbl,
 .review-val {
+  color: #92400e;
   font-size: var(--text-sm);
   font-weight: 800;
-  color: #92400e;
 }
 
 .review-tags {
   display: flex;
-  gap: 4px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 .weak-chip {
@@ -217,7 +301,7 @@ onMounted(() => fetchAll());
   border-radius: 999px;
   background: #fef3c7;
   color: #92400e;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -228,22 +312,24 @@ onMounted(() => fetchAll());
 
 .review-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.primary-button, .ghost-button {
+.primary-button,
+.ghost-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
-  padding: 8px 14px;
+  gap: 4px;
   min-height: 38px;
+  padding: 8px 14px;
+  font-size: var(--text-sm);
 }
 
-/* ── Responsive ── */
 @media (min-width: 640px) {
-  .stat-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .stat-val {
     font-size: 1.375rem;
@@ -260,6 +346,9 @@ onMounted(() => fetchAll());
   }
   .stat-val {
     font-size: 1rem;
+  }
+  .insight-strip {
+    grid-template-columns: 1fr;
   }
 }
 </style>

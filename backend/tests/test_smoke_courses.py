@@ -1,4 +1,4 @@
-"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
+﻿"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
 
 
 class TestMyCourses:
@@ -31,11 +31,11 @@ class TestMyCourses:
             "/auth/register",
             json={
                 "username": "bob_mine",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "bob_mine", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "bob_mine", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
         resp = client.get(self.COURSES_MINE, headers=b_headers)
@@ -130,11 +130,11 @@ class TestMyCourses:
             "/auth/register",
             json={
                 "username": "pc_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "pc_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "pc_iso", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.COURSES_MINE, headers=b_headers)
         assert resp.json() == []
@@ -204,11 +204,11 @@ class TestCourseQuestions:
             "/auth/register",
             json={
                 "username": "spy",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "spy", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "spy", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"/courses/{cid}/questions", headers=b_headers)
         assert resp.status_code == 404
@@ -256,11 +256,11 @@ class TestCoursePractice:
             "/auth/register",
             json={
                 "username": "spy2",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "spy2", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "spy2", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"/courses/{cid}/practice/random", headers=b_headers)
         assert resp.status_code == 404
@@ -290,11 +290,11 @@ class TestPublish:
             "/auth/register",
             json={
                 "username": "viewer_pub",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "viewer_pub", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "viewer_pub", "password": "passpw"})
         v_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get("/questions/", headers=v_headers)
         assert any(q["id"] == qid for q in resp.json())
@@ -317,11 +317,11 @@ class TestPublish:
             "/auth/register",
             json={
                 "username": "pub_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "pub_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "pub_other", "password": "passpw"})
         o_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/questions/{qid}/publish", headers=o_headers)
         assert resp.status_code == 403
@@ -360,11 +360,11 @@ class TestPublish:
             "/auth/register",
             json={
                 "username": "pub_course",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "pub_course", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "pub_course", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/courses/{cid}/publish", headers=b_headers)
         assert resp.status_code == 403

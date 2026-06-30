@@ -1,8 +1,17 @@
 """AI chat endpoint for study assistance."""
 
+import json
 import logging
 
+from openai import APIConnectionError, APIStatusError
+
+try:
+    from openai import APITimeoutError
+except ImportError:  # pragma: no cover
+    APITimeoutError = TimeoutError
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
 
 from .. import auth as auth_module
@@ -18,7 +27,7 @@ from ..models import User
 from ..ratelimit import RateLimiter, get_limiter
 from ..services.ai_client import get_chat_client
 
-logger = logging.getLogger("exam_system.chat")
+logger = logging.getLogger("xuexibao.chat")
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
@@ -48,6 +57,9 @@ SYSTEM_PROMPT = (
     "回答要简洁清楚，优先给可直接记忆和复习的内容。"
 )
 
+# SSE 流式响应单 token 上限（与非流式端点一致）
+_STREAM_MAX_TOKENS = 1200
+
 
 def _extract_reply(completion) -> str:
     if not completion.choices:
@@ -67,12 +79,12 @@ def rate_limiter() -> RateLimiter:
     return get_limiter()
 
 
-@router.post("/", response_model=ChatResponse)
-def chat(
-    req: ChatRequest,
-    current_user: User = Depends(auth_module.get_current_user),
-    limiter: RateLimiter = Depends(rate_limiter),
-):
+def _validate_chat_request(req: ChatRequest, current_user: User, limiter: RateLimiter) -> list[dict]:
+    """Shared request validation + message building for /chat/ and /chat/stream.
+
+    Raises HTTPException on any validation/rate-limit failure.
+    Returns the OpenAI ``messages`` list ready to send.
+    """
     message_text = req.message.strip()
     if not message_text:
         raise HTTPException(status_code=400, detail="消息不能为空。")
@@ -109,6 +121,35 @@ def chat(
     for item in history:
         messages.append({"role": item.role, "content": item.content})
     messages.append({"role": "user", "content": message_text})
+    return messages
+
+
+def _sse(data: dict | str) -> str:
+    """Format a single SSE frame. Pass a dict to JSON-encode, or '[DONE]'."""
+    payload = "[DONE]" if data == "[DONE]" else json.dumps(data, ensure_ascii=False)
+    return f"data: {payload}\n\n"
+
+
+def _ai_error_response(exc: Exception) -> tuple[int, str]:
+    if isinstance(exc, (APITimeoutError, TimeoutError)):
+        return status.HTTP_504_GATEWAY_TIMEOUT, "AI 请求超时，请稍后重试。"
+    if isinstance(exc, APIStatusError):
+        if exc.status_code in (401, 403):
+            return status.HTTP_502_BAD_GATEWAY, "AI 服务鉴权失败，请检查后端 AI Key 和接口地址配置。"
+        if exc.status_code == 429:
+            return status.HTTP_502_BAD_GATEWAY, "AI 服务请求过于频繁，请稍后重试。"
+    if isinstance(exc, APIConnectionError):
+        return status.HTTP_502_BAD_GATEWAY, "AI 服务连接失败，请检查网络或接口地址后重试。"
+    return status.HTTP_502_BAD_GATEWAY, "AI 服务暂时不可用，请稍后重试。"
+
+
+@router.post("/", response_model=ChatResponse)
+def chat(
+    req: ChatRequest,
+    current_user: User = Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
+):
+    messages = _validate_chat_request(req, current_user, limiter)
 
     # Reuse the singleton client so the httpx connection pool persists.
     client = get_chat_client()
@@ -122,11 +163,12 @@ def chat(
             temperature=0.7,
         )
         reply = _extract_reply(completion)
-    except Exception:
+    except Exception as exc:
         logger.exception("Upstream AI call failed for user %s", current_user.id)
+        status_code, detail = _ai_error_response(exc)
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI 服务暂时不可用，请稍后重试。",
+            status_code=status_code,
+            detail=detail,
         )
 
     if not reply:
@@ -137,3 +179,66 @@ def chat(
         )
 
     return ChatResponse(reply=reply)
+
+
+@router.post("/stream")
+def chat_stream(
+    req: ChatRequest,
+    current_user: User = Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
+) -> StreamingResponse:
+    """SSE streaming variant of POST /chat/.
+
+    Streams AI deltas as ``data: {"delta": "..."}\\n\\n`` frames. The final
+    frame is ``data: [DONE]\\n\\n``. On error, emits ``data: {"error": "..."}``
+    so the frontend can surface it inline without losing partial text.
+
+    Validation runs before opening the stream, so auth/rate-limit/length
+    errors are still returned as normal HTTP error responses.
+    """
+    messages = _validate_chat_request(req, current_user, limiter)
+    client = get_chat_client()
+    user_id = current_user.id
+
+    def event_stream():
+        # Sync generator — Starlette runs it in a threadpool so the sync
+        # OpenAI client doesn't block the event loop.
+        try:
+            stream = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=messages,
+                max_tokens=_STREAM_MAX_TOKENS,
+                temperature=0.7,
+                stream=True,
+            )
+            emitted_any = False
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                piece = getattr(delta, "content", None) or ""
+                if piece:
+                    emitted_any = True
+                    yield _sse({"delta": piece})
+                # finish_reason handling: OpenAI sends "stop" on the final chunk
+                if getattr(chunk.choices[0], "finish_reason", None):
+                    break
+            if not emitted_any:
+                yield _sse({"error": "AI 返回内容为空，请重试一次。"})
+        except Exception as exc:
+            logger.exception("Upstream AI stream failed for user %s", user_id)
+            _status_code, detail = _ai_error_response(exc)
+            yield _sse({"error": detail})
+        finally:
+            yield _sse("[DONE]")
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            # Disable nginx buffering so chunks flush to the client immediately.
+            "X-Accel-Buffering": "no",
+        },
+    )

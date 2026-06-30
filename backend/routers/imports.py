@@ -16,6 +16,7 @@ router = APIRouter(prefix="/imports", tags=["imports"])
 
 # Backward-compatible exports for existing tests and callers.
 extract_text_and_warnings = imports_service.extract_text_and_warnings
+extract_images_from_file = imports_service.extract_images_from_file
 extract_text_from_file = imports_service.extract_text_from_file
 _validate_question_item = imports_service.validate_question_item
 _question_items_from_parsed_json = imports_service.question_items_from_parsed_json
@@ -24,6 +25,8 @@ _extract_questions_from_ai_response = imports_service.extract_questions_from_ai_
 _call_ai_parse_chunk = imports_service.call_ai_parse_chunk
 _deduplicate_questions = imports_service.deduplicate_questions
 call_ai_parse = imports_service.call_ai_parse
+call_ai_parse_multimodal = imports_service.call_ai_parse_multimodal
+call_ai_extract_text_from_images = imports_service.call_ai_extract_text_from_images
 OPENAI_API_KEY = imports_service.OPENAI_API_KEY
 OPENAI_BASE_URL = imports_service.OPENAI_BASE_URL
 OpenAI = imports_service.OpenAI
@@ -66,8 +69,18 @@ async def upload_file(
     try:
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
-        text, _ = imports_service.extract_text_and_warnings(saved.path)
+        text, extract_warnings = imports_service.extract_text_and_warnings(saved.path)
+        images, image_warnings = imports_service.extract_images_from_file(saved.path)
+        if not text.strip() and images:
+            _sync_ai_overrides()
+            text, ai_warnings, _parse_timing = imports_service.call_ai_extract_text_from_images(images)
+            extract_warnings = extract_warnings + image_warnings + ai_warnings
+        elif image_warnings:
+            extract_warnings = extract_warnings + image_warnings
         extract_ms = imports_service.elapsed_ms(extract_start)
+        if not text.strip():
+            detail = imports_service.empty_extract_detail(saved.path, extract_warnings)
+            raise HTTPException(status_code=400, detail=detail)
         return schemas.FileExtractResponse(
             text=text,
             filename=saved.filename,
@@ -77,7 +90,7 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
@@ -95,21 +108,23 @@ async def preview_import(
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
         text, extract_warnings = imports_service.extract_text_or_raise(saved.path)
+        images, image_warnings = imports_service.extract_images_from_file(saved.path)
+        extract_warnings = extract_warnings + image_warnings
         extract_ms = imports_service.elapsed_ms(extract_start)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
     try:
         _sync_ai_overrides()
-        questions, ai_warnings, parse_timing = imports_service.preview_import_from_text(text)
+        questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"AI 解析失败: {exc}") from exc
+        raise HTTPException(status_code=502, detail="AI 解析失败，请稍后重试") from exc
 
     all_warnings = extract_warnings + ai_warnings
     total_valid = len(questions)
@@ -182,9 +197,10 @@ async def import_file_auto(
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
         text, _ = imports_service.extract_text_or_raise(saved.path)
+        images, _image_warnings = imports_service.extract_images_from_file(saved.path)
         extract_ms = imports_service.elapsed_ms(extract_start)
         _sync_ai_overrides()
-        question_dicts, _warnings, parse_timing = imports_service.preview_import_from_text(text)
+        question_dicts, _warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
         bank = imports_service.resolve_target_course(
             db,
             current_user.id,
@@ -201,7 +217,7 @@ async def import_file_auto(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="导入失败，请稍后重试") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 

@@ -8,19 +8,17 @@
       <div class="auth-brand">
         <div class="auth-logo" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="url(#logo-grad)"/>
-            <path d="M8 14l6-4.5 6 4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 18l4-3 4 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect width="32" height="32" rx="8" fill="url(#logo-grad)" />
+            <path d="M8 14l6-4.5 6 4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M10 18l4-3 4 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             <defs>
               <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32">
-                <stop stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/>
+                <stop stop-color="#3b82f6" /><stop offset="1" stop-color="#1d4ed8" />
               </linearGradient>
             </defs>
           </svg>
         </div>
-        <p class="auth-eyebrow">AI 智能练习</p>
-        <h1>考前复习系统</h1>
-        <p class="auth-tagline">导入资料 · 智能出题 · 错题复盘</p>
+        <h1>学习宝</h1>
       </div>
       <router-view />
     </div>
@@ -44,7 +42,7 @@
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-2xl);
   background: var(--surface);
-  box-shadow: var(--shadow-modal);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-brand {
@@ -66,15 +64,6 @@
   height: 48px;
 }
 
-.auth-eyebrow {
-  margin: 0;
-  color: var(--primary);
-  font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .auth-brand h1 {
   margin: 8px 0 0;
   font-size: var(--text-2xl);
@@ -82,13 +71,6 @@
   letter-spacing: -0.02em;
   line-height: 1.25;
   color: var(--text-main);
-}
-
-.auth-tagline {
-  margin: 6px 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: 1.5;
 }
 
 @media (max-width: 420px) {

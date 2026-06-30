@@ -1,4 +1,4 @@
-"""Tests for practice endpoints: random, submit with normalization."""
+﻿"""Tests for practice endpoints: random, submit with normalization."""
 
 
 class TestPractice:
@@ -38,6 +38,57 @@ class TestPractice:
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         resp = client.get(self.PRACTICE_RANDOM + "?type=short_answer", headers=auth_headers)
         assert resp.status_code == 404
+
+    def test_random_question_excludes_answered_ids(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        remaining = questions[0]
+        excluded_ids = ",".join(str(question["id"]) for question in questions[1:])
+
+        resp = client.get(
+            self.PRACTICE_RANDOM,
+            headers=auth_headers,
+            params={"exclude_ids": excluded_ids},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == remaining["id"]
+
+    def test_random_question_returns_404_when_all_ids_excluded(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        excluded_ids = ",".join(str(question["id"]) for question in questions)
+
+        resp = client.get(
+            self.PRACTICE_RANDOM,
+            headers=auth_headers,
+            params={"exclude_ids": excluded_ids},
+        )
+
+        assert resp.status_code == 404
+
+    def test_wrong_review_excludes_answered_ids(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        first, second = questions[0], questions[1]
+
+        for question in (first, second):
+            resp = client.post(
+                self.PRACTICE_SUBMIT,
+                json={"question_id": question["id"], "user_answer": "__wrong__"},
+                headers=auth_headers,
+            )
+            assert resp.status_code == 200
+            assert resp.json()["is_correct"] is False
+
+        resp = client.get(
+            "/practice/review/wrong",
+            headers=auth_headers,
+            params={"exclude_ids": str(first["id"])},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == second["id"]
 
     def test_submit_correct_single_choice(self, client, auth_headers, sample_questions):
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
@@ -306,11 +357,11 @@ class TestPracticeWithCourses:
             "/auth/register",
             json={
                 "username": "intruder",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        resp = client.post("/auth/login", json={"username": "intruder", "password": "pass"})
+        resp = client.post("/auth/login", json={"username": "intruder", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
         # User B tries to access user A's private course

@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from random import randint
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from . import models
 from .config import APP_TIMEZONE
@@ -251,6 +251,7 @@ def get_random_question(
     user_id: int | None = None,
     q_type: str = "",
     chapter: str = "",
+    excluded_ids: list[int] | None = None,
 ) -> models.Question | None:
     """Return a random question visible to *user_id*, using count+offset.
 
@@ -262,6 +263,8 @@ def get_random_question(
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
+    if excluded_ids:
+        query = query.filter(~models.Question.id.in_(excluded_ids))
     count = query.count()
     if count == 0:
         return None
@@ -274,6 +277,7 @@ def get_random_question_in_course(
     user_id: int | None = None,
     q_type: str = "",
     chapter: str = "",
+    excluded_ids: list[int] | None = None,
 ) -> models.Question | None:
     """Random question in a course, using count+offset instead of ORDER BY RANDOM()."""
     query = _add_question_visibility_filter(
@@ -284,6 +288,8 @@ def get_random_question_in_course(
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
+    if excluded_ids:
+        query = query.filter(~models.Question.id.in_(excluded_ids))
     count = query.count()
     if count == 0:
         return None
@@ -390,11 +396,13 @@ def get_due_reviews(
     user_id: int,
     course_id: int | None = None,
     limit: int = 20,
+    excluded_ids: list[int] | None = None,
 ) -> list[models.UserQuestionReview]:
     now = datetime.now(UTC)
 
     query = (
         db.query(models.UserQuestionReview)
+        .options(joinedload(models.UserQuestionReview.question))
         .filter(models.UserQuestionReview.user_id == user_id)
         .filter(
             (models.UserQuestionReview.next_review_at <= now) | (models.UserQuestionReview.next_review_at.is_(None))
@@ -403,6 +411,8 @@ def get_due_reviews(
 
     if course_id is not None:
         query = query.filter(models.UserQuestionReview.course_id == course_id)
+    if excluded_ids:
+        query = query.filter(~models.UserQuestionReview.question_id.in_(excluded_ids))
 
     query = query.order_by(
         models.UserQuestionReview.next_review_at.asc().nulls_first(),

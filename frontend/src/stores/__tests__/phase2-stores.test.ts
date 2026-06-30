@@ -36,7 +36,7 @@ describe("phase2 stores", () => {
     theme.toggle();
     expect(theme.mode).toBe("dark");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
-    expect(window.localStorage.getItem("exam-system-theme")).toBe("dark");
+    expect(window.localStorage.getItem("xuexibao-theme")).toBe("dark");
   });
 
   it("ui store tracks sidebar and global loading", () => {

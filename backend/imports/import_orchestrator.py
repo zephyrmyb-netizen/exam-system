@@ -16,6 +16,7 @@ from .. import crud, schemas
 from ..config import (
     IMPORT_CHUNK_SIZE,
     IMPORT_MAX_CHUNKS,
+    IMPORT_MAX_TOKENS,
     IMPORT_UPSTREAM_TIMEOUT,
     OPENAI_API_KEY,
     OPENAI_BASE_URL,
@@ -24,6 +25,7 @@ from ..config import (
 from ..crud import derive_course_name_from_filename
 from ..models import Question as QuestionModel
 from ..utils import VALID_QUESTION_TYPES, normalize_answer
+from .image_extractor import IMAGE_EXTENSIONS, ImagePayload, extract_images_from_file, image_bytes_to_data_url
 
 try:
     from openai import APITimeoutError
@@ -31,10 +33,12 @@ except ImportError:  # pragma: no cover
     APITimeoutError = TimeoutError
 
 
-ALLOWED_EXTENSIONS = {".docx", ".pptx"}
+ALLOWED_EXTENSIONS = {".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"}
+LEGACY_PPT_EXTENSION = ".ppt"
 MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
+AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
 
 
 @dataclass
@@ -70,13 +74,34 @@ def _ai_override_active() -> bool:
     return OpenAI is not __import__("openai").OpenAI
 
 
-def validate_upload(filename: str, content: bytes) -> str:
+def validate_upload_extension(filename: str) -> str:
+    """Validate the file extension only (no size check). Returns the lowercased ext.
+
+    Use this before streaming to avoid reading the file when the format is
+    outright unsupported.
+    """
     ext = Path(filename or "").suffix.lower()
+    if ext == LEGACY_PPT_EXTENSION:
+        raise HTTPException(
+            status_code=400,
+            detail="暂不支持旧版 .ppt，请在 PowerPoint/WPS 中另存为 .pptx 后上传。",
+        )
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx 或 .pptx 文件",
+            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx、.pdf、.pptx、.png、.jpg、.jpeg、.webp 文件",
         )
+    return ext
+
+
+def validate_upload(filename: str, content: bytes) -> str:
+    """Validate both extension and size of an in-memory upload.
+
+    Kept for backward compatibility with callers that already hold the bytes
+    (e.g. tests). New code should prefer :func:`validate_upload_extension`
+    plus streaming size checks in :func:`save_upload_to_temp`.
+    """
+    ext = validate_upload_extension(filename)
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
@@ -85,13 +110,64 @@ def validate_upload(filename: str, content: bytes) -> str:
     return ext
 
 
+def detect_file_kind(filename_or_path: str) -> str:
+    ext = Path(filename_or_path or "").suffix.lower()
+    if ext == ".docx":
+        return "docx"
+    if ext == ".pdf":
+        return "pdf"
+    if ext == ".pptx":
+        return "pptx"
+    if ext in IMAGE_EXTENSIONS:
+        return "image"
+    if ext == LEGACY_PPT_EXTENSION:
+        return "legacy_ppt"
+    return "unsupported"
+
+
+# 流式上传分块大小：64KB，平衡 I/O 次数与内存占用
+_UPLOAD_CHUNK_SIZE = 64 * 1024
+
+
 async def save_upload_to_temp(file: UploadFile) -> SavedUpload:
+    """Stream an upload to a temp file in chunks, enforcing the size limit.
+
+    Avoids loading the entire file into memory before validation. The
+    extension is checked up front (cheap, no I/O); size is enforced
+    incrementally while writing chunks — exceeding the limit aborts early
+    and the partial temp file is removed.
+    """
     filename = file.filename or "unknown"
-    content = await file.read()
-    ext = validate_upload(filename, content)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=ext or ".tmp") as tmp:
-        tmp.write(content)
-        path = tmp.name
+    ext = validate_upload_extension(filename)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext or ".tmp")
+    path = tmp.name
+    written = 0
+    try:
+        tmp.close()
+        with open(path, "wb") as out:
+            while True:
+                chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > MAX_FILE_SIZE:
+                    out.close()
+                    os.unlink(path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"文件大小超过限制（最大 {MAX_FILE_SIZE // (1024 * 1024)}MB）",
+                    )
+                out.write(chunk)
+    except HTTPException:
+        raise
+    except Exception:
+        # Clean up the partial temp file on any other failure.
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        raise
     return SavedUpload(filename=filename, ext=ext, path=path)
 
 
@@ -109,9 +185,28 @@ def extract_text_and_warnings(file_path: str) -> tuple[str, list[str]]:
     warnings: list[str] = []
     if ext == ".docx":
         return _extract_docx(file_path, warnings)
+    if ext == ".pdf":
+        return _extract_pdf(file_path, warnings)
     if ext == ".pptx":
         return _extract_pptx(file_path, warnings)
+    if ext in IMAGE_EXTENSIONS:
+        return "", warnings
+    if ext == LEGACY_PPT_EXTENSION:
+        raise HTTPException(status_code=400, detail="暂不支持旧版 .ppt，请在 PowerPoint/WPS 中另存为 .pptx 后上传。")
     raise HTTPException(status_code=400, detail=f"不支持的文件格式: {ext}")
+
+
+def empty_extract_detail(file_path: str, warnings: list[str] | None = None) -> str:
+    ext = Path(file_path).suffix.lower()
+    if warnings:
+        return "；".join(warnings[:3])
+    if ext == ".pdf":
+        return "未从 PDF 中提取到文字，请确认不是扫描版图片 PDF，或将页面导出为图片后上传。"
+    if ext == ".pptx":
+        return "未从 PPTX 中识别到文字或图片题目，请检查文件是否为空，或尝试导出为图片后上传。"
+    if ext in IMAGE_EXTENSIONS:
+        return "图片识别失败，请确认图片格式正确且内容清晰。"
+    return "文档中未提取到任何文本内容"
 
 
 def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
@@ -131,11 +226,37 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
             if row_texts:
                 parts.append(" | ".join(row_texts))
 
-    has_image = any("image" in rel.reltype for rel in doc.part.rels.values())
-    if has_image:
-        warnings.append("文档中包含图片，暂不支持 OCR 识别图片中的文字，请手动核对")
-
     return "\n".join(parts), warnings
+
+
+def _extract_pdf(path: str, warnings: list[str]) -> tuple[str, list[str]]:
+    from pypdf import PdfReader
+
+    try:
+        reader = PdfReader(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"PDF 文件读取失败：{exc}") from exc
+
+    if reader.is_encrypted:
+        try:
+            if reader.decrypt("") == 0:
+                raise HTTPException(status_code=400, detail="PDF 文件已加密，请先解除密码后再上传。")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="PDF 文件已加密，请先解除密码后再上传。") from exc
+
+    parts: list[str] = []
+    for page_index, page in enumerate(reader.pages, start=1):
+        try:
+            text = (page.extract_text() or "").strip()
+        except Exception as exc:
+            warnings.append(f"第 {page_index} 页 PDF 文本提取失败：{exc}")
+            continue
+        if text:
+            parts.append(f"[Page {page_index}]\n{text}")
+
+    return "\n\n".join(parts), warnings
 
 
 def _extract_pptx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
@@ -143,25 +264,19 @@ def _extract_pptx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
 
     prs = Presentation(path)
     parts: list[str] = []
-    has_image = False
 
-    for slide in prs.slides:
+    for slide_index, slide in enumerate(prs.slides, start=1):
+        slide_parts: list[str] = []
         for shape in slide.shapes:
             if hasattr(shape, "text") and shape.text.strip():
-                parts.append(shape.text)
-            try:
-                if "Picture" in type(shape).__name__ or hasattr(shape, "image"):
-                    has_image = True
-            except Exception:
-                pass
+                slide_parts.append(shape.text.strip())
             if shape.has_table:
                 for row in shape.table.rows:
                     row_texts = [cell.text.strip() for cell in row.cells if cell.text.strip()]
                     if row_texts:
-                        parts.append(" | ".join(row_texts))
-
-    if has_image:
-        warnings.append("演示文稿中包含图片，暂不支持 OCR 识别图片中的文字，请手动核对")
+                        slide_parts.append(" | ".join(row_texts))
+        if slide_parts:
+            parts.append(f"[Slide {slide_index}]\n" + "\n".join(slide_parts))
 
     return "\n".join(parts), warnings
 
@@ -171,22 +286,48 @@ def extract_text_from_file(file_path: str) -> str:
     return text
 
 
-def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
+def _extract_text_or_raise_legacy(file_path: str) -> tuple[str, list[str]]:
     try:
         text, warnings = extract_text_and_warnings(file_path)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
     return text, warnings
 
 
+def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
+    try:
+        text, warnings = extract_text_and_warnings(file_path)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
+
+    if text.strip():
+        return text, warnings
+
+    images, image_warnings = extract_images_from_file(file_path)
+    warnings.extend(image_warnings)
+    ext = Path(file_path).suffix.lower()
+    if images:
+        return text, warnings
+    if ext == ".pptx":
+        raise HTTPException(status_code=400, detail="未从 PPT 中识别到文字或图片题目，请检查文件是否为空，或尝试导出为图片后上传。")
+    if ext == ".pdf":
+        raise HTTPException(status_code=400, detail="未从 PDF 中提取到文字，请确认不是扫描版图片 PDF，或将页面导出为图片后上传。")
+    raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
+
+
 def build_ai_prompt(text_chunk: str) -> str:
     return (
         "You are an exam-question extraction assistant. Convert the document text into strict JSON.\n"
+        "Extract EVERY complete question in this chunk. Do not summarize. Do not return only one sample.\n"
+        "If the chunk contains 12 complete questions, return 12 question objects. Preserve numbered questions.\n"
+        "If there are no complete questions in this chunk, return {\"questions\": []}.\n"
         "Return ONLY a JSON object with this shape:\n"
         "{\n"
         '  "questions": [\n'
@@ -206,8 +347,31 @@ def build_ai_prompt(text_chunk: str) -> str:
         "1. Use the original language of the document for question text and analysis.\n"
         "2. For choice questions, options must be an object keyed by A/B/C/D.\n"
         "3. For true_false answers, use one of: true, false, yes, no.\n"
-        "4. Do not include markdown fences or explanations outside JSON.\n\n"
+        "4. Split combined numbered lists into separate question objects.\n"
+        "5. Do not include markdown fences or explanations outside JSON.\n\n"
         f"Document text:\n{text_chunk}"
+    )
+
+
+def build_ai_multimodal_prompt(text: str = "") -> str:
+    context = text.strip() or "(no extracted text; identify questions from the images)"
+    return (
+        "You are an exam-question extraction assistant. Extract all exam questions from the text and images.\n"
+        "Return ONLY strict JSON, with no markdown or explanation. Shape:\n"
+        '{"questions":[{"type":"single_choice | multiple_choice | true_false | fill_blank | short_answer",'
+        '"question":"question text","options":{"A":"option A","B":"option B"},'
+        '"answer":"correct answer","analysis":"short explanation","subject":"",'
+        '"chapter":"","difficulty":"normal"}]}\n'
+        "Rules: single_choice answer like A; multiple_choice answer like A,B; true_false answer uses "
+        "正确 or 错误; extract every question from every image; skip uncertain decorative text.\n\n"
+        f"Extracted document text:\n{context}"
+    )
+
+
+def build_ai_image_text_prompt() -> str:
+    return (
+        "Identify the exam-question text in these images. Return plain text only, preserving question stems, "
+        "options, answers, and analysis when visible. Do not describe decorative elements."
     )
 
 
@@ -375,6 +539,113 @@ def safe_ai_error_detail(exc: Exception | None = None) -> str:
     return "AI 服务暂时不可用，请稍后重试"
 
 
+def _ensure_openai_key() -> None:
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="未配置 OPENAI_API_KEY，请在 .env 文件中设置 OPENAI_API_KEY 以使用 AI 自动导入功能",
+        )
+
+
+def _multimodal_content(prompt: str, images: list[ImagePayload]) -> list[dict[str, Any]]:
+    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+    for image in images:
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": image_bytes_to_data_url(image.data, image.mime_type)},
+            }
+        )
+    return content
+
+
+def _call_chat_completion(content: str | list[dict[str, Any]], *, temperature: float = 0.1):
+    client = _build_import_client()
+    try:
+        return client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": content}],
+            response_format={"type": "json_object"},
+            temperature=temperature,
+            max_tokens=AI_MAX_TOKENS,
+        )
+    except APITimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except HTTPException:
+        raise
+    except (APIStatusError, APIConnectionError) as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+
+
+def _validate_ai_items(items: list[dict[str, Any]], warnings: list[str]) -> list[dict[str, Any]]:
+    valid: list[dict[str, Any]] = []
+    for index, item in enumerate(deduplicate_questions(items)):
+        validated, error = validate_question_item(item)
+        if validated:
+            validated["line_number"] = index + 1
+            valid.append(validated)
+        else:
+            warnings.append(f"第 {index + 1} 题格式有误: {error}")
+    return valid
+
+
+def call_ai_parse_multimodal(
+    text: str,
+    images: list[ImagePayload],
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    _ensure_openai_key()
+    total_start = time.perf_counter()
+    ai_start = time.perf_counter()
+    response = _call_chat_completion(_multimodal_content(build_ai_multimodal_prompt(text), images))
+    ai_ms = elapsed_ms(ai_start)
+    raw = response.choices[0].message.content if response.choices else ""
+    if not raw:
+        timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+        return [], ["AI 返回了空响应"], timing
+
+    items, warnings = extract_questions_from_ai_response(raw)
+    valid = _validate_ai_items(items, warnings)
+    timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+    if not valid:
+        ensure_questions_found(valid, warnings)
+    return valid, warnings, timing
+
+
+def call_ai_extract_text_from_images(images: list[ImagePayload]) -> tuple[str, list[str], dict[str, Any]]:
+    _ensure_openai_key()
+    total_start = time.perf_counter()
+    ai_start = time.perf_counter()
+    client = _build_import_client()
+    try:
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": _multimodal_content(build_ai_image_text_prompt(), images)}],
+            temperature=0.1,
+            max_tokens=AI_MAX_TOKENS,
+        )
+    except APITimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except HTTPException:
+        raise
+    except (APIStatusError, APIConnectionError) as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+
+    ai_ms = elapsed_ms(ai_start)
+    text = response.choices[0].message.content if response.choices else ""
+    timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+    if not text.strip():
+        return "", ["图片识别失败：AI 返回了空响应"], timing
+    return text.strip(), [], timing
+
+
 def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[str, Any]], list[str]]:
     client = _build_import_client()
     try:
@@ -383,7 +654,7 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
             messages=[{"role": "user", "content": build_ai_prompt(text_chunk)}],
             response_format={"type": "json_object"},
             temperature=0.1,
-            max_tokens=3000,
+            max_tokens=AI_MAX_TOKENS,
         )
     except APITimeoutError as exc:
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
@@ -409,7 +680,7 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
                 messages=[{"role": "user", "content": build_ai_repair_prompt(raw)}],
                 response_format={"type": "json_object"},
                 temperature=0,
-                max_tokens=3000,
+                max_tokens=AI_MAX_TOKENS,
             )
             repair_raw = repair_response.choices[0].message.content if repair_response.choices else ""
             repaired_items, repair_warnings = extract_questions_from_ai_response(repair_raw)
@@ -524,7 +795,7 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     if not valid and saw_upstream_error:
         raise HTTPException(status_code=502, detail=safe_ai_error_detail())
     if not valid and saw_invalid_json:
-        raise HTTPException(status_code=400, detail="AI 返回非 JSON，无法解析题目")
+        raise HTTPException(status_code=400, detail="AI 未能解析出题目，请换一个文件或稍后重试。")
 
     return valid, all_warnings, timing
 
@@ -539,6 +810,26 @@ def ensure_questions_found(questions: list[dict[str, Any]], warnings: list[str])
 
 
 def preview_import_from_text(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    questions, warnings, timing = call_ai_parse(text)
+    ensure_questions_found(questions, warnings)
+    return questions, warnings, timing
+
+
+def preview_import_from_file_content(
+    text: str,
+    images: list[ImagePayload],
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    if images:
+        try:
+            return call_ai_parse_multimodal(text, images)
+        except HTTPException as exc:
+            if text.strip():
+                questions, warnings, timing = call_ai_parse(text)
+                warnings.insert(0, f"图片识别失败：{exc.detail}")
+                ensure_questions_found(questions, warnings)
+                return questions, warnings, timing
+            raise
+
     questions, warnings, timing = call_ai_parse(text)
     ensure_questions_found(questions, warnings)
     return questions, warnings, timing
@@ -612,5 +903,5 @@ def persist_imported_questions(
         db.commit()
     except Exception as exc:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"导入失败，已回滚: {exc}") from exc
+        raise HTTPException(status_code=500, detail="导入失败，已回滚") from exc
     return len(models_to_add)

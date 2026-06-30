@@ -1,4 +1,4 @@
-# Exam System Backend
+# 学习宝 Backend
 
 FastAPI + SQLAlchemy + SQLite/PostgreSQL + JWT 认证后端。
 
@@ -108,7 +108,7 @@ API 文档自动生成于 http://127.0.0.1:8000/docs
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `APP_ENV` | `development` | 运行环境：`development`（开发）或 `production`（生产） |
-| `DATABASE_URL` | `sqlite:///./exam_system.db` | 数据库连接（开发用 SQLite，生产用 PostgreSQL） |
+| `DATABASE_URL` | `sqlite:///./xuexibao.db` | 数据库连接（开发用 SQLite，生产用 PostgreSQL） |
 | `SECRET_KEY` | `change-this-secret-key-in-production` | JWT 签名密钥（**生产环境必须修改**） |
 | `CORS_ORIGINS` | （空 → 允许所有） | 逗号分隔的允许跨域来源，如 `http://localhost:5173,http://192.168.1.8:5173` |
 | `INVITE_CODE` | `dev-invite` | 注册邀请码（生产环境请修改） |
@@ -116,6 +116,11 @@ API 文档自动生成于 http://127.0.0.1:8000/docs
 | `OPENAI_API_KEY` | （空） | AI 接口密钥（必填，用于对话和自动导入） |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | AI 接口地址（可换 Mimo、DeepSeek 等兼容接口） |
 | `OPENAI_MODEL` | `gpt-4o-mini` | AI 模型名（如 `mimo-v2.5`、`deepseek-chat`） |
+| `CHAT_UPSTREAM_TIMEOUT` | `90` | AI 对话单次请求超时秒数 |
+| `IMPORT_UPSTREAM_TIMEOUT` | `90` | AI 文件导入每个分块的上游超时秒数 |
+| `IMPORT_CHUNK_SIZE` | `5000` | AI 文件导入每个分块约处理的字符数 |
+| `IMPORT_MAX_CHUNKS` | `20` | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_TOKENS` | `6000` | AI 文件导入单次模型输出 token 上限 |
 
 #### SECRET_KEY 配置说明
 
@@ -154,11 +159,11 @@ SECRET_KEY=<你生成的随机字符串>
 
 ### SQLite（开发环境）
 
-默认使用 SQLite，数据库文件生成在 `backend/exam_system.db`。零配置即可运行，适合单人本地开发和测试。
+默认使用 SQLite，数据库文件生成在 `backend/xuexibao.db`。零配置即可运行，适合单人本地开发和测试。
 
 ```bash
 # 重置数据库：删除 db 文件后重启后端即可
-del backend\exam_system.db
+del backend\xuexibao.db
 ```
 
 ### PostgreSQL（生产环境）
@@ -170,7 +175,7 @@ del backend\exam_system.db
 pip install psycopg2-binary
 
 # 2. 修改 .env
-# DATABASE_URL=postgresql://用户名:密码@localhost:5432/exam_system
+# DATABASE_URL=postgresql://用户名:密码@localhost:5432/xuexibao
 ```
 
 ## AI 接口配置
@@ -195,7 +200,7 @@ OPENAI_MODEL=mimo-v2.5
 
 > ⚠️ **安全警告**（提交公开仓库前必读）：
 > - ✅ **`backend/.env` 不要提交** — 已在 `.gitignore` 中忽略
-> - ✅ **`backend/exam_system.db` 不要提交** — 包含真实数据
+> - ✅ **`backend/xuexibao.db` 不要提交** — 包含真实数据
 > - ✅ **`uploads/` 不要提交** — 用户上传的文件不应进入仓库
 > - ✅ **不要截图、日志或视频中暴露 API Key / SECRET_KEY / 数据库内容**
 > - ✅ **公开仓库前运行 `git status` 和 `git grep -n "sk-"` 检查**
@@ -206,7 +211,7 @@ OPENAI_MODEL=mimo-v2.5
 
 ```markdown
 - [ ] `.env` 文件未被 Git 跟踪
-- [ ] `backend/exam_system.db` 未被跟踪
+- [ ] `backend/xuexibao.db` 未被跟踪
 - [ ] `uploads/` 未被跟踪
 - [ ] `.env.example` 中不含真实的 API Key（应使用 `<your-api-key>` 占位）
 - [ ] 生产环境已设置随机 `SECRET_KEY`
@@ -219,6 +224,16 @@ OPENAI_MODEL=mimo-v2.5
 这些配置同时影响以下接口：
 - `POST /chat` — AI 学习对话助手
 - `POST /imports/file/auto` — 上传文件后 AI 自动结构化并导入题目
+
+## Word/PDF/PPT/图片导入说明
+
+支持上传 `.docx`、`.pdf`、`.pptx`、`.png`、`.jpg`、`.jpeg`、`.webp`，单文件最大 10MB。旧版 `.ppt` 不支持，请在 PowerPoint/WPS 中另存为 `.pptx`。
+
+PDF 文本可提取时会按页加入 `[Page N]` 提示；扫描版 PDF 没有可提取文字时会提示导出为图片后上传；加密 PDF 会提示先解除密码。PPTX 文本会按页加入 `[Slide N]`，空 PPTX 或只有无法识别内容的文件会返回明确错误，不会返回 401。
+
+图片、PPT 内嵌图片和扫描内容识别依赖 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入。缺少 `OPENAI_API_KEY` 时服务可以启动，但调用 AI 导入或 AI 对话会返回“AI 服务未配置”的明确错误。
+
+导入错误状态码约定：文件类型或解析失败返回 400/422，AI 超时返回 504，AI 服务不可用或上游异常返回 502，资源不存在返回 404，权限不足返回 403/404；只有缺少、无效或过期的 Bearer token 才返回 401。
 
 ## 接口列表
 
@@ -301,8 +316,8 @@ OPENAI_MODEL=mimo-v2.5
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/imports/file` | 上传 .docx/.pptx 提取文本（最大 10MB） |
-| POST | `/imports/file/preview` | 上传文件并用 AI 解析为题目，返回预览（不入库） |
+| POST | `/imports/file` | 上传 .docx/.pdf/.pptx/.png/.jpg/.jpeg/.webp 提取文本或图片内容（最大 10MB） |
+| POST | `/imports/file/preview` | 上传文件并用 AI 解析为题目，支持 PPT 内嵌图片和直接图片，返回预览（不入库） |
 | POST | `/imports/confirm` | 确认预览后的题目并写入数据库 |
 | POST | `/imports/file/auto` | 上传文件并 AI 直接导入（无预览编辑环节） |
 

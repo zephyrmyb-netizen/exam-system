@@ -25,6 +25,7 @@ const router = useRouter();
 const stats = ref({ todayCount: null as number | null, totalCount: null as number | null, wrongCount: null as number | null });
 const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as any[] });
 const reviewError = ref("");
+const statsLoading = ref(false);
 
 const recentCourses = ref<Course[]>([]);
 const coursesLoading = ref(false);
@@ -100,6 +101,7 @@ function goToMode(card: { disabled: boolean; to: string }) {
 
 async function fetchStatsReview() {
   reviewError.value = "";
+  statsLoading.value = true;
   try {
     const [statsResult, reviewResult, weakResult] = await Promise.allSettled([
       getPracticeStats(),
@@ -130,6 +132,8 @@ async function fetchStatsReview() {
     }
   } catch (error) {
     reviewError.value = getErrorMessage(error, "学习数据暂时不可用");
+  } finally {
+    statsLoading.value = false;
   }
 }
 
@@ -173,6 +177,7 @@ onMounted(() => {
       :wrong-count="wrongCount"
       :due-count="review.dueCount"
       :weak-types="review.weakTypes"
+      :loading="statsLoading"
       @primary="openPrimaryPractice"
     />
 

@@ -1,15 +1,22 @@
 """Repository layer for database access."""
 
+from .bookmark_repo import BookmarkRepository
+from .collaboration_repo import CollaborationRepository
 from .course_repo import CourseRepository
 from .practice_repo import PracticeRepository
 from .question_repo import QuestionRepository
+from .tag_repo import QuestionTagRepository, TagRepository
 from .user_repo import UserRepository
 from .wrongbook_repo import WrongbookRepository
 
 __all__ = [
+    "CollaborationRepository",
+    "BookmarkRepository",
     "CourseRepository",
     "PracticeRepository",
     "QuestionRepository",
+    "QuestionTagRepository",
+    "TagRepository",
     "UserRepository",
     "WrongbookRepository",
 ]

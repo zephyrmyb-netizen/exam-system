@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Design System — Exam System
+   Design System — 学习宝
    Mobile-first, clean hierarchy, breathing room.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -16,6 +16,11 @@
   --line-soft: #e2e8f0;
   --line-strong: #cbd5e1;
   --line-accent: #93c5fd;
+
+  /* ── Semantic aliases (used by Card, CardTitle, Button components) ── */
+  --border: var(--line-soft);
+  --text-primary: var(--text-main);
+  --surface-muted: var(--surface-soft);
 
   /* ── Brand ── */
   --primary: #3b82f6;
@@ -47,6 +52,7 @@
 
   --text-xs: 0.6875rem;    /* 11px */
   --text-sm: 0.8125rem;    /* 13px */
+  --text-md: 0.875rem;     /* 14px */
   --text-base: 0.9375rem;  /* 15px */
   --text-lg: 1.125rem;     /* 18px */
   --text-xl: 1.375rem;     /* 22px */
@@ -81,8 +87,14 @@
   --shadow-teal: 0 6px 18px rgba(13, 148, 136, 0.22);
 
   /* ── Transitions ── */
-  --ease-out: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-out: 通用快速反馈（hover / 选中态），柔和的减速曲线 */
+  --ease-out: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-spring: 微弹性，适合按钮按压回弹 */
+  --ease-spring: 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ease-smooth: 内容切换（题目切换/卡片进入），更慢更柔和 */
+  --ease-smooth: 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-bounce: 强弹性反馈，适合选项点击 */
+  --ease-bounce: 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Shell ── */
   --shell-max: 720px;
@@ -103,20 +115,57 @@
    Reset & Base
    ═══════════════════════════════════════════════════════════ */
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-html { background: var(--page-bg); }
+html {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  background: var(--page-bg);
+}
 
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
   background: var(--page-bg);
   color: var(--text-main);
+  padding-top: env(safe-area-inset-top);
 }
 
 button, textarea, input, select, a {
   font: inherit;
   color: inherit;
+}
+
+/* iOS Safari 在聚焦 font-size < 16px 的输入框时会自动缩放页面。
+   统一设为 16px 防止缩放，桌面端不受影响。
+   使用 !important 覆盖所有组件/类选择器中的 font-size 设置。
+   iOS 10+ 忽略 viewport 的 maximum-scale/user-scalable，font-size 是唯一可靠方案。 */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="week"],
+  input[type="month"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* ── Keyboard focus-visible ── */
@@ -136,17 +185,28 @@ a:focus:not(:focus-visible) {
 button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; opacity: 0.55; }
 
-#app { min-height: 100vh; }
+#app {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
 
 /* ═══════════════════════════════════════════════════════════
    Shell & Layout
    ═══════════════════════════════════════════════════════════ */
 
 .app-shell {
-  width: min(100%, var(--shell-max));
+  width: 100%;
   min-height: 100vh;
-  margin: 0 auto;
+  min-height: 100dvh;
+  margin: 0;
   padding: var(--space-3) var(--space-3) var(--nav-bottom-clearance);
+}
+
+.app-shell--immersive {
+  --practice-sticky-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .app-header {
@@ -204,14 +264,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .bottom-nav {
   position: fixed;
-  left: 50%;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   bottom: calc(var(--nav-safe-gap) + 10px);
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
   gap: 2px;
-  width: min(calc(100% - 24px), calc(var(--shell-max) - 24px));
+  width: auto;
   height: calc(var(--nav-height) - 8px);
   padding: 4px 6px;
   border: 1px solid rgba(226, 232, 240, 0.85);
@@ -219,7 +280,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(20px);
-  transform: translateX(-50%);
+  transform: none;
 }
 
 .nav-button {
@@ -294,7 +355,104 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Buttons
+   UI Components — Button (Vue Component)
+   ═══════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: transform var(--ease-out), background-color var(--ease-out),
+              border-color var(--ease-out), box-shadow var(--ease-out),
+              color var(--ease-out), opacity var(--ease-out);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn--default {
+  padding: 12px 18px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border: 1px solid rgba(37, 99, 235, 0.7);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn--default:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+}
+
+.btn--secondary {
+  padding: 10px 14px;
+  color: var(--text-main);
+  background: var(--surface-muted);
+  border: 1px solid var(--line-soft);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.btn--ghost {
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.btn--outline {
+  padding: 10px 14px;
+  color: var(--text-main);
+  background: transparent;
+  border: 1px solid var(--line-soft);
+}
+
+.btn--outline:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.btn--danger {
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--rose);
+  border: 1px solid rgba(225, 29, 72, 0.7);
+}
+
+.btn--danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
+}
+
+.btn--sm {
+  height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.btn--md {
+  height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-base);
+}
+
+.btn--lg {
+  height: 56px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-lg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Buttons (Legacy Global Classes)
    ═══════════════════════════════════════════════════════════ */
 
 .nav-button,
@@ -636,8 +794,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .icon-button {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
   background: var(--surface);
@@ -1283,22 +1441,23 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
    ═══════════════════════════════════════════════════════════ */
 
 .chat-page {
-  display: grid;
-  grid-template-rows: auto minmax(320px, 1fr) auto auto;
-  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
-  background: #f8fafd;
+  background: var(--surface-soft);
   box-shadow: var(--shadow-card);
 }
 
 .chat-topbar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-4);
+  gap: var(--space-2);
+  padding: calc(env(safe-area-inset-top) + 12px) var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--line-soft);
   background: var(--surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -1324,12 +1483,14 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .chat-messages {
+  flex: 1;
   display: grid;
   align-content: start;
   gap: var(--space-4);
   min-height: 0;
   padding: var(--space-4);
   overflow-y: auto;
+  overscroll-behavior: contain;
   scroll-behavior: smooth;
 }
 
@@ -1365,17 +1526,21 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .chat-bubble {
   max-width: 86%;
+  min-width: 0;
   padding: var(--space-3) var(--space-3) 6px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-xs);
+  overflow-wrap: anywhere;
 }
 
 .chat-bubble p {
   margin: 0;
   line-height: 1.6;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
   font-size: var(--text-sm);
 }
 
@@ -1393,7 +1558,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   display: block;
   margin-top: 6px;
   color: var(--text-placeholder);
-  font-size: 10px;
+  font-size: 11px;
   text-align: right;
   font-weight: 600;
 }
@@ -1403,6 +1568,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .suggestion-row {
+  flex-shrink: 0;
   display: flex;
   gap: var(--space-2);
   padding: 0 var(--space-4) var(--space-3);
@@ -1432,6 +1598,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .chat-composer {
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-2);
@@ -1578,6 +1745,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
     padding: var(--space-6) var(--space-6) calc(var(--nav-bottom-clearance) + var(--space-2));
   }
 
+  .app-shell--immersive {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   .app-header {
     padding: var(--space-5) var(--space-6);
     margin-bottom: var(--space-6);
@@ -1624,8 +1795,19 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
     min-width: 160px;
   }
 
+}
+
+@media (min-width: 760px) {
+  .app-shell {
+    max-width: var(--shell-max);
+    margin: 0 auto;
+  }
+
   .bottom-nav {
+    left: 50%;
+    right: auto;
     width: min(calc(100% - 40px), calc(var(--shell-max) - 40px));
+    transform: translateX(-50%);
   }
 }
 
@@ -1638,7 +1820,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
   .bottom-nav {
     bottom: calc(var(--nav-safe-gap) + 12px);
-    width: min(calc(100% - 18px), calc(var(--shell-max) - 18px));
   }
 }
 
@@ -1649,6 +1830,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 @media (max-width: 420px) {
   .app-shell {
     padding: 10px 10px var(--nav-bottom-clearance);
+  }
+
+  .app-shell--immersive {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   :root {
@@ -1674,7 +1859,6 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
   .bottom-nav {
     gap: 1px;
-    width: min(calc(100% - 16px), calc(var(--shell-max) - 16px));
   }
 
   .nav-icon {
@@ -1714,4 +1898,237 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
     width: 36px;
     height: 36px;
   }
+}
+
+/* Dark theme
+   Keep this layer at the end so it can override older utility-heavy pages.
+   The theme toggle already adds html.dark; this maps it to the real app tokens
+   and bridges common Tailwind hard-coded light classes used in Phase 4 pages. */
+html.dark {
+  color-scheme: dark;
+  --page-bg: #07111f;
+  --surface: #101827;
+  --surface-soft: #152033;
+  --surface-strong: #1d2b45;
+  --surface-muted: var(--surface-soft);
+  --text-main: #f8fafc;
+  --text-primary: var(--text-main);
+  --text-secondary: #dbeafe;
+  --text-muted: #93a4ba;
+  --text-placeholder: #64748b;
+  --line-soft: rgba(148, 163, 184, 0.22);
+  --line-strong: rgba(148, 163, 184, 0.34);
+  --line-accent: rgba(96, 165, 250, 0.55);
+  --border: var(--line-soft);
+  --primary-soft: rgba(37, 99, 235, 0.16);
+  --primary-border: rgba(96, 165, 250, 0.34);
+  --primary-glow: rgba(59, 130, 246, 0.28);
+  --teal-soft: rgba(13, 148, 136, 0.16);
+  --violet-soft: rgba(124, 58, 237, 0.18);
+  --rose-soft: rgba(225, 29, 72, 0.16);
+  --rose-border: rgba(251, 113, 133, 0.28);
+  --amber-soft: rgba(217, 119, 6, 0.16);
+  --emerald-soft: rgba(5, 150, 105, 0.16);
+  --emerald-border: rgba(52, 211, 153, 0.28);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.24);
+  --shadow-card: 0 8px 28px rgba(0, 0, 0, 0.28);
+  --shadow-elevated: 0 14px 38px rgba(0, 0, 0, 0.34);
+  --shadow-modal: 0 24px 56px rgba(0, 0, 0, 0.48);
+}
+
+html.dark,
+html.dark body,
+html.dark #app {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.18), transparent 32%),
+    radial-gradient(circle at 100% 10%, rgba(124, 58, 237, 0.13), transparent 28%),
+    var(--page-bg);
+  color: var(--text-main);
+}
+
+html.dark .app-header,
+html.dark .bottom-nav,
+html.dark .card,
+html.dark .surface-card,
+html.dark .shortcut-item,
+html.dark .profile-card,
+html.dark .question-card,
+html.dark .practice-card,
+html.dark .auth-card,
+html.dark .global-search-panel,
+html.dark .confirm-card {
+  border-color: var(--line-soft);
+  background: rgba(16, 24, 39, 0.88);
+  color: var(--text-main);
+  box-shadow: var(--shadow-card);
+}
+
+html.dark .bottom-nav,
+html.dark body .bottom-nav {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.24);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+}
+
+html.dark .theme-toggle,
+html.dark .icon-button,
+html.dark .layout-back-button {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: var(--line-soft);
+  color: var(--text-main);
+}
+
+html.dark .text-input,
+html.dark .large-textarea,
+html.dark .answer-textarea,
+html.dark .filter-input,
+html.dark .filter-select,
+html.dark .file-input,
+html.dark .text-output,
+html.dark .prompt-box,
+html.dark .chat-composer textarea,
+html.dark .global-search-input,
+html.dark .account-row {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: var(--line-strong);
+  color: var(--text-main);
+}
+
+html.dark .status-banner--info,
+html.dark .info-message,
+html.dark .empty-state,
+html.dark .status-panel,
+html.dark .deleted-question-notice,
+html.dark .meta-row span,
+html.dark .stat-badge,
+html.dark .option-list li,
+html.dark .answer-panel,
+html.dark .wrongbook-status,
+html.dark .chat-page,
+html.dark .chat-topbar,
+html.dark .chat-bubble,
+html.dark .practice-stem,
+html.dark .practice-card-shell,
+html.dark .practice-result__item,
+html.dark .practice-result__analysis,
+html.dark .practice-result__wrongbook,
+html.dark .practice-swipe-hint,
+html.dark .home-entry,
+html.dark .stat-card,
+html.dark .shortcut-card--nested {
+  background: rgba(21, 32, 51, 0.82);
+  border-color: var(--line-soft);
+  color: var(--text-main);
+}
+
+html.dark .nav-button,
+html.dark .page-info,
+html.dark .stat-label,
+html.dark .account-label,
+html.dark .muted-text,
+html.dark .file-tip {
+  color: var(--text-muted);
+}
+
+html.dark .nav-button.active,
+html.dark .page-kicker,
+html.dark .hero-eyebrow,
+html.dark .chat-kicker {
+  color: #60a5fa;
+}
+
+html.dark .practice-result--correct {
+  background: rgba(5, 150, 105, 0.18);
+  border-color: var(--emerald-border);
+}
+
+html.dark .practice-result--wrong {
+  background: rgba(225, 29, 72, 0.17);
+  border-color: var(--rose-border);
+}
+
+html.dark .practice-result--correct .practice-result__icon,
+html.dark .practice-result--correct .practice-result__title,
+html.dark .practice-result__value--ok {
+  color: #34d399;
+}
+
+html.dark .practice-result--wrong .practice-result__icon,
+html.dark .practice-result--wrong .practice-result__title,
+html.dark .practice-result__value--bad {
+  color: #fb7185;
+}
+
+html.dark .practice-stem__tag {
+  background: rgba(15, 23, 42, 0.78);
+  border-color: var(--line-soft);
+  color: var(--text-secondary);
+}
+
+html.dark .practice-stem__hint,
+html.dark .practice-summary__icon--keep,
+html.dark .msg-warn {
+  background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
+}
+
+/* Tailwind utility bridge for pages that still use hard-coded light classes. */
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-blue-50,
+html.dark .from-blue-50,
+html.dark .to-white {
+  background-color: rgba(16, 24, 39, 0.88) !important;
+}
+
+html.dark .from-blue-50 {
+  --tw-gradient-from: rgba(30, 41, 59, 0.94) !important;
+}
+
+html.dark .to-white {
+  --tw-gradient-to: rgba(15, 23, 42, 0.92) !important;
+}
+
+html.dark .bg-white\/15,
+html.dark .bg-white\/12,
+html.dark .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-blue-100 {
+  border-color: var(--line-soft) !important;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: var(--text-main) !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark .text-slate-300 {
+  color: var(--text-muted) !important;
+}
+
+html.dark .shadow-sm,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: var(--shadow-card) !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color-scheme: dark;
 }

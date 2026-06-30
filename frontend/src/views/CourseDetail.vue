@@ -21,6 +21,7 @@ const loading = ref(false);
 const errorMessage = ref("");
 const publishLoading = ref(false);
 const deleteLoading = ref(false);
+const exportLoading = ref(false);
 
 const showForm = ref(false);
 const formLoading = ref(false);
@@ -151,6 +152,27 @@ function goToImport() {
   router.push({ name: "import", query: { course_id: courseId.value } });
 }
 
+async function exportCourse() {
+  if (!course.value || exportLoading.value) return;
+  exportLoading.value = true;
+  errorMessage.value = "";
+  try {
+    const response = await request.get(`/exports/courses/${courseId.value}.json`, { responseType: "blob" });
+    const blobUrl = window.URL.createObjectURL(response.data);
+    const anchor = document.createElement("a");
+    anchor.href = blobUrl;
+    anchor.download = `${course.value.name || "course"}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "导出题库失败");
+  } finally {
+    exportLoading.value = false;
+  }
+}
+
 onMounted(fetchCourse);
 watch(() => route.params.courseId, fetchCourse);
 </script>
@@ -172,10 +194,11 @@ watch(() => route.params.courseId, fetchCourse);
       @edit="openEdit"
       @publish="publishCourse"
       @unpublish="unpublishCourse"
+      @export="exportCourse"
       @delete="deleteCourse"
     />
 
-    <QuestionList :courseId="courseId" />
+    <QuestionList :course-id="courseId" />
 
     <CourseEditModal
       v-if="showForm && course"

@@ -151,6 +151,75 @@ export interface WeakType {
   error_rate: number;
 }
 
+export interface DailyActivity {
+  date: string;
+  count: number;
+}
+
+export interface TypeDistribution {
+  question_type: string;
+  total_count: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy_rate: number;
+}
+
+export interface Streak {
+  current_streak: number;
+  longest_streak: number;
+  last_practiced_date: string | null;
+}
+
+export interface TagAccuracy {
+  tag_id: number;
+  tag_name: string;
+  total_count: number;
+  correct_count: number;
+  accuracy_rate: number;
+}
+
+export interface TodayRecommendation {
+  weak_tags: Array<{
+    tag_id: number;
+    tag_name: string;
+    total_count: number;
+    correct_count: number;
+    accuracy_rate: number;
+  }>;
+  weak_types: WeakType[];
+  due_count: number;
+  due_question_ids: number[];
+  recommended_modes: string[];
+}
+
+export interface CourseAnalytics {
+  course_id: number;
+  course_name: string;
+  question_count: number;
+  practice_count: number;
+  accuracy_rate: number;
+}
+
+export interface ScoreBucket {
+  label: string;
+  count: number;
+}
+
+export interface Bookmark {
+  id: number;
+  question_id: number;
+  folder_name: string;
+  note: string;
+  created_at: string | null;
+  question?: Question | null;
+}
+
+export interface BookmarkList {
+  items: Bookmark[];
+  total: number;
+  folders: string[];
+}
+
 export interface DueReviewItem {
   id: number;
   review_level: number;
@@ -207,6 +276,88 @@ export interface User {
   id: number;
   username: string;
   role: string;
+  permissions?: string[];
+}
+
+export type RoleName = "student" | "teacher" | "admin";
+
+export interface Exam {
+  id: number;
+  title: string;
+  description: string;
+  course_id: number;
+  creator_id: number;
+  time_limit: number;
+  total_score: number;
+  is_shuffle: boolean;
+  is_blind: boolean;
+  status: "draft" | "published" | string;
+  question_count: number;
+  created_at: string | null;
+}
+
+export interface ExamQuestion {
+  id: number;
+  question_id: number;
+  question_type: QuestionType | string;
+  question: string;
+  options: Record<string, string> | null;
+  score: number;
+  order_index: number;
+}
+
+export interface ExamDetail extends Exam {
+  questions: ExamQuestion[];
+}
+
+export interface ExamCreate {
+  title: string;
+  course_id: number;
+  description?: string;
+  time_limit?: number;
+  total_score?: number;
+  is_shuffle?: boolean;
+  is_blind?: boolean;
+  question_ids?: number[];
+}
+
+export interface ExamAttempt {
+  id: number;
+  exam_id: number;
+  user_id: number;
+  started_at: string | null;
+  submitted_at: string | null;
+  score: number | null;
+}
+
+export interface ExamSubmissionCreate {
+  answers: Record<string, string>;
+}
+
+export interface ExamResult {
+  exam_id: number;
+  submission_id: number;
+  score: number;
+  total_score: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy_rate: number;
+  submitted_at: string | null;
+}
+
+export interface ExamLeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  score: number;
+  total_score: number;
+  submitted_at: string | null;
+}
+
+export interface ExamLeaderboard {
+  exam_id: number;
+  entries: ExamLeaderboardEntry[];
+  total: number;
 }
 
 export interface LoginRequest {

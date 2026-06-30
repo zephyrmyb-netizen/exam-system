@@ -82,22 +82,32 @@ function pickOption(key) {
 <style scoped>
 .practice-options-grid {
   display: grid;
-  gap: 12px;
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  /* 允许父级横向滑动手势，垂直滚动仍可用 */
+  touch-action: pan-y;
 }
 
 .practice-option-card {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  padding: 16px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
   border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--surface);
   text-align: left;
   color: var(--text-main);
-  transition: all var(--ease-out);
+  /* 用 ease-spring 让点击回弹更柔和有弹性 */
+  transition: border-color var(--ease-out), background var(--ease-out),
+              box-shadow var(--ease-out), transform var(--ease-spring);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-option-card:hover:not(:disabled) {
@@ -106,8 +116,10 @@ function pickOption(key) {
   box-shadow: var(--shadow-xs);
 }
 
+/* 点击反馈：从 0.99 加强到 0.97，加弹性曲线让按压更真实 */
 .practice-option-card:active:not(:disabled) {
-  transform: scale(0.99);
+  transform: scale(0.97);
+  transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .practice-option-card.is-selected {
@@ -124,8 +136,8 @@ function pickOption(key) {
 }
 
 .practice-option-card__check {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 1.5px solid var(--line-strong);
   border-radius: 6px;
   color: var(--primary);
@@ -140,8 +152,8 @@ function pickOption(key) {
 }
 
 .practice-option-card__key {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #f1f5f9;
   color: var(--primary-strong);
@@ -156,10 +168,11 @@ function pickOption(key) {
 
 .practice-option-card__value {
   min-width: 0;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.38;
   font-weight: 700;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .practice-option-card.is-correct {
@@ -187,21 +200,29 @@ function pickOption(key) {
 .practice-boolean-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  touch-action: pan-y;
 }
 
 .practice-boolean-button {
   display: grid;
   place-items: center;
-  gap: 10px;
-  padding: 22px 16px;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 10px;
   border: 2px solid var(--line-strong);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--text-main);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
-  transition: all var(--ease-out);
+  transition: border-color var(--ease-out), background var(--ease-out),
+              color var(--ease-out), box-shadow var(--ease-out),
+              transform var(--ease-spring);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-boolean-button:hover:not(:disabled) {
@@ -252,13 +273,31 @@ function pickOption(key) {
 
 @media (max-width: 420px) {
   .practice-option-card {
-    padding: 14px;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 8px 9px;
+    gap: 7px;
+    border-radius: 10px;
+  }
+
+  .practice-option-card__check {
+    grid-column: 1;
+  }
+
+  .practice-option-card__key {
+    grid-column: 1;
+  }
+
+  .practice-option-card__value {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
 
   .practice-boolean-button {
-    padding: 18px 12px;
-    font-size: 15px;
+    min-height: 48px;
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-md);
   }
 }
 </style>

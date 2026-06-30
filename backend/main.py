@@ -5,6 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import admin, analytics, bookmarks, exams, exports, recommendations, tags
 from .config import (
     _IS_DEFAULT_INVITE,
     _IS_DEFAULT_SECRET,
@@ -19,7 +20,7 @@ from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
 
 configure_logging()
-logger = structlog.get_logger("exam_system")
+logger = structlog.get_logger("xuexibao")
 
 
 @asynccontextmanager
@@ -28,7 +29,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Exam System API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="学习宝 API", version="2.0.0", lifespan=lifespan)
 app.add_middleware(RequestIDMiddleware)
 
 # ── Startup warnings (development only — production errors are raised in config.py) ─
@@ -84,3 +85,10 @@ app.include_router(imports.router)
 app.include_router(courses.router)
 app.include_router(library.router)
 app.include_router(chat.router)
+app.include_router(exams.router)
+app.include_router(admin.router)
+app.include_router(tags.router)
+app.include_router(recommendations.router)
+app.include_router(analytics.router)
+app.include_router(exports.router)
+app.include_router(bookmarks.router)

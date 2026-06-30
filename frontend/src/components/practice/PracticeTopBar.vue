@@ -22,7 +22,7 @@ defineEmits(["back", "end"]);
 
     <button class="practice-end-button" type="button" aria-label="结束练习" @click="$emit('end')">
       <X :size="16" :stroke-width="2.5" />
-      <span class="practice-end-button__label">结束</span>
+      <span class="practice-end-button__label">结束练习</span>
     </button>
   </div>
 </template>
@@ -32,7 +32,11 @@ defineEmits(["back", "end"]);
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  overflow: hidden;
 }
 
 .practice-topbar__center {
@@ -40,6 +44,7 @@ defineEmits(["back", "end"]);
   align-items: center;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
   flex: 1;
 }
 
@@ -59,7 +64,7 @@ defineEmits(["back", "end"]);
   border-radius: var(--radius-full);
   background: #fef3c7;
   color: #92400e;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -68,8 +73,8 @@ defineEmits(["back", "end"]);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  height: 40px;
+  width: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
   background: var(--surface);

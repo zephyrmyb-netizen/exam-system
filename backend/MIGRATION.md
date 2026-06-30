@@ -23,7 +23,7 @@ backend\.venv\Scripts\python.exe backend\migrate_sqlite.py
 ```
 
 This script:
-1. **Backs up** the database to `backend/exam_system.backup-<timestamp>.db`
+1. **Backs up** the database to `backend/xuexibao.backup-<timestamp>.db`
 2. Adds missing columns to the `questions` table via `ALTER TABLE`
 3. Creates the `question_banks` table if missing
 4. Creates the `practice_records` table if missing
@@ -33,11 +33,13 @@ This script:
 
 **Run this every time you modify `models.py` fields and want to keep your existing data.**
 
+Phase 4 note: the script also creates the `tags` and `question_tags` tables when they are missing.
+
 ## Restoring From Backup
 
 ```bash
 cd "D:\File\exam system"
-copy backend\exam_system.backup-<timestamp>.db backend\exam_system.db
+copy backend\xuexibao.backup-<timestamp>.db backend\xuexibao.db
 ```
 
 ## Alternative: Full Rebuild (Wipes All Data)
@@ -46,7 +48,7 @@ If data isn't important during development:
 
 ```bash
 cd "D:\File\exam system"
-del backend\exam_system.db
+del backend\xuexibao.db
 # Then restart the backend — it auto-creates a fresh DB with all models
 # Daily use should not include --reload, so long AI imports are not interrupted
 backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
@@ -72,7 +74,7 @@ alembic init backend\alembic
 
 ### Configure `backend\alembic.ini`
 ```ini
-sqlalchemy.url = sqlite:///./backend/exam_system.db
+sqlalchemy.url = sqlite:///./backend/xuexibao.db
 ```
 
 ### Configure `backend\alembic\env.py`

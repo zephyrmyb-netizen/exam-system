@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, CheckCircle, Home, Library, Plus, Sparkles, User } from "@lucide/vue";
+import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sparkles, Sun, User } from "@lucide/vue";
 
 import { getAuthEventName, getToken } from "../api/request";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
+import GlobalSearch from "../components/search/GlobalSearch.vue";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
+import { useThemeStore } from "../stores/theme";
 
 const route = useRoute();
 const router = useRouter();
 const { fetchProfile } = useAuth();
+const theme = useThemeStore();
 
 const {
   status: aiStatus,
@@ -20,9 +23,17 @@ const {
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
+const searchRef = ref<InstanceType<typeof GlobalSearch> | null>(null);
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+const keyboardActive = ref(false);
+const inputFocusActive = ref(false);
+const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take"]);
+
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
+
+const isImmersiveRoute = computed(() => immersiveRouteNames.has(route.name as string));
+const showBottomNav = computed(() => !keyboardActive.value && !inputFocusActive.value && !isImmersiveRoute.value);
 
 watch(aiStatus, (val) => {
   if (val === "success") {
@@ -58,7 +69,7 @@ const activeNavKey = computed(() => {
   return nav || "";
 });
 
-const showHeader = computed(() => !["home", "mine"].includes(route.name as string));
+const showHeader = computed(() => !isImmersiveRoute.value && !["home", "mine", "chat"].includes(route.name as string));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
@@ -95,29 +106,77 @@ function goToImportTab() {
   router.replace({ path: "/import" });
 }
 
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    searchRef.value?.open();
+  }
+}
+
+function handleViewportResize() {
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const heightDiff = window.innerHeight - vv.height;
+    keyboardActive.value = heightDiff > 120;
+  }
+}
+
+function isEditableElement(target: unknown): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+}
+
+function handleFocusIn(event: { target: unknown }) {
+  inputFocusActive.value = isEditableElement(event.target);
+}
+
+function handleFocusOut() {
+  window.setTimeout(() => {
+    inputFocusActive.value = isEditableElement(document.activeElement);
+  }, 0);
+}
+
 onMounted(() => {
   if (getToken()) fetchProfile();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
+  window.addEventListener("keydown", handleGlobalKeydown);
+  window.addEventListener("focusin", handleFocusIn);
+  window.addEventListener("focusout", handleFocusOut);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
+  window.removeEventListener("keydown", handleGlobalKeydown);
+  window.removeEventListener("focusin", handleFocusIn);
+  window.removeEventListener("focusout", handleFocusOut);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener("resize", handleViewportResize);
+  }
   if (successTimer) clearTimeout(successTimer);
 });
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :class="{ 'app-shell--keyboard': keyboardActive, 'app-shell--immersive': isImmersiveRoute }">
     <header v-if="showHeader" class="app-header">
       <button v-if="showBackButton" class="layout-back-button" type="button" @click="goBack">
         <ArrowLeft :size="18" :stroke-width="2.5" />
         <span>返回</span>
       </button>
-      <div class="page-intro">
-        <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
-        <h1>{{ route.meta?.title || "" }}</h1>
+      <div class="header-row">
+        <div class="page-intro">
+          <p v-if="route.meta?.description" class="page-kicker">{{ route.meta.description }}</p>
+          <h1>{{ route.meta?.title || "" }}</h1>
+        </div>
+        <button class="theme-toggle" type="button" aria-label="切换主题" @click="theme.toggle()">
+          <Sun v-if="theme.mode === 'dark'" :size="18" :stroke-width="2.4" />
+          <Moon v-else :size="18" :stroke-width="2.4" />
+        </button>
       </div>
     </header>
 
@@ -146,10 +205,14 @@ onUnmounted(() => {
     </div>
 
     <main class="app-main">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
 
-    <nav class="bottom-nav" aria-label="主导航">
+    <nav v-if="showBottomNav" class="bottom-nav" aria-label="主导航">
       <button
         v-for="item in navItems"
         :key="item.key"
@@ -166,13 +229,48 @@ onUnmounted(() => {
     </nav>
 
     <ConfirmDialog />
+    <GlobalSearch ref="searchRef" />
   </div>
 </template>
 
 <style scoped>
 .app-shell {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.app-shell--keyboard,
+.app-shell--immersive {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell--immersive {
+  --practice-sticky-bottom: calc(12px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+.app-main {
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 不设 overflow-x: hidden —— 根据 CSS 规范，设置 overflow-x 为非 visible 值
+     会把 overflow-y 计算为 auto，使 .app-main 成为滚动容器，从而破坏
+     ExamTake .exam-topbar 的 position: sticky（会相对于 .app-main 而非视口吸顶）。
+     子元素已用 min-width: 0 + max-width: 100% 约束，不会横向溢出。 */
+}
+
+.app-main :deep(> *) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .app-header {
@@ -193,6 +291,25 @@ onUnmounted(() => {
   background: var(--surface);
   color: var(--text-main);
   font-weight: 800;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-main);
 }
 
 .ai-task-banner {
@@ -265,18 +382,20 @@ onUnmounted(() => {
   position: fixed;
   left: max(14px, env(safe-area-inset-left));
   right: max(14px, env(safe-area-inset-right));
-  bottom: calc(26px + env(safe-area-inset-bottom));
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 70;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
-  min-height: 78px;
+  min-height: 74px;
   padding: 8px 10px 10px;
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
   backdrop-filter: blur(18px);
+  transform: none;
+  width: auto;
 }
 
 .nav-button {
@@ -311,6 +430,6 @@ onUnmounted(() => {
 
 @media (min-width: 760px) {
   .app-shell { max-width: 640px; margin: 0 auto; }
-  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100vw - 28px)); transform: translateX(-50%); }
+  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100% - 28px)); transform: translateX(-50%); }
 }
 </style>

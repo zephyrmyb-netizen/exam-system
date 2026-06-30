@@ -23,6 +23,18 @@ class User(Base):
     bookmarks = relationship("Bookmark", cascade="all, delete-orphan")
     study_goals = relationship("StudyGoal", cascade="all, delete-orphan")
 
+    @property
+    def role(self) -> str:
+        """Public role name used by API schemas; missing roles behave as students."""
+        if self.role_ref is None:
+            return "student"
+        return self.role_ref.name
+
+    @property
+    def permissions(self) -> list[str]:
+        """Schema-friendly placeholder; populated by permission-aware endpoints later."""
+        return []
+
 
 class QuestionBank(Base):
     """A named collection of questions (a "course" or "question bank")."""
@@ -40,17 +52,7 @@ class QuestionBank(Base):
     owner = relationship("User", back_populates="question_banks")
     questions = relationship("Question", back_populates="course", cascade="all, delete-orphan")
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "owner_id": self.owner_id,
-            "name": self.name,
-            "description": self.description or "",
-            "subject": self.subject or "",
-            "visibility": self.visibility,
-            "question_count": len(self.questions) if self.questions else 0,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
+
 
 
 class Question(Base):
@@ -85,24 +87,6 @@ class Question(Base):
 
     def set_options_dict(self, options_dict):
         self.options = json.dumps(options_dict, ensure_ascii=False) if options_dict else None
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "owner_id": self.owner_id,
-            "course_id": self.course_id,
-            "visibility": self.visibility,
-            "source": self.source,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "subject": self.subject,
-            "chapter": self.chapter,
-            "type": self.type,
-            "question": self.question,
-            "options": self.get_options_dict(),
-            "answer": self.answer,
-            "analysis": self.analysis or "",
-            "difficulty": self.difficulty or "normal",
-        }
 
 
 class WrongRecord(Base):

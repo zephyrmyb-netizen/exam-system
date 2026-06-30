@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from "vue";
-import { typeLabel, formatOptions } from "../../utils/question";
+import { typeLabel } from "../../utils/question";
 import {
   ArrowLeft, CheckCircle, AlertCircle, Trash2, Plus,
-  Edit3, BookOpen, Layers, Lock, Globe, Sparkles,
+  Edit3, Sparkles,
 } from "@lucide/vue";
 import QuestionEditor from "../question/QuestionEditor.vue";
 import { useConfirmDialog } from "../../stores/confirmDialog";
@@ -229,7 +229,15 @@ function handleRetry() {
     </div>
 
     <!-- ── Question list ── -->
-    <div class="q-list">
+    <div v-if="questions.length === 0" class="empty-preview">
+      <AlertCircle :size="18" :stroke-width="2.5" />
+      <div>
+        <strong>未识别到可预览的题目</strong>
+        <p>可以重新解析、返回重新选择文件，或手动新增题目。</p>
+      </div>
+    </div>
+
+    <div v-else class="q-list">
       <div
         v-for="(q, idx) in questions"
         :key="q._tempId"
@@ -279,6 +287,10 @@ function handleRetry() {
       <button class="ghost-button" type="button" @click="handleRetry">
         <Sparkles :size="16" :stroke-width="2.5" style="margin-right:4px" />
         重新解析
+      </button>
+      <button v-if="questions.length === 0" class="ghost-button" type="button" @click="handleBack">
+        <ArrowLeft :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        返回重新选择文件
       </button>
       <button
         class="primary-button"
@@ -336,7 +348,16 @@ function handleRetry() {
   padding: var(--space-3); border-radius: var(--radius-md);
   background: var(--amber-soft); border: 1px solid #fde68a;
 }
-.warn-line { margin: 0; font-size: var(--text-xs); color: #92400e; font-weight: 600; line-height: 1.5; }
+.warn-line {
+  margin: 0;
+  color: #92400e;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
 .warn-line + .warn-line { margin-top: 4px; }
 
 /* ── Summary ── */
@@ -374,6 +395,28 @@ function handleRetry() {
 
 /* ── Question list ── */
 .q-list { display: grid; gap: 6px; }
+.empty-preview {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+
+.empty-preview strong {
+  display: block;
+  color: var(--text-main);
+  font-size: var(--text-sm);
+}
+
+.empty-preview p {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
 .q-item {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -392,7 +435,7 @@ function handleRetry() {
 .q-type-tag {
   padding: 2px 6px; border-radius: 4px;
   background: var(--primary-soft); color: var(--primary-strong);
-  font-size: 10px; font-weight: 700; flex-shrink: 0;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
 .q-preview { font-size: var(--text-xs); color: var(--text-secondary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -430,10 +473,11 @@ function handleRetry() {
 .msg-err { background: var(--rose-soft); color: var(--rose); }
 
 /* ── Actions ── */
-.action-row { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2); margin-top: var(--space-1); }
+.action-row { display: flex; gap: var(--space-2); margin-top: var(--space-1); }
 .ghost-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font-size: var(--text-sm); font-weight: 700; border-radius: var(--radius-md); }
 .ghost-button { padding: 0 14px; color: var(--primary-strong); background: var(--primary-soft); border: 1px solid var(--primary-border); cursor: pointer; }
 .primary-button {
+  flex: 1;
   padding: 0 18px; border: none; color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   box-shadow: var(--shadow-primary); cursor: pointer;
@@ -443,5 +487,9 @@ function handleRetry() {
 @media (max-width: 420px) {
   .course-row { grid-template-columns: 1fr; }
   .course-or { text-align: center; }
+  .action-row { flex-direction: column; }
+  .q-item { align-items: flex-start; }
+  .q-item-head { flex-wrap: wrap; }
+  .q-preview { width: 100%; white-space: normal; word-break: break-word; }
 }
 </style>

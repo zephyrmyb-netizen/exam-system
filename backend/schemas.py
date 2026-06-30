@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .utils import VALID_QUESTION_TYPES, normalize_answer
 
@@ -49,15 +50,17 @@ class QuestionValidatorMixin:
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str
-    invite_code: str
+    username: str = Field(..., min_length=3, max_length=32, pattern=r"^[A-Za-z0-9_]+$",
+                         description="用户名 3-32 位，仅支持字母、数字、下划线")
+    password: str = Field(..., min_length=6, max_length=64, description="密码长度 6-64 位")
+    invite_code: str = Field(..., min_length=1, max_length=100, description="注册邀请码")
 
 
 class UserOut(BaseModel):
     id: int
     username: str
-    role: str = "user"
+    role: str = "student"
+    permissions: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,10 +80,10 @@ class TokenResponse(BaseModel):
 
 
 class CourseCreate(BaseModel):
-    name: str
-    description: str = ""
-    subject: str = ""
-    visibility: str = "private"
+    name: str = Field(..., min_length=1, max_length=80, description="课程名 1-80 字符")
+    description: str = Field("", max_length=500)
+    subject: str = Field("", max_length=40)
+    visibility: str = Field("private", pattern=r"^(private|public)$")
 
 
 class CourseOut(BaseModel):
@@ -97,6 +100,48 @@ class CourseOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _compute_course_fields(cls, data: Any) -> Any:
+        """Derive question_count from the ORM questions relationship.
+
+        When data is an ORM object (from_attributes=True), build an enriched
+        dict so that question_count can be computed from the loaded
+        questions relationship.
+        """
+        if hasattr(data, "questions") and not isinstance(data, dict):
+            try:
+                questions = data.questions
+                question_count = len(questions) if isinstance(questions, list) else 0
+            except Exception:
+                question_count = 0
+            return {
+                "id": data.id,
+                "owner_id": data.owner_id,
+                "name": data.name,
+                "description": data.description,
+                "subject": data.subject or "",
+                "visibility": data.visibility,
+                "created_at": data.created_at,
+                "question_count": question_count,
+            }
+        if isinstance(data, dict) and "question_count" not in data:
+            # Called with a pre-built dict (e.g. after to_dict-like enrichment)
+            data.setdefault("question_count", 0)
+        return data
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _none_to_empty_description(cls, v: Any) -> str:
+        return v if v is not None else ""
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
 
 class CourseUpdate(BaseModel):
     """Fields allowed when editing a course."""
@@ -110,14 +155,14 @@ class CourseUpdate(BaseModel):
 
 
 class QuestionCreate(QuestionValidatorMixin, BaseModel):
-    subject: str = "默认科目"
-    chapter: str = "默认章节"
+    subject: str = Field("默认科目", max_length=40)
+    chapter: str = Field("默认章节", max_length=40)
     type: str  # single_choice, multiple_choice, true_false, fill_blank, short_answer
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000, description="题干 1-2000 字符")
     options: dict[str, Any] | None = None
-    answer: str
-    analysis: str = ""
-    difficulty: str = "normal"
+    answer: str = Field(..., min_length=1, max_length=2000, description="答案 1-2000 字符")
+    analysis: str = Field("", max_length=2000)
+    difficulty: str = Field("normal", pattern=r"^(easy|normal|hard)$")
     course_id: int | None = None  # optional: add to a course
 
 
@@ -125,14 +170,14 @@ class QuestionManualCreate(QuestionValidatorMixin, BaseModel):
     """Manual single-question creation — course_id is required."""
 
     course_id: int
-    subject: str = "默认科目"
-    chapter: str = "默认章节"
+    subject: str = Field("默认科目", max_length=40)
+    chapter: str = Field("默认章节", max_length=40)
     type: str  # single_choice, multiple_choice, true_false, fill_blank, short_answer
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000, description="题干 1-2000 字符")
     options: dict[str, Any] | None = None
-    answer: str
-    analysis: str = ""
-    difficulty: str = "normal"
+    answer: str = Field(..., min_length=1, max_length=2000, description="答案 1-2000 字符")
+    analysis: str = Field("", max_length=2000)
+    difficulty: str = Field("normal", pattern=r"^(easy|normal|hard)$")
 
 
 class QuestionUpdate(BaseModel):
@@ -187,6 +232,31 @@ class QuestionOut(BaseModel):
     difficulty: str
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def _parse_options_json(cls, v: Any) -> dict[str, Any] | None:
+        """Deserialize JSON text stored in the ORM Text column."""
+        if isinstance(v, str):
+            import json
+
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return v
+
+    @field_validator("analysis", mode="before")
+    @classmethod
+    def _none_to_empty_analysis(cls, v: Any) -> str:
+        return v if v is not None else ""
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class BatchImportResponse(BaseModel):
@@ -325,6 +395,254 @@ class PracticeHistoryOut(BaseModel):
     total: int = 0
     page: int = 1
     page_size: int = 20
+
+
+# -- Bookmarks ---------------------------------------------------------------
+
+
+class BookmarkCreate(BaseModel):
+    question_id: int
+    folder_name: str = Field("Default", min_length=1, max_length=40)
+    note: str = Field("", max_length=500)
+
+
+class BookmarkOut(BaseModel):
+    id: int
+    question_id: int
+    folder_name: str = ""
+    note: str = ""
+    created_at: str | None = None
+    question: QuestionOut | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _dt_to_iso_created_at(cls, v: Any) -> str | None:
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
+
+class BookmarkListOut(BaseModel):
+    items: list[BookmarkOut] = []
+    total: int = 0
+    folders: list[str] = []
+    page: int = 1
+    page_size: int = 20
+
+
+# -- Knowledge Tags ----------------------------------------------------------
+
+
+class TagCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=30, description="标签名 1-30 字符")
+    color: str = Field("", max_length=20)
+    parent_id: int | None = None
+
+
+class TagOut(BaseModel):
+    id: int
+    name: str
+    color: str = ""
+    parent_id: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TagListOut(BaseModel):
+    items: list[TagOut] = []
+    total: int = 0
+    page: int = 0
+    page_size: int = 0
+
+
+class QuestionTagAssign(BaseModel):
+    tag_names: list[str] = []
+
+
+class TagAccuracyOut(BaseModel):
+    tag_id: int
+    tag_name: str
+    total_count: int = 0
+    correct_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+# -- Recommendation & Analytics ---------------------------------------------
+
+
+class WeakTagOut(BaseModel):
+    tag_id: int
+    tag_name: str
+    total_count: int = 0
+    correct_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class TodayRecommendationOut(BaseModel):
+    weak_tags: list[WeakTagOut] = []
+    weak_types: list["WeakTypeOut"] = []
+    due_count: int = 0
+    due_question_ids: list[int] = []
+    recommended_modes: list[str] = []
+
+
+class DailyActivityOut(BaseModel):
+    date: str
+    count: int = 0
+
+
+class TypeDistributionOut(BaseModel):
+    question_type: str
+    total_count: int = 0
+    correct_count: int = 0
+    wrong_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class StreakOut(BaseModel):
+    current_streak: int = 0
+    longest_streak: int = 0
+    last_practiced_date: str | None = None
+
+
+class CourseAnalyticsOut(BaseModel):
+    course_id: int
+    course_name: str
+    question_count: int = 0
+    practice_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class ScoreBucketOut(BaseModel):
+    label: str
+    count: int = 0
+
+
+# -- Exam --------------------------------------------------------------------
+
+
+class ExamCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100, description="考试标题 1-100 字符")
+    course_id: int
+    description: str = Field("", max_length=500)
+    time_limit: int = Field(60, ge=1, le=300, description="考试时长 1-300 分钟")
+    total_score: int = Field(100, ge=1, le=1000, description="总分 1-1000")
+    is_shuffle: bool = False
+    is_blind: bool = True
+    question_ids: list[int] = []
+
+
+class ExamOut(BaseModel):
+    id: int
+    title: str
+    description: str = ""
+    course_id: int
+    creator_id: int
+    time_limit: int = 60
+    total_score: int = 100
+    is_shuffle: bool = False
+    is_blind: bool = True
+    status: str = "draft"
+    question_count: int = 0
+    created_at: str | None = None
+
+
+class ExamQuestionOut(BaseModel):
+    id: int
+    question_id: int
+    question_type: str
+    question: str
+    options: dict[str, str] | None = None
+    score: int = 1
+    order_index: int = 0
+
+
+class ExamDetailOut(ExamOut):
+    questions: list[ExamQuestionOut] = []
+
+
+class ExamAttemptOut(BaseModel):
+    id: int
+    exam_id: int
+    user_id: int
+    started_at: str | None = None
+    submitted_at: str | None = None
+    score: int | None = None
+
+
+class ExamSubmissionCreate(BaseModel):
+    answers: dict[str, str] = {}
+
+
+class ExamResultOut(BaseModel):
+    exam_id: int
+    submission_id: int
+    score: int = 0
+    total_score: int = 0
+    correct_count: int = 0
+    wrong_count: int = 0
+    accuracy_rate: float = 0.0
+    submitted_at: str | None = None
+
+
+class ExamLeaderboardEntry(BaseModel):
+    rank: int
+    user_id: int
+    username: str
+    score: int
+    total_score: int
+    submitted_at: str | None = None
+
+
+class ExamLeaderboardOut(BaseModel):
+    exam_id: int
+    entries: list[ExamLeaderboardEntry] = []
+    total: int = 0
+
+
+class ExamListOut(BaseModel):
+    items: list[ExamOut] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+
+
+# -- Admin -------------------------------------------------------------------
+
+
+class AdminUserOut(BaseModel):
+    id: int
+    username: str
+    role: str = "student"
+
+
+class AdminUserListOut(BaseModel):
+    items: list[AdminUserOut] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+
+
+class AdminRoleUpdate(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def _check_role(cls, v: str) -> str:
+        v = v.strip()
+        if v not in {"student", "teacher", "admin"}:
+            raise ValueError("角色仅支持 student / teacher / admin")
+        return v
+
+
+class AdminStatsOut(BaseModel):
+    user_count: int = 0
+    course_count: int = 0
+    question_count: int = 0
+    exam_count: int = 0
+    submission_count: int = 0
 
 
 # -- Review & Insights ------------------------------------------------------

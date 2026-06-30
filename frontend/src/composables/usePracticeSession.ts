@@ -23,6 +23,9 @@ interface SessionStats {
   startedAt: Date | null;
 }
 
+const CORRECT_AUTO_NEXT_DELAY_MS = 650;
+const MAX_DUPLICATE_FETCH_ATTEMPTS = 8;
+
 export interface UsePracticeSessionProps {
   courseId?: number | null;
   mode?: string;
@@ -46,6 +49,7 @@ export interface UsePracticeSessionReturn {
   result: Ref<SubmitResponse | null>;
   selectedAnswer: Ref<string>;
   selectedAnswers: Ref<string[]>;
+  sessionComplete: Ref<boolean>;
   sessionStats: Ref<SessionStats>;
   setSingleAnswer: (value: string) => void;
   startSession: () => void;
@@ -68,6 +72,24 @@ function createSessionStats(): SessionStats {
   };
 }
 
+function isQuestionLike(value: unknown): value is Question {
+  return typeof value === "object" && value !== null && typeof (value as { id?: unknown }).id === "number";
+}
+
+function extractDueReviewQuestion(value: unknown): Question | null {
+  if (isQuestionLike(value)) return value;
+
+  if (typeof value !== "object" || value === null) return null;
+  const payload = value as {
+    question?: unknown;
+    items?: Array<{ question?: unknown }>;
+  };
+
+  if (isQuestionLike(payload.question)) return payload.question;
+  const item = payload.items?.find((entry) => isQuestionLike(entry.question));
+  return isQuestionLike(item?.question) ? item.question : null;
+}
+
 export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePracticeSessionReturn {
   const question = ref<Question | null>(null);
   const selectedAnswer = ref<string>("");
@@ -78,7 +100,17 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   const submitting = ref<boolean>(false);
   const errorMessage = ref<string>("");
   const validationMessage = ref<string>("");
+  const sessionComplete = ref<boolean>(false);
   const sessionStats = ref<SessionStats>(createSessionStats());
+  const answeredQuestionIds = new Set<number>();
+  let correctAutoNextTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearCorrectAutoNextTimer(): void {
+    if (correctAutoNextTimer) {
+      clearTimeout(correctAutoNextTimer);
+      correctAutoNextTimer = null;
+    }
+  }
 
   const accuracy = computed<number | null>(() => {
     const answered = sessionStats.value.answeredCount;
@@ -141,6 +173,8 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   async function fetchRandomQuestion(): Promise<void> {
+    if (loading.value) return;
+    clearCorrectAutoNextTimer();
     loading.value = true;
     errorMessage.value = "";
     validationMessage.value = "";
@@ -149,41 +183,69 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     try {
       const params: Record<string, string | number> = {};
       if (props.courseId) params.course_id = props.courseId;
+      if (answeredQuestionIds.size > 0) {
+        params.exclude_ids = Array.from(answeredQuestionIds).join(",");
+      }
 
-      let data: Question;
-      if (props.mode === "wrong_review") {
-        data = await getReviewWrongQuestion(params);
-      } else if (props.mode === "due_review") {
-        data = await getReviewDueQuestion(params);
-      } else {
-        if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
-        if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
-        data = await getRandomPracticeQuestion(params);
+      if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
+      if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
+
+      let data: Question | null = null;
+      for (let attempt = 0; attempt < MAX_DUPLICATE_FETCH_ATTEMPTS; attempt += 1) {
+        if (props.mode === "wrong_review") {
+          data = await getReviewWrongQuestion(params);
+        } else if (props.mode === "due_review") {
+          data = extractDueReviewQuestion(await getReviewDueQuestion(params));
+        } else {
+          data = await getRandomPracticeQuestion(params);
+        }
+
+        if (data && !answeredQuestionIds.has(data.id)) break;
+        data = null;
+      }
+
+      if (!data) {
+        sessionComplete.value = answeredQuestionIds.size > 0;
+        question.value = null;
+        return;
       }
 
       question.value = data;
+      sessionComplete.value = false;
     } catch (error: unknown) {
       question.value = null;
-      errorMessage.value = getErrorMessage(error, "获取题目失败");
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404 && answeredQuestionIds.size > 0) {
+        sessionComplete.value = true;
+        errorMessage.value = "";
+      } else {
+        errorMessage.value = getErrorMessage(error, "获取题目失败");
+      }
     } finally {
       loading.value = false;
     }
   }
 
   function setSingleAnswer(value: string): void {
-    if (result.value) return;
+    if (result.value || submitting.value) return;
     selectedAnswer.value = value;
     validationMessage.value = "";
+    // 选择题点击即提交：选定单选/判断答案后立即判定
+    void submitAnswer();
   }
 
   function toggleMultipleAnswer(key: string): void {
-    if (result.value) return;
+    if (result.value || submitting.value) return;
     if (selectedAnswers.value.includes(key)) {
       selectedAnswers.value = selectedAnswers.value.filter((item) => item !== key);
     } else {
       selectedAnswers.value = [...selectedAnswers.value, key];
     }
     validationMessage.value = "";
+    // 多选题点击即提交：用户每点一个选项都用当前已选集合立即判定
+    if (selectedAnswers.value.length > 0) {
+      void submitAnswer();
+    }
   }
 
   function updateTextAnswer(value: string): void {
@@ -192,7 +254,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   async function submitAnswer(): Promise<void> {
-    if (!question.value) return;
+    if (!question.value || submitting.value || result.value) return;
 
     if (question.value.type === "multiple_choice" && selectedAnswers.value.length === 0) {
       validationMessage.value = "请至少选择一个选项。";
@@ -218,9 +280,13 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
 
       result.value = data;
       sessionStats.value.answeredCount += 1;
+      answeredQuestionIds.add(question.value.id);
       if (data.is_correct) {
         sessionStats.value.correctCount += 1;
         sessionStats.value.streak += 1;
+        correctAutoNextTimer = setTimeout(() => {
+          fetchRandomQuestion();
+        }, CORRECT_AUTO_NEXT_DELAY_MS);
       } else {
         sessionStats.value.wrongCount += 1;
         sessionStats.value.streak = 0;
@@ -242,6 +308,9 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   function startSession(): void {
+    clearCorrectAutoNextTimer();
+    answeredQuestionIds.clear();
+    sessionComplete.value = false;
     sessionStats.value = {
       ...createSessionStats(),
       startedAt: new Date(),
@@ -266,6 +335,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     result,
     selectedAnswer,
     selectedAnswers,
+    sessionComplete,
     sessionStats,
     setSingleAnswer,
     startSession,

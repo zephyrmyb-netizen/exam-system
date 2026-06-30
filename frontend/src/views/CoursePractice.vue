@@ -149,10 +149,10 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
     <!-- ── Immersive Practice ── -->
     <template v-else>
       <Practice
-        :courseId="courseId"
-        :courseName="course?.name || ''"
+        :course-id="courseId"
+        :course-name="course?.name || ''"
         :mode="selectedMode"
-        modeParam=""
+        mode-param=""
         @end-practice="endPractice"
       />
     </template>
@@ -259,7 +259,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   padding: var(--space-3);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, #fff, #f8fbff);
+  background: linear-gradient(180deg, var(--surface), var(--surface-soft));
 }
 
 .settings-summary-item {

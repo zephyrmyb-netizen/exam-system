@@ -9,16 +9,32 @@ from ..routers.courses import _get_accessible_course
 router = APIRouter(prefix="/practice", tags=["practice"])
 
 
+def _parse_exclude_ids(raw: str) -> list[int]:
+    result: list[int] = []
+    for item in (raw or "").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        try:
+            value = int(item)
+        except ValueError:
+            continue
+        if value > 0:
+            result.append(value)
+    return result
+
+
 @router.get("/random")
 def random_question(
     type: str = "",
     chapter: str = "",
-    course_id: int = Query(0, ge=0, description="课程ID，0表示从全部可见题目中随机抽题"),
+    exclude_ids: str = Query("", description="本轮练习中需要排除的题目 ID，逗号分隔"),
+    course_id: int = Query(0, ge=0, description="课程 ID，0 表示从全部可见题目中随机抽题"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
+    excluded = _parse_exclude_ids(exclude_ids)
     if course_id > 0:
-        # Validate the user has access to this course
         _get_accessible_course(db, course_id, current_user.id)
         question = crud.get_random_question_in_course(
             db,
@@ -26,14 +42,21 @@ def random_question(
             user_id=current_user.id,
             q_type=type,
             chapter=chapter,
+            excluded_ids=excluded,
         )
         if not question:
-            raise HTTPException(status_code=404, detail="该课程下暂无可用题目")
+            raise HTTPException(status_code=404, detail="本轮题目已完成或该课程暂无可用题目")
     else:
-        question = crud.get_random_question(db, user_id=current_user.id, q_type=type, chapter=chapter)
+        question = crud.get_random_question(
+            db,
+            user_id=current_user.id,
+            q_type=type,
+            chapter=chapter,
+            excluded_ids=excluded,
+        )
         if not question:
-            raise HTTPException(status_code=404, detail="题库为空，请先导入题目")
-    return question.to_dict()
+            raise HTTPException(status_code=404, detail="本轮题目已完成或题库为空")
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
 @router.post("/submit", response_model=schemas.SubmitResponse)
@@ -42,15 +65,12 @@ def submit_answer(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    # 1. 校验题目可见性
     question = crud.get_visible_question_by_id(db, body.question_id, current_user.id)
     if not question:
         raise HTTPException(status_code=404, detail="题目不存在")
 
-    # 2. 判分
     is_correct = crud.check_answer(question, body.user_answer)
 
-    # 3. 维护错题本
     if is_correct:
         crud.clear_wrong_record_if_correct(db, current_user.id, question.id)
         wrongbook_recorded = False
@@ -58,7 +78,6 @@ def submit_answer(
         record = crud.upsert_wrong_record(db, current_user.id, question.id, body.user_answer)
         wrongbook_recorded = record is not None
 
-    # 4. 写入 PracticeRecord（答对、答错都记）
     crud.create_practice_record(
         db,
         user_id=current_user.id,
@@ -70,7 +89,6 @@ def submit_answer(
         correct_answer=question.answer,
     )
 
-    # 5. 更新间隔复习状态
     crud.upsert_user_question_review(
         db,
         user_id=current_user.id,
@@ -79,7 +97,6 @@ def submit_answer(
         is_correct=is_correct,
     )
 
-    # 6. 提交事务
     db.commit()
 
     return schemas.SubmitResponse(
@@ -95,10 +112,7 @@ def get_stats(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Return practice statistics for the current user only.
-
-    today_count is based on UTC date boundary (records with answered_at >= 00:00 UTC today).
-    """
+    """Return practice statistics for the current user only."""
     return crud.get_practice_stats(db, user_id=current_user.id)
 
 
@@ -109,10 +123,6 @@ def get_history(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Return paginated practice history for the current user, newest first.
-
-    Each record includes question text for context.
-    """
     records, total = crud.get_practice_history(
         db,
         user_id=current_user.id,
@@ -124,7 +134,6 @@ def get_history(
     for r in records:
         question_text = ""
         if r.question is not None:
-            # 题干截断到 80 字符作为摘要
             qt = r.question.question or ""
             question_text = qt[:80] + ("..." if len(qt) > 80 else "")
 
@@ -150,18 +159,14 @@ def get_history(
     )
 
 
-# ── Review: Wrong-question review ─────────────────────────────────────────
 @router.get("/review/wrong")
 def review_wrong_question(
-    course_id: int = Query(0, ge=0, description="课程ID筛选，0表示全部课程"),
+    course_id: int = Query(0, ge=0, description="课程 ID，0 表示全部课程"),
     type: str = "",
+    exclude_ids: str = Query("", description="本轮练习中需要排除的题目 ID，逗号分隔"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Pull a question from the user's wrong records, prioritizing high wrong_count.
-
-    If course_id > 0, validates course access first.
-    """
     if course_id > 0:
         _get_accessible_course(db, course_id, current_user.id)
 
@@ -170,39 +175,30 @@ def review_wrong_question(
         user_id=current_user.id,
         course_id=course_id if course_id > 0 else None,
         q_type=type,
+        excluded_ids=_parse_exclude_ids(exclude_ids),
     )
     if not question:
-        raise HTTPException(status_code=404, detail="暂无错题，继续加油！")
-    return question.to_dict()
+        raise HTTPException(status_code=404, detail="本轮错题已完成或暂无错题")
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
-# ── Review: Today's review suggestion ──────────────────────────────────────
 @router.get("/review/today", response_model=schemas.TodayReviewOut)
 def review_today(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Return today's review suggestion for the current user."""
     return crud.get_today_review_summary(db, user_id=current_user.id)
 
 
-# ── Review: Due questions (spaced repetition) ─────────────────────────────
 @router.get("/review/due")
 def review_due(
-    course_id: int = Query(0, ge=0, description="课程ID筛选，0表示全部课程"),
-    limit: int = Query(20, ge=1, le=100, description="最多返回题数"),
+    course_id: int = Query(0, ge=0, description="课程 ID，0 表示全部课程"),
+    limit: int = Query(20, ge=1, le=100, description="最多返回题目数量"),
+    exclude_ids: str = Query("", description="本轮练习中需要排除的题目 ID，逗号分隔"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Return due review questions for the current user.
-
-    Due questions are those with next_review_at <= now in the
-    user_question_reviews table, ordered by earliest deadline and lowest
-    review level first.
-    """
     if course_id > 0:
-        from ..routers.courses import _get_accessible_course
-
         _get_accessible_course(db, course_id, current_user.id)
 
     reviews = crud.get_due_reviews(
@@ -210,6 +206,7 @@ def review_due(
         user_id=current_user.id,
         course_id=course_id if course_id > 0 else None,
         limit=limit,
+        excluded_ids=_parse_exclude_ids(exclude_ids),
     )
 
     items = []
@@ -221,25 +218,18 @@ def review_due(
             "last_reviewed_at": rev.last_reviewed_at.isoformat() if rev.last_reviewed_at else None,
             "consecutive_correct": rev.consecutive_correct,
             "review_mode": rev.review_mode or "",
+            "question": schemas.QuestionOut.model_validate(rev.question).model_dump()
+            if rev.question and rev.question_id
+            else None,
         }
-        if rev.question and rev.question_id:
-            item["question"] = rev.question.to_dict()
-        else:
-            item["question"] = None
         items.append(item)
 
     return {"items": items, "total": len(items)}
 
 
-# ── Insights: Weak types ──────────────────────────────────────────────────
 @router.get("/insights/weak-types", response_model=list[schemas.WeakTypeOut])
 def weak_types(
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    """Return weak question types based on recent practice records.
-
-    Uses the last 50 practice records to identify question types
-    with above-average error rate.
-    """
     return crud.get_weak_types(db, user_id=current_user.id)

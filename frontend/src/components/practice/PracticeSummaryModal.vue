@@ -7,6 +7,7 @@ defineProps({
   correctCount: { type: Number, default: 0 },
   wrongCount: { type: Number, default: 0 },
   accuracy: { type: Number, default: null },
+  canContinue: { type: Boolean, default: true },
 });
 
 defineEmits(["end", "continue"]);
@@ -27,7 +28,7 @@ defineEmits(["end", "continue"]);
           <RefreshCw v-else :size="36" />
         </div>
 
-        <p class="practice-summary__title">结束练习</p>
+        <p class="practice-summary__title">本次练习结束</p>
         <p class="practice-summary__desc">
           {{
             answeredCount > 0
@@ -68,7 +69,7 @@ defineEmits(["end", "continue"]);
             <ArrowRight :size="17" :stroke-width="2.5" />
             <span>结束练习</span>
           </button>
-          <button class="practice-secondary-button" type="button" @click="$emit('continue')">
+          <button v-if="canContinue" class="practice-secondary-button" type="button" @click="$emit('continue')">
             <Play :size="17" :stroke-width="2.5" />
             <span>继续练习</span>
           </button>
