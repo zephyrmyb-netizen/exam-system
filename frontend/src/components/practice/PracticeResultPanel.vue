@@ -67,6 +67,19 @@ const swipeHint = computed(() =>
   padding: 18px;
   border-radius: var(--radius-xl);
   border: 1px solid transparent;
+  /* 内部子项错开入场，营造流畅的层次感 */
+  animation: result-item-stagger 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes result-item-stagger {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .practice-result--correct {
