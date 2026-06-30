@@ -186,6 +186,7 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
 button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 #app {
+  width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -1447,7 +1448,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
-  background: #f8fafd;
+  background: var(--surface-soft);
   box-shadow: var(--shadow-card);
 }
 
@@ -1525,17 +1526,20 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .chat-bubble {
   max-width: 86%;
+  min-width: 0;
   padding: var(--space-3) var(--space-3) 6px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow-xs);
+  overflow-wrap: anywhere;
 }
 
 .chat-bubble p {
   margin: 0;
   line-height: 1.6;
   word-break: break-word;
+  overflow-wrap: anywhere;
   white-space: pre-line;
   font-size: var(--text-sm);
 }
@@ -2004,6 +2008,12 @@ html.dark .wrongbook-status,
 html.dark .chat-page,
 html.dark .chat-topbar,
 html.dark .chat-bubble,
+html.dark .practice-stem,
+html.dark .practice-card-shell,
+html.dark .practice-result__item,
+html.dark .practice-result__analysis,
+html.dark .practice-result__wrongbook,
+html.dark .practice-swipe-hint,
 html.dark .home-entry,
 html.dark .stat-card,
 html.dark .shortcut-card--nested {
@@ -2026,6 +2036,41 @@ html.dark .page-kicker,
 html.dark .hero-eyebrow,
 html.dark .chat-kicker {
   color: #60a5fa;
+}
+
+html.dark .practice-result--correct {
+  background: rgba(5, 150, 105, 0.18);
+  border-color: var(--emerald-border);
+}
+
+html.dark .practice-result--wrong {
+  background: rgba(225, 29, 72, 0.17);
+  border-color: var(--rose-border);
+}
+
+html.dark .practice-result--correct .practice-result__icon,
+html.dark .practice-result--correct .practice-result__title,
+html.dark .practice-result__value--ok {
+  color: #34d399;
+}
+
+html.dark .practice-result--wrong .practice-result__icon,
+html.dark .practice-result--wrong .practice-result__title,
+html.dark .practice-result__value--bad {
+  color: #fb7185;
+}
+
+html.dark .practice-stem__tag {
+  background: rgba(15, 23, 42, 0.78);
+  border-color: var(--line-soft);
+  color: var(--text-secondary);
+}
+
+html.dark .practice-stem__hint,
+html.dark .practice-summary__icon--keep,
+html.dark .msg-warn {
+  background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
 }
 
 /* Tailwind utility bridge for pages that still use hard-coded light classes. */

@@ -79,7 +79,7 @@ async def upload_file(
             extract_warnings = extract_warnings + image_warnings
         extract_ms = imports_service.elapsed_ms(extract_start)
         if not text.strip():
-            detail = "；".join(extract_warnings[:3]) if extract_warnings else "文档中未提取到任何文本内容"
+            detail = imports_service.empty_extract_detail(saved.path, extract_warnings)
             raise HTTPException(status_code=400, detail=detail)
         return schemas.FileExtractResponse(
             text=text,

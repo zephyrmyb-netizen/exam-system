@@ -63,9 +63,9 @@ const swipeHint = computed(() =>
 <style scoped>
 .practice-result {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: var(--radius-xl);
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid transparent;
   /* 内部子项错开入场，营造流畅的层次感 */
   animation: result-item-stagger 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -115,20 +115,20 @@ const swipeHint = computed(() =>
 }
 
 .practice-result__title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
 }
 
 .practice-result__body {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .practice-result__item,
 .practice-result__analysis {
   display: grid;
-  gap: 6px;
-  padding: 12px 14px;
+  gap: 4px;
+  padding: 8px 10px;
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.65);
 }
@@ -145,8 +145,8 @@ const swipeHint = computed(() =>
 .practice-result__item span:last-child,
 .practice-result__analysis p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.55;
   font-weight: 700;
   word-break: break-word;
 }
@@ -161,11 +161,11 @@ const swipeHint = computed(() =>
   align-items: center;
   gap: 6px;
   justify-self: start;
-  padding: 7px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.65);
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -179,11 +179,11 @@ const swipeHint = computed(() =>
   align-items: center;
   gap: 6px;
   justify-self: start;
-  padding: 8px 14px;
+  padding: 7px 11px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.7);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   border: 1px dashed rgba(148, 163, 184, 0.7);
 }
@@ -205,7 +205,8 @@ const swipeHint = computed(() =>
 
 @media (max-width: 420px) {
   .practice-result {
-    padding: 16px;
+    padding: 10px;
+    gap: 8px;
   }
 }
 </style>

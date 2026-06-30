@@ -27,12 +27,13 @@ const searchRef = ref<InstanceType<typeof GlobalSearch> | null>(null);
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 const keyboardActive = ref(false);
+const inputFocusActive = ref(false);
 const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take"]);
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
 
 const isImmersiveRoute = computed(() => immersiveRouteNames.has(route.name as string));
-const showBottomNav = computed(() => !keyboardActive.value && !isImmersiveRoute.value);
+const showBottomNav = computed(() => !keyboardActive.value && !inputFocusActive.value && !isImmersiveRoute.value);
 
 watch(aiStatus, (val) => {
   if (val === "success") {
@@ -120,11 +121,28 @@ function handleViewportResize() {
   }
 }
 
+function isEditableElement(target: unknown): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+}
+
+function handleFocusIn(event: { target: unknown }) {
+  inputFocusActive.value = isEditableElement(event.target);
+}
+
+function handleFocusOut() {
+  window.setTimeout(() => {
+    inputFocusActive.value = isEditableElement(document.activeElement);
+  }, 0);
+}
+
 onMounted(() => {
   if (getToken()) fetchProfile();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
   window.addEventListener("keydown", handleGlobalKeydown);
+  window.addEventListener("focusin", handleFocusIn);
+  window.addEventListener("focusout", handleFocusOut);
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleViewportResize);
   }
@@ -134,6 +152,8 @@ onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
   window.removeEventListener("keydown", handleGlobalKeydown);
+  window.removeEventListener("focusin", handleFocusIn);
+  window.removeEventListener("focusout", handleFocusOut);
   if (window.visualViewport) {
     window.visualViewport.removeEventListener("resize", handleViewportResize);
   }
@@ -215,6 +235,8 @@ onUnmounted(() => {
 
 <style scoped>
 .app-shell {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;

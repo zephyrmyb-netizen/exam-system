@@ -17,6 +17,21 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.3.1-mobile-practice-polish",
+    version: "v2.3.1",
+    date: "2026-06-30",
+    type: "优化",
+    title: "移动端练习体验优化",
+    items: [
+      "优化手机端刷题页比例和选项卡片密度。",
+      "修复底部导航和安全区域遮挡问题。",
+      "优化答对自动下一题与滑动下一题体验。",
+      "修复 AI 对话 Markdown 星号直接显示的问题。",
+      "改进深色/浅色主题切换效果。",
+      "优化导入文件选择兼容性。",
+    ],
+  },
+  {
     id: "v2.3.0-practice-swipe-to-next",
     version: "v2.3.0",
     date: "2026-06-30",

@@ -225,7 +225,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 - 图片：`.png`、`.jpg`、`.jpeg`、`.webp`
 - 旧版 `.ppt` 暂不支持，请在 PowerPoint/WPS 中另存为 `.pptx` 后上传
 
-图片题目识别依赖当前 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入，例如 `mimo-v2.5`。如果模型不支持图片输入，纯文本 Word/PDF/PPT 导入仍可使用，图片识别会返回明确错误或 warning。扫描版 PDF 建议导出为图片后上传。
+图片题目识别依赖当前 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入，例如 `mimo-v2.5`。如果模型不支持图片输入，纯文本 Word/PDF/PPT 导入仍可使用，图片识别会返回明确错误或 warning。扫描版 PDF 建议导出为图片后上传；加密 PDF 请先解除密码后再上传。文件解析失败返回 400/422，AI 超时返回 504，AI 服务不可用返回 502，不会当作登录失效处理。
 
 #### AI 导入超时排查
 

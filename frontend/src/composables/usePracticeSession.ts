@@ -151,6 +151,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   async function fetchRandomQuestion(): Promise<void> {
+    if (loading.value) return;
     clearCorrectAutoNextTimer();
     loading.value = true;
     errorMessage.value = "";
@@ -182,7 +183,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   function setSingleAnswer(value: string): void {
-    if (result.value) return;
+    if (result.value || submitting.value) return;
     selectedAnswer.value = value;
     validationMessage.value = "";
     // 选择题点击即提交：选定单选/判断答案后立即判定
@@ -190,7 +191,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   function toggleMultipleAnswer(key: string): void {
-    if (result.value) return;
+    if (result.value || submitting.value) return;
     if (selectedAnswers.value.includes(key)) {
       selectedAnswers.value = selectedAnswers.value.filter((item) => item !== key);
     } else {
@@ -209,7 +210,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   async function submitAnswer(): Promise<void> {
-    if (!question.value) return;
+    if (!question.value || submitting.value || result.value) return;
 
     if (question.value.type === "multiple_choice" && selectedAnswers.value.length === 0) {
       validationMessage.value = "请至少选择一个选项。";

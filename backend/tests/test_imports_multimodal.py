@@ -38,6 +38,15 @@ def _make_png_bytes() -> bytes:
     return buf.getvalue()
 
 
+def _make_image_bytes(fmt: str) -> bytes:
+    from PIL import Image
+
+    image = Image.new("RGB", (8, 8), color=(255, 255, 255))
+    buf = io.BytesIO()
+    image.save(buf, format=fmt)
+    return buf.getvalue()
+
+
 def _make_pptx_bytes(text: str = "", image_bytes: bytes | None = None) -> bytes:
     from pptx import Presentation
 
@@ -87,6 +96,19 @@ def _make_pdf_bytes(text: str) -> bytes:
     return bytes(output)
 
 
+def _make_encrypted_pdf_bytes() -> bytes:
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(io.BytesIO(_make_pdf_bytes("secret text")))
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    writer.encrypt("password")
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
 class TestMultimodalImport:
     PREVIEW_URL = "/imports/file/preview"
     FILE_URL = "/imports/file"
@@ -120,6 +142,46 @@ class TestMultimodalImport:
         assert resp.status_code == 200
         assert "PDF question" in resp.json()["text"]
         assert "[Page 1]" in resp.json()["text"]
+
+    def test_upload_empty_pdf_returns_scan_hint(self, client, auth_headers):
+        resp = client.post(
+            self.FILE_URL,
+            headers=auth_headers,
+            files={"file": ("scan-like.pdf", _make_pdf_bytes(""), "application/pdf")},
+        )
+
+        assert resp.status_code == 400
+        assert resp.status_code != 401
+        assert "PDF" in resp.json()["detail"]
+        assert "图片" in resp.json()["detail"]
+
+    def test_upload_encrypted_pdf_returns_password_hint(self, client, auth_headers):
+        resp = client.post(
+            self.FILE_URL,
+            headers=auth_headers,
+            files={"file": ("locked.pdf", _make_encrypted_pdf_bytes(), "application/pdf")},
+        )
+
+        assert resp.status_code == 400
+        assert resp.status_code != 401
+        assert "加密" in resp.json()["detail"]
+
+    def test_upload_empty_pptx_returns_clear_error(self, client, auth_headers):
+        resp = client.post(
+            self.FILE_URL,
+            headers=auth_headers,
+            files={
+                "file": (
+                    "empty.pptx",
+                    _make_pptx_bytes(),
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                )
+            },
+        )
+
+        assert resp.status_code == 400
+        assert resp.status_code != 401
+        assert "PPT" in resp.json()["detail"]
 
     @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
     def test_preview_pptx_with_embedded_image_uses_multimodal_ai(self, client, auth_headers, monkeypatch):
@@ -158,6 +220,34 @@ class TestMultimodalImport:
         data = resp.json()
         assert data["suggested_course_name"] == "network-quiz"
         assert data["questions"][0]["question"] == "Direct image question"
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_direct_jpeg_uses_image_ai(self, client, auth_headers, monkeypatch):
+        mock_client = _mock_import_ai_response("JPEG image question")
+        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+
+        resp = client.post(
+            self.PREVIEW_URL,
+            headers=auth_headers,
+            files={"file": ("network-quiz.jpeg", _make_image_bytes("JPEG"), "image/jpeg")},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["questions"][0]["question"] == "JPEG image question"
+
+    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    def test_preview_direct_webp_uses_image_ai(self, client, auth_headers, monkeypatch):
+        mock_client = _mock_import_ai_response("WEBP image question")
+        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+
+        resp = client.post(
+            self.PREVIEW_URL,
+            headers=auth_headers,
+            files={"file": ("network-quiz.webp", _make_image_bytes("WEBP"), "image/webp")},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["questions"][0]["question"] == "WEBP image question"
 
     def test_upload_legacy_ppt_returns_clear_error(self, client, auth_headers):
         resp = client.post(

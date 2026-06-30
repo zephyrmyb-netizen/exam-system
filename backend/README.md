@@ -116,6 +116,10 @@ API 文档自动生成于 http://127.0.0.1:8000/docs
 | `OPENAI_API_KEY` | （空） | AI 接口密钥（必填，用于对话和自动导入） |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | AI 接口地址（可换 Mimo、DeepSeek 等兼容接口） |
 | `OPENAI_MODEL` | `gpt-4o-mini` | AI 模型名（如 `mimo-v2.5`、`deepseek-chat`） |
+| `CHAT_UPSTREAM_TIMEOUT` | `90` | AI 对话单次请求超时秒数 |
+| `IMPORT_UPSTREAM_TIMEOUT` | `90` | AI 文件导入每个分块的上游超时秒数 |
+| `IMPORT_CHUNK_SIZE` | `5000` | AI 文件导入每个分块约处理的字符数 |
+| `IMPORT_MAX_CHUNKS` | `3` | AI 文件导入最多处理的分块数 |
 
 #### SECRET_KEY 配置说明
 
@@ -219,6 +223,16 @@ OPENAI_MODEL=mimo-v2.5
 这些配置同时影响以下接口：
 - `POST /chat` — AI 学习对话助手
 - `POST /imports/file/auto` — 上传文件后 AI 自动结构化并导入题目
+
+## Word/PDF/PPT/图片导入说明
+
+支持上传 `.docx`、`.pdf`、`.pptx`、`.png`、`.jpg`、`.jpeg`、`.webp`，单文件最大 10MB。旧版 `.ppt` 不支持，请在 PowerPoint/WPS 中另存为 `.pptx`。
+
+PDF 文本可提取时会按页加入 `[Page N]` 提示；扫描版 PDF 没有可提取文字时会提示导出为图片后上传；加密 PDF 会提示先解除密码。PPTX 文本会按页加入 `[Slide N]`，空 PPTX 或只有无法识别内容的文件会返回明确错误，不会返回 401。
+
+图片、PPT 内嵌图片和扫描内容识别依赖 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入。缺少 `OPENAI_API_KEY` 时服务可以启动，但调用 AI 导入或 AI 对话会返回“AI 服务未配置”的明确错误。
+
+导入错误状态码约定：文件类型或解析失败返回 400/422，AI 超时返回 504，AI 服务不可用或上游异常返回 502，资源不存在返回 404，权限不足返回 403/404；只有缺少、无效或过期的 Bearer token 才返回 401。
 
 ## 接口列表
 

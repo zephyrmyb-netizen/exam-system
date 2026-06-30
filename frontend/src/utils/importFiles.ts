@@ -1,6 +1,20 @@
 export const ALLOWED_IMPORT_EXTENSIONS = [".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"] as const;
 export const UNSUPPORTED_LEGACY_EXTENSIONS = [".ppt"] as const;
-export const ACCEPTED_IMPORT_FILE_TYPES = ALLOWED_IMPORT_EXTENSIONS.join(",");
+export const ACCEPTED_IMPORT_FILE_TYPES = [
+  ".docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".pdf",
+  "application/pdf",
+  ".pptx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".png",
+  "image/png",
+  ".jpg",
+  ".jpeg",
+  "image/jpeg",
+  ".webp",
+  "image/webp",
+].join(",");
 
 type FileLike = Pick<File, "name" | "size"> | { name?: string; size?: number } | null | undefined;
 

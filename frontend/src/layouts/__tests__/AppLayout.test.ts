@@ -88,4 +88,28 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".app-header").exists()).toBe(false);
     expect(wrapper.find(".bottom-nav").exists()).toBe(false);
   });
+
+  it("hides the bottom navigation while an editable field is focused", async () => {
+    route.name = "chat";
+    route.path = "/chat";
+    route.meta = { title: "AI 对话练习", navKey: "ai", parent: "home" };
+
+    const wrapper = mount(AppLayout, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          RouterView: { template: "<textarea class='chat-input'></textarea>" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.find(".bottom-nav").exists()).toBe(true);
+
+    await wrapper.find(".chat-input").trigger("focusin");
+
+    expect(wrapper.find(".bottom-nav").exists()).toBe(false);
+    wrapper.unmount();
+  });
 });

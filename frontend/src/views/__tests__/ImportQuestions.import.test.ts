@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ImportQuestions from "../ImportQuestions.vue";
 import { useAiImportTaskStore } from "../../stores/aiImportTask";
+import { ACCEPTED_IMPORT_FILE_TYPES } from "../../utils/importFiles";
 
 const router = { push: vi.fn() };
 const route = { query: {} };
@@ -79,7 +80,7 @@ describe("ImportQuestions file import behavior", () => {
   it("accepts Word, PDF, PPTX, and image upload formats", () => {
     const wrapper = mountPage();
 
-    expect(wrapper.find("input[type='file']").attributes("accept")).toBe(".docx,.pdf,.pptx,.png,.jpg,.jpeg,.webp");
+    expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
   });
 
   it("rejects legacy .ppt before upload with a save-as-PPTX message", async () => {

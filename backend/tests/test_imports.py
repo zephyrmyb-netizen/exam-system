@@ -840,6 +840,8 @@ class TestAutoImportAIFailure:
                 files={"file": ("test.docx", content, "application/octet-stream")},
             )
             assert resp.status_code >= 400
+            assert resp.status_code != 401
+            assert "AI 未能解析出题目" in resp.json()["detail"]
             qs = client.get("/questions/", headers=auth_headers).json()
             assert len(qs) == 0
         finally:
