@@ -166,7 +166,8 @@ copy backend\.env.example backend\.env
 | `CHAT_UPSTREAM_TIMEOUT`     | `90`                                 | AI 对话单次请求超时秒数 |
 | `IMPORT_UPSTREAM_TIMEOUT`   | `90`                                 | AI 文件导入每个分块的上游超时秒数 |
 | `IMPORT_CHUNK_SIZE`         | `5000`                               | AI 文件导入每个分块约处理的字符数 |
-| `IMPORT_MAX_CHUNKS`         | `3`                                  | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_CHUNKS`         | `20`                                 | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_TOKENS`         | `6000`                               | AI 文件导入单次模型输出 token 上限 |
 | `PRESERVE_SYSTEM_ENV`       | `0`                                  | 是否允许系统环境变量覆盖 `backend/.env` |
 
 #### SECRET_KEY 配置说明
@@ -252,7 +253,8 @@ AI 文件导入比普通对话更慢，因为后端会先提取 Word/PDF/PPT 文
 - 前端等待导入接口：`420` 秒
 - 后端单个分块上游超时：`IMPORT_UPSTREAM_TIMEOUT=90`
 - 每个分块字符数：`IMPORT_CHUNK_SIZE=5000`
-- 最多处理分块数：`IMPORT_MAX_CHUNKS=3`
+- 最多处理分块数：`IMPORT_MAX_CHUNKS=20`
+- 单次模型输出上限：`IMPORT_MAX_TOKENS=6000`
 
 如果导入大文件仍然超时，优先按这个顺序处理：
 

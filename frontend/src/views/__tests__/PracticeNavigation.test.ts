@@ -36,6 +36,7 @@ vi.mock("../../composables/usePracticeSession", () => ({
     result: ref(null),
     selectedAnswer: ref(""),
     selectedAnswers: ref([]),
+    sessionComplete: ref(false),
     sessionStats: ref({ answeredCount: 0, correctCount: 0, wrongCount: 0 }),
     setSingleAnswer: vi.fn(),
     startSession: vi.fn(),

@@ -16,6 +16,7 @@ from .. import crud, schemas
 from ..config import (
     IMPORT_CHUNK_SIZE,
     IMPORT_MAX_CHUNKS,
+    IMPORT_MAX_TOKENS,
     IMPORT_UPSTREAM_TIMEOUT,
     OPENAI_API_KEY,
     OPENAI_BASE_URL,
@@ -37,6 +38,7 @@ LEGACY_PPT_EXTENSION = ".ppt"
 MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
+AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
 
 
 @dataclass
@@ -323,6 +325,9 @@ def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
 def build_ai_prompt(text_chunk: str) -> str:
     return (
         "You are an exam-question extraction assistant. Convert the document text into strict JSON.\n"
+        "Extract EVERY complete question in this chunk. Do not summarize. Do not return only one sample.\n"
+        "If the chunk contains 12 complete questions, return 12 question objects. Preserve numbered questions.\n"
+        "If there are no complete questions in this chunk, return {\"questions\": []}.\n"
         "Return ONLY a JSON object with this shape:\n"
         "{\n"
         '  "questions": [\n'
@@ -342,7 +347,8 @@ def build_ai_prompt(text_chunk: str) -> str:
         "1. Use the original language of the document for question text and analysis.\n"
         "2. For choice questions, options must be an object keyed by A/B/C/D.\n"
         "3. For true_false answers, use one of: true, false, yes, no.\n"
-        "4. Do not include markdown fences or explanations outside JSON.\n\n"
+        "4. Split combined numbered lists into separate question objects.\n"
+        "5. Do not include markdown fences or explanations outside JSON.\n\n"
         f"Document text:\n{text_chunk}"
     )
 
@@ -561,7 +567,7 @@ def _call_chat_completion(content: str | list[dict[str, Any]], *, temperature: f
             messages=[{"role": "user", "content": content}],
             response_format={"type": "json_object"},
             temperature=temperature,
-            max_tokens=3000,
+            max_tokens=AI_MAX_TOKENS,
         )
     except APITimeoutError as exc:
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
@@ -619,7 +625,7 @@ def call_ai_extract_text_from_images(images: list[ImagePayload]) -> tuple[str, l
             model=OPENAI_MODEL,
             messages=[{"role": "user", "content": _multimodal_content(build_ai_image_text_prompt(), images)}],
             temperature=0.1,
-            max_tokens=3000,
+            max_tokens=AI_MAX_TOKENS,
         )
     except APITimeoutError as exc:
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
@@ -648,7 +654,7 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
             messages=[{"role": "user", "content": build_ai_prompt(text_chunk)}],
             response_format={"type": "json_object"},
             temperature=0.1,
-            max_tokens=3000,
+            max_tokens=AI_MAX_TOKENS,
         )
     except APITimeoutError as exc:
         raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
@@ -674,7 +680,7 @@ def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[st
                 messages=[{"role": "user", "content": build_ai_repair_prompt(raw)}],
                 response_format={"type": "json_object"},
                 temperature=0,
-                max_tokens=3000,
+                max_tokens=AI_MAX_TOKENS,
             )
             repair_raw = repair_response.choices[0].message.content if repair_response.choices else ""
             repaired_items, repair_warnings = extract_questions_from_ai_response(repair_raw)

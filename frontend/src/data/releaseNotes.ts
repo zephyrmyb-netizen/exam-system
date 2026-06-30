@@ -17,6 +17,31 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.3.3-practice-session-complete",
+    version: "v2.3.3",
+    date: "2026-06-30",
+    type: "修复",
+    title: "修复题库刷完后重复循环",
+    items: [
+      "修复题库题目刷完后又从第一题开始重复的问题。",
+      "本轮练习会自动排除已答题目，全部完成后显示练习总结。",
+      "优化结束弹窗，题目刷完时只保留结束练习入口。",
+    ],
+  },
+  {
+    id: "v2.3.2-long-word-ai-import",
+    version: "v2.3.2",
+    date: "2026-06-30",
+    type: "修复",
+    title: "修复长 Word 题库导入丢题",
+    items: [
+      "修复长 Word 文档 AI 导入只解析少量题目的问题。",
+      "提高长文档分块处理上限，减少大题库被截断的情况。",
+      "强化 AI 解析提示词，要求逐题提取而不是只返回示例题。",
+      "新增模型输出上限配置，降低题目列表被截断的概率。",
+    ],
+  },
+  {
     id: "v2.3.1-mobile-practice-polish",
     version: "v2.3.1",
     date: "2026-06-30",
