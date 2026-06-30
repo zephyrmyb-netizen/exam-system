@@ -1,7 +1,7 @@
 """Repository layer for database access."""
 
-from .collaboration_repo import CollaborationRepository
 from .bookmark_repo import BookmarkRepository
+from .collaboration_repo import CollaborationRepository
 from .course_repo import CourseRepository
 from .practice_repo import PracticeRepository
 from .question_repo import QuestionRepository

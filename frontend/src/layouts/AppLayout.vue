@@ -26,7 +26,13 @@ const showSuccessToast = ref(false);
 const searchRef = ref<InstanceType<typeof GlobalSearch> | null>(null);
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+const keyboardActive = ref(false);
+const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take"]);
+
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
+
+const isImmersiveRoute = computed(() => immersiveRouteNames.has(route.name as string));
+const showBottomNav = computed(() => !keyboardActive.value && !isImmersiveRoute.value);
 
 watch(aiStatus, (val) => {
   if (val === "success") {
@@ -62,7 +68,7 @@ const activeNavKey = computed(() => {
   return nav || "";
 });
 
-const showHeader = computed(() => !["home", "mine"].includes(route.name as string));
+const showHeader = computed(() => !isImmersiveRoute.value && !["home", "mine", "chat"].includes(route.name as string));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
@@ -106,23 +112,37 @@ function handleGlobalKeydown(event: KeyboardEvent) {
   }
 }
 
+function handleViewportResize() {
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const heightDiff = window.innerHeight - vv.height;
+    keyboardActive.value = heightDiff > 120;
+  }
+}
+
 onMounted(() => {
   if (getToken()) fetchProfile();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
   window.addEventListener("keydown", handleGlobalKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
   window.removeEventListener("keydown", handleGlobalKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener("resize", handleViewportResize);
+  }
   if (successTimer) clearTimeout(successTimer);
 });
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :class="{ 'app-shell--keyboard': keyboardActive, 'app-shell--immersive': isImmersiveRoute }">
     <header v-if="showHeader" class="app-header">
       <button v-if="showBackButton" class="layout-back-button" type="button" @click="goBack">
         <ArrowLeft :size="18" :stroke-width="2.5" />
@@ -172,7 +192,7 @@ onUnmounted(() => {
       </router-view>
     </main>
 
-    <nav class="bottom-nav" aria-label="主导航">
+    <nav v-if="showBottomNav" class="bottom-nav" aria-label="主导航">
       <button
         v-for="item in navItems"
         :key="item.key"
@@ -196,7 +216,36 @@ onUnmounted(() => {
 <style scoped>
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.app-shell--keyboard,
+.app-shell--immersive {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell--immersive {
+  --practice-sticky-bottom: calc(12px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+.app-main {
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.app-main :deep(> *) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .app-header {
@@ -308,18 +357,20 @@ onUnmounted(() => {
   position: fixed;
   left: max(14px, env(safe-area-inset-left));
   right: max(14px, env(safe-area-inset-right));
-  bottom: calc(26px + env(safe-area-inset-bottom));
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 70;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: end;
-  min-height: 78px;
+  min-height: 74px;
   padding: 8px 10px 10px;
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
   backdrop-filter: blur(18px);
+  transform: none;
+  width: auto;
 }
 
 .nav-button {
@@ -354,6 +405,6 @@ onUnmounted(() => {
 
 @media (min-width: 760px) {
   .app-shell { max-width: 640px; margin: 0 auto; }
-  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100vw - 28px)); transform: translateX(-50%); }
+  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100% - 28px)); transform: translateX(-50%); }
 }
 </style>

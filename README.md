@@ -618,6 +618,35 @@ powershell -ExecutionPolicy Bypass -File scripts\cleanup_local_artifacts.ps1 -In
 
 ## 验收命令
 
+### 2.0 发布门禁
+
+上线前从项目根目录依次执行：
+
+```powershell
+# 前端质量、测试和构建
+cd "D:\File\exam system\frontend"
+npm.cmd run lint
+npm.cmd run test
+npm.cmd run build
+
+# 后端质量和测试
+cd "D:\File\exam system"
+backend\.venv\Scripts\python.exe -m ruff check backend
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+
+# 公开仓库安全检查
+python scripts\security_check.py
+```
+
+生产环境发布前必须确认：
+
+- `APP_ENV=production`
+- `SECRET_KEY` 已换成随机长密钥
+- `INVITE_CODE` 已换成自己的邀请码
+- `CORS_ORIGINS` 已设置为真实前端域名
+- `DB_PASSWORD` 已设置为生产数据库密码
+- `backend/.env`、数据库、上传文件、日志和文档资料没有进入 Git
+
 ```bash
 # 后端测试
 cd "D:\File\exam system"

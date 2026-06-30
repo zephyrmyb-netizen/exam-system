@@ -9,9 +9,12 @@
 services:
   backend:
     environment:
-      - DATABASE_URL=postgresql://xuexibao_user:${DB_PASSWORD:-change_me}@postgres:5432/xuexibao
+      - DATABASE_URL=postgresql://xuexibao_user:${DB_PASSWORD:?set DB_PASSWORD}@postgres:5432/xuexibao
       - REDIS_URL=redis://redis:6379/0
       - APP_ENV=production
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY}
+      - INVITE_CODE=${INVITE_CODE:?set INVITE_CODE}
+      - CORS_ORIGINS=${CORS_ORIGINS:?set CORS_ORIGINS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -21,9 +24,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-    POSTGRES_USER: xuexibao_user
-    POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
-    POSTGRES_DB: xuexibao
+      POSTGRES_USER: xuexibao_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      POSTGRES_DB: xuexibao
     ports:
       - "5432:5432"
     volumes:

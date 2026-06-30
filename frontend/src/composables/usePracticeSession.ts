@@ -23,6 +23,8 @@ interface SessionStats {
   startedAt: Date | null;
 }
 
+const CORRECT_AUTO_NEXT_DELAY_MS = 650;
+
 export interface UsePracticeSessionProps {
   courseId?: number | null;
   mode?: string;
@@ -79,6 +81,14 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   const errorMessage = ref<string>("");
   const validationMessage = ref<string>("");
   const sessionStats = ref<SessionStats>(createSessionStats());
+  let correctAutoNextTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearCorrectAutoNextTimer(): void {
+    if (correctAutoNextTimer) {
+      clearTimeout(correctAutoNextTimer);
+      correctAutoNextTimer = null;
+    }
+  }
 
   const accuracy = computed<number | null>(() => {
     const answered = sessionStats.value.answeredCount;
@@ -141,6 +151,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   async function fetchRandomQuestion(): Promise<void> {
+    clearCorrectAutoNextTimer();
     loading.value = true;
     errorMessage.value = "";
     validationMessage.value = "";
@@ -221,6 +232,9 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       if (data.is_correct) {
         sessionStats.value.correctCount += 1;
         sessionStats.value.streak += 1;
+        correctAutoNextTimer = setTimeout(() => {
+          fetchRandomQuestion();
+        }, CORRECT_AUTO_NEXT_DELAY_MS);
       } else {
         sessionStats.value.wrongCount += 1;
         sessionStats.value.streak = 0;

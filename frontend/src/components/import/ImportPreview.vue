@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from "vue";
-import { typeLabel, formatOptions } from "../../utils/question";
+import { typeLabel } from "../../utils/question";
 import {
   ArrowLeft, CheckCircle, AlertCircle, Trash2, Plus,
-  Edit3, BookOpen, Layers, Lock, Globe, Sparkles,
+  Edit3, Sparkles,
 } from "@lucide/vue";
 import QuestionEditor from "../question/QuestionEditor.vue";
 import { useConfirmDialog } from "../../stores/confirmDialog";

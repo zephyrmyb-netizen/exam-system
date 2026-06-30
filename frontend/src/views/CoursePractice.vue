@@ -149,10 +149,10 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
     <!-- ── Immersive Practice ── -->
     <template v-else>
       <Practice
-        :courseId="courseId"
-        :courseName="course?.name || ''"
+        :course-id="courseId"
+        :course-name="course?.name || ''"
         :mode="selectedMode"
-        modeParam=""
+        mode-param=""
         @end-practice="endPractice"
       />
     </template>

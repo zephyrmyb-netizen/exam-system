@@ -8,12 +8,12 @@
       <div class="auth-brand">
         <div class="auth-logo" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="url(#logo-grad)"/>
-            <path d="M8 14l6-4.5 6 4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 18l4-3 4 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect width="32" height="32" rx="8" fill="url(#logo-grad)" />
+            <path d="M8 14l6-4.5 6 4.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M10 18l4-3 4 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             <defs>
               <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32">
-                <stop stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/>
+                <stop stop-color="#3b82f6" /><stop offset="1" stop-color="#1d4ed8" />
               </linearGradient>
             </defs>
           </svg>
@@ -42,7 +42,7 @@
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-2xl);
   background: var(--surface);
-  box-shadow: var(--shadow-modal);
+  box-shadow: var(--shadow-card);
 }
 
 .auth-brand {
