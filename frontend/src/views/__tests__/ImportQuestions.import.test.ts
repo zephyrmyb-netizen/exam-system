@@ -76,10 +76,10 @@ describe("ImportQuestions file import behavior", () => {
     vi.clearAllMocks();
   });
 
-  it("accepts Word, PPTX, and image upload formats", () => {
+  it("accepts Word, PDF, PPTX, and image upload formats", () => {
     const wrapper = mountPage();
 
-    expect(wrapper.find("input[type='file']").attributes("accept")).toBe(".docx,.pptx,.png,.jpg,.jpeg,.webp");
+    expect(wrapper.find("input[type='file']").attributes("accept")).toBe(".docx,.pdf,.pptx,.png,.jpg,.jpeg,.webp");
   });
 
   it("rejects legacy .ppt before upload with a save-as-PPTX message", async () => {
@@ -95,7 +95,7 @@ describe("ImportQuestions file import behavior", () => {
 
     await chooseFile(wrapper, new File(["x"], "notes.txt"));
 
-    expect(wrapper.text()).toContain("不支持 .txt 格式，目前支持 Word、PPTX、PNG、JPG、WEBP。");
+    expect(wrapper.text()).toContain("不支持 .txt 格式，目前支持 Word、PDF、PPTX、PNG、JPG、WEBP。");
   });
 
   it("shows file name, type, and size after selecting an image", async () => {

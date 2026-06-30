@@ -74,6 +74,9 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         if (ext === ".pptx") {
           return state.elapsedSeconds < 3 ? "正在读取 PPT 页内容" : "正在识别 PPT 中的图片题目";
         }
+        if (ext === ".pdf") {
+          return state.elapsedSeconds < 3 ? "正在读取 PDF 页面文字" : "AI 正在解析 PDF 题目";
+        }
         if ([".png", ".jpg", ".jpeg", ".webp"].includes(ext)) return "正在识别图片中的题目";
         if (state.elapsedSeconds < 3) return "正在提取文档文字";
         return "AI 正在解析题目，请稍等";
@@ -90,6 +93,9 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
           return state.elapsedSeconds < 3
             ? "正在读取 PPT 页内容，请稍候。"
             : "正在识别 PPT 中的图片题目，PPT 页数较多时可能需要 1-3 分钟。";
+        }
+        if (ext === ".pdf") {
+          return "文本型 PDF 会直接提取页面文字；扫描版 PDF 建议导出为图片后上传。";
         }
         if ([".png", ".jpg", ".jpeg", ".webp"].includes(ext)) {
           return "图片识别依赖多模态 AI，可能需要 10-60 秒。";
