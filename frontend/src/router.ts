@@ -169,6 +169,11 @@ const routes: RouteRecordRaw[] = [
     meta: { guest: true },
     children: [{ path: "", name: "register", component: () => import("./views/auth/RegisterView.vue") }],
   },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    component: () => import("./views/NotFound.vue"),
+  },
 ];
 
 const router = createRouter({

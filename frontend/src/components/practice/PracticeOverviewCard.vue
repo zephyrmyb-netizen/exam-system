@@ -11,6 +11,7 @@ defineProps({
   wrongCount: { type: Number, default: null },
   dueCount: { type: Number, default: null },
   weakTypes: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 });
 
 defineEmits(["primary"]);
@@ -37,20 +38,20 @@ function displayNumber(value, emptyValue = "--") {
 
     <div class="overview-stats">
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(todayCount) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(todayCount) }}</span>
         <span class="overview-stat-label">今日练习</span>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(totalCount) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(totalCount) }}</span>
         <span class="overview-stat-label">累计</span>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(wrongCount, 0) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(wrongCount, 0) }}</span>
         <span class="overview-stat-label">错题</span>
       </div>
       <div class="overview-stat">
         <span class="overview-stat-value" :class="{ 'stat-accent': dueCount > 0 }">
-          {{ displayNumber(dueCount) }}
+          {{ loading ? "..." : displayNumber(dueCount) }}
         </span>
         <span class="overview-stat-label">到期</span>
       </div>

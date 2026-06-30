@@ -190,6 +190,7 @@ function goQuestion(question: Question) {
   gap: var(--space-3);
   max-height: 520px;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: var(--space-3);
 }
 .search-hint {

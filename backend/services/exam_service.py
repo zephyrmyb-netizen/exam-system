@@ -103,6 +103,20 @@ class ExamService:
 
         submission = self.exam_repo.get_active_submission(exam_id=exam_id, user_id=user_id)
         if submission is None:
+            # Idempotency check: if the user already submitted this exam, return
+            # the existing result instead of creating and submitting a new record.
+            already_submitted = (
+                self.db.query(models.ExamSubmission)
+                .filter(
+                    models.ExamSubmission.exam_id == exam_id,
+                    models.ExamSubmission.user_id == user_id,
+                    models.ExamSubmission.submitted_at.isnot(None),
+                )
+                .order_by(models.ExamSubmission.submitted_at.desc())
+                .first()
+            )
+            if already_submitted is not None:
+                return self._result_from_submission(exam, already_submitted)
             submission = self.exam_repo.create_submission(exam_id=exam_id, user_id=user_id)
 
         correct_count = 0
@@ -134,6 +148,45 @@ class ExamService:
             wrong_count=wrong_count,
             accuracy_rate=accuracy_rate,
             submitted_at=submitted.submitted_at.isoformat() if submitted.submitted_at else None,
+        )
+
+    def _result_from_submission(
+        self,
+        exam: models.Exam,
+        submission: models.ExamSubmission,
+    ) -> schemas.ExamResultOut:
+        """Rebuild an :class:`ExamResultOut` from an already-submitted record.
+
+        Used for idempotent returns so a repeated ``submit_exam`` call yields
+        the same result as the original submission without creating a new row.
+        """
+        try:
+            answers = json.loads(submission.answers) if submission.answers else {}
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Stored submission answers are corrupted",
+            ) from exc
+
+        correct_count = 0
+        total_questions = len(exam.questions)
+        for exam_question in exam.questions:
+            question = exam_question.question
+            user_answer = answers.get(str(question.id), "")
+            if self._is_correct(question, user_answer):
+                correct_count += 1
+
+        wrong_count = max(total_questions - correct_count, 0)
+        accuracy_rate = round((correct_count / total_questions) * 100, 2) if total_questions else 0.0
+        return schemas.ExamResultOut(
+            exam_id=exam.id,
+            submission_id=submission.id,
+            score=submission.score or 0,
+            total_score=exam.total_score,
+            correct_count=correct_count,
+            wrong_count=wrong_count,
+            accuracy_rate=accuracy_rate,
+            submitted_at=submission.submitted_at.isoformat() if submission.submitted_at else None,
         )
 
     def get_leaderboard(self, exam_id: int, user_id: int) -> schemas.ExamLeaderboardOut:

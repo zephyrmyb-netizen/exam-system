@@ -42,7 +42,7 @@ export const useExamStore = defineStore("exam", {
         this.exams = data.items || [];
         return this.exams;
       } catch (error) {
-        this.error = getErrorMessage(error, "鑰冭瘯鍒楄〃鍔犺浇澶辫触");
+        this.error = getErrorMessage(error, "考试列表加载失败");
         throw error;
       } finally {
         this.loading = false;
@@ -57,7 +57,7 @@ export const useExamStore = defineStore("exam", {
         this.myExams = data.items || [];
         return this.myExams;
       } catch (error) {
-        this.error = getErrorMessage(error, "鎴戝垱寤虹殑鑰冭瘯鍔犺浇澶辫触");
+        this.error = getErrorMessage(error, "我创建的考试加载失败");
         throw error;
       } finally {
         this.loading = false;
@@ -76,7 +76,7 @@ export const useExamStore = defineStore("exam", {
         this.leaderboard = null;
         return detail;
       } catch (error) {
-        this.error = getErrorMessage(error, "鑰冭瘯璇︽儏鍔犺浇澶辫触");
+        this.error = getErrorMessage(error, "考试详情加载失败");
         throw error;
       } finally {
         this.loading = false;
@@ -95,7 +95,7 @@ export const useExamStore = defineStore("exam", {
         this.result = null;
         this.leaderboard = null;
       } catch (error) {
-        this.error = getErrorMessage(error, "鑰冭瘯寮€濮嬪け璐?");
+        this.error = getErrorMessage(error, "考试开始失败");
         throw error;
       } finally {
         this.loading = false;
@@ -129,7 +129,7 @@ export const useExamStore = defineStore("exam", {
         this.result = result;
         return result;
       } catch (error) {
-        this.error = getErrorMessage(error, "浜ゅ嵎澶辫触");
+        this.error = getErrorMessage(error, "交卷失败");
         throw error;
       } finally {
         this.submitting = false;

@@ -222,7 +222,7 @@ def _extract_text_or_raise_legacy(file_path: str) -> tuple[str, list[str]]:
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
@@ -235,7 +235,7 @@ def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
 
     if text.strip():
         return text, warnings
@@ -829,5 +829,5 @@ def persist_imported_questions(
         db.commit()
     except Exception as exc:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"导入失败，已回滚: {exc}") from exc
+        raise HTTPException(status_code=500, detail="导入失败，已回滚") from exc
     return len(models_to_add)

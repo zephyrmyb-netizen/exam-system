@@ -4,7 +4,6 @@ import App from "./App.vue";
 import router from "./router";
 import i18n from "./i18n";
 import "./styles/base.css";
-import "./styles/tokens.css";
 import "./styles/transitions.css";
 import "./styles/utilities.css";
 import "./style.css";

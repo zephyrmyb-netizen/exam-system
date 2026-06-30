@@ -296,8 +296,8 @@ watch(() => props.question, initForm);
 .editor-close {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
   background: transparent;

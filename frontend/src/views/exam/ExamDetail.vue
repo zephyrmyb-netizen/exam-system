@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Clock, FileQuestion, Play, Trophy } from "@lucide/vue";
+import { ArrowLeft, Clock, FileQuestion, Play, Trophy } from "@lucide/vue";
 
 import { useExamStore } from "@/stores/exam";
 
@@ -18,6 +18,14 @@ function openLeaderboard() {
   router.push({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 
+function goBack() {
+  router.push({ name: "exams" });
+}
+
+function retry() {
+  store.loadExam(examId.value);
+}
+
 onMounted(() => {
   store.loadExam(examId.value);
 });
@@ -26,7 +34,16 @@ onMounted(() => {
 <template>
   <section class="exam-detail-page">
     <p v-if="store.loading" class="info-message">正在加载考试...</p>
-    <p v-if="store.error" class="error-message">{{ store.error }}</p>
+
+    <div v-else-if="store.error" class="empty-panel">
+      <p class="error-message">{{ store.error }}</p>
+      <div class="empty-actions">
+        <button type="button" class="action-btn" @click="retry">重试</button>
+        <button type="button" class="action-btn ghost" @click="goBack">
+          <ArrowLeft :size="16" /> 返回列表
+        </button>
+      </div>
+    </div>
 
     <article v-if="store.currentExam" class="detail-card">
       <p class="eyebrow">考试说明</p>
@@ -64,6 +81,29 @@ onMounted(() => {
 
 <style scoped>
 .exam-detail-page { display: grid; gap: var(--space-4); }
+.empty-panel {
+  display: grid;
+  gap: var(--space-4);
+  place-items: center;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+.empty-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; }
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.action-btn.ghost { background: var(--surface); color: var(--text-main); border: 1px solid var(--line-soft); }
 .detail-card {
   display: grid;
   gap: var(--space-4);
