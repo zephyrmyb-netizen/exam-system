@@ -82,16 +82,21 @@ function pickOption(key) {
 <style scoped>
 .practice-options-grid {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .practice-option-card {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 9px;
   width: 100%;
-  padding: 16px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -124,8 +129,8 @@ function pickOption(key) {
 }
 
 .practice-option-card__check {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 1.5px solid var(--line-strong);
   border-radius: 6px;
   color: var(--primary);
@@ -140,8 +145,8 @@ function pickOption(key) {
 }
 
 .practice-option-card__key {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #f1f5f9;
   color: var(--primary-strong);
@@ -156,8 +161,8 @@ function pickOption(key) {
 
 .practice-option-card__value {
   min-width: 0;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.45;
   font-weight: 700;
   word-break: break-word;
 }
@@ -187,19 +192,23 @@ function pickOption(key) {
 .practice-boolean-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .practice-boolean-button {
   display: grid;
   place-items: center;
-  gap: 10px;
-  padding: 22px 16px;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 12px;
   border: 2px solid var(--line-strong);
   border-radius: var(--radius-xl);
   background: var(--surface);
   color: var(--text-main);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   transition: all var(--ease-out);
 }
@@ -252,13 +261,30 @@ function pickOption(key) {
 
 @media (max-width: 420px) {
   .practice-option-card {
-    padding: 14px;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 9px 10px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .practice-option-card__check {
+    grid-column: 1;
+  }
+
+  .practice-option-card__key {
+    grid-column: 1;
+  }
+
+  .practice-option-card__value {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
 
   .practice-boolean-button {
-    padding: 18px 12px;
-    font-size: 15px;
+    padding: 12px 10px;
+    font-size: 14px;
+    border-radius: var(--radius-lg);
   }
 }
 </style>

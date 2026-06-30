@@ -104,11 +104,11 @@ async function confirmAndSkip() {
 
 function goBack() {
   if (props.courseId) {
-    router.push(`/courses/${props.courseId}`);
+    router.replace(`/courses/${props.courseId}`);
   } else if (props.mode === "wrong_review" || props.mode === "due_review") {
-    router.push({ name: "practice" });
+    router.replace({ name: "practice" });
   } else {
-    router.push("/courses");
+    router.replace("/courses");
   }
 }
 
@@ -117,7 +117,12 @@ function endPractice() {
 }
 
 function handleEndPractice() {
-  emit("end-practice");
+  showSummary.value = false;
+  if (props.courseId) {
+    emit("end-practice");
+    return;
+  }
+  goBack();
 }
 
 function continuePractice() {
@@ -269,22 +274,30 @@ onMounted(() => {
 <style scoped>
 .practice-page {
   display: grid;
-  gap: var(--space-3);
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
 
 .practice-content {
   display: grid;
-  gap: 14px;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
 .practice-card-shell {
   display: grid;
-  gap: 16px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  padding: 16px;
-  border-radius: var(--radius-2xl);
+  padding: 12px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 253, 0.96));
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(226, 232, 240, 0.88);
@@ -293,7 +306,8 @@ onMounted(() => {
 .practice-answer-section,
 .practice-message-stack {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .state-block {
@@ -413,9 +427,14 @@ onMounted(() => {
 }
 
 @media (max-width: 420px) {
+  .practice-page {
+    gap: 7px;
+    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+
   .practice-card-shell {
-    padding: 14px;
-    border-radius: var(--radius-xl);
+    padding: 10px;
+    border-radius: var(--radius-lg);
   }
 }
 </style>

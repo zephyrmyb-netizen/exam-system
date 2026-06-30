@@ -27,7 +27,7 @@ defineEmits(["end", "continue"]);
           <RefreshCw v-else :size="36" />
         </div>
 
-        <p class="practice-summary__title">结束练习</p>
+        <p class="practice-summary__title">本次练习结束</p>
         <p class="practice-summary__desc">
           {{
             answeredCount > 0

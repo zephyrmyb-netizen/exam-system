@@ -147,7 +147,7 @@ const routes: RouteRecordRaw[] = [
         path: "chat",
         name: "chat",
         component: () => import("./views/Chat.vue"),
-        meta: { title: "AI 对话练习", description: "追问知识点，适合碎片复习。", navKey: "ai" },
+        meta: { title: "AI 对话练习", description: "追问知识点，适合碎片复习。", navKey: "ai", parent: "home" },
       },
       {
         path: "study-overview",

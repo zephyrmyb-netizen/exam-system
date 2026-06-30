@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="学习宝 API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="学习宝 API", version="2.0.0", lifespan=lifespan)
 app.add_middleware(RequestIDMiddleware)
 
 # ── Startup warnings (development only — production errors are raised in config.py) ─

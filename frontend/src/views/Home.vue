@@ -68,7 +68,7 @@ function heatmapClass(count: number): string {
   if (count >= 10) return "bg-blue-600";
   if (count >= 5) return "bg-blue-400";
   if (count > 0) return "bg-blue-200";
-  return "bg-slate-100";
+  return "bg-slate-200";
 }
 
 const latestNote = computed(() => releaseNotes[0] || null);

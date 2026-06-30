@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import request, { getErrorMessage } from "../../api/request";
-import { typeLabels, typeOptions } from "../../utils/question";
+import { typeOptions } from "../../utils/question";
 import { X, Plus, Trash2 } from "@lucide/vue";
 
 const props = defineProps({

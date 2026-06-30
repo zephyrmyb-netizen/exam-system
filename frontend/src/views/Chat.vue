@@ -1,9 +1,14 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
-import { Sparkles, Send, RefreshCw } from "@lucide/vue";
+import { useRouter } from "vue-router";
+import { ArrowLeft, Moon, Send, Sparkles, Sun, RefreshCw } from "@lucide/vue";
 import { sendChatMessage } from "../api/chat";
 import { getErrorMessage } from "../api/request";
+import { normalizeChatReply } from "../utils/chatText";
+import { useThemeStore } from "../stores/theme";
 
+const router = useRouter();
+const theme = useThemeStore();
 const messageList = ref(null);
 const draft = ref("");
 const loading = ref(false);
@@ -26,6 +31,10 @@ function currentTime() {
     minute: "2-digit",
     hour12: false,
   }).format(new Date());
+}
+
+function goBack() {
+  router.push({ name: "home" });
 }
 
 function scrollToBottom() {
@@ -67,7 +76,8 @@ async function sendMessage(text = draft.value, options = {}) {
   loading.value = true;
   try {
     const data = await sendChatMessage(content, buildHistory());
-    addMessage("assistant", data.reply || "AI 没有返回内容，请重试。", {
+    const reply = normalizeChatReply(data.reply || "AI 没有返回内容，请重试。");
+    addMessage("assistant", reply, {
       error: !data.reply,
     });
   } catch (err) {
@@ -94,14 +104,23 @@ function retry(index) {
 <template>
   <section class="chat-page" aria-label="学习对话">
     <div class="chat-topbar">
-      <div>
+      <button class="chat-back-btn" type="button" aria-label="返回" @click="goBack">
+        <ArrowLeft :size="20" :stroke-width="2.5" />
+      </button>
+      <div class="chat-topbar-center">
         <p class="chat-kicker">
           <Sparkles :size="12" :stroke-width="3" style="margin-right:4px;vertical-align:-1px" />
           AI 复习助手
         </p>
         <h2>对话练习</h2>
       </div>
-      <span class="online-dot">在线</span>
+      <div class="chat-topbar-right">
+        <span class="online-dot">在线</span>
+        <button class="chat-theme-btn" type="button" aria-label="切换主题" @click="theme.toggle()">
+          <Sun v-if="theme.mode === 'dark'" :size="18" :stroke-width="2.4" />
+          <Moon v-else :size="18" :stroke-width="2.4" />
+        </button>
+      </div>
     </div>
 
     <div ref="messageList" class="chat-messages">
@@ -165,6 +184,44 @@ function retry(index) {
 </template>
 
 <style scoped>
+.chat-back-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chat-topbar-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-theme-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-main);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .chat-kicker {
   display: inline-flex;
   align-items: center;

@@ -35,15 +35,21 @@ defineEmits(["submit", "skip"]);
 <style scoped>
 .practice-action-bar {
   display: grid;
-  gap: 10px;
-  position: sticky;
+  gap: 6px;
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  right: max(8px, env(safe-area-inset-right));
   bottom: var(--practice-sticky-bottom);
   z-index: 8;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .practice-action-bar__hint {
   margin: 0;
-  padding: 10px 14px;
+  min-width: 0;
+  padding: 7px 10px;
   border-radius: var(--radius-md);
   background: rgba(248, 250, 253, 0.92);
   color: var(--text-placeholder);
@@ -56,11 +62,14 @@ defineEmits(["submit", "skip"]);
 
 .practice-action-bar__panel {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: minmax(112px, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 8px;
   border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(14px);
@@ -72,9 +81,10 @@ defineEmits(["submit", "skip"]);
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 48px;
-  padding: 12px 16px;
-  border-radius: var(--radius-lg);
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
   font-weight: 800;
   transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out), background var(--ease-out);
 }
@@ -107,9 +117,38 @@ defineEmits(["submit", "skip"]);
   color: var(--text-secondary);
 }
 
+.practice-submit-button span,
+.practice-skip-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 760px) {
+  .practice-action-bar {
+    left: 50%;
+    right: auto;
+    width: min(612px, calc(100% - 28px));
+    transform: translateX(-50%);
+  }
+}
+
 @media (max-width: 420px) {
+  .practice-action-bar__hint {
+    display: none;
+  }
+
   .practice-action-bar__panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(104px, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .practice-submit-button,
+  .practice-skip-button {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 10px;
+    font-size: 14px;
   }
 }
 </style>

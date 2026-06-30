@@ -265,7 +265,7 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
     <!-- Editor modal -->
     <QuestionEditor
       v-if="showEditor"
-      :courseId="props.courseId"
+      :course-id="props.courseId"
       :question="editingQuestion"
       @close="closeEditor"
       @saved="onQuestionSaved"

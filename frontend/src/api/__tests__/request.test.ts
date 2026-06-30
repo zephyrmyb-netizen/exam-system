@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import request, { getErrorMessage, getToken, setToken } from "../request.ts";
+import request, { getErrorMessage, getToken, resolveDefaultApiBaseUrl, setToken } from "../request.ts";
 
 function axiosLikeError(status: number) {
   return {
@@ -10,6 +10,20 @@ function axiosLikeError(status: number) {
     },
   };
 }
+
+describe("resolveDefaultApiBaseUrl", () => {
+  it("uses same-origin API calls when a phone opens the Vite dev server by LAN IP", () => {
+    expect(resolveDefaultApiBaseUrl({ hostname: "192.168.10.14", port: "5174", protocol: "http:" })).toBe("");
+  });
+
+  it("keeps same-origin API calls for the production nginx port", () => {
+    expect(resolveDefaultApiBaseUrl({ hostname: "192.168.10.14", port: "8080", protocol: "http:" })).toBe("");
+  });
+
+  it("uses same-origin API calls for localhost development through the Vite proxy", () => {
+    expect(resolveDefaultApiBaseUrl({ hostname: "localhost", port: "5174", protocol: "http:" })).toBe("");
+  });
+});
 
 describe("getErrorMessage", () => {
   it("shows a clear AI timeout message for 504 responses", () => {

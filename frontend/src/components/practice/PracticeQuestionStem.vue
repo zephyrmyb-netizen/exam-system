@@ -23,8 +23,11 @@ defineProps({
 <style scoped>
 .practice-stem {
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px;
   border: 1px solid rgba(191, 219, 254, 0.8);
   border-radius: var(--radius-xl);
   background: linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.96));
@@ -36,11 +39,12 @@ defineProps({
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  min-width: 0;
 }
 
 .practice-stem__tag,
 .practice-stem__hint {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 800;
@@ -60,8 +64,9 @@ defineProps({
 
 .practice-stem__title {
   margin: 0;
-  font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.45rem);
-  line-height: 1.7;
+  min-width: 0;
+  font-size: clamp(1rem, 0.96rem + 0.45vw, 1.22rem);
+  line-height: 1.45;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--text-main);
@@ -70,7 +75,18 @@ defineProps({
 
 @media (max-width: 420px) {
   .practice-stem {
-    padding: var(--space-3);
+    padding: 10px;
+    border-radius: var(--radius-lg);
+  }
+
+  .practice-stem__meta {
+    gap: 5px;
+  }
+
+  .practice-stem__tag,
+  .practice-stem__hint {
+    padding: 2px 8px;
+    font-size: 10px;
   }
 }
 </style>

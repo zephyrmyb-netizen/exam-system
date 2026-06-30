@@ -5,7 +5,6 @@ import tempfile
 from pathlib import Path
 
 
-
 def _clean_test_env():
     """Remove all TEST_* keys from os.environ."""
     for k in list(os.environ.keys()):

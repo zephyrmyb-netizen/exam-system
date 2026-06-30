@@ -4,8 +4,6 @@ import {
   isTextQuestionType,
   getQuestionAnswerHint,
   typeLabel,
-  TRUE_FALSE_TRUE,
-  TRUE_FALSE_FALSE,
 } from "../question.ts";
 
 describe("formatOptions", () => {

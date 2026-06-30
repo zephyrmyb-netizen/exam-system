@@ -198,7 +198,7 @@ watch(() => route.params.courseId, fetchCourse);
       @delete="deleteCourse"
     />
 
-    <QuestionList :courseId="courseId" />
+    <QuestionList :course-id="courseId" />
 
     <CourseEditModal
       v-if="showForm && course"

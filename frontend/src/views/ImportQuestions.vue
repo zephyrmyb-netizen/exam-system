@@ -379,12 +379,12 @@ onMounted(() => {
     <template v-else-if="phase === 'preview'">
       <p v-if="confirmError" class="msg msg-err">{{ confirmError }}</p>
       <ImportPreview
-        :previewData="aiTask.previewData.value"
+        :preview-data="aiTask.previewData.value"
         :courses="courses"
-        :coursesLoading="coursesLoading"
+        :courses-loading="coursesLoading"
         :confirming="confirmLoading"
-        :initialCourseId="activeCourseId"
-        :initialCourseName="activeCourseName"
+        :initial-course-id="activeCourseId"
+        :initial-course-name="activeCourseName"
         @confirm="handleConfirm"
         @back="handleBackFromPreview"
         @retry="handleRetryPreview"
