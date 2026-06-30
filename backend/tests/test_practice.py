@@ -39,6 +39,34 @@ class TestPractice:
         resp = client.get(self.PRACTICE_RANDOM + "?type=short_answer", headers=auth_headers)
         assert resp.status_code == 404
 
+    def test_random_question_excludes_answered_ids(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        remaining = questions[0]
+        excluded_ids = ",".join(str(question["id"]) for question in questions[1:])
+
+        resp = client.get(
+            self.PRACTICE_RANDOM,
+            headers=auth_headers,
+            params={"exclude_ids": excluded_ids},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == remaining["id"]
+
+    def test_random_question_returns_404_when_all_ids_excluded(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        excluded_ids = ",".join(str(question["id"]) for question in questions)
+
+        resp = client.get(
+            self.PRACTICE_RANDOM,
+            headers=auth_headers,
+            params={"exclude_ids": excluded_ids},
+        )
+
+        assert resp.status_code == 404
+
     def test_submit_correct_single_choice(self, client, auth_headers, sample_questions):
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         resp = client.get("/questions/", headers=auth_headers)

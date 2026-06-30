@@ -9,14 +9,31 @@ from ..routers.courses import _get_accessible_course
 router = APIRouter(prefix="/practice", tags=["practice"])
 
 
+def _parse_exclude_ids(raw: str) -> list[int]:
+    result: list[int] = []
+    for item in (raw or "").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        try:
+            value = int(item)
+        except ValueError:
+            continue
+        if value > 0:
+            result.append(value)
+    return result
+
+
 @router.get("/random")
 def random_question(
     type: str = "",
     chapter: str = "",
+    exclude_ids: str = Query("", description="Comma-separated current-session question ids to exclude"),
     course_id: int = Query(0, ge=0, description="课程ID，0表示从全部可见题目中随机抽题"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
+    excluded = _parse_exclude_ids(exclude_ids)
     if course_id > 0:
         # Validate the user has access to this course
         _get_accessible_course(db, course_id, current_user.id)
@@ -26,11 +43,18 @@ def random_question(
             user_id=current_user.id,
             q_type=type,
             chapter=chapter,
+            excluded_ids=excluded,
         )
         if not question:
             raise HTTPException(status_code=404, detail="该课程下暂无可用题目")
     else:
-        question = crud.get_random_question(db, user_id=current_user.id, q_type=type, chapter=chapter)
+        question = crud.get_random_question(
+            db,
+            user_id=current_user.id,
+            q_type=type,
+            chapter=chapter,
+            excluded_ids=excluded,
+        )
         if not question:
             raise HTTPException(status_code=404, detail="题库为空，请先导入题目")
     return schemas.QuestionOut.model_validate(question).model_dump()

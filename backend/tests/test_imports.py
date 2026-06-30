@@ -1,6 +1,7 @@
 ﻿"""Tests for imports endpoints: file upload, size limits, AI auto import."""
 
 import io
+import json
 from unittest.mock import MagicMock, patch
 
 from backend.main import app
@@ -931,6 +932,64 @@ class TestAutoImportAIFailure:
             assert "invalid_api_key" not in detail
         finally:
             mock.stop()
+
+
+class TestLongDocumentAIImport:
+    """Long Word-style documents should not silently lose most questions."""
+
+    def test_ai_parse_processes_more_than_three_text_chunks(self, monkeypatch):
+        from backend.imports import import_orchestrator
+
+        monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "sk-test")
+        monkeypatch.setattr(import_orchestrator, "AI_CHUNK_SIZE", 80)
+
+        mock_client = MagicMock()
+        call_count = {"value": 0}
+
+        def create_completion(**kwargs):
+            call_count["value"] += 1
+            question_no = call_count["value"]
+            choice = MagicMock()
+            choice.message.content = json.dumps(
+                {
+                    "questions": [
+                        {
+                            "type": "fill_blank",
+                            "question": f"第 {question_no} 题：测试填空？",
+                            "answer": "答案",
+                            "analysis": "解析",
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            )
+            completion = MagicMock()
+            completion.choices = [choice]
+            return completion
+
+        mock_client.chat.completions.create.side_effect = create_completion
+        monkeypatch.setattr(import_orchestrator, "_build_import_client", lambda: mock_client)
+
+        long_text = "\n".join(
+            f"{index}. 这是一道模拟 Word 文档中的复习题，题干较长，用来触发分块。答案：答案。"
+            for index in range(1, 7)
+        )
+
+        questions, warnings, timing = import_orchestrator.call_ai_parse(long_text)
+
+        assert call_count["value"] >= 6
+        assert timing["chunks"] >= 6
+        assert len(questions) >= 6
+        assert not any("仅处理前 3 部分" in warning for warning in warnings)
+
+    def test_text_prompt_requires_extracting_every_question(self):
+        from backend.imports.import_orchestrator import build_ai_prompt
+
+        prompt = build_ai_prompt("1. 第一题？\n2. 第二题？")
+
+        assert "Extract EVERY complete question" in prompt
+        assert "Do not summarize" in prompt
+        assert "Do not return only one sample" in prompt
 
 
 class TestImportRateLimit:

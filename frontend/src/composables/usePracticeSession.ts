@@ -48,6 +48,7 @@ export interface UsePracticeSessionReturn {
   result: Ref<SubmitResponse | null>;
   selectedAnswer: Ref<string>;
   selectedAnswers: Ref<string[]>;
+  sessionComplete: Ref<boolean>;
   sessionStats: Ref<SessionStats>;
   setSingleAnswer: (value: string) => void;
   startSession: () => void;
@@ -80,7 +81,9 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   const submitting = ref<boolean>(false);
   const errorMessage = ref<string>("");
   const validationMessage = ref<string>("");
+  const sessionComplete = ref<boolean>(false);
   const sessionStats = ref<SessionStats>(createSessionStats());
+  const answeredQuestionIds = new Set<number>();
   let correctAutoNextTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearCorrectAutoNextTimer(): void {
@@ -161,6 +164,9 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     try {
       const params: Record<string, string | number> = {};
       if (props.courseId) params.course_id = props.courseId;
+      if (answeredQuestionIds.size > 0) {
+        params.exclude_ids = Array.from(answeredQuestionIds).join(",");
+      }
 
       let data: Question;
       if (props.mode === "wrong_review") {
@@ -174,9 +180,16 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       }
 
       question.value = data;
+      sessionComplete.value = false;
     } catch (error: unknown) {
       question.value = null;
-      errorMessage.value = getErrorMessage(error, "获取题目失败");
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404 && answeredQuestionIds.size > 0) {
+        sessionComplete.value = true;
+        errorMessage.value = "";
+      } else {
+        errorMessage.value = getErrorMessage(error, "获取题目失败");
+      }
     } finally {
       loading.value = false;
     }
@@ -236,6 +249,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
 
       result.value = data;
       sessionStats.value.answeredCount += 1;
+      answeredQuestionIds.add(question.value.id);
       if (data.is_correct) {
         sessionStats.value.correctCount += 1;
         sessionStats.value.streak += 1;
@@ -263,6 +277,9 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   }
 
   function startSession(): void {
+    clearCorrectAutoNextTimer();
+    answeredQuestionIds.clear();
+    sessionComplete.value = false;
     sessionStats.value = {
       ...createSessionStats(),
       startedAt: new Date(),
@@ -287,6 +304,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     result,
     selectedAnswer,
     selectedAnswers,
+    sessionComplete,
     sessionStats,
     setSingleAnswer,
     startSession,

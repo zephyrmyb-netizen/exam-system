@@ -119,7 +119,8 @@ API 文档自动生成于 http://127.0.0.1:8000/docs
 | `CHAT_UPSTREAM_TIMEOUT` | `90` | AI 对话单次请求超时秒数 |
 | `IMPORT_UPSTREAM_TIMEOUT` | `90` | AI 文件导入每个分块的上游超时秒数 |
 | `IMPORT_CHUNK_SIZE` | `5000` | AI 文件导入每个分块约处理的字符数 |
-| `IMPORT_MAX_CHUNKS` | `3` | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_CHUNKS` | `20` | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_TOKENS` | `6000` | AI 文件导入单次模型输出 token 上限 |
 
 #### SECRET_KEY 配置说明
 

@@ -251,6 +251,7 @@ def get_random_question(
     user_id: int | None = None,
     q_type: str = "",
     chapter: str = "",
+    excluded_ids: list[int] | None = None,
 ) -> models.Question | None:
     """Return a random question visible to *user_id*, using count+offset.
 
@@ -262,6 +263,8 @@ def get_random_question(
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
+    if excluded_ids:
+        query = query.filter(~models.Question.id.in_(excluded_ids))
     count = query.count()
     if count == 0:
         return None
@@ -274,6 +277,7 @@ def get_random_question_in_course(
     user_id: int | None = None,
     q_type: str = "",
     chapter: str = "",
+    excluded_ids: list[int] | None = None,
 ) -> models.Question | None:
     """Random question in a course, using count+offset instead of ORDER BY RANDOM()."""
     query = _add_question_visibility_filter(
@@ -284,6 +288,8 @@ def get_random_question_in_course(
         query = query.filter(models.Question.type == q_type)
     if chapter:
         query = query.filter(models.Question.chapter == chapter)
+    if excluded_ids:
+        query = query.filter(~models.Question.id.in_(excluded_ids))
     count = query.count()
     if count == 0:
         return None

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowRight, AlertTriangle, CheckCircle, Library, RefreshCw, Sparkles } from "@lucide/vue";
 import PracticeActionBar from "../components/practice/PracticeActionBar.vue";
@@ -42,6 +42,7 @@ const {
   result,
   selectedAnswer,
   selectedAnswers,
+  sessionComplete,
   sessionStats,
   setSingleAnswer,
   startSession,
@@ -138,6 +139,12 @@ function continuePractice() {
 onMounted(() => {
   if (props.courseId || canStartWithoutCourse.value) {
     startSession();
+  }
+});
+
+watch(sessionComplete, (complete) => {
+  if (complete) {
+    showSummary.value = true;
   }
 });
 </script>
@@ -287,6 +294,7 @@ onMounted(() => {
       :correct-count="sessionStats.correctCount"
       :wrong-count="sessionStats.wrongCount"
       :accuracy="accuracy"
+      :can-continue="!sessionComplete"
       @end="handleEndPractice"
       @continue="continuePractice"
     />
