@@ -57,15 +57,15 @@ const {
 // 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
 // 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
 // fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
-const swipeEnabled = computed(() => !!result.value);
+const canSwipeNext = computed(() => !!result.value && !loading.value && !submitting.value);
 const swipeProgress = createSwipeProgress();
 useSwipeNext({
   onSwipe: () => {
-    if (swipeEnabled.value) {
+    if (canSwipeNext.value) {
       void fetchRandomQuestion();
     }
   },
-  enabled: swipeEnabled,
+  enabled: canSwipeNext,
   progress: swipeProgress,
 });
 
@@ -187,12 +187,18 @@ onMounted(() => {
 
     <div v-else-if="isCourseEmpty" class="state-block">
       <div class="state-icon"><AlertTriangle :size="44" :stroke-width="1.5" /></div>
-      <p class="state-title">该题库暂时无题目</p>
+      <p class="state-title">当前题库暂无题目</p>
       <p class="state-hint">先去导入或添加题目到当前题库。</p>
-      <button class="primary-button" type="button" @click="router.push('/import')">
-        <Sparkles :size="16" :stroke-width="2.5" />
-        <span>去导入题目</span>
-      </button>
+      <div class="state-actions">
+        <button class="ghost-button" type="button" @click="goBack">
+          <Library :size="16" :stroke-width="2.5" />
+          <span>返回题库</span>
+        </button>
+        <button class="primary-button" type="button" @click="router.push('/import')">
+          <Sparkles :size="16" :stroke-width="2.5" />
+          <span>去导入题目</span>
+        </button>
+      </div>
     </div>
 
     <div v-else-if="errorMessage && !question" class="state-block">
@@ -371,7 +377,7 @@ onMounted(() => {
   display: grid;
   place-items: center;
   gap: var(--space-2);
-  padding: var(--space-10) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   text-align: center;
 }
 
@@ -405,7 +411,15 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
 .retry-btn,
+.ghost-button,
 .primary-button {
   display: inline-flex;
   align-items: center;
@@ -490,8 +504,14 @@ onMounted(() => {
   }
 
   .practice-card-shell {
-    padding: 10px;
+    gap: 8px;
+    padding: 9px;
     border-radius: var(--radius-lg);
+  }
+
+  .practice-answer-section,
+  .practice-message-stack {
+    gap: 6px;
   }
 }
 </style>

@@ -300,7 +300,7 @@ onMounted(() => {
   <section class="stack">
     <div class="section-heading">
       <h2>导入题目</h2>
-      <p>上传 Word、PPTX 或图片，AI 自动解析成题库</p>
+      <p>支持 Word、PDF、PPTX、图片，AI 自动解析成题库</p>
     </div>
 
     <ImportCapabilityStrip />

@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { ArrowLeft, Moon, Send, Sparkles, Sun, RefreshCw } from "@lucide/vue";
 import { sendChatMessage, streamChatMessage } from "../api/chat";
 import { getErrorMessage } from "../api/request";
-import { normalizeChatReply } from "../utils/chatText";
+import { renderAssistantMarkdown } from "../utils/chatText";
 import { useThemeStore } from "../stores/theme";
 
 const router = useRouter();
@@ -26,6 +26,10 @@ let currentStreamController = null;
 
 const suggestions = ["出一道选择题", "解释这道错题", "总结本章重点"];
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
+
+function normalizeAssistantText(text) {
+  return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
 
 function currentTime() {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -112,7 +116,7 @@ async function sendMessage(text = draft.value, options = {}) {
             resolve();
             return;
           }
-          placeholder.text = normalizeChatReply(fullText);
+          placeholder.text = normalizeAssistantText(fullText);
           resolve();
         },
         onError: (msg) => {
@@ -122,13 +126,13 @@ async function sendMessage(text = draft.value, options = {}) {
         },
       });
     });
-  } catch (streamErr) {
+  } catch {
     // 流式失败：移除占位消息，回退到一次性请求
     const idx = messages.value.indexOf(placeholder);
     if (idx !== -1) messages.value.splice(idx, 1);
     try {
       const data = await sendChatMessage(content, buildHistory());
-      const reply = normalizeChatReply(data.reply || "AI 没有返回内容，请重试。");
+      const reply = normalizeAssistantText(data.reply || "AI 没有返回内容，请重试。");
       addMessage("assistant", reply, { error: !data.reply });
     } catch (fallbackErr) {
       const msg = getErrorMessage(fallbackErr, "AI 回复失败，请稍后重试");
@@ -150,6 +154,10 @@ function retry(index) {
 
   messages.value.splice(index, 1);
   sendMessage(lastUserMsg.text, { retry: true });
+}
+
+function getAssistantHtml(text) {
+  return renderAssistantMarkdown(text);
 }
 </script>
 
@@ -186,7 +194,14 @@ function retry(index) {
           {{ message.role === "assistant" ? "AI" : "我" }}
         </div>
         <div class="chat-bubble">
-          <p v-if="message.text">{{ message.text }}</p>
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-if="message.text && message.role === 'assistant'"
+            class="chat-markdown"
+            v-html="getAssistantHtml(message.text)"
+          ></div>
+          <!-- eslint-enable vue/no-v-html -->
+          <p v-else-if="message.text">{{ message.text }}</p>
           <div v-else class="typing-indicator">
             <span></span><span></span><span></span>
           </div>
@@ -294,5 +309,46 @@ function retry(index) {
 .chat-row.is-error .chat-bubble {
   border-color: var(--rose-border);
   background: var(--rose-soft);
+}
+
+.chat-markdown {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chat-markdown :deep(p),
+.chat-markdown :deep(ul) {
+  margin: 0;
+}
+
+.chat-markdown :deep(ul) {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.2em;
+}
+
+.chat-markdown :deep(li) {
+  padding-left: 2px;
+}
+
+.chat-markdown :deep(strong) {
+  color: var(--text-main);
+  font-weight: 850;
+}
+
+.chat-markdown :deep(code) {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--primary-strong);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
 }
 </style>

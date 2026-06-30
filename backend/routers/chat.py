@@ -3,6 +3,12 @@
 import json
 import logging
 
+from openai import APIConnectionError, APIStatusError
+try:
+    from openai import APITimeoutError
+except ImportError:  # pragma: no cover
+    APITimeoutError = TimeoutError
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
@@ -123,6 +129,19 @@ def _sse(data: dict | str) -> str:
     return f"data: {payload}\n\n"
 
 
+def _ai_error_response(exc: Exception) -> tuple[int, str]:
+    if isinstance(exc, (APITimeoutError, TimeoutError)):
+        return status.HTTP_504_GATEWAY_TIMEOUT, "AI 请求超时，请稍后重试。"
+    if isinstance(exc, APIStatusError):
+        if exc.status_code in (401, 403):
+            return status.HTTP_502_BAD_GATEWAY, "AI 服务鉴权失败，请检查后端 AI Key 和接口地址配置。"
+        if exc.status_code == 429:
+            return status.HTTP_502_BAD_GATEWAY, "AI 服务请求过于频繁，请稍后重试。"
+    if isinstance(exc, APIConnectionError):
+        return status.HTTP_502_BAD_GATEWAY, "AI 服务连接失败，请检查网络或接口地址后重试。"
+    return status.HTTP_502_BAD_GATEWAY, "AI 服务暂时不可用，请稍后重试。"
+
+
 @router.post("/", response_model=ChatResponse)
 def chat(
     req: ChatRequest,
@@ -143,11 +162,12 @@ def chat(
             temperature=0.7,
         )
         reply = _extract_reply(completion)
-    except Exception:
+    except Exception as exc:
         logger.exception("Upstream AI call failed for user %s", current_user.id)
+        status_code, detail = _ai_error_response(exc)
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI 服务暂时不可用，请稍后重试。",
+            status_code=status_code,
+            detail=detail,
         )
 
     if not reply:
@@ -204,9 +224,10 @@ def chat_stream(
                     break
             if not emitted_any:
                 yield _sse({"error": "AI 返回内容为空，请重试一次。"})
-        except Exception:
+        except Exception as exc:
             logger.exception("Upstream AI stream failed for user %s", user_id)
-            yield _sse({"error": "AI 服务暂时不可用，请稍后重试。"})
+            _status_code, detail = _ai_error_response(exc)
+            yield _sse({"error": detail})
         finally:
             yield _sse("[DONE]")
 

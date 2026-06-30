@@ -22,8 +22,6 @@ import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import Button from "../components/ui/button/Button.vue";
 import Card from "../components/ui/card/Card.vue";
 import CardContent from "../components/ui/card/CardContent.vue";
-import CardHeader from "../components/ui/card/CardHeader.vue";
-import CardTitle from "../components/ui/card/CardTitle.vue";
 
 const router = useRouter();
 const { user } = useAuth();

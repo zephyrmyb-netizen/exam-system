@@ -194,6 +194,19 @@ def extract_text_and_warnings(file_path: str) -> tuple[str, list[str]]:
     raise HTTPException(status_code=400, detail=f"不支持的文件格式: {ext}")
 
 
+def empty_extract_detail(file_path: str, warnings: list[str] | None = None) -> str:
+    ext = Path(file_path).suffix.lower()
+    if warnings:
+        return "；".join(warnings[:3])
+    if ext == ".pdf":
+        return "未从 PDF 中提取到文字，请确认不是扫描版图片 PDF，或将页面导出为图片后上传。"
+    if ext == ".pptx":
+        return "未从 PPTX 中识别到文字或图片题目，请检查文件是否为空，或尝试导出为图片后上传。"
+    if ext in IMAGE_EXTENSIONS:
+        return "图片识别失败，请确认图片格式正确且内容清晰。"
+    return "文档中未提取到任何文本内容"
+
+
 def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
     from docx import Document
 
@@ -224,7 +237,10 @@ def _extract_pdf(path: str, warnings: list[str]) -> tuple[str, list[str]]:
 
     if reader.is_encrypted:
         try:
-            reader.decrypt("")
+            if reader.decrypt("") == 0:
+                raise HTTPException(status_code=400, detail="PDF 文件已加密，请先解除密码后再上传。")
+        except HTTPException:
+            raise
         except Exception as exc:
             raise HTTPException(status_code=400, detail="PDF 文件已加密，请先解除密码后再上传。") from exc
 
@@ -773,7 +789,7 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     if not valid and saw_upstream_error:
         raise HTTPException(status_code=502, detail=safe_ai_error_detail())
     if not valid and saw_invalid_json:
-        raise HTTPException(status_code=400, detail="AI 返回非 JSON，无法解析题目")
+        raise HTTPException(status_code=400, detail="AI 未能解析出题目，请换一个文件或稍后重试。")
 
     return valid, all_warnings, timing
 
