@@ -24,6 +24,7 @@ from ..config import (
 from ..crud import derive_course_name_from_filename
 from ..models import Question as QuestionModel
 from ..utils import VALID_QUESTION_TYPES, normalize_answer
+from .image_extractor import IMAGE_EXTENSIONS, ImagePayload, extract_images_from_file, image_bytes_to_data_url
 
 try:
     from openai import APITimeoutError
@@ -31,7 +32,8 @@ except ImportError:  # pragma: no cover
     APITimeoutError = TimeoutError
 
 
-ALLOWED_EXTENSIONS = {".docx", ".pptx"}
+ALLOWED_EXTENSIONS = {".docx", ".pptx", ".png", ".jpg", ".jpeg", ".webp"}
+LEGACY_PPT_EXTENSION = ".ppt"
 MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
@@ -72,10 +74,15 @@ def _ai_override_active() -> bool:
 
 def validate_upload(filename: str, content: bytes) -> str:
     ext = Path(filename or "").suffix.lower()
+    if ext == LEGACY_PPT_EXTENSION:
+        raise HTTPException(
+            status_code=400,
+            detail="暂不支持旧版 .ppt，请在 PowerPoint/WPS 中另存为 .pptx 后上传。",
+        )
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx 或 .pptx 文件",
+            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx、.pptx、.png、.jpg、.jpeg、.webp 文件",
         )
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -83,6 +90,19 @@ def validate_upload(filename: str, content: bytes) -> str:
             detail=f"文件大小超过限制（最大 {MAX_FILE_SIZE // (1024 * 1024)}MB）",
         )
     return ext
+
+
+def detect_file_kind(filename_or_path: str) -> str:
+    ext = Path(filename_or_path or "").suffix.lower()
+    if ext == ".docx":
+        return "docx"
+    if ext == ".pptx":
+        return "pptx"
+    if ext in IMAGE_EXTENSIONS:
+        return "image"
+    if ext == LEGACY_PPT_EXTENSION:
+        return "legacy_ppt"
+    return "unsupported"
 
 
 async def save_upload_to_temp(file: UploadFile) -> SavedUpload:
@@ -111,6 +131,10 @@ def extract_text_and_warnings(file_path: str) -> tuple[str, list[str]]:
         return _extract_docx(file_path, warnings)
     if ext == ".pptx":
         return _extract_pptx(file_path, warnings)
+    if ext in IMAGE_EXTENSIONS:
+        return "", warnings
+    if ext == LEGACY_PPT_EXTENSION:
+        raise HTTPException(status_code=400, detail="暂不支持旧版 .ppt，请在 PowerPoint/WPS 中另存为 .pptx 后上传。")
     raise HTTPException(status_code=400, detail=f"不支持的文件格式: {ext}")
 
 
@@ -131,10 +155,6 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
             if row_texts:
                 parts.append(" | ".join(row_texts))
 
-    has_image = any("image" in rel.reltype for rel in doc.part.rels.values())
-    if has_image:
-        warnings.append("文档中包含图片，暂不支持 OCR 识别图片中的文字，请手动核对")
-
     return "\n".join(parts), warnings
 
 
@@ -143,25 +163,19 @@ def _extract_pptx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
 
     prs = Presentation(path)
     parts: list[str] = []
-    has_image = False
 
-    for slide in prs.slides:
+    for slide_index, slide in enumerate(prs.slides, start=1):
+        slide_parts: list[str] = []
         for shape in slide.shapes:
             if hasattr(shape, "text") and shape.text.strip():
-                parts.append(shape.text)
-            try:
-                if "Picture" in type(shape).__name__ or hasattr(shape, "image"):
-                    has_image = True
-            except Exception:
-                pass
+                slide_parts.append(shape.text.strip())
             if shape.has_table:
                 for row in shape.table.rows:
                     row_texts = [cell.text.strip() for cell in row.cells if cell.text.strip()]
                     if row_texts:
-                        parts.append(" | ".join(row_texts))
-
-    if has_image:
-        warnings.append("演示文稿中包含图片，暂不支持 OCR 识别图片中的文字，请手动核对")
+                        slide_parts.append(" | ".join(row_texts))
+        if slide_parts:
+            parts.append(f"[Slide {slide_index}]\n" + "\n".join(slide_parts))
 
     return "\n".join(parts), warnings
 
@@ -171,7 +185,7 @@ def extract_text_from_file(file_path: str) -> str:
     return text
 
 
-def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
+def _extract_text_or_raise_legacy(file_path: str) -> tuple[str, list[str]]:
     try:
         text, warnings = extract_text_and_warnings(file_path)
     except HTTPException:
@@ -182,6 +196,27 @@ def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
     if not text.strip():
         raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
     return text, warnings
+
+
+def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
+    try:
+        text, warnings = extract_text_and_warnings(file_path)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+
+    if text.strip():
+        return text, warnings
+
+    images, image_warnings = extract_images_from_file(file_path)
+    warnings.extend(image_warnings)
+    ext = Path(file_path).suffix.lower()
+    if images:
+        return text, warnings
+    if ext == ".pptx":
+        raise HTTPException(status_code=400, detail="未从 PPT 中识别到文字或图片题目，请检查文件是否为空，或尝试导出为图片后上传。")
+    raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
 
 
 def build_ai_prompt(text_chunk: str) -> str:
@@ -208,6 +243,28 @@ def build_ai_prompt(text_chunk: str) -> str:
         "3. For true_false answers, use one of: true, false, yes, no.\n"
         "4. Do not include markdown fences or explanations outside JSON.\n\n"
         f"Document text:\n{text_chunk}"
+    )
+
+
+def build_ai_multimodal_prompt(text: str = "") -> str:
+    context = text.strip() or "(no extracted text; identify questions from the images)"
+    return (
+        "You are an exam-question extraction assistant. Extract all exam questions from the text and images.\n"
+        "Return ONLY strict JSON, with no markdown or explanation. Shape:\n"
+        '{"questions":[{"type":"single_choice | multiple_choice | true_false | fill_blank | short_answer",'
+        '"question":"question text","options":{"A":"option A","B":"option B"},'
+        '"answer":"correct answer","analysis":"short explanation","subject":"",'
+        '"chapter":"","difficulty":"normal"}]}\n'
+        "Rules: single_choice answer like A; multiple_choice answer like A,B; true_false answer uses "
+        "正确 or 错误; extract every question from every image; skip uncertain decorative text.\n\n"
+        f"Extracted document text:\n{context}"
+    )
+
+
+def build_ai_image_text_prompt() -> str:
+    return (
+        "Identify the exam-question text in these images. Return plain text only, preserving question stems, "
+        "options, answers, and analysis when visible. Do not describe decorative elements."
     )
 
 
@@ -375,6 +432,113 @@ def safe_ai_error_detail(exc: Exception | None = None) -> str:
     return "AI 服务暂时不可用，请稍后重试"
 
 
+def _ensure_openai_key() -> None:
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="未配置 OPENAI_API_KEY，请在 .env 文件中设置 OPENAI_API_KEY 以使用 AI 自动导入功能",
+        )
+
+
+def _multimodal_content(prompt: str, images: list[ImagePayload]) -> list[dict[str, Any]]:
+    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+    for image in images:
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": image_bytes_to_data_url(image.data, image.mime_type)},
+            }
+        )
+    return content
+
+
+def _call_chat_completion(content: str | list[dict[str, Any]], *, temperature: float = 0.1):
+    client = _build_import_client()
+    try:
+        return client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": content}],
+            response_format={"type": "json_object"},
+            temperature=temperature,
+            max_tokens=3000,
+        )
+    except APITimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except HTTPException:
+        raise
+    except (APIStatusError, APIConnectionError) as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+
+
+def _validate_ai_items(items: list[dict[str, Any]], warnings: list[str]) -> list[dict[str, Any]]:
+    valid: list[dict[str, Any]] = []
+    for index, item in enumerate(deduplicate_questions(items)):
+        validated, error = validate_question_item(item)
+        if validated:
+            validated["line_number"] = index + 1
+            valid.append(validated)
+        else:
+            warnings.append(f"第 {index + 1} 题格式有误: {error}")
+    return valid
+
+
+def call_ai_parse_multimodal(
+    text: str,
+    images: list[ImagePayload],
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    _ensure_openai_key()
+    total_start = time.perf_counter()
+    ai_start = time.perf_counter()
+    response = _call_chat_completion(_multimodal_content(build_ai_multimodal_prompt(text), images))
+    ai_ms = elapsed_ms(ai_start)
+    raw = response.choices[0].message.content if response.choices else ""
+    if not raw:
+        timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+        return [], ["AI 返回了空响应"], timing
+
+    items, warnings = extract_questions_from_ai_response(raw)
+    valid = _validate_ai_items(items, warnings)
+    timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+    if not valid:
+        ensure_questions_found(valid, warnings)
+    return valid, warnings, timing
+
+
+def call_ai_extract_text_from_images(images: list[ImagePayload]) -> tuple[str, list[str], dict[str, Any]]:
+    _ensure_openai_key()
+    total_start = time.perf_counter()
+    ai_start = time.perf_counter()
+    client = _build_import_client()
+    try:
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": _multimodal_content(build_ai_image_text_prompt(), images)}],
+            temperature=0.1,
+            max_tokens=3000,
+        )
+    except APITimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI 调用超时，请稍后重试") from exc
+    except HTTPException:
+        raise
+    except (APIStatusError, APIConnectionError) as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=safe_ai_error_detail(exc)) from exc
+
+    ai_ms = elapsed_ms(ai_start)
+    text = response.choices[0].message.content if response.choices else ""
+    timing = {"chunk_ms": 0, "ai_ms": ai_ms, "chunks": 1, "ai_chunks": [ai_ms], "total_ms": elapsed_ms(total_start)}
+    if not text.strip():
+        return "", ["图片识别失败：AI 返回了空响应"], timing
+    return text.strip(), [], timing
+
+
 def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[str, Any]], list[str]]:
     client = _build_import_client()
     try:
@@ -539,6 +703,26 @@ def ensure_questions_found(questions: list[dict[str, Any]], warnings: list[str])
 
 
 def preview_import_from_text(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    questions, warnings, timing = call_ai_parse(text)
+    ensure_questions_found(questions, warnings)
+    return questions, warnings, timing
+
+
+def preview_import_from_file_content(
+    text: str,
+    images: list[ImagePayload],
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    if images:
+        try:
+            return call_ai_parse_multimodal(text, images)
+        except HTTPException as exc:
+            if text.strip():
+                questions, warnings, timing = call_ai_parse(text)
+                warnings.insert(0, f"图片识别失败：{exc.detail}")
+                ensure_questions_found(questions, warnings)
+                return questions, warnings, timing
+            raise
+
     questions, warnings, timing = call_ai_parse(text)
     ensure_questions_found(questions, warnings)
     return questions, warnings, timing

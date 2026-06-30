@@ -2,11 +2,11 @@
   <div class="import-capability-strip">
     <div class="import-capability">
       <span class="capability-label">当前支持</span>
-      <strong>Word .docx / PPT .pptx</strong>
+      <strong>Word .docx / PPTX .pptx / PNG JPG WEBP</strong>
     </div>
     <div class="import-capability">
       <span class="capability-label">处理提示</span>
-      <strong>约 30 秒，大文件会更久</strong>
+      <strong>文档 30-120 秒，图片 10-60 秒</strong>
     </div>
     <div class="import-capability import-capability--wide">
       <span class="capability-label">切换页面</span>

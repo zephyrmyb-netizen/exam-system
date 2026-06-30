@@ -1,6 +1,6 @@
 ﻿# 学习宝
 
-基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PPT 预览导入等功能。
+基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PPT/图片预览导入等功能。
 
 ## 题库逻辑
 
@@ -209,15 +209,23 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 - **手动添加题目**：进入课程后可以逐道添加题目（支持单选题、多选题、判断题、填空题、简答题）
 - **批量导入**：通过 JSON 数组或 Word/PPT 文件批量导入
 
-### Word/PPT 预览导入流程
+### Word/PPT/图片预览导入流程
 
 文件上传采用**预览→修改→确认**三步流程，不是直接写入数据库：
 
-1. **上传文件**：调用 `POST /imports/file/preview`，后端提取文本后调用 AI 解析为题目数组
+1. **上传文件**：调用 `POST /imports/file/preview`，后端提取 Word/PPT 文本、PPT 内嵌图片或直接上传的图片后调用 AI 解析为题目数组
 2. **预览与修改**：前端展示 AI 解析结果，用户可以编辑题目字段（题干、选项、答案、解析等）
 3. **确认导入**：用户确认后调用 `POST /imports/confirm`，后端校验所有题目后统一写入数据库
 
 这种方式确保用户对导入内容有完全控制权，避免 AI 解析错误直接入库。
+
+支持的文件格式：
+
+- 文档：`.docx`、`.pptx`
+- 图片：`.png`、`.jpg`、`.jpeg`、`.webp`
+- 旧版 `.ppt` 暂不支持，请在 PowerPoint/WPS 中另存为 `.pptx` 后上传
+
+图片题目识别依赖当前 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入，例如 `mimo-v2.5`。如果模型不支持图片输入，纯文本 Word/PPT 导入仍可使用，图片识别会返回明确错误或 warning。
 
 #### AI 导入超时排查
 
@@ -504,8 +512,8 @@ del backend\xuexibao.db
 
 | 端点                  | 方法   | 说明                                        |
 | --------------------- | ------ | ------------------------------------------- |
-| `/imports/file`       | POST   | 上传 .docx/.pptx 文件，提取文本（最大 10MB）|
-| `/imports/file/preview`| POST   | 上传文件并用 AI 解析为题目，返回预览（不入库）|
+| `/imports/file`       | POST   | 上传 .docx/.pptx/.png/.jpg/.jpeg/.webp 文件，提取文本或图片识别文本（最大 10MB）|
+| `/imports/file/preview`| POST   | 上传文件并用 AI 解析为题目，支持 PPT 内嵌图片和直接图片，返回预览（不入库）|
 | `/imports/confirm`    | POST   | 确认预览后的题目并写入数据库                |
 | `/imports/file/auto`  | POST   | 上传文件并用 AI 直接解析并导入              |
 

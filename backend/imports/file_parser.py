@@ -5,6 +5,8 @@ from .import_orchestrator import (
     MAX_FILE_SIZE,
     SavedUpload,
     cleanup_temp_file,
+    detect_file_kind,
+    extract_images_from_file,
     extract_text_and_warnings,
     extract_text_from_file,
     extract_text_or_raise,
@@ -20,6 +22,8 @@ __all__ = [
     "extract_text_and_warnings",
     "extract_text_from_file",
     "extract_text_or_raise",
+    "extract_images_from_file",
+    "detect_file_kind",
     "save_upload_to_temp",
     "validate_upload",
 ]

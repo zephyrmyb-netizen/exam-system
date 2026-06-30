@@ -301,8 +301,8 @@ OPENAI_MODEL=mimo-v2.5
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/imports/file` | 上传 .docx/.pptx 提取文本（最大 10MB） |
-| POST | `/imports/file/preview` | 上传文件并用 AI 解析为题目，返回预览（不入库） |
+| POST | `/imports/file` | 上传 .docx/.pptx/.png/.jpg/.jpeg/.webp 提取文本或图片内容（最大 10MB） |
+| POST | `/imports/file/preview` | 上传文件并用 AI 解析为题目，支持 PPT 内嵌图片和直接图片，返回预览（不入库） |
 | POST | `/imports/confirm` | 确认预览后的题目并写入数据库 |
 | POST | `/imports/file/auto` | 上传文件并 AI 直接导入（无预览编辑环节） |
 

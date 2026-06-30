@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.1.0-ai-import-ppt-image",
+    version: "v2.1.0",
+    date: "2026-06-30",
+    type: "新增",
+    title: "AI 导入支持 PPT 与图片识别",
+    items: [
+      "AI 导入新增图片题目识别，支持 PNG、JPG、WEBP。",
+      "增强 PPTX 导入，支持读取页内文字并识别内嵌图片题目。",
+      "优化导入页文件类型提示、解析进度和失败提示。",
+      "旧版 PPT 会提示另存为 PPTX，避免用户反复上传失败。",
+    ],
+  },
+  {
     id: "v2.0.1-mobile-practice-immersive",
     version: "v2.0.1",
     date: "2026-06-29",
