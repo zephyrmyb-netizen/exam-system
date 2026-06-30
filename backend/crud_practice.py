@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from random import randint
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from . import models
 from .config import APP_TIMEZONE
@@ -395,6 +395,7 @@ def get_due_reviews(
 
     query = (
         db.query(models.UserQuestionReview)
+        .options(joinedload(models.UserQuestionReview.question))
         .filter(models.UserQuestionReview.user_id == user_id)
         .filter(
             (models.UserQuestionReview.next_review_at <= now) | (models.UserQuestionReview.next_review_at.is_(None))

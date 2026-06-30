@@ -18,9 +18,9 @@ BookmarkRepoDep = Annotated[BookmarkRepository, Depends(get_bookmark_repo)]
 def _visible_question_or_404(db: DbSession, *, question_id: int, user_id: int) -> models.Question:
     question = db.query(models.Question).filter(models.Question.id == question_id).first()
     if question is None:
-        raise HTTPException(status_code=404, detail="Question not found")
+        raise HTTPException(status_code=404, detail="题目不存在")
     if question.owner_id != user_id and question.visibility != "public":
-        raise HTTPException(status_code=404, detail="Question not found")
+        raise HTTPException(status_code=404, detail="题目不存在")
     return question
 
 
@@ -50,12 +50,21 @@ def list_bookmarks(
     current_user: CurrentUser,
     repo: BookmarkRepoDep,
     folder: str = Query("", description="Optional bookmark folder name"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
 ):
-    items, total = repo.list_for_user(user_id=current_user.id, folder=folder.strip())
+    items, total = repo.list_for_user(
+        user_id=current_user.id,
+        folder=folder.strip(),
+        page=page,
+        page_size=page_size,
+    )
     return schemas.BookmarkListOut(
         items=[_bookmark_out(item) for item in items],
         total=total,
         folders=repo.list_folders_for_user(user_id=current_user.id),
+        page=page,
+        page_size=page_size,
     )
 
 
@@ -66,4 +75,4 @@ def remove_bookmark(
     repo: BookmarkRepoDep,
 ):
     repo.delete_for_user_question(user_id=current_user.id, question_id=question_id)
-    return {"message": "Bookmark removed"}
+    return {"message": "已取消收藏"}

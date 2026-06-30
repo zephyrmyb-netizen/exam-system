@@ -212,13 +212,13 @@ onMounted(() => {
                 <strong class="text-sm font-black text-slate-950">
                   {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
                 </strong>
-                <small v-if="item.suffix" class="text-[9px] font-bold text-slate-400">{{ item.suffix }}</small>
+                <small v-if="item.suffix" class="text-[11px] font-bold text-slate-400">{{ item.suffix }}</small>
               </div>
-              <span class="mt-0.5 block text-[10px] font-bold text-slate-500">{{ item.label }}</span>
+              <span class="mt-0.5 block text-[11px] font-bold text-slate-500">{{ item.label }}</span>
             </div>
           </div>
           <div class="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5">
-            <span class="text-[10px] font-bold text-slate-400">7日</span>
+            <span class="text-[11px] font-bold text-slate-400">7日</span>
             <div class="flex flex-1 gap-1">
               <span
                 v-for="(count, index) in heatmapData"

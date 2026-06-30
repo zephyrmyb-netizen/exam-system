@@ -1,4 +1,4 @@
-"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
+﻿"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
 
 
 class TestDeleteCourseComplete:
@@ -15,11 +15,11 @@ class TestDeleteCourseComplete:
             "/auth/register",
             json={
                 "username": username,
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": username, "password": "pass"})
+        r = client.post("/auth/login", json={"username": username, "password": "passpw"})
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
     def test_delete_empty_course(self, client, auth_headers):
@@ -206,11 +206,11 @@ class TestEditCourse:
             "/auth/register",
             json={
                 "username": "ec_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "ec_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "ec_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(f"{self.COURSES_URL}{cid}", json={"name": "Hacked"}, headers=bh)
         assert resp.status_code == 403
@@ -299,11 +299,11 @@ class TestUnpublishCourse:
             "/auth/register",
             json={
                 "username": "uc_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "uc_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "uc_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=bh)
         assert resp.status_code == 403

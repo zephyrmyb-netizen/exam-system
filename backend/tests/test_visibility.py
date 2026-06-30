@@ -11,7 +11,7 @@ Covers all 7 permission requirements:
 """
 
 
-def _register_user(client, username: str, password: str = "pass"):
+def _register_user(client, username: str, password: str = "passpw"):
     """Helper: register and login a user, return auth headers."""
     client.post(
         "/auth/register",

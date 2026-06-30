@@ -2,10 +2,11 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from .. import models, schemas
+from ..crud_common import apply_pagination
 from ..database import get_db
 from .deps import require_permission
 
@@ -22,10 +23,22 @@ def _admin_user_out(user: models.User) -> schemas.AdminUserOut:
 @router.get("/users", response_model=schemas.AdminUserListOut)
 def list_users(
     current_user: AdminUser,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     db: Session = Depends(get_db),
 ):
-    users = db.query(models.User).options(joinedload(models.User.role_ref)).order_by(models.User.id.asc()).all()
-    return schemas.AdminUserListOut(items=[_admin_user_out(user) for user in users], total=len(users))
+    query = (
+        db.query(models.User)
+        .options(joinedload(models.User.role_ref))
+        .order_by(models.User.id.asc())
+    )
+    users, total = apply_pagination(query, page, page_size)
+    return schemas.AdminUserListOut(
+        items=[_admin_user_out(user) for user in users],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.patch("/users/{user_id}/role", response_model=schemas.AdminUserOut)
@@ -37,11 +50,11 @@ def update_user_role(
 ):
     role_name = body.role.strip()
     if role_name not in {"student", "teacher", "admin"}:
-        raise HTTPException(status_code=400, detail="Unsupported role")
+        raise HTTPException(status_code=400, detail="不支持的角色")
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="用户不存在")
 
     role = db.query(models.Role).filter(models.Role.name == role_name).first()
     if role is None:

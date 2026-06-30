@@ -1,4 +1,4 @@
-"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
+﻿"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
 
 
 class TestLibrary:
@@ -34,11 +34,11 @@ class TestLibrary:
             "/auth/register",
             json={
                 "username": "lib_viewer",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "lib_viewer", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "lib_viewer", "password": "passpw"})
         v_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"{self.LIBRARY_PUBLIC}/{cid}/questions", headers=v_headers)
         assert resp.status_code == 200
@@ -53,11 +53,11 @@ class TestLibrary:
             "/auth/register",
             json={
                 "username": "lib_spy",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "lib_spy", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "lib_spy", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(f"{self.LIBRARY_PUBLIC}/{cid}/questions", headers=b_headers)
         assert resp.status_code == 404

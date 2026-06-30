@@ -1,4 +1,4 @@
-"""Tests for questions endpoints: batch import, list, delete, validation."""
+﻿"""Tests for questions endpoints: batch import, list, delete, validation."""
 
 import pytest
 from pydantic import ValidationError
@@ -271,11 +271,11 @@ class TestQuestionUpdate:
             "/auth/register",
             json={
                 "username": "other_edit",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "other_edit", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "other_edit", "password": "passpw"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         c_resp = client.post("/courses/", json={"name": "OthersCourse"}, headers=other)
         others_cid = c_resp.json()["id"]
@@ -295,11 +295,11 @@ class TestQuestionUpdate:
             "/auth/register",
             json={
                 "username": "non_owner",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "non_owner", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "non_owner", "password": "passpw"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(
             f"/questions/{q['id']}",
@@ -372,11 +372,11 @@ class TestQuestionUnpublish:
             "/auth/register",
             json={
                 "username": "unpub_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "unpub_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "unpub_other", "password": "passpw"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"/questions/{qid}/unpublish", headers=other)
         assert resp.status_code == 403

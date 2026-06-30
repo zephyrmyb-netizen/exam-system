@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .utils import VALID_QUESTION_TYPES, normalize_answer
 
@@ -50,9 +50,10 @@ class QuestionValidatorMixin:
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str
-    invite_code: str
+    username: str = Field(..., min_length=3, max_length=32, pattern=r"^[A-Za-z0-9_]+$",
+                         description="用户名 3-32 位，仅支持字母、数字、下划线")
+    password: str = Field(..., min_length=6, max_length=64, description="密码长度 6-64 位")
+    invite_code: str = Field(..., min_length=1, max_length=100, description="注册邀请码")
 
 
 class UserOut(BaseModel):
@@ -79,10 +80,10 @@ class TokenResponse(BaseModel):
 
 
 class CourseCreate(BaseModel):
-    name: str
-    description: str = ""
-    subject: str = ""
-    visibility: str = "private"
+    name: str = Field(..., min_length=1, max_length=80, description="课程名 1-80 字符")
+    description: str = Field("", max_length=500)
+    subject: str = Field("", max_length=40)
+    visibility: str = Field("private", pattern=r"^(private|public)$")
 
 
 class CourseOut(BaseModel):
@@ -154,14 +155,14 @@ class CourseUpdate(BaseModel):
 
 
 class QuestionCreate(QuestionValidatorMixin, BaseModel):
-    subject: str = "默认科目"
-    chapter: str = "默认章节"
+    subject: str = Field("默认科目", max_length=40)
+    chapter: str = Field("默认章节", max_length=40)
     type: str  # single_choice, multiple_choice, true_false, fill_blank, short_answer
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000, description="题干 1-2000 字符")
     options: dict[str, Any] | None = None
-    answer: str
-    analysis: str = ""
-    difficulty: str = "normal"
+    answer: str = Field(..., min_length=1, max_length=2000, description="答案 1-2000 字符")
+    analysis: str = Field("", max_length=2000)
+    difficulty: str = Field("normal", pattern=r"^(easy|normal|hard)$")
     course_id: int | None = None  # optional: add to a course
 
 
@@ -169,14 +170,14 @@ class QuestionManualCreate(QuestionValidatorMixin, BaseModel):
     """Manual single-question creation — course_id is required."""
 
     course_id: int
-    subject: str = "默认科目"
-    chapter: str = "默认章节"
+    subject: str = Field("默认科目", max_length=40)
+    chapter: str = Field("默认章节", max_length=40)
     type: str  # single_choice, multiple_choice, true_false, fill_blank, short_answer
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000, description="题干 1-2000 字符")
     options: dict[str, Any] | None = None
-    answer: str
-    analysis: str = ""
-    difficulty: str = "normal"
+    answer: str = Field(..., min_length=1, max_length=2000, description="答案 1-2000 字符")
+    analysis: str = Field("", max_length=2000)
+    difficulty: str = Field("normal", pattern=r"^(easy|normal|hard)$")
 
 
 class QuestionUpdate(BaseModel):
@@ -401,8 +402,8 @@ class PracticeHistoryOut(BaseModel):
 
 class BookmarkCreate(BaseModel):
     question_id: int
-    folder_name: str = "Default"
-    note: str = ""
+    folder_name: str = Field("Default", min_length=1, max_length=40)
+    note: str = Field("", max_length=500)
 
 
 class BookmarkOut(BaseModel):
@@ -427,14 +428,16 @@ class BookmarkListOut(BaseModel):
     items: list[BookmarkOut] = []
     total: int = 0
     folders: list[str] = []
+    page: int = 1
+    page_size: int = 20
 
 
 # -- Knowledge Tags ----------------------------------------------------------
 
 
 class TagCreate(BaseModel):
-    name: str
-    color: str = ""
+    name: str = Field(..., min_length=1, max_length=30, description="标签名 1-30 字符")
+    color: str = Field("", max_length=20)
     parent_id: int | None = None
 
 
@@ -521,11 +524,11 @@ class ScoreBucketOut(BaseModel):
 
 
 class ExamCreate(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1, max_length=100, description="考试标题 1-100 字符")
     course_id: int
-    description: str = ""
-    time_limit: int = 60
-    total_score: int = 100
+    description: str = Field("", max_length=500)
+    time_limit: int = Field(60, ge=1, le=300, description="考试时长 1-300 分钟")
+    total_score: int = Field(100, ge=1, le=1000, description="总分 1-1000")
     is_shuffle: bool = False
     is_blind: bool = True
     question_ids: list[int] = []
@@ -618,10 +621,20 @@ class AdminUserOut(BaseModel):
 class AdminUserListOut(BaseModel):
     items: list[AdminUserOut] = []
     total: int = 0
+    page: int = 1
+    page_size: int = 20
 
 
 class AdminRoleUpdate(BaseModel):
     role: str
+
+    @field_validator("role")
+    @classmethod
+    def _check_role(cls, v: str) -> str:
+        v = v.strip()
+        if v not in {"student", "teacher", "admin"}:
+            raise ValueError("角色仅支持 student / teacher / admin")
+        return v
 
 
 class AdminStatsOut(BaseModel):

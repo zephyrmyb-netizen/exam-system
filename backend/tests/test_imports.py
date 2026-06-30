@@ -1,4 +1,4 @@
-"""Tests for imports endpoints: file upload, size limits, AI auto import."""
+﻿"""Tests for imports endpoints: file upload, size limits, AI auto import."""
 
 import io
 from unittest.mock import MagicMock, patch
@@ -391,11 +391,11 @@ class TestFileAutoCourseName:
             "/auth/register",
             json={
                 "username": "bob_auto_cn",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "bob_auto_cn", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "bob_auto_cn", "password": "passpw"})
         bob = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
         mock = self._mock_openai_response()
@@ -429,11 +429,11 @@ class TestCourseNameUserIsolation:
             "/auth/register",
             json={
                 "username": username,
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": username, "password": "pass"})
+        r = client.post("/auth/login", json={"username": username, "password": "passpw"})
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
     def test_same_name_different_users(self, client):

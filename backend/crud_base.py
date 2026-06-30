@@ -6,6 +6,8 @@ from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import Session
 
+from .crud_common import MAX_UNPAGINATED_ROWS
+
 ModelType = TypeVar("ModelType")
 CreateSchema = TypeVar("CreateSchema")
 UpdateSchema = TypeVar("UpdateSchema")
@@ -64,6 +66,8 @@ class GenericCRUD(Generic[ModelType, CreateSchema, UpdateSchema]):
         total = query.count()
         if page > 0 and page_size > 0:
             query = query.offset((page - 1) * page_size).limit(page_size)
+        else:
+            query = query.limit(MAX_UNPAGINATED_ROWS)
         return PaginatedResult(items=query.all(), total=total, page=page, page_size=page_size)
 
     def delete(self, db: Session, id: int) -> bool:

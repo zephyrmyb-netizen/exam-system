@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -6,6 +7,12 @@ from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .config import APP_TIMEZONE
+
+logger = logging.getLogger("xuexibao.crud")
+
+# 当调用方未指定分页（page<=0 或 page_size<=0）时，对未分页查询施加的硬上限，
+# 防止数据量过大时一次性返回全部行造成内存/网络压力。正常使用不会触及此上限。
+MAX_UNPAGINATED_ROWS = 1000
 
 
 def _local_now() -> datetime:
@@ -94,9 +101,20 @@ def derive_course_name_from_filename(filename: str) -> str:
 def apply_pagination(query, page: int, page_size: int):
     """Apply offset/limit pagination to a SQLAlchemy query.
 
-    Returns (items, total). When page or page_size <= 0, returns all rows.
+    Returns (items, total). When page or page_size <= 0, returns up to
+    ``MAX_UNPAGINATED_ROWS`` rows (with a warning) instead of an unbounded
+    ``.all()`` — this protects the server from accidental full-table scans
+    when callers omit pagination.
     """
     total = query.count()
     if page > 0 and page_size > 0:
         query = query.offset((page - 1) * page_size).limit(page_size)
+    else:
+        if total > MAX_UNPAGINATED_ROWS:
+            logger.warning(
+                "apply_pagination: unpaginated query returned %d rows, capping to %d",
+                total,
+                MAX_UNPAGINATED_ROWS,
+            )
+        query = query.limit(MAX_UNPAGINATED_ROWS)
     return query.all(), total

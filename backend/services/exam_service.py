@@ -24,13 +24,13 @@ class ExamService:
 
     def create_exam(self, data: schemas.ExamCreate, *, creator_id: int) -> models.Exam:
         if not data.title.strip():
-            raise HTTPException(status_code=400, detail="Exam title cannot be empty")
+            raise HTTPException(status_code=400, detail="考试标题不能为空")
 
         course = self.course_repo.get_by_id(data.course_id)
         if course is None:
-            raise HTTPException(status_code=404, detail="Course not found")
+            raise HTTPException(status_code=404, detail="课程不存在")
         if course.owner_id != creator_id:
-            raise HTTPException(status_code=403, detail="Only the course owner can create exams")
+            raise HTTPException(status_code=403, detail="只有课程所有者可以创建考试")
 
         if data.question_ids:
             found = (
@@ -44,16 +44,16 @@ class ExamService:
             found_ids = {row[0] for row in found}
             missing = [question_id for question_id in data.question_ids if question_id not in found_ids]
             if missing:
-                raise HTTPException(status_code=400, detail=f"Questions not in course: {missing}")
+                raise HTTPException(status_code=400, detail=f"以下题目不在该课程中：{missing}")
 
         return self.exam_repo.create_exam(data, creator_id=creator_id)
 
     def publish_exam(self, exam_id: int, user_id: int) -> models.Exam:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None:
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
         if exam.creator_id != user_id:
-            raise HTTPException(status_code=403, detail="Only the creator can publish this exam")
+            raise HTTPException(status_code=403, detail="只有创建者可以发布此考试")
         return self.exam_repo.update_status(exam_id, "published")
 
     def list_published(
@@ -76,15 +76,15 @@ class ExamService:
     def get_detail(self, exam_id: int, user_id: int) -> models.Exam:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None:
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
         if exam.status != "published" and exam.creator_id != user_id:
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
         return exam
 
     def start_attempt(self, exam_id: int, user_id: int) -> models.ExamSubmission:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None or exam.status != "published":
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
 
         existing = self.exam_repo.get_active_submission(exam_id=exam_id, user_id=user_id)
         if existing is not None:
@@ -99,7 +99,7 @@ class ExamService:
     ) -> schemas.ExamResultOut:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None or exam.status != "published":
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
 
         submission = self.exam_repo.get_active_submission(exam_id=exam_id, user_id=user_id)
         if submission is None:
@@ -165,7 +165,7 @@ class ExamService:
         except (TypeError, ValueError) as exc:
             raise HTTPException(
                 status_code=500,
-                detail="Stored submission answers are corrupted",
+                detail="已保存的答卷数据损坏，请联系管理员重置",
             ) from exc
 
         correct_count = 0
@@ -192,7 +192,7 @@ class ExamService:
     def get_leaderboard(self, exam_id: int, user_id: int) -> schemas.ExamLeaderboardOut:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
         if exam is None or (exam.status != "published" and exam.creator_id != user_id):
-            raise HTTPException(status_code=404, detail="Exam not found")
+            raise HTTPException(status_code=404, detail="考试不存在")
 
         entries = []
         for index, submission in enumerate(self.exam_repo.list_submitted(exam_id), start=1):

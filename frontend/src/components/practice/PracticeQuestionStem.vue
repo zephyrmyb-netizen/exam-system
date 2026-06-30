@@ -86,7 +86,7 @@ defineProps({
   .practice-stem__tag,
   .practice-stem__hint {
     padding: 2px 8px;
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 </style>

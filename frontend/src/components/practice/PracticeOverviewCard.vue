@@ -93,11 +93,11 @@ function displayNumber(value, emptyValue = "--") {
 .overview-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); padding-top: var(--space-2); }
 .overview-stat { display: grid; gap: 1px; }
 .overview-stat-value { font-size: 18px; font-weight: 800; color: var(--text-main); }
-.overview-stat-label { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.overview-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 .stat-accent { color: var(--teal); }
 .overview-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.overview-weak-label { font-size: 10px; font-weight: 700; color: var(--text-muted); }
-.overview-weak-chip { padding: 2px 7px; border-radius: 999px; background: var(--rose-soft); color: var(--rose); font-size: 10px; font-weight: 700; }
+.overview-weak-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.overview-weak-chip { padding: 2px 7px; border-radius: 999px; background: var(--rose-soft); color: var(--rose); font-size: 11px; font-weight: 700; }
 
 @media (max-width: 420px) {
   .overview-card { padding: var(--space-3); }

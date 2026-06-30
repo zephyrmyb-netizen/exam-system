@@ -3,6 +3,7 @@
 from sqlalchemy.orm import joinedload
 
 from .. import models
+from ..crud_common import apply_pagination
 from .base import BaseRepository
 
 
@@ -17,7 +18,14 @@ class BookmarkRepository(BaseRepository[models.Bookmark]):
             .first()
         )
 
-    def list_for_user(self, *, user_id: int, folder: str = "") -> tuple[list[models.Bookmark], int]:
+    def list_for_user(
+        self,
+        *,
+        user_id: int,
+        folder: str = "",
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[models.Bookmark], int]:
         query = (
             self.query()
             .options(joinedload(models.Bookmark.question))
@@ -26,8 +34,7 @@ class BookmarkRepository(BaseRepository[models.Bookmark]):
         )
         if folder:
             query = query.filter(models.Bookmark.folder_name == folder)
-        items = query.all()
-        return items, len(items)
+        return apply_pagination(query, page, page_size)
 
     def list_folders_for_user(self, *, user_id: int) -> list[str]:
         rows = (

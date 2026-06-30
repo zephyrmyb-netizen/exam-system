@@ -1,4 +1,4 @@
-"""Tests for practice endpoints: random, submit with normalization."""
+﻿"""Tests for practice endpoints: random, submit with normalization."""
 
 
 class TestPractice:
@@ -306,11 +306,11 @@ class TestPracticeWithCourses:
             "/auth/register",
             json={
                 "username": "intruder",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        resp = client.post("/auth/login", json={"username": "intruder", "password": "pass"})
+        resp = client.post("/auth/login", json={"username": "intruder", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
         # User B tries to access user A's private course

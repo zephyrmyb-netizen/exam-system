@@ -185,6 +185,8 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     if (result.value) return;
     selectedAnswer.value = value;
     validationMessage.value = "";
+    // 选择题点击即提交：选定单选/判断答案后立即判定
+    void submitAnswer();
   }
 
   function toggleMultipleAnswer(key: string): void {
@@ -195,6 +197,10 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       selectedAnswers.value = [...selectedAnswers.value, key];
     }
     validationMessage.value = "";
+    // 多选题点击即提交：用户每点一个选项都用当前已选集合立即判定
+    if (selectedAnswers.value.length > 0) {
+      void submitAnswer();
+    }
   }
 
   function updateTextAnswer(value: string): void {
