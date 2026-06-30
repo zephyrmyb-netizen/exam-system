@@ -4,6 +4,7 @@ import { defineStore, storeToRefs } from "pinia";
 import { previewFile } from "../api/imports";
 import { getErrorMessage } from "../api/request";
 import type { ImportPreviewResponse, ImportTiming } from "../types";
+import { getFileExtension } from "../utils/importFiles";
 
 export type TaskStatus = "idle" | "running" | "success" | "error";
 export type TaskMode = "preview" | "auto";
@@ -69,7 +70,12 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
   getters: {
     progressTitle(state): string {
       if (state.status === "running") {
-        if (state.elapsedSeconds < 3) return "正在读取文档";
+        const ext = getFileExtension(state.fileName);
+        if (ext === ".pptx") {
+          return state.elapsedSeconds < 3 ? "正在读取 PPT 页内容" : "正在识别 PPT 中的图片题目";
+        }
+        if ([".png", ".jpg", ".jpeg", ".webp"].includes(ext)) return "正在识别图片中的题目";
+        if (state.elapsedSeconds < 3) return "正在提取文档文字";
         return "AI 正在解析题目，请稍等";
       }
       if (state.status === "success") return "AI 解析完成";
@@ -79,13 +85,19 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
 
     progressDetail(state): string {
       if (state.status === "running") {
+        const ext = getFileExtension(state.fileName);
+        if (ext === ".pptx") {
+          return state.elapsedSeconds < 3
+            ? "正在读取 PPT 页内容，请稍候。"
+            : "正在识别 PPT 中的图片题目，PPT 页数较多时可能需要 1-3 分钟。";
+        }
+        if ([".png", ".jpg", ".jpeg", ".webp"].includes(ext)) {
+          return "图片识别依赖多模态 AI，可能需要 10-60 秒。";
+        }
         if (state.elapsedSeconds < 3) {
-          return "正在上传并提取文档文字，请稍候。";
+          return "正在提取文档文字，请稍候。";
         }
-        if (state.elapsedSeconds < 60) {
-          return "AI 正在导入题目，请等待约 30 秒；大文件或模型繁忙时可能更久。";
-        }
-        return "AI 仍在处理，大文件可能超过 1 分钟；切到其他页面也会继续，回来后可查看进度。";
+        return "正在让 AI 整理题目，文档较长时可能需要 30-120 秒；切到其他页面也会继续。";
       }
 
       if (state.status === "success" && state.timing) {

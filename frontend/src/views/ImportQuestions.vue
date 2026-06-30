@@ -19,12 +19,23 @@ import ImportTaskMonitor from "../components/import/ImportTaskMonitor.vue";
 import { useImportCourses } from "../composables/useImportCourses";
 import { useManualQuestionImport } from "../composables/useManualQuestionImport";
 import { useAiImportTask } from "../stores/aiImportTask";
+import {
+  ACCEPTED_IMPORT_FILE_TYPES,
+  ALLOWED_IMPORT_EXTENSIONS,
+  formatImportFileSize,
+  getFileExtension,
+  getFileKindLabel,
+  getUnsupportedImportMessage,
+  isAllowedImportFile,
+  isImageFile,
+  isLegacyPpt,
+} from "../utils/importFiles";
 
 const router = useRouter();
 const route = useRoute();
 const aiTask = useAiImportTask();
 
-const ALLOWED_EXTENSIONS = [".docx", ".pptx"];
+const ACCEPTED_FILE_TYPES = ACCEPTED_IMPORT_FILE_TYPES;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const selectedFile = ref(null);
@@ -54,6 +65,11 @@ const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.pr
 const hasImportSuccess = computed(() => !!importResult.value);
 const activeFileName = computed(() => selectedFile.value?.name || aiTask.fileName.value || "");
 const hasActiveFile = computed(() => !!activeFileName.value);
+const activeFileKind = computed(() => getFileKindLabel(selectedFile.value || { name: aiTask.fileName.value }));
+const activeFileSize = computed(() => formatImportFileSize(selectedFile.value?.size));
+const activeFileDisplay = computed(() => [activeFileName.value, activeFileKind.value, activeFileSize.value].filter(Boolean).join(" · "));
+const selectedFileIsImage = computed(() => isImageFile(selectedFile.value));
+const canExtractText = computed(() => !!selectedFile.value && !selectedFileIsImage.value && !isParsing.value);
 const activeCourseId = computed(() => selectedCourseId.value || aiTask.courseId.value || 0);
 const activeCourseName = computed(() => derivedCourseName.value || aiTask.courseName.value || "");
 
@@ -132,9 +148,8 @@ function onFileChange(event) {
     return;
   }
 
-  const ext = file.name?.slice(file.name.lastIndexOf(".")).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    fileError.value = `不支持 ${ext || "未知"} 格式，仅支持 ${ALLOWED_EXTENSIONS.join("、")}`;
+  if (isLegacyPpt(file) || !isAllowedImportFile(file)) {
+    fileError.value = getUnsupportedImportMessage(file.name);
     selectedFile.value = null;
     event.target.value = "";
     return;
@@ -155,6 +170,10 @@ async function handlePreview() {
   const file = selectedFile.value || aiTask.fileRef.value;
   if (!file) {
     fileError.value = "请先选择文件。";
+    return;
+  }
+  if (isLegacyPpt(file) || !ALLOWED_IMPORT_EXTENSIONS.includes(getFileExtension(file.name))) {
+    fileError.value = getUnsupportedImportMessage(file.name);
     return;
   }
 
@@ -217,6 +236,10 @@ async function uploadFile() {
     fileError.value = "请先选择文件。";
     return;
   }
+  if (isImageFile(selectedFile.value)) {
+    fileError.value = "图片文件没有可直接提取的文本，请使用 AI 解析。";
+    return;
+  }
 
   fileLoading.value = true;
   fileMessage.value = "";
@@ -277,21 +300,23 @@ onMounted(() => {
   <section class="stack">
     <div class="section-heading">
       <h2>导入题目</h2>
-      <p>上传 Word / PPT，AI 自动解析成题库</p>
+      <p>上传 Word、PPTX 或图片，AI 自动解析成题库</p>
     </div>
 
     <ImportCapabilityStrip />
 
     <template v-if="phase === 'select'">
       <label class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
-        <input class="file-input-native" type="file" accept=".docx,.pptx" :disabled="isParsing" @change="onFileChange" />
+        <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" :disabled="isParsing" @change="onFileChange" />
         <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-        <span v-if="!hasActiveFile" class="hero-drop-text">选择 .docx 或 .pptx 文件</span>
+        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PPTX / 图片</span>
         <span v-else class="hero-drop-text hero-drop-selected">
           <CheckCircle :size="15" :stroke-width="2.5" />
-          {{ activeFileName }}
+          {{ activeFileDisplay }}
         </span>
-        <span class="hero-drop-hint">{{ isParsing ? "AI 正在解析，暂不能更换文件" : "最大 10MB" }}</span>
+        <span class="hero-drop-hint">
+          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .docx、.pptx、.png、.jpg、.webp，最大 10MB" }}
+        </span>
       </label>
 
       <div v-if="hasActiveFile" class="opt-panel">
@@ -319,7 +344,7 @@ onMounted(() => {
 
       <button class="hero-cta" type="button" :disabled="!hasActiveFile || isParsing" @click="handlePreview">
         <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" />
-        {{ isParsing ? "AI 正在解析..." : "AI 解析文档" }}
+        {{ isParsing ? "AI 正在解析..." : "AI 解析文件" }}
       </button>
 
       <ImportTaskMonitor
@@ -336,7 +361,7 @@ onMounted(() => {
           将导入到已有题库：<strong>{{ currentTargetName }}</strong>
         </span>
         <span v-else>
-          将解析文档并预览，确认后创建题库：<strong>{{ currentTargetName || "未命名" }}</strong>
+          将解析文件并预览，确认后创建题库：<strong>{{ currentTargetName || "未命名" }}</strong>
         </span>
       </p>
 
@@ -361,9 +386,11 @@ onMounted(() => {
 
           <div class="adv-card">
             <div class="adv-title">只提取文本</div>
-            <p class="adv-desc">提取文件文字，给其他 AI 工具整理。</p>
-            <button class="ghost-button" type="button" :disabled="fileLoading || isParsing || !selectedFile" @click="uploadFile">
-              {{ fileLoading ? "提取中..." : "提取文本" }}
+            <p class="adv-desc">
+              {{ selectedFileIsImage ? "图片文件没有可直接提取的文本，请使用 AI 解析。" : "提取文件文字，给其他 AI 工具整理。" }}
+            </p>
+            <button class="ghost-button" type="button" :disabled="fileLoading || !canExtractText" @click="uploadFile">
+              {{ selectedFileIsImage ? "图片需使用 AI 解析" : fileLoading ? "提取中..." : "提取文本" }}
             </button>
             <p v-if="fileMessage" class="msg msg-ok">{{ fileMessage }}</p>
             <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
