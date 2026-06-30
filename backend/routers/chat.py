@@ -4,6 +4,7 @@ import json
 import logging
 
 from openai import APIConnectionError, APIStatusError
+
 try:
     from openai import APITimeoutError
 except ImportError:  # pragma: no cover

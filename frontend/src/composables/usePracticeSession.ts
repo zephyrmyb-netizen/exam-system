@@ -24,6 +24,7 @@ interface SessionStats {
 }
 
 const CORRECT_AUTO_NEXT_DELAY_MS = 650;
+const MAX_DUPLICATE_FETCH_ATTEMPTS = 8;
 
 export interface UsePracticeSessionProps {
   courseId?: number | null;
@@ -69,6 +70,24 @@ function createSessionStats(): SessionStats {
     streak: 0,
     startedAt: null,
   };
+}
+
+function isQuestionLike(value: unknown): value is Question {
+  return typeof value === "object" && value !== null && typeof (value as { id?: unknown }).id === "number";
+}
+
+function extractDueReviewQuestion(value: unknown): Question | null {
+  if (isQuestionLike(value)) return value;
+
+  if (typeof value !== "object" || value === null) return null;
+  const payload = value as {
+    question?: unknown;
+    items?: Array<{ question?: unknown }>;
+  };
+
+  if (isQuestionLike(payload.question)) return payload.question;
+  const item = payload.items?.find((entry) => isQuestionLike(entry.question));
+  return isQuestionLike(item?.question) ? item.question : null;
 }
 
 export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePracticeSessionReturn {
@@ -168,15 +187,27 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
         params.exclude_ids = Array.from(answeredQuestionIds).join(",");
       }
 
-      let data: Question;
-      if (props.mode === "wrong_review") {
-        data = await getReviewWrongQuestion(params);
-      } else if (props.mode === "due_review") {
-        data = await getReviewDueQuestion(params);
-      } else {
-        if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
-        if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
-        data = await getRandomPracticeQuestion(params);
+      if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
+      if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
+
+      let data: Question | null = null;
+      for (let attempt = 0; attempt < MAX_DUPLICATE_FETCH_ATTEMPTS; attempt += 1) {
+        if (props.mode === "wrong_review") {
+          data = await getReviewWrongQuestion(params);
+        } else if (props.mode === "due_review") {
+          data = extractDueReviewQuestion(await getReviewDueQuestion(params));
+        } else {
+          data = await getRandomPracticeQuestion(params);
+        }
+
+        if (data && !answeredQuestionIds.has(data.id)) break;
+        data = null;
+      }
+
+      if (!data) {
+        sessionComplete.value = answeredQuestionIds.size > 0;
+        question.value = null;
+        return;
       }
 
       question.value = data;

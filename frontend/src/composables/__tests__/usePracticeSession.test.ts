@@ -84,4 +84,27 @@ describe("usePracticeSession", () => {
     expect(session.sessionComplete.value).toBe(true);
     expect(session.errorMessage.value).toBe("");
   });
+
+  it("does not show a duplicate question when the backend ignores exclusions", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+
+    getRandomPracticeQuestion
+      .mockResolvedValueOnce(makeQuestion(1))
+      .mockResolvedValueOnce(makeQuestion(1))
+      .mockResolvedValueOnce(makeQuestion(2));
+    submitPracticeAnswer.mockResolvedValue(correctResult());
+
+    await session.startSession();
+    await flushPromises();
+    expect(session.question.value?.id).toBe(1);
+
+    session.setSingleAnswer("A");
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(650);
+    await flushPromises();
+
+    expect(session.question.value?.id).toBe(2);
+    expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(3);
+  });
 });

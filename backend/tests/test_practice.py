@@ -67,6 +67,29 @@ class TestPractice:
 
         assert resp.status_code == 404
 
+    def test_wrong_review_excludes_answered_ids(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        questions = client.get("/questions/", headers=auth_headers).json()
+        first, second = questions[0], questions[1]
+
+        for question in (first, second):
+            resp = client.post(
+                self.PRACTICE_SUBMIT,
+                json={"question_id": question["id"], "user_answer": "__wrong__"},
+                headers=auth_headers,
+            )
+            assert resp.status_code == 200
+            assert resp.json()["is_correct"] is False
+
+        resp = client.get(
+            "/practice/review/wrong",
+            headers=auth_headers,
+            params={"exclude_ids": str(first["id"])},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == second["id"]
+
     def test_submit_correct_single_choice(self, client, auth_headers, sample_questions):
         client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
         resp = client.get("/questions/", headers=auth_headers)
