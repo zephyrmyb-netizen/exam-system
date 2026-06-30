@@ -396,6 +396,7 @@ def get_due_reviews(
     user_id: int,
     course_id: int | None = None,
     limit: int = 20,
+    excluded_ids: list[int] | None = None,
 ) -> list[models.UserQuestionReview]:
     now = datetime.now(UTC)
 
@@ -410,6 +411,8 @@ def get_due_reviews(
 
     if course_id is not None:
         query = query.filter(models.UserQuestionReview.course_id == course_id)
+    if excluded_ids:
+        query = query.filter(~models.UserQuestionReview.question_id.in_(excluded_ids))
 
     query = query.order_by(
         models.UserQuestionReview.next_review_at.asc().nulls_first(),

@@ -139,6 +139,7 @@ def list_course_questions(
 def random_question_in_course(
     course_id: int,
     type: str = "",
+    exclude_ids: str = Query("", description="Comma-separated current-session question ids to exclude"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
@@ -150,6 +151,7 @@ def random_question_in_course(
         course_id,
         user_id=current_user.id,
         q_type=type,
+        excluded_ids=[int(item) for item in exclude_ids.split(",") if item.strip().isdigit()],
     )
     if not question:
         raise HTTPException(status_code=404, detail="该课程下暂无可用题目")

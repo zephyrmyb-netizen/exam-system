@@ -10,6 +10,7 @@ def get_random_wrong_question(
     user_id: int,
     course_id: int | None = None,
     q_type: str = "",
+    excluded_ids: list[int] | None = None,
 ) -> models.Question | None:
     from random import randint
 
@@ -24,14 +25,14 @@ def get_random_wrong_question(
         base = base.filter(models.Question.course_id == course_id)
     if q_type:
         base = base.filter(models.Question.type == q_type)
+    if excluded_ids:
+        base = base.filter(~models.Question.id.in_(excluded_ids))
 
-    # Find the maximum wrong_count among matching questions.
+    # Find the maximum wrong_count among matching, non-excluded questions.
     max_wc = (
-        db.query(func.max(models.WrongRecord.wrong_count))
+        base.join(models.WrongRecord, models.WrongRecord.question_id == models.Question.id)
         .filter(models.WrongRecord.user_id == user_id)
-        .filter(
-            models.WrongRecord.question_id.in_(db.query(models.Question.id).filter(models.Question.id.in_(wrong_qids)))
-        )
+        .with_entities(func.max(models.WrongRecord.wrong_count))
         .scalar()
     )
     if max_wc is None:

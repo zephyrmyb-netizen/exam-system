@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.3.4-practice-no-repeat-deep-fix",
+    version: "v2.3.4",
+    date: "2026-06-30",
+    type: "修复",
+    title: "深层修复题库刷完后重复循环",
+    items: [
+      "普通练习、错题复习和到期复习统一排除本轮已答题目。",
+      "后端抽题接口支持本轮排除列表，避免刷完后重新抽到第一题。",
+      "前端增加重复题防御，即使接口偶发返回旧题也不会展示给用户。",
+      "题库全部刷完后直接显示练习总结，不再无限重复。",
+    ],
+  },
+  {
     id: "v2.3.3-practice-session-complete",
     version: "v2.3.3",
     date: "2026-06-30",
