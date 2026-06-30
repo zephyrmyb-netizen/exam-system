@@ -11,8 +11,8 @@ import PracticeSummaryModal from "../components/practice/PracticeSummaryModal.vu
 import PracticeTextAnswer from "../components/practice/PracticeTextAnswer.vue";
 import PracticeTopBar from "../components/practice/PracticeTopBar.vue";
 import { usePracticeSession } from "../composables/usePracticeSession";
+import { useSwipeNext } from "../composables/useSwipeNext";
 import { typeLabel } from "../utils/question";
-import { useConfirmDialog } from "../stores/confirmDialog";
 
 const props = defineProps({
   courseId: { type: String, default: "" },
@@ -23,7 +23,6 @@ const props = defineProps({
 
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
-const confirmDialog = useConfirmDialog();
 const showSummary = ref(false);
 
 const {
@@ -54,6 +53,19 @@ const {
   updateTextAnswer,
   validationMessage,
 } = usePracticeSession(props);
+
+// 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
+// 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
+// fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
+const swipeEnabled = computed(() => !!result.value);
+useSwipeNext({
+  onSwipe: () => {
+    if (swipeEnabled.value) {
+      void fetchRandomQuestion();
+    }
+  },
+  enabled: swipeEnabled,
+});
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
@@ -89,18 +101,6 @@ const isCourseEmpty = computed(() =>
     && question.value === null
     && sessionStats.value.answeredCount === 0,
 );
-
-async function confirmAndSkip() {
-  if (hasAnswerSelected.value) {
-    const confirmed = await confirmDialog.confirm({
-      title: "换下一题",
-      message: "当前答案还没提交，确定换一题吗？",
-      confirmText: "换题",
-    });
-    if (!confirmed) return;
-  }
-  fetchRandomQuestion();
-}
 
 function goBack() {
   if (props.courseId) {
@@ -244,7 +244,6 @@ onMounted(() => {
           :current-answer="currentAnswer"
           :correct-answer-display="correctAnswerDisplay"
           :loading="loading"
-          @next="fetchRandomQuestion"
         />
       </div>
 
@@ -254,8 +253,8 @@ onMounted(() => {
         :submitting="submitting"
         :has-answer-selected="hasAnswerSelected"
         :answer-hint="answerHint"
+        :is-text-question="isTextQuestion"
         @submit="submitAnswer"
-        @skip="confirmAndSkip"
       />
     </div>
 

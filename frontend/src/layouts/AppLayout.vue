@@ -239,7 +239,10 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  /* 不设 overflow-x: hidden —— 根据 CSS 规范，设置 overflow-x 为非 visible 值
+     会把 overflow-y 计算为 auto，使 .app-main 成为滚动容器，从而破坏
+     ExamTake .exam-topbar 的 position: sticky（会相对于 .app-main 而非视口吸顶）。
+     子元素已用 min-width: 0 + max-width: 100% 约束，不会横向溢出。 */
 }
 
 .app-main :deep(> *) {

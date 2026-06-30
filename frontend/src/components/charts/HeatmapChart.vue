@@ -84,7 +84,7 @@ function dayLabel(date: string): string {
 }
 .heatmap-cell span {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 .heatmap-cell strong {

@@ -1,14 +1,22 @@
 <script setup>
-import { ArrowRight, BookMarked, CheckCircle, XCircle } from "@lucide/vue";
+import { computed } from "vue";
+import { BookMarked, CheckCircle, ChevronLeft, XCircle } from "@lucide/vue";
 
-defineProps({
+const props = defineProps({
   result: { type: Object, required: true },
   currentAnswer: { type: String, default: "" },
   correctAnswerDisplay: { type: String, default: "" },
   loading: { type: Boolean, default: false },
 });
 
-defineEmits(["next"]);
+// 「下一题」按钮已移除，全部题型统一改为右滑手势跳下一题。
+// 答对时由 usePracticeSession 内的 650ms 定时器自动跳；
+// 答错时用户右滑即可进入下一题。
+defineEmits([]);
+
+const swipeHint = computed(() =>
+  props.loading ? "加载中..." : "向左滑动查看下一题",
+);
 </script>
 
 <template>
@@ -45,10 +53,10 @@ defineEmits(["next"]);
       <span>{{ result.wrongbook_recorded ? "已记录到错题本" : "已加入错题本" }}</span>
     </div>
 
-    <button class="practice-primary-button" type="button" :disabled="loading" @click="$emit('next')">
-      <ArrowRight :size="17" :stroke-width="2.5" />
-      <span>{{ loading ? "加载中..." : "下一题" }}</span>
-    </button>
+    <div v-if="!result.is_correct" class="practice-swipe-hint">
+      <ChevronLeft :size="15" :stroke-width="2.5" class="practice-swipe-hint__icon" />
+      <span>{{ swipeHint }}</span>
+    </div>
   </div>
 </template>
 
@@ -153,31 +161,33 @@ defineEmits(["next"]);
   background: rgba(236, 253, 245, 0.9);
 }
 
-.practice-primary-button {
+.practice-swipe-hint {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  width: 100%;
-  min-height: 50px;
-  padding: 13px 18px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  color: #fff;
-  font-size: var(--text-base);
-  font-weight: 800;
-  box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  justify-self: start;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px dashed rgba(148, 163, 184, 0.7);
 }
 
-.practice-primary-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+.practice-swipe-hint__icon {
+  animation: swipe-hint-pulse 1.6s ease-in-out infinite;
 }
 
-.practice-primary-button:disabled {
-  opacity: 0.5;
+@keyframes swipe-hint-pulse {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-4px);
+    opacity: 0.6;
+  }
 }
 
 @media (max-width: 420px) {

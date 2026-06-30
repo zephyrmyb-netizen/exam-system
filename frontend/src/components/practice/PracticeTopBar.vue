@@ -64,7 +64,7 @@ defineEmits(["back", "end"]);
   border-radius: var(--radius-full);
   background: #fef3c7;
   color: #92400e;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 

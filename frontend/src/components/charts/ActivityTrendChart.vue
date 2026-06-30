@@ -99,7 +99,7 @@ function dayLabel(date: string): string {
 }
 .activity-item small {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 </style>

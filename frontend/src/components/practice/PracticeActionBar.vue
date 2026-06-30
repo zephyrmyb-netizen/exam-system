@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
-import { Send, Shuffle } from "@lucide/vue";
+import { Send } from "@lucide/vue";
 
 defineProps({
   result: { type: Object, default: null },
@@ -8,9 +8,12 @@ defineProps({
   submitting: { type: Boolean, default: false },
   hasAnswerSelected: { type: Boolean, default: false },
   answerHint: { type: String, default: "" },
+  // 仅文本题（fill_blank / short_answer）需要保留「提交答案」按钮；
+  // 选择题改为点击即提交，不再走 ActionBar。
+  isTextQuestion: { type: Boolean, default: false },
 });
 
-defineEmits(["submit", "skip"]);
+defineEmits(["submit"]);
 
 const keyboardOffset = ref(0);
 
@@ -35,17 +38,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="!result" class="practice-action-bar" :style="{ bottom: keyboardOffset ? `${keyboardOffset}px` : 'var(--practice-sticky-bottom)' }">
+  <div
+    v-if="isTextQuestion && !result"
+    class="practice-action-bar"
+    :style="{ bottom: keyboardOffset ? `${keyboardOffset}px` : 'var(--practice-sticky-bottom)' }"
+  >
     <p v-if="!hasAnswerSelected && !submitting && answerHint" class="practice-action-bar__hint">
       {{ answerHint }}
     </p>
 
     <div class="practice-action-bar__panel">
-      <button class="practice-skip-button" type="button" @click="$emit('skip')">
-        <span>不会，换一题</span>
-        <Shuffle :size="13" :stroke-width="2.5" />
-      </button>
-
       <button class="practice-submit-button" type="button" :disabled="!canSubmit" @click="$emit('submit')">
         <Send :size="17" :stroke-width="2.5" />
         <span>{{ submitting ? "提交中..." : "提交答案" }}</span>
@@ -84,7 +86,6 @@ onUnmounted(() => {
 
 .practice-action-bar__panel {
   display: grid;
-  grid-template-columns: minmax(112px, 0.9fr) minmax(0, 1.1fr);
   gap: 8px;
   min-width: 0;
   width: 100%;
@@ -97,8 +98,7 @@ onUnmounted(() => {
   backdrop-filter: blur(14px);
 }
 
-.practice-submit-button,
-.practice-skip-button {
+.practice-submit-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,16 +106,13 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius: var(--radius-md);
-  font-weight: 800;
-  transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out), background var(--ease-out);
-}
-
-.practice-submit-button {
   border: none;
+  border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #fff;
+  font-weight: 800;
   box-shadow: var(--shadow-primary);
+  transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out), background var(--ease-out);
 }
 
 .practice-submit-button:hover:not(:disabled) {
@@ -127,20 +124,7 @@ onUnmounted(() => {
   opacity: 0.48;
 }
 
-.practice-skip-button {
-  border: 1px solid var(--line-soft);
-  background: var(--surface-soft);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.practice-skip-button:hover {
-  border-color: var(--line-accent);
-  color: var(--text-secondary);
-}
-
-.practice-submit-button span,
-.practice-skip-button span {
+.practice-submit-button span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -161,12 +145,7 @@ onUnmounted(() => {
     display: none;
   }
 
-  .practice-action-bar__panel {
-    grid-template-columns: minmax(104px, 0.9fr) minmax(0, 1.1fr);
-  }
-
-  .practice-submit-button,
-  .practice-skip-button {
+  .practice-submit-button {
     width: 100%;
     min-height: 42px;
     padding: 9px 10px;

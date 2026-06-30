@@ -1,5 +1,5 @@
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from . import models
 from .crud_common import _add_question_visibility_filter, apply_pagination
@@ -60,7 +60,12 @@ def get_wrong_records(
     chapter: str = "",
     q_type: str = "",
 ) -> tuple[list[models.WrongRecord], int]:
-    query = db.query(models.WrongRecord).filter(models.WrongRecord.user_id == user_id).join(models.Question)
+    query = (
+        db.query(models.WrongRecord)
+        .options(joinedload(models.WrongRecord.question))
+        .filter(models.WrongRecord.user_id == user_id)
+        .join(models.Question)
+    )
 
     if keyword:
         like = f"%{keyword}%"

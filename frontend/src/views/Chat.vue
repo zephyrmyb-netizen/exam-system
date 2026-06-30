@@ -2,7 +2,7 @@
 import { computed, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowLeft, Moon, Send, Sparkles, Sun, RefreshCw } from "@lucide/vue";
-import { sendChatMessage } from "../api/chat";
+import { sendChatMessage, streamChatMessage } from "../api/chat";
 import { getErrorMessage } from "../api/request";
 import { normalizeChatReply } from "../utils/chatText";
 import { useThemeStore } from "../stores/theme";
@@ -22,6 +22,8 @@ const messages = ref([
   },
 ]);
 
+let currentStreamController = null;
+
 const suggestions = ["出一道选择题", "解释这道错题", "总结本章重点"];
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
 
@@ -34,6 +36,8 @@ function currentTime() {
 }
 
 function goBack() {
+  // 中断未完成的流式请求，避免离开页面后回调仍写入 state
+  currentStreamController?.abort();
   router.push({ name: "home" });
 }
 
@@ -63,6 +67,10 @@ function buildHistory() {
     .map((m) => ({ role: m.role, content: m.text }));
 }
 
+/**
+ * 发送消息。优先走流式（边生成边显示），流式失败时自动回退到一次性模式。
+ * `options.retry` 为 true 时表示重试，不再向 messages 追加用户消息。
+ */
 async function sendMessage(text = draft.value, options = {}) {
   const content = text.trim();
   if (!content || loading.value) return;
@@ -74,17 +82,61 @@ async function sendMessage(text = draft.value, options = {}) {
   scrollToBottom();
 
   loading.value = true;
+  // 预占一条 assistant 消息，流式 delta 持续追加到它的 text
+  const placeholder = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    role: "assistant",
+    text: "",
+    time: currentTime(),
+    error: false,
+    streaming: true,
+  };
+  messages.value.push(placeholder);
+  scrollToBottom();
+
   try {
-    const data = await sendChatMessage(content, buildHistory());
-    const reply = normalizeChatReply(data.reply || "AI 没有返回内容，请重试。");
-    addMessage("assistant", reply, {
-      error: !data.reply,
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      currentStreamController = streamChatMessage(content, buildHistory(), {
+        onDelta: (delta) => {
+          placeholder.text += delta;
+          scrollToBottom();
+        },
+        onDone: (fullText) => {
+          if (settled) return;
+          settled = true;
+          placeholder.streaming = false;
+          if (!fullText.trim()) {
+            placeholder.text = "AI 没有返回内容，请重试。";
+            placeholder.error = true;
+            resolve();
+            return;
+          }
+          placeholder.text = normalizeChatReply(fullText);
+          resolve();
+        },
+        onError: (msg) => {
+          if (settled) return;
+          settled = true;
+          reject(new Error(msg));
+        },
+      });
     });
-  } catch (err) {
-    const msg = getErrorMessage(err, "AI 回复失败，请稍后重试");
-    addMessage("assistant", msg, { error: true });
+  } catch (streamErr) {
+    // 流式失败：移除占位消息，回退到一次性请求
+    const idx = messages.value.indexOf(placeholder);
+    if (idx !== -1) messages.value.splice(idx, 1);
+    try {
+      const data = await sendChatMessage(content, buildHistory());
+      const reply = normalizeChatReply(data.reply || "AI 没有返回内容，请重试。");
+      addMessage("assistant", reply, { error: !data.reply });
+    } catch (fallbackErr) {
+      const msg = getErrorMessage(fallbackErr, "AI 回复失败，请稍后重试");
+      addMessage("assistant", msg, { error: true });
+    }
   } finally {
     loading.value = false;
+    currentStreamController = null;
     scrollToBottom();
   }
 }
@@ -134,8 +186,11 @@ function retry(index) {
           {{ message.role === "assistant" ? "AI" : "我" }}
         </div>
         <div class="chat-bubble">
-          <p>{{ message.text }}</p>
-          <time>{{ message.time }}</time>
+          <p v-if="message.text">{{ message.text }}</p>
+          <div v-else class="typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
+          <time v-if="!message.streaming">{{ message.time }}</time>
           <button
             v-if="message.role === 'assistant' && message.error"
             class="retry-btn"
@@ -147,13 +202,6 @@ function retry(index) {
           </button>
         </div>
       </article>
-
-      <div v-if="loading" class="chat-row assistant">
-        <div class="chat-avatar" aria-hidden="true">AI</div>
-        <div class="chat-bubble typing-indicator">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
     </div>
 
     <div class="suggestion-row" aria-label="快捷提问">

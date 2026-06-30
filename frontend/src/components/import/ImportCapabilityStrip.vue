@@ -40,7 +40,7 @@
 
 .capability-label {
   color: var(--text-placeholder);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 

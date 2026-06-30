@@ -72,7 +72,12 @@ def _ai_override_active() -> bool:
     return OpenAI is not __import__("openai").OpenAI
 
 
-def validate_upload(filename: str, content: bytes) -> str:
+def validate_upload_extension(filename: str) -> str:
+    """Validate the file extension only (no size check). Returns the lowercased ext.
+
+    Use this before streaming to avoid reading the file when the format is
+    outright unsupported.
+    """
     ext = Path(filename or "").suffix.lower()
     if ext == LEGACY_PPT_EXTENSION:
         raise HTTPException(
@@ -84,6 +89,17 @@ def validate_upload(filename: str, content: bytes) -> str:
             status_code=400,
             detail=f"不支持的文件格式 '{ext}'，仅支持 .docx、.pdf、.pptx、.png、.jpg、.jpeg、.webp 文件",
         )
+    return ext
+
+
+def validate_upload(filename: str, content: bytes) -> str:
+    """Validate both extension and size of an in-memory upload.
+
+    Kept for backward compatibility with callers that already hold the bytes
+    (e.g. tests). New code should prefer :func:`validate_upload_extension`
+    plus streaming size checks in :func:`save_upload_to_temp`.
+    """
+    ext = validate_upload_extension(filename)
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
@@ -107,13 +123,49 @@ def detect_file_kind(filename_or_path: str) -> str:
     return "unsupported"
 
 
+# 流式上传分块大小：64KB，平衡 I/O 次数与内存占用
+_UPLOAD_CHUNK_SIZE = 64 * 1024
+
+
 async def save_upload_to_temp(file: UploadFile) -> SavedUpload:
+    """Stream an upload to a temp file in chunks, enforcing the size limit.
+
+    Avoids loading the entire file into memory before validation. The
+    extension is checked up front (cheap, no I/O); size is enforced
+    incrementally while writing chunks — exceeding the limit aborts early
+    and the partial temp file is removed.
+    """
     filename = file.filename or "unknown"
-    content = await file.read()
-    ext = validate_upload(filename, content)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=ext or ".tmp") as tmp:
-        tmp.write(content)
-        path = tmp.name
+    ext = validate_upload_extension(filename)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext or ".tmp")
+    path = tmp.name
+    written = 0
+    try:
+        tmp.close()
+        with open(path, "wb") as out:
+            while True:
+                chunk = await file.read(_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > MAX_FILE_SIZE:
+                    out.close()
+                    os.unlink(path)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"文件大小超过限制（最大 {MAX_FILE_SIZE // (1024 * 1024)}MB）",
+                    )
+                out.write(chunk)
+    except HTTPException:
+        raise
+    except Exception:
+        # Clean up the partial temp file on any other failure.
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        raise
     return SavedUpload(filename=filename, ext=ext, path=path)
 
 

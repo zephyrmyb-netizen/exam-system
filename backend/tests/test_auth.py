@@ -23,8 +23,8 @@ class TestAuth:
                 "invite_code": "",
             },
         )
-        assert resp.status_code == 400
-        assert "邀请码" in resp.json()["detail"]
+        # 空邀请码现在由 Pydantic schema 层（min_length=1）拦截，返回 422
+        assert resp.status_code == 422
 
     def test_register_wrong_invite_code(self, client):
         resp = client.post(
@@ -139,7 +139,8 @@ class TestAuth:
                 "invite_code": "dev-invite",
             },
         )
-        assert resp.status_code == 400
+        # 纯空格用户名不匹配 ^[A-Za-z0-9_]+$ 模式，由 schema 层拦截返回 422
+        assert resp.status_code == 422
 
     def test_login_nonexistent_user(self, client):
         resp = client.post(

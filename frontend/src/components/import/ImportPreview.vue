@@ -435,7 +435,7 @@ function handleRetry() {
 .q-type-tag {
   padding: 2px 6px; border-radius: 4px;
   background: var(--primary-soft); color: var(--primary-strong);
-  font-size: 10px; font-weight: 700; flex-shrink: 0;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
 .q-preview { font-size: var(--text-xs); color: var(--text-secondary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
