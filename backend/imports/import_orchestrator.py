@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover
     APITimeoutError = TimeoutError
 
 
-ALLOWED_EXTENSIONS = {".docx", ".pptx", ".png", ".jpg", ".jpeg", ".webp"}
+ALLOWED_EXTENSIONS = {".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"}
 LEGACY_PPT_EXTENSION = ".ppt"
 MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
@@ -82,7 +82,7 @@ def validate_upload(filename: str, content: bytes) -> str:
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx、.pptx、.png、.jpg、.jpeg、.webp 文件",
+            detail=f"不支持的文件格式 '{ext}'，仅支持 .docx、.pdf、.pptx、.png、.jpg、.jpeg、.webp 文件",
         )
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -96,6 +96,8 @@ def detect_file_kind(filename_or_path: str) -> str:
     ext = Path(filename_or_path or "").suffix.lower()
     if ext == ".docx":
         return "docx"
+    if ext == ".pdf":
+        return "pdf"
     if ext == ".pptx":
         return "pptx"
     if ext in IMAGE_EXTENSIONS:
@@ -129,6 +131,8 @@ def extract_text_and_warnings(file_path: str) -> tuple[str, list[str]]:
     warnings: list[str] = []
     if ext == ".docx":
         return _extract_docx(file_path, warnings)
+    if ext == ".pdf":
+        return _extract_pdf(file_path, warnings)
     if ext == ".pptx":
         return _extract_pptx(file_path, warnings)
     if ext in IMAGE_EXTENSIONS:
@@ -156,6 +160,33 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
                 parts.append(" | ".join(row_texts))
 
     return "\n".join(parts), warnings
+
+
+def _extract_pdf(path: str, warnings: list[str]) -> tuple[str, list[str]]:
+    from pypdf import PdfReader
+
+    try:
+        reader = PdfReader(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"PDF 文件读取失败：{exc}") from exc
+
+    if reader.is_encrypted:
+        try:
+            reader.decrypt("")
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="PDF 文件已加密，请先解除密码后再上传。") from exc
+
+    parts: list[str] = []
+    for page_index, page in enumerate(reader.pages, start=1):
+        try:
+            text = (page.extract_text() or "").strip()
+        except Exception as exc:
+            warnings.append(f"第 {page_index} 页 PDF 文本提取失败：{exc}")
+            continue
+        if text:
+            parts.append(f"[Page {page_index}]\n{text}")
+
+    return "\n\n".join(parts), warnings
 
 
 def _extract_pptx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
@@ -216,6 +247,8 @@ def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
         return text, warnings
     if ext == ".pptx":
         raise HTTPException(status_code=400, detail="未从 PPT 中识别到文字或图片题目，请检查文件是否为空，或尝试导出为图片后上传。")
+    if ext == ".pdf":
+        raise HTTPException(status_code=400, detail="未从 PDF 中提取到文字，请确认不是扫描版图片 PDF，或将页面导出为图片后上传。")
     raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
 
 

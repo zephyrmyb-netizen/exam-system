@@ -137,7 +137,7 @@ export default {
   import: {
     title: "AI 导入",
     upload: "上传文件",
-    uploadHint: "支持 .docx / .pptx / .png / .jpg / .webp 文件，最大 10MB",
+    uploadHint: "支持 .docx / .pdf / .pptx / .png / .jpg / .webp 文件，最大 10MB",
     preview: "预览题目",
     confirm: "确认导入",
     autoImport: "直接导入",

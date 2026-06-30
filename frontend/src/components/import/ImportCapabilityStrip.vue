@@ -2,7 +2,7 @@
   <div class="import-capability-strip">
     <div class="import-capability">
       <span class="capability-label">当前支持</span>
-      <strong>Word .docx / PPTX .pptx / PNG JPG WEBP</strong>
+      <strong>Word .docx / PDF .pdf / PPTX .pptx / PNG JPG WEBP</strong>
     </div>
     <div class="import-capability">
       <span class="capability-label">处理提示</span>

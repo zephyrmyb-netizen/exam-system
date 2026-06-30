@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.1.1-ai-import-pdf",
+    version: "v2.1.1",
+    date: "2026-06-30",
+    type: "修复",
+    title: "AI 导入支持选择 PDF",
+    items: [
+      "修复手机文件选择器中 PDF 文件无法选择的问题。",
+      "AI 导入新增文本型 PDF 提取，支持从 PDF 页面文字生成题库。",
+      "扫描版 PDF 会给出明确提示，建议导出为图片后上传识别。",
+      "同步更新导入页格式提示和前后端校验。",
+    ],
+  },
+  {
     id: "v2.1.0-ai-import-ppt-image",
     version: "v2.1.0",
     date: "2026-06-30",

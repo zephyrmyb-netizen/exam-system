@@ -1,4 +1,4 @@
-export const ALLOWED_IMPORT_EXTENSIONS = [".docx", ".pptx", ".png", ".jpg", ".jpeg", ".webp"] as const;
+export const ALLOWED_IMPORT_EXTENSIONS = [".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"] as const;
 export const UNSUPPORTED_LEGACY_EXTENSIONS = [".ppt"] as const;
 export const ACCEPTED_IMPORT_FILE_TYPES = ALLOWED_IMPORT_EXTENSIONS.join(",");
 
@@ -16,7 +16,7 @@ export function isImageFile(file: FileLike): boolean {
 }
 
 export function isDocumentFile(file: FileLike): boolean {
-  return [".docx", ".pptx"].includes(getFileExtension(file?.name));
+  return [".docx", ".pdf", ".pptx"].includes(getFileExtension(file?.name));
 }
 
 export function isLegacyPpt(file: FileLike): boolean {
@@ -30,6 +30,7 @@ export function isAllowedImportFile(file: FileLike): boolean {
 export function getFileKindLabel(file: FileLike): string {
   const ext = getFileExtension(file?.name);
   if (ext === ".docx") return "Word 文档";
+  if (ext === ".pdf") return "PDF 文档";
   if (ext === ".pptx") return "PPTX 演示文稿";
   if ([".png", ".jpg", ".jpeg", ".webp"].includes(ext)) return "图片题目";
   if (ext === ".ppt") return "旧版 PPT，不支持";
@@ -48,5 +49,5 @@ export function getUnsupportedImportMessage(fileName: string | null | undefined)
   if (ext === ".ppt") {
     return "暂不支持旧版 .ppt，请在 PowerPoint/WPS 中另存为 .pptx 后上传。";
   }
-  return `不支持 ${ext || "未知"} 格式，目前支持 Word、PPTX、PNG、JPG、WEBP。`;
+  return `不支持 ${ext || "未知"} 格式，目前支持 Word、PDF、PPTX、PNG、JPG、WEBP。`;
 }

@@ -309,13 +309,13 @@ onMounted(() => {
       <label class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
         <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" :disabled="isParsing" @change="onFileChange" />
         <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PPTX / 图片</span>
+        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPTX / 图片</span>
         <span v-else class="hero-drop-text hero-drop-selected">
           <CheckCircle :size="15" :stroke-width="2.5" />
           {{ activeFileDisplay }}
         </span>
         <span class="hero-drop-hint">
-          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .docx、.pptx、.png、.jpg、.webp，最大 10MB" }}
+          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .docx、.pdf、.pptx、.png、.jpg、.webp，最大 10MB" }}
         </span>
       </label>
 

@@ -54,6 +54,39 @@ def _make_pptx_bytes(text: str = "", image_bytes: bytes | None = None) -> bytes:
     return buf.getvalue()
 
 
+def _make_pdf_bytes(text: str) -> bytes:
+    # Minimal text PDF with one Helvetica text stream. It keeps the test independent
+    # from optional PDF writer libraries while still exercising real PDF parsing.
+    escaped = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    stream = f"BT /F1 14 Tf 72 720 Td ({escaped}) Tj ET".encode("latin-1", errors="ignore")
+    objects.append(b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream")
+
+    output = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for index, obj in enumerate(objects, start=1):
+        offsets.append(len(output))
+        output.extend(f"{index} 0 obj\n".encode("ascii"))
+        output.extend(obj)
+        output.extend(b"\nendobj\n")
+    xref_offset = len(output)
+    output.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    output.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        output.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    output.extend(
+        f"trailer\n<< /Root 1 0 R /Size {len(objects) + 1} >>\nstartxref\n{xref_offset}\n%%EOF\n".encode(
+            "ascii"
+        )
+    )
+    return bytes(output)
+
+
 class TestMultimodalImport:
     PREVIEW_URL = "/imports/file/preview"
     FILE_URL = "/imports/file"
@@ -75,6 +108,18 @@ class TestMultimodalImport:
         assert resp.status_code == 200
         assert "Python" in resp.json()["text"]
         assert "[Slide 1]" in resp.json()["text"]
+
+    def test_upload_pdf_extracts_page_text(self, client, auth_headers):
+        content = _make_pdf_bytes("1. PDF question A. yes B. no Answer: A")
+        resp = client.post(
+            self.FILE_URL,
+            headers=auth_headers,
+            files={"file": ("pdf-review.pdf", content, "application/pdf")},
+        )
+
+        assert resp.status_code == 200
+        assert "PDF question" in resp.json()["text"]
+        assert "[Page 1]" in resp.json()["text"]
 
     @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
     def test_preview_pptx_with_embedded_image_uses_multimodal_ai(self, client, auth_headers, monkeypatch):
