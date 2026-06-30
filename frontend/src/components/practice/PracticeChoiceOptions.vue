@@ -86,6 +86,8 @@ function pickOption(key) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  /* 允许父级横向滑动手势，垂直滚动仍可用 */
+  touch-action: pan-y;
 }
 
 .practice-option-card {
@@ -102,7 +104,10 @@ function pickOption(key) {
   background: var(--surface);
   text-align: left;
   color: var(--text-main);
-  transition: all var(--ease-out);
+  /* 用 ease-spring 让点击回弹更柔和有弹性 */
+  transition: border-color var(--ease-out), background var(--ease-out),
+              box-shadow var(--ease-out), transform var(--ease-spring);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-option-card:hover:not(:disabled) {
@@ -111,8 +116,10 @@ function pickOption(key) {
   box-shadow: var(--shadow-xs);
 }
 
+/* 点击反馈：从 0.99 加强到 0.97，加弹性曲线让按压更真实 */
 .practice-option-card:active:not(:disabled) {
-  transform: scale(0.99);
+  transform: scale(0.97);
+  transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .practice-option-card.is-selected {
@@ -196,6 +203,7 @@ function pickOption(key) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  touch-action: pan-y;
 }
 
 .practice-boolean-button {
@@ -210,7 +218,10 @@ function pickOption(key) {
   color: var(--text-main);
   font-size: 15px;
   font-weight: 800;
-  transition: all var(--ease-out);
+  transition: border-color var(--ease-out), background var(--ease-out),
+              color var(--ease-out), box-shadow var(--ease-out),
+              transform var(--ease-spring);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-boolean-button:hover:not(:disabled) {

@@ -87,8 +87,14 @@
   --shadow-teal: 0 6px 18px rgba(13, 148, 136, 0.22);
 
   /* ── Transitions ── */
-  --ease-out: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-out: 通用快速反馈（hover / 选中态），柔和的减速曲线 */
+  --ease-out: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-spring: 微弹性，适合按钮按压回弹 */
+  --ease-spring: 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ease-smooth: 内容切换（题目切换/卡片进入），更慢更柔和 */
+  --ease-smooth: 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-bounce: 强弹性反馈，适合选项点击 */
+  --ease-bounce: 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Shell ── */
   --shell-max: 720px;

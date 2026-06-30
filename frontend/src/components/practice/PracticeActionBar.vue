@@ -112,12 +112,20 @@ onUnmounted(() => {
   color: #fff;
   font-weight: 800;
   box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out), background var(--ease-out);
+  transition: transform var(--ease-spring), box-shadow var(--ease-out),
+              border-color var(--ease-out), background var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-submit-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+}
+
+/* 按压反馈：用弹性曲线让按钮回弹更柔和 */
+.practice-submit-button:active:not(:disabled) {
+  transform: scale(0.96);
+  transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .practice-submit-button:disabled {

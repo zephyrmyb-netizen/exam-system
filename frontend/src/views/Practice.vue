@@ -11,7 +11,7 @@ import PracticeSummaryModal from "../components/practice/PracticeSummaryModal.vu
 import PracticeTextAnswer from "../components/practice/PracticeTextAnswer.vue";
 import PracticeTopBar from "../components/practice/PracticeTopBar.vue";
 import { usePracticeSession } from "../composables/usePracticeSession";
-import { useSwipeNext } from "../composables/useSwipeNext";
+import { createSwipeProgress, useSwipeNext } from "../composables/useSwipeNext";
 import { typeLabel } from "../utils/question";
 
 const props = defineProps({
@@ -58,6 +58,7 @@ const {
 // 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
 // fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
 const swipeEnabled = computed(() => !!result.value);
+const swipeProgress = createSwipeProgress();
 useSwipeNext({
   onSwipe: () => {
     if (swipeEnabled.value) {
@@ -65,7 +66,12 @@ useSwipeNext({
     }
   },
   enabled: swipeEnabled,
+  progress: swipeProgress,
 });
+
+// 跟手位移：左滑时卡片轻微左移，给用户「我在拖动」的实感
+const swipeOffsetX = computed(() => `calc(${swipeProgress.value} * -28px)`);
+const swipeOpacity = computed(() => 1 - swipeProgress.value * 0.35);
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
@@ -208,44 +214,55 @@ onMounted(() => {
     </div>
 
     <div v-else-if="question" class="practice-content">
-      <div class="practice-card-shell">
-        <PracticeQuestionStem :question="question" />
+      <Transition name="question-fade" mode="out-in">
+        <div
+          :key="question.id"
+          class="practice-card-shell"
+          :style="{
+            transform: `translateX(${swipeOffsetX})`,
+            opacity: swipeOpacity,
+          }"
+        >
+          <PracticeQuestionStem :question="question" />
 
-        <div class="practice-answer-section">
-          <PracticeChoiceOptions
-            v-if="!isTextQuestion"
-            :question-type="question.type"
-            :options="answerOptions"
-            :selected-answer="selectedAnswer"
-            :selected-answers="selectedAnswers"
-            :result="result"
-            :correct-answer-display="correctAnswerDisplay"
-            @pick-single="setSingleAnswer"
-            @toggle-multiple="toggleMultipleAnswer"
-          />
+          <div class="practice-answer-section">
+            <PracticeChoiceOptions
+              v-if="!isTextQuestion"
+              :question-type="question.type"
+              :options="answerOptions"
+              :selected-answer="selectedAnswer"
+              :selected-answers="selectedAnswers"
+              :result="result"
+              :correct-answer-display="correctAnswerDisplay"
+              @pick-single="setSingleAnswer"
+              @toggle-multiple="toggleMultipleAnswer"
+            />
 
-          <PracticeTextAnswer
-            v-else
-            :model-value="textAnswer"
-            :disabled="!!result"
-            @update:model-value="updateTextAnswer"
-            @keydown="handleTextKeydown"
-          />
+            <PracticeTextAnswer
+              v-else
+              :model-value="textAnswer"
+              :disabled="!!result"
+              @update:model-value="updateTextAnswer"
+              @keydown="handleTextKeydown"
+            />
+          </div>
+
+          <div v-if="validationMessage || errorMessage" class="practice-message-stack">
+            <p v-if="validationMessage" class="msg msg-warn">{{ validationMessage }}</p>
+            <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
+          </div>
+
+          <Transition name="result-pop">
+            <PracticeResultPanel
+              v-if="result"
+              :result="result"
+              :current-answer="currentAnswer"
+              :correct-answer-display="correctAnswerDisplay"
+              :loading="loading"
+            />
+          </Transition>
         </div>
-
-        <div v-if="validationMessage || errorMessage" class="practice-message-stack">
-          <p v-if="validationMessage" class="msg msg-warn">{{ validationMessage }}</p>
-          <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
-        </div>
-
-        <PracticeResultPanel
-          v-if="result"
-          :result="result"
-          :current-answer="currentAnswer"
-          :correct-answer-display="correctAnswerDisplay"
-          :loading="loading"
-        />
-      </div>
+      </Transition>
 
       <PracticeActionBar
         :result="result"
@@ -300,6 +317,47 @@ onMounted(() => {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 253, 0.96));
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(226, 232, 240, 0.88);
+  /* 跟手位移用 transform，加 will-change 提示浏览器优化合成层 */
+  will-change: transform, opacity;
+  transition: transform 0.06s linear, opacity 0.06s linear;
+}
+
+/* ── 题目切换过渡：从右侧淡入并轻微上移 ── */
+.question-fade-enter-active {
+  transition: opacity var(--ease-smooth), transform var(--ease-smooth);
+}
+
+.question-fade-leave-active {
+  transition: opacity 0.16s cubic-bezier(0.22, 1, 0.36, 1), transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.question-fade-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.question-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+/* ── 结果面板出现：弹性缩放淡入 ── */
+.result-pop-enter-active {
+  transition: opacity var(--ease-bounce), transform var(--ease-bounce);
+}
+
+.result-pop-leave-active {
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.result-pop-enter-from {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+}
+
+.result-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
 }
 
 .practice-answer-section,
