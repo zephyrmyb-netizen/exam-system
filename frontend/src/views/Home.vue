@@ -176,19 +176,24 @@ onMounted(() => {
         <span>搜索题库、课程、题目</span>
       </button>
 
-      <div class="mt-3 grid grid-cols-4 gap-1.5">
+      <div class="mt-3 grid grid-cols-2 gap-2">
         <button
           v-for="item in heroActions"
           :key="item.label"
-          class="relative grid min-h-[60px] place-items-center gap-0.5 rounded-xl border border-white/15 bg-white/10 px-1 py-2 text-center active:bg-white/20"
+          class="relative grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-left active:bg-white/20"
           type="button"
           @click="goTo(item.to)"
         >
-          <span v-if="item.badge" class="absolute -top-1.5 right-1 rounded-full bg-amber-300 px-1 py-px text-[8px] font-black leading-tight text-blue-900">
+          <span v-if="item.badge" class="absolute -top-1.5 right-1.5 rounded-full bg-amber-300 px-1.5 py-px text-[8px] font-black leading-tight text-blue-900">
             {{ item.badge }}
           </span>
-          <component :is="item.icon" :size="19" :stroke-width="2.3" />
-          <strong class="text-[11px] font-black leading-tight">{{ item.label }}</strong>
+          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/14">
+            <component :is="item.icon" :size="18" :stroke-width="2.3" />
+          </span>
+          <span class="min-w-0">
+            <strong class="block truncate text-[12px] font-black leading-tight">{{ item.label }}</strong>
+            <small class="mt-0.5 block line-clamp-2 text-[10px] font-semibold leading-snug text-white/70">{{ item.desc }}</small>
+          </span>
         </button>
       </div>
     </section>
@@ -263,8 +268,8 @@ onMounted(() => {
       <div v-if="recentCourses.length > 0" class="space-y-2">
         <Card v-for="course in recentCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
           <CardContent class="p-3">
-            <div class="flex items-center gap-3">
-              <button class="flex min-w-0 flex-1 items-center gap-3 text-left" type="button" @click="goTo(`/courses/${course.id}`)">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <button class="flex min-w-0 items-center gap-3 text-left" type="button" @click="goTo(`/courses/${course.id}`)">
                 <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
                   <BookOpen :size="20" :stroke-width="2.2" />
                 </span>
@@ -275,7 +280,7 @@ onMounted(() => {
                   </small>
                 </span>
               </button>
-              <Button size="sm" @click="goTo(`/courses/${course.id}/practice`)">练习</Button>
+              <Button size="sm" class="shrink-0 px-3" @click="goTo(`/courses/${course.id}/practice`)">练习</Button>
             </div>
           </CardContent>
         </Card>
