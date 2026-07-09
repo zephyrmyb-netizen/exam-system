@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.3.5-ux-copy-polish",
+    version: "v2.3.5",
+    date: "2026-07-01",
+    type: "优化",
+    title: "用户体验与文案收口",
+    items: [
+      "修复首页、题库页和底部导航的异常文案显示。",
+      "优化首页核心入口和学习概览的信息层级。",
+      "优化题库卡片操作区，降低误触和拥挤感。",
+      "统一移动端加载、空状态和操作反馈体验。",
+    ],
+  },
+  {
     id: "v2.3.4-practice-no-repeat-deep-fix",
     version: "v2.3.4",
     date: "2026-06-30",

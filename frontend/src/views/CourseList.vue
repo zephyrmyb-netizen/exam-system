@@ -199,15 +199,15 @@ onMounted(fetchCourses);
 
 <template>
   <section class="space-y-4 pb-24">
-    <div class="flex items-start justify-between gap-3">
-      <div>
+    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+      <div class="min-w-0">
         <p class="text-sm font-bold text-slate-400">选择课程开始练习</p>
-        <h1 class="mt-1 text-4xl font-black text-slate-950">我的题库</h1>
+        <h1 class="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">我的题库</h1>
         <p class="mt-2 text-sm font-semibold text-slate-500">{{ courseSummary }}</p>
       </div>
-      <div class="flex shrink-0 gap-2">
-        <Button variant="outline" :disabled="loading" @click="fetchCourses">刷新</Button>
-        <Button @click="openCreate">
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+        <Button variant="outline" class="min-w-0 px-3" :disabled="loading" @click="fetchCourses">刷新</Button>
+        <Button class="min-w-0 px-3" @click="openCreate">
           <Plus :size="16" :stroke-width="2.5" />
           创建题库
         </Button>
@@ -267,12 +267,12 @@ onMounted(fetchCourses);
     <div class="space-y-3">
       <Card v-for="course in filteredCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
         <CardContent class="p-4">
-          <button class="flex w-full items-center gap-3 text-left" type="button" @click="router.push(`/courses/${course.id}`)">
-            <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+          <button class="flex w-full min-w-0 items-center gap-3 text-left" type="button" @click="router.push(`/courses/${course.id}`)">
+            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
               <BookOpen :size="22" :stroke-width="2.2" />
             </span>
             <span class="min-w-0 flex-1">
-              <strong class="block truncate text-lg font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
+              <strong class="block truncate text-base font-black text-slate-950 sm:text-lg">{{ getCourseDisplayName(course) }}</strong>
               <small class="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
                 <span class="inline-flex items-center gap-1"><Layers :size="13" />{{ course.question_count ?? 0 }} 道题</span>
                 <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
@@ -285,34 +285,41 @@ onMounted(fetchCourses);
             <ChevronRight :size="20" :stroke-width="2.5" class="text-slate-300" />
           </button>
 
-          <div class="mt-4 grid grid-cols-[1fr_1.4fr_auto_auto_auto] gap-2 border-t border-slate-100 pt-3">
-            <Button variant="outline" size="sm" @click="router.push(`/courses/${course.id}`)">查看题目</Button>
-            <Button size="sm" :disabled="!isPracticeReadyCourse(course)" @click="goToPractice(course)">
-              <Play :size="14" :stroke-width="2.6" />
-              {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
-            </Button>
-            <button class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700" type="button" title="编辑" @click.stop="openEdit(course)">
-              <Pencil :size="15" :stroke-width="2.5" />
-            </button>
-            <button
-              class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              type="button"
-              :title="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
-              :disabled="publishLoading === course.id"
-              @click.stop="togglePublish(course)"
-            >
-              <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
-              <Lock v-else :size="15" :stroke-width="2.5" />
-            </button>
-            <button
-              class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-              type="button"
-              title="删除"
-              :disabled="deleteLoading === course.id"
-              @click.stop="deleteCourse(course)"
-            >
-              <Trash2 :size="15" :stroke-width="2.5" />
-            </button>
+          <div class="mt-4 grid gap-2 border-t border-slate-100 pt-3">
+            <div class="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-2">
+              <Button size="sm" class="min-w-0 px-3" :disabled="!isPracticeReadyCourse(course)" @click="goToPractice(course)">
+                <Play :size="14" :stroke-width="2.6" />
+                {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
+              </Button>
+              <Button variant="outline" size="sm" class="min-w-0 px-3" @click="router.push(`/courses/${course.id}`)">查看题目</Button>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-end gap-1.5">
+              <button class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700" type="button" title="编辑" aria-label="编辑" @click.stop="openEdit(course)">
+                <Pencil :size="15" :stroke-width="2.5" />
+              </button>
+              <button
+                class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                type="button"
+                :title="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
+                :aria-label="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
+                :disabled="publishLoading === course.id"
+                @click.stop="togglePublish(course)"
+              >
+                <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
+                <Lock v-else :size="15" :stroke-width="2.5" />
+              </button>
+              <button
+                class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                type="button"
+                title="删除"
+                aria-label="删除"
+                :disabled="deleteLoading === course.id"
+                @click.stop="deleteCourse(course)"
+              >
+                <Trash2 :size="15" :stroke-width="2.5" />
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
