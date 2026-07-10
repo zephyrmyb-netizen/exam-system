@@ -17,6 +17,43 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.3.8-ai-import-experience",
+    version: "v2.3.8",
+    date: "2026-07-10",
+    type: "优化",
+    title: "AI 导入体验优化",
+    items: [
+      "优化 PDF、PPT 和图片文件选择。",
+      "优化 AI 解析中的状态提示。",
+      "优化解析失败和 0 题时的提示。",
+    ],
+  },
+  {
+    id: "v2.3.7-practice-answering-polish",
+    version: "v2.3.7",
+    date: "2026-07-10",
+    type: "优化",
+    title: "练习页答题体验优化",
+    items: [
+      "优化手机端答题页比例。",
+      "优化选择题判定和完成态。",
+      "修复题库刷完后重复循环问题。",
+      "优化练习页返回和结束体验。",
+    ],
+  },
+  {
+    id: "v2.3.6-mobile-home-course-polish",
+    version: "v2.3.6",
+    date: "2026-07-10",
+    type: "优化",
+    title: "移动端首页与题库体验优化",
+    items: [
+      "优化首页核心入口和学习概览布局。",
+      "优化题库卡片操作区。",
+      "改善移动端按钮拥挤和空状态体验。",
+    ],
+  },
+  {
     id: "v2.3.5-ux-copy-polish",
     version: "v2.3.5",
     date: "2026-07-01",
