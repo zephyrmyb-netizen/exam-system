@@ -17,6 +17,10 @@
 
 ## 使用方式
 
+已完成新增：
+
+2026-07-10 | Figma 视觉设计尝试，因套餐与 MCP 配额限制阻断 | [2026-07-10-figma-visual-system-blocked.md](./archive/2026-07-10-figma-visual-system-blocked.md)
+
 1. 开工时复制 [TEMPLATE.md](./TEMPLATE.md) 到 `active/`。
 2. 完成后补全验证、commit 和 push 结果。
 3. 将文件移入 `archive/`，并更新本索引。
