@@ -1,8 +1,9 @@
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ImportQuestions from "../ImportQuestions.vue";
+import { previewFile } from "../../api/imports";
 import { useAiImportTaskStore } from "../../stores/aiImportTask";
 import { ACCEPTED_IMPORT_FILE_TYPES } from "../../utils/importFiles";
 
@@ -35,6 +36,7 @@ vi.mock("../../composables/useManualQuestionImport", () => ({
 }));
 
 vi.mock("../../api/imports", () => ({
+  AI_IMPORT_FORMAT_ERROR_MESSAGE: "AI 返回格式异常，已跳过异常片段，请尝试重新解析。",
   confirmImport: vi.fn(),
   extractFileText: vi.fn(),
   previewFile: vi.fn(() =>
@@ -77,10 +79,12 @@ describe("ImportQuestions file import behavior", () => {
     vi.clearAllMocks();
   });
 
-  it("accepts Word, PDF, PPTX, and image upload formats", () => {
+  it("accepts Word, PDF, PPT, image, and TXT upload formats", () => {
     const wrapper = mountPage();
 
     expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
+    expect(wrapper.text()).toContain("文件选择支持 Word / PDF / PPT / 图片 / TXT");
+    expect(wrapper.text()).toContain("AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP");
   });
 
   it("rejects legacy .ppt before upload with a save-as-PPTX message", async () => {
@@ -96,7 +100,15 @@ describe("ImportQuestions file import behavior", () => {
 
     await chooseFile(wrapper, new File(["x"], "notes.txt"));
 
-    expect(wrapper.text()).toContain("不支持 .txt 格式，目前支持 Word、PDF、PPTX、PNG、JPG、WEBP。");
+    expect(wrapper.text()).toContain("当前 AI 文件解析请先转换为 .docx 后上传");
+  });
+
+  it("derives the default course name from the selected file name", async () => {
+    const wrapper = mountPage();
+
+    await chooseFile(wrapper, new File(["x"], "Java复习题.docx"));
+
+    expect((wrapper.get(".opt-input").element as HTMLInputElement).value).toBe("Java复习题");
   });
 
   it("shows file name, type, and size after selecting an image", async () => {
@@ -119,15 +131,41 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.text()).toContain("图片文件没有可直接提取的文本，请使用 AI 解析。");
   });
 
-  it("keeps the running task monitor visible and disables replacement actions", async () => {
+  it("restores the running parsing status and disables replacement actions after returning", async () => {
     const store = useAiImportTaskStore();
     store.status = "running";
     store.fileName = "slides.pptx";
+    store.startedAt = Date.now() - 2_000;
 
     const wrapper = mountPage();
 
     expect(wrapper.find(".task-monitor").exists()).toBe(true);
     expect(wrapper.find("input[type='file']").attributes("disabled")).toBeDefined();
-    expect(wrapper.text()).toContain("AI 正在解析，请等待，不要重复上传。");
+    expect(wrapper.text()).toContain("AI 正在解析，请稍候，通常需要 30 秒左右");
+  });
+
+  it("shows the AI-specific timeout guidance", async () => {
+    vi.mocked(previewFile).mockRejectedValueOnce({ code: "ECONNABORTED" });
+    const wrapper = mountPage();
+
+    await chooseFile(wrapper, new File(["x"], "slow.docx"));
+    await wrapper.get(".hero-cta").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("AI 解析时间较长，请稍后重试或换一个更小的文件。");
+    expect(wrapper.get(".hero-cta").text()).toContain("重新解析");
+  });
+
+  it("normalizes the backend non-JSON parsing failure message", async () => {
+    vi.mocked(previewFile).mockRejectedValueOnce({
+      response: { status: 400, data: { detail: "AI 未能解析出题目，请换一个文件或稍后重试。" } },
+    });
+    const wrapper = mountPage();
+
+    await chooseFile(wrapper, new File(["x"], "broken.docx"));
+    await wrapper.get(".hero-cta").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("AI 返回格式异常，已跳过异常片段，请尝试重新解析。");
   });
 });

@@ -17,6 +17,7 @@ const props = defineProps({
   courses: { type: Array, default: () => [] },
   coursesLoading: { type: Boolean, default: false },
   confirming: { type: Boolean, default: false },
+  fileName: { type: String, default: "" },
   initialCourseId: { type: Number, default: 0 },
   initialCourseName: { type: String, default: "" },
 });
@@ -79,6 +80,8 @@ const effectiveCourseName = computed(() => {
 });
 
 const timing = computed(() => props.previewData?.timing || null);
+const skippedInvalidQuestionCount = computed(() => Number(props.previewData?.total_invalid || 0));
+const warningCount = computed(() => warnings.value.length);
 
 function formatTiming(ms) {
   const value = Number(ms || 0);
@@ -198,6 +201,8 @@ function handleRetry() {
       </button>
       <div class="preview-head-text">
         <p class="preview-title">预览解析结果</p>
+        <p v-if="fileName" class="preview-sub">文件：<strong>{{ fileName }}</strong></p>
+        <p class="preview-sub">目标题库：<strong>{{ effectiveCourseName || suggestedCourseName || "未命名" }}</strong></p>
         <p v-if="previewData.suggested_course_name" class="preview-sub">
           推荐题库：<strong>{{ previewData.suggested_course_name }}</strong>
         </p>
@@ -214,7 +219,11 @@ function handleRetry() {
 
     <!-- ── Summary bar ── -->
     <div class="summary-bar">
-      <span class="sum-count"><strong>{{ questions.length }}</strong> 道题待导入</span>
+      <div class="sum-count">
+        <strong>解析出 {{ questions.length }} 道题</strong>
+        <span class="sum-skipped">已跳过 {{ skippedInvalidQuestionCount }} 条无效题目</span>
+        <span class="sum-warning">异常提示 {{ warningCount }} 条</span>
+      </div>
       <button class="add-btn" type="button" @click="showNewQuestionEditor = true">
         <Plus :size="14" :stroke-width="2.5" />
         新增题目
@@ -233,7 +242,7 @@ function handleRetry() {
       <AlertCircle :size="18" :stroke-width="2.5" />
       <div>
         <strong>未识别到可预览的题目</strong>
-        <p>可以重新解析、返回重新选择文件，或手动新增题目。</p>
+        <p>确认导入已禁用。可以重新解析、返回重新选择文件，或手动新增题目。</p>
       </div>
     </div>
 
@@ -366,6 +375,20 @@ function handleRetry() {
 }
 .sum-count { font-size: var(--text-sm); color: var(--text-muted); }
 .sum-count strong { color: var(--text-main); font-size: var(--text-lg); }
+.sum-skipped {
+  display: block;
+  margin-top: 2px;
+  color: var(--amber);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.sum-warning {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
 .add-btn {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 6px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm);

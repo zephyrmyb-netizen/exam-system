@@ -28,4 +28,30 @@ describe("imports api", () => {
       }),
     );
   });
+
+  it("turns a malformed preview response into a recoverable parsing message", async () => {
+    vi.mocked(request.post).mockResolvedValueOnce({ data: "not-json" } as never);
+
+    await expect(previewFile(new File(["bad"], "broken.docx"))).rejects.toMatchObject({
+      userMessage: "AI 返回格式异常，已跳过异常片段，请尝试重新解析。",
+    });
+  });
+
+  it("normalizes an AI non-JSON warning returned by the preview API", async () => {
+    vi.mocked(request.post).mockResolvedValueOnce({
+      data: {
+        questions: [{ type: "fill_blank", question: "Q", answer: "A" }],
+        suggested_course_name: "测试题库",
+        warnings: ["AI 返回了非 JSON 格式内容，已忽略此分块（Unexpected token）"],
+        total_parsed: 1,
+        total_valid: 1,
+        total_invalid: 0,
+        timing: null,
+      },
+    } as never);
+
+    const result = await previewFile(new File(["partial"], "partial.docx"));
+
+    expect(result.warnings).toContain("AI 返回格式异常，已跳过异常片段，请尝试重新解析。");
+  });
 });

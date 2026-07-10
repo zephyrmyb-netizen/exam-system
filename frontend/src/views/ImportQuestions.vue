@@ -37,6 +37,7 @@ const aiTask = useAiImportTask();
 
 const ACCEPTED_FILE_TYPES = ACCEPTED_IMPORT_FILE_TYPES;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const PARSING_RECOVERY_HINT = "AI 正在解析，请稍候，通常需要 30 秒左右";
 
 const selectedFile = ref(null);
 const derivedCourseName = ref("");
@@ -300,7 +301,7 @@ onMounted(() => {
   <section class="stack">
     <div class="section-heading">
       <h2>导入题目</h2>
-      <p>支持 Word、PDF、PPTX、图片，AI 自动解析成题库</p>
+      <p>文件选择支持 Word / PDF / PPT / 图片 / TXT；AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP</p>
     </div>
 
     <ImportCapabilityStrip />
@@ -309,13 +310,13 @@ onMounted(() => {
       <label class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
         <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" :disabled="isParsing" @change="onFileChange" />
         <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPTX / 图片</span>
+        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPT / 图片 / TXT</span>
         <span v-else class="hero-drop-text hero-drop-selected">
           <CheckCircle :size="15" :stroke-width="2.5" />
           {{ activeFileDisplay }}
         </span>
         <span class="hero-drop-hint">
-          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .docx、.pdf、.pptx、.png、.jpg、.webp，最大 10MB" }}
+          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .doc、.docx、.pdf、.ppt、.pptx、.png、.jpg、.jpeg、.webp、.txt，最大 10MB" }}
         </span>
       </label>
 
@@ -344,8 +345,10 @@ onMounted(() => {
 
       <button class="hero-cta" type="button" :disabled="!hasActiveFile || isParsing" @click="handlePreview">
         <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" />
-        {{ isParsing ? "AI 正在解析..." : "AI 解析文件" }}
+        {{ isParsing ? "AI 正在解析..." : aiTask.error.value ? "重新解析" : "AI 解析文件" }}
       </button>
+
+      <p v-if="isParsing" class="msg msg-info">{{ PARSING_RECOVERY_HINT }}</p>
 
       <ImportTaskMonitor
         v-if="isParsing"
@@ -410,6 +413,7 @@ onMounted(() => {
         :courses="courses"
         :courses-loading="coursesLoading"
         :confirming="confirmLoading"
+        :file-name="activeFileName"
         :initial-course-id="activeCourseId"
         :initial-course-name="activeCourseName"
         @confirm="handleConfirm"
@@ -422,6 +426,7 @@ onMounted(() => {
       <div class="ai-done">
         <div class="ai-done-icon"><CheckCircle :size="36" :stroke-width="2.5" color="var(--emerald)" /></div>
         <p class="ai-done-title">导入成功</p>
+        <p class="ai-done-target">已导入到题库：<strong>{{ importResult?.course_name || activeCourseName || "未命名题库" }}</strong></p>
         <div class="ai-done-stats">
           <div class="ai-done-stat">
             <span class="ai-done-num">{{ importResult?.imported_count || 0 }}</span>
@@ -628,10 +633,28 @@ onMounted(() => {
   color: var(--emerald);
 }
 
+.msg-info {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
 .msg-err,
 .msg-err-pre {
   background: var(--rose-soft);
   color: var(--rose);
+}
+
+.ai-done-target {
+  margin: -6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-align: center;
+}
+
+.ai-done-target strong {
+  color: var(--primary-strong);
+  font-weight: 800;
 }
 
 .msg-err-pre {
