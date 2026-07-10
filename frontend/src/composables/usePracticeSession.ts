@@ -205,7 +205,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       }
 
       if (!data) {
-        sessionComplete.value = answeredQuestionIds.size > 0;
+        sessionComplete.value = true;
         question.value = null;
         return;
       }
@@ -215,7 +215,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     } catch (error: unknown) {
       question.value = null;
       const status = (error as { response?: { status?: number } })?.response?.status;
-      if (status === 404 && answeredQuestionIds.size > 0) {
+      if (status === 404) {
         sessionComplete.value = true;
         errorMessage.value = "";
       } else {
@@ -242,10 +242,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       selectedAnswers.value = [...selectedAnswers.value, key];
     }
     validationMessage.value = "";
-    // 多选题点击即提交：用户每点一个选项都用当前已选集合立即判定
-    if (selectedAnswers.value.length > 0) {
-      void submitAnswer();
-    }
+    // 多选题保留显式提交，避免用户尚未选完就被提前判定。
   }
 
   function updateTextAnswer(value: string): void {
@@ -257,14 +254,14 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     if (!question.value || submitting.value || result.value) return;
 
     if (question.value.type === "multiple_choice" && selectedAnswers.value.length === 0) {
-      validationMessage.value = "请至少选择一个选项。";
+      validationMessage.value = "请选择一个选项";
       return;
     }
 
     if (!currentAnswer.value) {
       validationMessage.value = isTextQuestion.value
         ? "请先填写你的答案。"
-        : "请先选择一个选项。";
+        : "请选择一个选项";
       return;
     }
 

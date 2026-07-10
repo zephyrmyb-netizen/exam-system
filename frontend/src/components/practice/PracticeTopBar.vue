@@ -1,5 +1,5 @@
 <script setup>
-import { ChevronLeft, X } from "@lucide/vue";
+import { ChevronLeft, LogOut } from "@lucide/vue";
 
 defineProps({
   courseName: { type: String, default: "" },
@@ -21,7 +21,7 @@ defineEmits(["back", "end"]);
     </div>
 
     <button class="practice-end-button" type="button" aria-label="结束练习" @click="$emit('end')">
-      <X :size="16" :stroke-width="2.5" />
+      <LogOut :size="16" :stroke-width="2.5" />
       <span class="practice-end-button__label">结束练习</span>
     </button>
   </div>

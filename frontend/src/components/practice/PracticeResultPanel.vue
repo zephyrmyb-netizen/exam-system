@@ -24,7 +24,7 @@ const swipeHint = computed(() =>
     <div class="practice-result__head">
       <CheckCircle v-if="result.is_correct" :size="22" class="practice-result__icon" />
       <XCircle v-else :size="22" class="practice-result__icon" />
-      <span class="practice-result__title">{{ result.is_correct ? "回答正确" : "回答错误" }}</span>
+      <span class="practice-result__title">{{ result.is_correct ? "答对了" : "答错了" }}</span>
     </div>
 
     <div class="practice-result__body">
@@ -39,7 +39,7 @@ const swipeHint = computed(() =>
         <span class="practice-result__value--ok">{{ correctAnswerDisplay }}</span>
       </div>
       <div v-if="result.analysis" class="practice-result__analysis">
-        <span class="practice-result__label">解析</span>
+        <span class="practice-result__label">查看解析</span>
         <p>{{ result.analysis }}</p>
       </div>
     </div>
@@ -63,8 +63,8 @@ const swipeHint = computed(() =>
 <style scoped>
 .practice-result {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   border-radius: var(--radius-lg);
   border: 1px solid transparent;
   /* 内部子项错开入场，营造流畅的层次感 */
@@ -121,14 +121,14 @@ const swipeHint = computed(() =>
 
 .practice-result__body {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .practice-result__item,
 .practice-result__analysis {
   display: grid;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.65);
 }
@@ -179,13 +179,13 @@ const swipeHint = computed(() =>
   align-items: center;
   gap: 6px;
   justify-self: start;
-  padding: 7px 11px;
+  padding: 4px 8px;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.7);
   color: var(--text-secondary);
   font-size: 12px;
-  font-weight: 700;
-  border: 1px dashed rgba(148, 163, 184, 0.7);
+  font-weight: 650;
+  opacity: 0.78;
 }
 
 .practice-swipe-hint__icon {

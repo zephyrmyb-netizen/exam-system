@@ -69,7 +69,7 @@ const activeNavKey = computed(() => {
   return nav || "";
 });
 
-const showHeader = computed(() => !isImmersiveRoute.value && !["home", "mine", "chat"].includes(route.name as string));
+const showHeader = computed(() => !isImmersiveRoute.value && !["home", "courses", "mine", "chat"].includes(route.name as string));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {

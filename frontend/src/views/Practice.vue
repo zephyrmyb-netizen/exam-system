@@ -59,6 +59,9 @@ const {
 // 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
 // fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
 const canSwipeNext = computed(() => !!result.value && !loading.value && !submitting.value);
+const requiresManualSubmit = computed(() =>
+  isTextQuestion.value || question.value?.type === "multiple_choice",
+);
 const swipeProgress = createSwipeProgress();
 useSwipeNext({
   onSwipe: () => {
@@ -71,8 +74,8 @@ useSwipeNext({
 });
 
 // 跟手位移：左滑时卡片轻微左移，给用户「我在拖动」的实感
-const swipeOffsetX = computed(() => `calc(${swipeProgress.value} * -28px)`);
-const swipeOpacity = computed(() => 1 - swipeProgress.value * 0.35);
+const swipeOffsetX = computed(() => `${swipeProgress.value * -18}px`);
+const swipeOpacity = computed(() => 1 - swipeProgress.value * 0.18);
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
@@ -150,7 +153,10 @@ watch(sessionComplete, (complete) => {
 </script>
 
 <template>
-  <section class="practice-page">
+  <section
+    class="practice-page"
+    :class="{ 'practice-page--with-action': requiresManualSubmit && question && !result }"
+  >
     <PracticeTopBar
       :course-name="props.courseName"
       :mode-label="modeLabel"
@@ -283,7 +289,7 @@ watch(sessionComplete, (complete) => {
         :submitting="submitting"
         :has-answer-selected="hasAnswerSelected"
         :answer-hint="answerHint"
-        :is-text-question="isTextQuestion"
+        :show-submit-button="requiresManualSubmit"
         @submit="submitAnswer"
       />
     </div>
@@ -294,6 +300,7 @@ watch(sessionComplete, (complete) => {
       :correct-count="sessionStats.correctCount"
       :wrong-count="sessionStats.wrongCount"
       :accuracy="accuracy"
+      :completed="sessionComplete"
       :can-continue="!sessionComplete"
       @end="handleEndPractice"
       @continue="continuePractice"
@@ -309,7 +316,11 @@ watch(sessionComplete, (complete) => {
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+.practice-page--with-action {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
 }
 
 .practice-content {
@@ -347,12 +358,12 @@ watch(sessionComplete, (complete) => {
 
 .question-fade-enter-from {
   opacity: 0;
-  transform: translateX(24px);
+  transform: translateX(16px);
 }
 
 .question-fade-leave-to {
   opacity: 0;
-  transform: translateX(-24px);
+  transform: translateX(-16px);
 }
 
 /* ── 结果面板出现：弹性缩放淡入 ── */
@@ -366,12 +377,12 @@ watch(sessionComplete, (complete) => {
 
 .result-pop-enter-from {
   opacity: 0;
-  transform: translateY(8px) scale(0.96);
+  transform: translateY(5px);
 }
 
 .result-pop-leave-to {
   opacity: 0;
-  transform: scale(0.98);
+  transform: translateY(-3px);
 }
 
 .practice-answer-section,
@@ -507,8 +518,12 @@ watch(sessionComplete, (complete) => {
 
 @media (max-width: 420px) {
   .practice-page {
-    gap: 7px;
-    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+    gap: 6px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .practice-page--with-action {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
 
   .practice-card-shell {
