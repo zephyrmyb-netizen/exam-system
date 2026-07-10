@@ -272,7 +272,13 @@ onMounted(fetchCourses);
               <BookOpen :size="22" :stroke-width="2.2" />
             </span>
             <span class="min-w-0 flex-1">
-              <strong class="block truncate text-base font-black text-slate-950 sm:text-lg">{{ getCourseDisplayName(course) }}</strong>
+              <strong
+                class="block truncate text-base font-black text-slate-950 sm:text-lg"
+                data-course-title
+                :title="getCourseDisplayName(course)"
+              >
+                {{ getCourseDisplayName(course) }}
+              </strong>
               <small class="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
                 <span class="inline-flex items-center gap-1"><Layers :size="13" />{{ course.question_count ?? 0 }} 道题</span>
                 <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
@@ -295,14 +301,20 @@ onMounted(fetchCourses);
             </div>
 
             <div class="flex flex-wrap items-center justify-end gap-1.5">
-              <button class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700" type="button" title="编辑" aria-label="编辑" @click.stop="openEdit(course)">
+              <button
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                type="button"
+                :title="`编辑${getCourseDisplayName(course)}`"
+                :aria-label="`编辑${getCourseDisplayName(course)}`"
+                @click.stop="openEdit(course)"
+              >
                 <Pencil :size="15" :stroke-width="2.5" />
               </button>
               <button
-                class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 type="button"
-                :title="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
-                :aria-label="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
+                :title="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
+                :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
                 :disabled="publishLoading === course.id"
                 @click.stop="togglePublish(course)"
               >
@@ -310,10 +322,10 @@ onMounted(fetchCourses);
                 <Lock v-else :size="15" :stroke-width="2.5" />
               </button>
               <button
-                class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                 type="button"
-                title="删除"
-                aria-label="删除"
+                :title="`删除${getCourseDisplayName(course)}`"
+                :aria-label="`删除${getCourseDisplayName(course)}`"
                 :disabled="deleteLoading === course.id"
                 @click.stop="deleteCourse(course)"
               >

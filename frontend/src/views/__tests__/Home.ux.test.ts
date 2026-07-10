@@ -7,13 +7,14 @@ import type { Course } from "../../types";
 
 const push = vi.fn();
 const courses = ref<Course[]>([]);
+const authUser = ref({ username: "student" });
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({ push }),
 }));
 
 vi.mock("../../stores/auth", () => ({
-  useAuth: () => ({ user: ref({ username: "小明" }) }),
+  useAuth: () => ({ user: authUser }),
 }));
 
 vi.mock("../../composables/useStudyOverview", () => ({
@@ -55,6 +56,19 @@ describe("Home UX polish", () => {
   beforeEach(() => {
     push.mockClear();
     courses.value = [];
+    authUser.value = { username: "student" };
+  });
+
+  it("keeps long greetings contained and the search entry visibly styled", () => {
+    authUser.value = { username: "accept_v235_mobile_u3_178361" };
+
+    const wrapper = mount(Home);
+    const greeting = wrapper.get("[data-home-greeting]");
+    const searchEntry = wrapper.get("[data-home-search]");
+
+    expect(greeting.classes()).toContain("truncate");
+    expect(greeting.attributes("title")).toContain("accept_v235_mobile_u3_178361");
+    expect(searchEntry.classes()).toContain("home-search-entry");
   });
 
   it("renders the four core entry labels with their supporting copy", () => {
@@ -85,5 +99,16 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).toContain("题库三");
     expect(wrapper.text()).toContain("题库二");
     expect(wrapper.text()).not.toContain("题库一");
+  });
+
+  it("keeps the recent course title separate from its practice action", async () => {
+    courses.value = [course(1, "很长的移动端复习题库名称")];
+
+    const wrapper = mount(Home);
+    await flushPromises();
+
+    const practiceButton = wrapper.find('button[aria-label="开始练习：很长的移动端复习题库名称"]');
+    expect(practiceButton.exists()).toBe(true);
+    expect(practiceButton.text()).toBe("开始练习");
   });
 });
