@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | 2026-07-10 | 建立开工必读规约与操作留档机制 | [2026-07-10-workflow-readme.md](./archive/2026-07-10-workflow-readme.md) |
 | 2026-07-10 | 收口 AI 导入、练习、首页题库前端改动 | [2026-07-10-pending-frontend-integration.md](./archive/2026-07-10-pending-frontend-integration.md) |
+| 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
 
 ## 使用方式
 
