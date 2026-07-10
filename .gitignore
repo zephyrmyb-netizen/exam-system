@@ -31,6 +31,7 @@ uploads/
 
 # Local tool and test output
 *.log
+acceptance-*.png
 test-results/
 playwright-report/
 .playwright-cli/

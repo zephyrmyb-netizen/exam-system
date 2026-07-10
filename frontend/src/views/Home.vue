@@ -6,7 +6,6 @@ import {
   ChevronRight,
   ClipboardList,
   FileUp,
-  Megaphone,
   Search,
   Target,
   TrendingUp,
@@ -15,7 +14,6 @@ import {
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
 import { useStudyOverview } from "../composables/useStudyOverview";
-import { releaseNotes } from "../data/releaseNotes";
 import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
@@ -68,8 +66,6 @@ function heatmapClass(count: number): string {
   if (count > 0) return "bg-blue-200";
   return "bg-slate-200";
 }
-
-const latestNote = computed(() => releaseNotes[0] || null);
 
 const recentCourses = computed(() => {
   const seen = new Set<number | string>();
@@ -150,25 +146,22 @@ onMounted(() => {
   <section class="space-y-3">
     <!-- Hero -->
     <section class="rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 p-3.5 text-white shadow-lg shadow-blue-500/20">
-      <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
         <div class="min-w-0">
           <p class="text-[11px] font-semibold text-white/70">{{ dateText }}</p>
-          <h1 class="mt-0.5 text-xl font-black leading-tight">
+          <h1
+            class="mt-0.5 truncate text-xl font-black leading-tight"
+            data-home-greeting
+            :title="`${usernameText}，开始复习吧`"
+          >
             {{ usernameText }}，开始复习吧
           </h1>
         </div>
-        <button
-          class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 active:bg-white/25"
-          type="button"
-          aria-label="更新公告"
-          @click="router.push('/announcements?from=home')"
-        >
-          <Megaphone :size="16" :stroke-width="2.4" />
-        </button>
       </div>
 
       <button
-        class="mt-3 flex h-10 w-full items-center gap-2.5 rounded-2xl bg-white px-3.5 text-left text-[13px] font-bold text-slate-400"
+        class="home-search-entry mt-3 flex h-10 w-full items-center gap-2.5 rounded-2xl bg-white px-3.5 text-left text-[13px] font-bold"
+        data-home-search
         type="button"
         @click="router.push('/courses')"
       >
@@ -280,21 +273,28 @@ onMounted(() => {
                   </small>
                 </span>
               </button>
-              <Button size="sm" class="shrink-0 px-3" @click="goTo(`/courses/${course.id}/practice`)">练习</Button>
+              <Button
+                size="sm"
+                class="shrink-0 whitespace-nowrap px-3"
+                :aria-label="`开始练习：${getCourseDisplayName(course)}`"
+                @click="goTo(`/courses/${course.id}/practice`)"
+              >
+                开始练习
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
     </section>
-
-    <Card v-if="latestNote" class="border-blue-100 bg-blue-50/70">
-      <CardContent class="flex items-center justify-between gap-3 p-3">
-        <div class="min-w-0">
-          <p class="text-[11px] font-black text-blue-600">最新公告 {{ latestNote.version }}</p>
-          <h3 class="mt-0.5 truncate text-sm font-black text-slate-950">{{ latestNote.title }}</h3>
-        </div>
-        <Button variant="outline" size="sm" @click="router.push('/announcements?from=home')">查看</Button>
-      </CardContent>
-    </Card>
   </section>
 </template>
+
+<style scoped>
+.home-search-entry {
+  color: #64748b;
+}
+
+.home-search-entry :deep(svg) {
+  color: #64748b;
+}
+</style>

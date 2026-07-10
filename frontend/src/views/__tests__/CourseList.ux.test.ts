@@ -66,8 +66,21 @@ describe("CourseList UX polish", () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
-    expect(wrapper.find('button[aria-label="编辑"]').exists()).toBe(true);
-    expect(wrapper.find('button[aria-label="发布到公共题库"]').exists()).toBe(true);
-    expect(wrapper.find('button[aria-label="删除"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="编辑线性代数复习题库"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="公开线性代数复习题库"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="删除线性代数复习题库"]').exists()).toBe(true);
+  });
+
+  it("truncates long course names inside the card", async () => {
+    mocks.requestGet.mockResolvedValue({
+      data: [course({ name: "这是一个在手机端必须截断而不能撑破卡片布局的超长题库名称" })],
+    });
+
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const title = wrapper.find("[data-course-title]");
+    expect(title.classes()).toContain("truncate");
+    expect(title.attributes("title")).toBe("这是一个在手机端必须截断而不能撑破卡片布局的超长题库名称");
   });
 });
