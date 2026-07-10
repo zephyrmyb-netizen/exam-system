@@ -41,6 +41,15 @@ function correctResult(): SubmitResponse {
   };
 }
 
+function wrongResult(): SubmitResponse {
+  return {
+    is_correct: false,
+    correct_answer: "B",
+    analysis: "答案解析",
+    wrongbook_recorded: true,
+  };
+}
+
 describe("usePracticeSession", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -106,5 +115,76 @@ describe("usePracticeSession", () => {
 
     expect(session.question.value?.id).toBe(2);
     expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(3);
+  });
+
+  it("enters the completed state when there are no questions to practice", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+
+    getRandomPracticeQuestion.mockResolvedValueOnce(null);
+
+    session.startSession();
+    await flushPromises();
+
+    expect(session.question.value).toBeNull();
+    expect(session.sessionComplete.value).toBe(true);
+    expect(session.errorMessage.value).toBe("");
+  });
+
+  it("moves to the next question after a correct single-choice answer", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+
+    getRandomPracticeQuestion
+      .mockResolvedValueOnce(makeQuestion(1))
+      .mockResolvedValueOnce(makeQuestion(2));
+    submitPracticeAnswer.mockResolvedValueOnce(correctResult());
+
+    session.startSession();
+    await flushPromises();
+    session.setSingleAnswer("A");
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(650);
+    await flushPromises();
+
+    expect(session.question.value?.id).toBe(2);
+    expect(session.sessionStats.value.answeredCount).toBe(1);
+  });
+
+  it("keeps the current question and analysis visible after a wrong answer", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+
+    getRandomPracticeQuestion.mockResolvedValueOnce(makeQuestion(1));
+    submitPracticeAnswer.mockResolvedValueOnce(wrongResult());
+
+    session.startSession();
+    await flushPromises();
+    session.setSingleAnswer("B");
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(session.question.value?.id).toBe(1);
+    expect(session.result.value?.is_correct).toBe(false);
+    expect(session.result.value?.analysis).toBe("答案解析");
+    expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not auto-submit a multiple-choice question while selecting options", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+    const multipleQuestion = { ...makeQuestion(1), type: "multiple_choice" } as Question;
+
+    getRandomPracticeQuestion.mockResolvedValueOnce(multipleQuestion);
+
+    session.startSession();
+    await flushPromises();
+    session.toggleMultipleAnswer("A");
+    session.toggleMultipleAnswer("B");
+    await flushPromises();
+
+    expect(session.selectedAnswers.value).toEqual(["A", "B"]);
+    expect(submitPracticeAnswer).not.toHaveBeenCalled();
+    expect(session.canSubmit.value).toBe(true);
   });
 });

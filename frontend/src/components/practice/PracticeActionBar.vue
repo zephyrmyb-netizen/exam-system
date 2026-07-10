@@ -8,9 +8,8 @@ defineProps({
   submitting: { type: Boolean, default: false },
   hasAnswerSelected: { type: Boolean, default: false },
   answerHint: { type: String, default: "" },
-  // 仅文本题（fill_blank / short_answer）需要保留「提交答案」按钮；
-  // 选择题改为点击即提交，不再走 ActionBar。
-  isTextQuestion: { type: Boolean, default: false },
+  // 多选和文本题保留显式提交；单选与判断题点击选项后立即判定。
+  showSubmitButton: { type: Boolean, default: false },
 });
 
 defineEmits(["submit"]);
@@ -39,7 +38,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    v-if="isTextQuestion && !result"
+    v-if="showSubmitButton && !result"
     class="practice-action-bar"
     :style="{ bottom: keyboardOffset ? `${keyboardOffset}px` : 'var(--practice-sticky-bottom)' }"
   >

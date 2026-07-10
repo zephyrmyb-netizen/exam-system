@@ -7,6 +7,7 @@ defineProps({
   correctCount: { type: Number, default: 0 },
   wrongCount: { type: Number, default: 0 },
   accuracy: { type: Number, default: null },
+  completed: { type: Boolean, default: false },
   canContinue: { type: Boolean, default: true },
 });
 
@@ -28,12 +29,18 @@ defineEmits(["end", "continue"]);
           <RefreshCw v-else :size="36" />
         </div>
 
-        <p class="practice-summary__title">本次练习结束</p>
+        <p class="practice-summary__title">
+          {{ completed ? "本次练习已完成" : "结束练习" }}
+        </p>
         <p class="practice-summary__desc">
           {{
-            answeredCount > 0
-              ? `本次练习已完成 ${answeredCount} 题，是否返回练习设置？`
-              : "还没有完成题目，确定要退出本次练习吗？"
+            completed
+              ? answeredCount > 0
+                ? `本次共完成 ${answeredCount} 题。`
+                : "当前没有新的题目可练习。"
+              : answeredCount > 0
+                ? `本次练习已完成 ${answeredCount} 题，是否返回练习设置？`
+                : "还没有完成题目，确定要退出本次练习吗？"
           }}
         </p>
 

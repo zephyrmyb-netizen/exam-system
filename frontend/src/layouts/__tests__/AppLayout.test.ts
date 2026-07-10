@@ -49,7 +49,7 @@ describe("AppLayout immersive routes", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps normal pages with header and bottom navigation", () => {
+  it("keeps the course tab focused on its page content with bottom navigation", () => {
     route.name = "courses";
     route.path = "/courses";
     route.meta = { title: "题库", navKey: "list" };
@@ -65,7 +65,7 @@ describe("AppLayout immersive routes", () => {
     });
 
     expect(wrapper.find(".app-shell").classes()).not.toContain("app-shell--immersive");
-    expect(wrapper.find(".app-header").exists()).toBe(true);
+    expect(wrapper.find(".app-header").exists()).toBe(false);
     expect(wrapper.find(".bottom-nav").exists()).toBe(true);
   });
 

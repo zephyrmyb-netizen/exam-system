@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref, type Ref } from "vue";
 interface UseSwipeNextOptions {
   /** 触发回调（一般传入下一题函数） */
   onSwipe: () => void;
-  /** 横向位移阈值（px），默认 50（降低灵敏度门槛） */
+  /** 横向位移阈值（px），默认 64，避免纵向滚动时误触 */
   threshold?: number;
   /** 是否启用，传入 ref 控制启停（如仅在 result 显示时响应） */
   enabled?: Ref<boolean>;
@@ -15,14 +15,13 @@ interface UseSwipeNextOptions {
  * 原生 pointer events 实现的"从右往左滑 -> 下一题"手势。
  *
  * 触发条件（满足任一即触发，让滑动更灵敏）：
- * 1. 位移触发：dx < 0 且 |dx| >= threshold 且 |dx| >= |dy| * 0.6
- *    （放宽纵向限制：允许横向位移是纵向的 1.67 倍以内，斜向滑动也能触发）
- * 2. 速度触发：dx < 0 且 |dx| >= 20 且速度 > 0.6 px/ms（快速划走）
+ * 1. 位移触发：dx < 0 且 |dx| >= threshold 且横向位移明显大于纵向位移。
+ * 2. 速度触发：dx < 0 且 |dx| >= 36 且速度 > 0.65 px/ms，并保持横向主导。
  *
  * 同时通过 progress ref 实时输出滑动进度（0~1），用于跟手视觉反馈。
  */
 export function useSwipeNext(options: UseSwipeNextOptions): void {
-  const { onSwipe, threshold = 50, enabled, progress } = options;
+  const { onSwipe, threshold = 64, enabled, progress } = options;
 
   let startX = 0;
   let startY = 0;
@@ -40,6 +39,7 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
     if (!isEnabled()) return;
     // 仅主键 / 触摸
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    if (event.target instanceof Element && event.target.closest("button, input, textarea, select, a")) return;
     startX = event.clientX;
     startY = event.clientY;
     lastX = event.clientX;
@@ -66,7 +66,7 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
     lastTime = now;
 
     // 仅向左滑且横向占主导时才更新进度
-    if (dx < 0 && Math.abs(dx) >= Math.abs(dy) * 0.6) {
+    if (dx < 0 && Math.abs(dx) >= Math.abs(dy) * 1.25) {
       if (progress) progress.value = Math.min(1, Math.abs(dx) / threshold);
     } else if (progress) {
       progress.value = 0;
@@ -90,12 +90,16 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
 
     let shouldTrigger = false;
     if (dx < 0) {
-      // 1. 位移触发：达到阈值且横向占主导（放宽到 0.6 倍）
-      if (absDx >= threshold && absDx >= absDy * 0.6) {
+      // 1. 位移触发：达到阈值且横向明显占主导
+      if (absDx >= threshold && absDx >= absDy * 1.25) {
         shouldTrigger = true;
       }
-      // 2. 速度触发：快速划（位移≥20px，速度≥0.6px/ms）
-      else if (absDx >= 20 && (velocity <= -0.6 || avgVelocity >= 0.6)) {
+      // 2. 速度触发：快速横划，同时排除斜向滚动
+      else if (
+        absDx >= 36
+        && absDx >= absDy * 1.25
+        && (velocity <= -0.65 || avgVelocity >= 0.65)
+      ) {
         shouldTrigger = true;
       }
     }
