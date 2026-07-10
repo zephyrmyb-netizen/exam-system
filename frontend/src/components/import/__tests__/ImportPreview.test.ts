@@ -52,4 +52,35 @@ describe("ImportPreview warnings and empty state", () => {
     expect(wrapper.text()).toContain("返回重新选择文件");
     expect(wrapper.text()).toContain("手动新增题目");
   });
+
+  it("disables confirmation when there are no questions to import", () => {
+    const wrapper = mountPreview();
+
+    expect(wrapper.get(".primary-button").attributes("disabled")).toBeDefined();
+    expect(wrapper.text()).toContain("确认导入已禁用");
+  });
+
+  it("shows the source file, target course, and skipped fragment count", () => {
+    const wrapper = mount(ImportPreview, {
+      props: {
+        previewData: {
+          ...previewData,
+          questions: [{ type: "fill_blank", question: "Java 是什么？", answer: "语言" }],
+          total_valid: 1,
+          total_invalid: 2,
+        },
+        fileName: "Java复习题.docx",
+        initialCourseName: "Java复习题",
+      },
+      global: {
+        stubs: { QuestionEditor: true },
+      },
+    });
+
+    expect(wrapper.text()).toContain("文件：Java复习题.docx");
+    expect(wrapper.text()).toContain("目标题库：Java复习题");
+    expect(wrapper.text()).toContain("解析出 1 道题");
+    expect(wrapper.text()).toContain("已跳过 2 条无效题目");
+    expect(wrapper.text()).toContain("异常提示 2 条");
+  });
 });

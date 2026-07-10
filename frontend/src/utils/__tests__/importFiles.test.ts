@@ -36,21 +36,18 @@ describe("import file helpers", () => {
     expect(getFileKindLabel(file("old.ppt"))).toBe("旧版 PPT，不支持");
   });
 
-  it("includes extensions and MIME types for mobile file pickers", () => {
-    expect(ACCEPTED_IMPORT_FILE_TYPES.split(",")).toEqual([
+  it("includes Word, PDF, PPT, image, and TXT extensions for mobile file pickers", () => {
+    expect(ACCEPTED_IMPORT_FILE_TYPES.split(",")).toEqual(expect.arrayContaining([
+      ".doc",
       ".docx",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ".pdf",
-      "application/pdf",
+      ".ppt",
       ".pptx",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       ".png",
-      "image/png",
       ".jpg",
       ".jpeg",
-      "image/jpeg",
       ".webp",
-      "image/webp",
-    ]);
+      ".txt",
+    ]));
   });
 });

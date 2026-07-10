@@ -1,6 +1,36 @@
 import type { FileExtractResponse, ImportPreviewResponse, ConfirmImportRequest, ConfirmImportResponse } from "@/types";
 import request from "./request.ts";
 
+export const AI_IMPORT_FORMAT_ERROR_MESSAGE = "AI 返回格式异常，已跳过异常片段，请尝试重新解析。";
+
+type UserFacingImportError = Error & { userMessage: string };
+
+function invalidPreviewResponseError(): UserFacingImportError {
+  const error = new Error("Invalid import preview response") as UserFacingImportError;
+  error.userMessage = AI_IMPORT_FORMAT_ERROR_MESSAGE;
+  return error;
+}
+
+function parsePreviewResponse(data: unknown): ImportPreviewResponse {
+  if (!data || typeof data !== "object" || Array.isArray(data) || !Array.isArray((data as ImportPreviewResponse).questions)) {
+    throw invalidPreviewResponseError();
+  }
+  const preview = data as ImportPreviewResponse;
+  const warnings = Array.isArray(preview.warnings) ? preview.warnings : [];
+  const hasAiFormatWarning = warnings.some((warning) => (
+    /AI 返回了非 JSON 格式内容|AI 返回内容中未找到 questions 数组|AI 返回格式异常/.test(warning)
+  ));
+
+  if (!hasAiFormatWarning || warnings.includes(AI_IMPORT_FORMAT_ERROR_MESSAGE)) {
+    return { ...preview, warnings };
+  }
+
+  return {
+    ...preview,
+    warnings: [AI_IMPORT_FORMAT_ERROR_MESSAGE, ...warnings],
+  };
+}
+
 export function extractFileText(
   file: File,
   params?: Record<string, string | number>,
@@ -31,7 +61,7 @@ export function previewFile(
   return request.post("/imports/file/preview", formData, {
     params,
     timeout: 420000,
-  }).then(({ data }) => data as ImportPreviewResponse);
+  }).then(({ data }) => parsePreviewResponse(data));
 }
 
 export function confirmImport(

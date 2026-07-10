@@ -1,16 +1,18 @@
 import { type ComputedRef, type Ref } from "vue";
 import { defineStore, storeToRefs } from "pinia";
 
-import { previewFile } from "../api/imports";
+import { AI_IMPORT_FORMAT_ERROR_MESSAGE, previewFile } from "../api/imports";
 import { getErrorMessage } from "../api/request";
 import type { ImportPreviewResponse, ImportTiming } from "../types";
 import { getFileExtension } from "../utils/importFiles";
 
 export type TaskStatus = "idle" | "running" | "success" | "error";
 export type TaskMode = "preview" | "auto";
+export type TaskStage = "idle" | "parsing" | "complete" | "failed";
 
 export interface AiImportTaskReturn {
   status: Ref<TaskStatus>;
+  stage: Ref<TaskStage>;
   mode: Ref<TaskMode>;
   fileRef: Ref<File | null>;
   fileName: Ref<string>;
@@ -35,6 +37,18 @@ export interface AiImportTaskReturn {
 
 let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
+function getPreviewErrorMessage(error: unknown): string {
+  const requestError = error as { code?: string; response?: { status?: number; data?: { detail?: unknown } } } | undefined;
+  if (requestError?.code === "ECONNABORTED" || requestError?.code === "ETIMEDOUT" || requestError?.response?.status === 504) {
+    return "AI 解析时间较长，请稍后重试或换一个更小的文件。";
+  }
+  const detail = requestError?.response?.data?.detail;
+  if (typeof detail === "string" && /AI 未能解析出题目|非 JSON|未找到 questions 数组|返回格式异常/.test(detail)) {
+    return AI_IMPORT_FORMAT_ERROR_MESSAGE;
+  }
+  return getErrorMessage(error, "AI 解析失败，请检查网络后重试");
+}
+
 function formatDuration(ms: number | undefined): string {
   const value = Number(ms || 0);
   if (value >= 1000) return `${Math.round(value / 100) / 10} 秒`;
@@ -51,6 +65,7 @@ function clearElapsedTimer(): void {
 export const useAiImportTaskStore = defineStore("aiImportTask", {
   state: () => ({
     status: "idle" as TaskStatus,
+    stage: "idle" as TaskStage,
     mode: "preview" as TaskMode,
     fileRef: null as File | null,
     fileName: "",
@@ -126,6 +141,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
     reset(): void {
       clearElapsedTimer();
       this.status = "idle";
+      this.stage = "idle";
       this.mode = "preview";
       this.fileRef = null;
       this.fileName = "";
@@ -147,6 +163,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
 
       this.reset();
       this.status = "running";
+      this.stage = "parsing";
       this.mode = "preview";
       this.fileRef = file || null;
       this.fileName = file?.name || "";
@@ -161,9 +178,11 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         this.timing = data?.timing || null;
         this.message = `AI 已解析出 ${data?.questions?.length || 0} 道题，请确认后导入。`;
         this.status = "success";
+        this.stage = "complete";
       } catch (err: unknown) {
-        this.error = getErrorMessage(err, "AI 解析失败，请检查网络后重试");
+        this.error = getPreviewErrorMessage(err);
         this.status = "error";
+        this.stage = "failed";
       } finally {
         clearElapsedTimer();
       }
@@ -184,6 +203,7 @@ export function useAiImportTask(): AiImportTaskReturn {
   const refs = storeToRefs(store);
   return {
     status: refs.status,
+    stage: refs.stage,
     mode: refs.mode,
     fileRef: refs.fileRef,
     fileName: refs.fileName,
