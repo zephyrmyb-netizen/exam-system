@@ -11,7 +11,7 @@ const router = useRouter();
       <strong class="not-found-code">404</strong>
       <p class="not-found-text">页面不存在</p>
       <p class="not-found-desc">你访问的页面可能已被移除或链接有误。</p>
-      <button class="home-btn" type="button" @click="router.push({ name: 'home' })">
+      <button class="home-btn" type="button" @click="router.replace({ name: 'home' })">
         <Home :size="18" />
         返回首页
       </button>

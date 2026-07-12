@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
 import {
   BookOpen,
   ChevronRight,
@@ -19,6 +18,7 @@ import {
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
@@ -26,7 +26,7 @@ import Button from "../components/ui/button/Button.vue";
 import Card from "../components/ui/card/Card.vue";
 import CardContent from "../components/ui/card/CardContent.vue";
 
-const router = useRouter();
+const { replaceWithSource } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
 
 const courses = ref<Course[]>([]);
@@ -207,7 +207,7 @@ async function togglePublish(course: Course) {
 
 function goToPractice(course: Course) {
   if (!isPracticeReadyCourse(course)) return;
-  router.push(`/courses/${course.id}/practice`);
+  replaceWithSource(`/courses/${course.id}/practice`, "courses");
 }
 
 onMounted(fetchCourses);
@@ -277,7 +277,7 @@ onMounted(fetchCourses);
             <Plus :size="16" :stroke-width="2.5" />
             创建题库
           </Button>
-          <Button variant="outline" @click="router.push('/import')">
+          <Button variant="outline" @click="replaceWithSource('/import', 'courses')">
             <Sparkles :size="16" :stroke-width="2.5" />
             去导入
           </Button>
@@ -299,7 +299,7 @@ onMounted(fetchCourses);
     <div class="space-y-3">
       <Card v-for="course in filteredCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
         <CardContent class="p-4">
-          <button class="flex w-full min-w-0 items-center gap-3 text-left" type="button" @click="router.push(`/courses/${course.id}`)">
+          <button class="flex w-full min-w-0 items-center gap-3 text-left" type="button" @click="replaceWithSource(`/courses/${course.id}`, 'courses')">
             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
               <BookOpen :size="22" :stroke-width="2.2" />
             </span>
@@ -329,7 +329,7 @@ onMounted(fetchCourses);
                 <Play :size="14" :stroke-width="2.6" />
                 {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
               </Button>
-              <Button variant="outline" size="sm" class="min-w-0 px-3" @click="router.push(`/courses/${course.id}`)">查看题目</Button>
+              <Button variant="outline" size="sm" class="min-w-0 px-3" @click="replaceWithSource(`/courses/${course.id}`, 'courses')">查看题目</Button>
             </div>
 
             <div class="relative flex justify-end">
@@ -363,7 +363,7 @@ onMounted(fetchCourses);
       </Card>
     </div>
 
-    <Button v-if="courses.length > 0 && filteredCourses.length > 0" variant="outline" class="w-full" @click="router.push('/public-library')">
+    <Button v-if="courses.length > 0 && filteredCourses.length > 0" variant="outline" class="w-full" @click="replaceWithSource('/public-library', 'courses')">
       <Globe :size="17" :stroke-width="2.5" />
       浏览公共题库
     </Button>

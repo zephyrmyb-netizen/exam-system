@@ -16,7 +16,7 @@ function backToExams() {
 }
 
 function openLeaderboard() {
-  router.push({ name: "exam-leaderboard", params: { examId: examId.value } });
+  router.replace({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 </script>
 

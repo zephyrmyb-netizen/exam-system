@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 import {
   BookOpen,
   ChevronRight,
@@ -14,6 +14,7 @@ import {
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
 import { useStudyOverview } from "../composables/useStudyOverview";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
@@ -21,7 +22,7 @@ import Button from "../components/ui/button/Button.vue";
 import Card from "../components/ui/card/Card.vue";
 import CardContent from "../components/ui/card/CardContent.vue";
 
-const router = useRouter();
+const { replaceTo } = useAppNavigation();
 const { user } = useAuth();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
@@ -111,8 +112,8 @@ const heroActions = [
   },
 ];
 
-function goTo(target: string | Record<string, unknown>) {
-  router.push(target);
+function goTo(target: RouteLocationRaw) {
+  replaceTo(target);
 }
 
 function formatCourseDate(course: Course) {
@@ -163,7 +164,7 @@ onMounted(() => {
         class="home-search-entry mt-3 flex h-10 w-full items-center gap-2.5 rounded-2xl bg-white px-3.5 text-left text-[13px] font-bold"
         data-home-search
         type="button"
-        @click="router.push('/courses')"
+        @click="replaceTo('/courses')"
       >
         <Search :size="16" :stroke-width="2.4" />
         <span>搜索题库、课程、题目</span>
@@ -235,7 +236,7 @@ onMounted(() => {
           <p class="text-xs font-bold text-slate-400">我的学习空间</p>
           <h2 class="text-2xl font-black text-slate-950">最近题库</h2>
         </div>
-        <Button variant="ghost" size="sm" @click="router.push('/courses')">
+        <Button variant="ghost" size="sm" @click="replaceTo('/courses')">
           查看全部
           <ChevronRight :size="15" :stroke-width="2.5" />
         </Button>

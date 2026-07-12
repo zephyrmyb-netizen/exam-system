@@ -76,7 +76,7 @@ onMounted(() => fetchPage(1));
       <History :size="40" :stroke-width="1.5" color="var(--text-placeholder)" />
       <p>还没有练习记录。</p>
       <p class="empty-hint">去练习页面选择题库，记录会自动保存。</p>
-      <button class="primary-button" type="button" @click="$router.push('/practice')" style="margin-top:4px">
+      <button class="primary-button" type="button" @click="$router.replace('/practice')" style="margin-top:4px">
         <Play :size="16" :stroke-width="2.5" style="margin-right:4px" />
         去练习
       </button>

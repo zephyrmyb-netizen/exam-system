@@ -13,7 +13,7 @@ const store = useExamStore();
 const canCreateExam = computed(() => auth.can("exam:create"));
 
 function openExam(id: number) {
-  router.push({ name: "exam-detail", params: { examId: id } });
+  router.replace({ name: "exam-detail", params: { examId: id } });
 }
 
 onMounted(() => {
@@ -33,7 +33,7 @@ onMounted(() => {
           <RefreshCw :size="16" />
           刷新
         </button>
-        <button v-if="canCreateExam" class="primary" type="button" @click="router.push({ name: 'exam-create' })">
+        <button v-if="canCreateExam" class="primary" type="button" @click="router.replace({ name: 'exam-create' })">
           <Plus :size="17" />
           创建考试
         </button>

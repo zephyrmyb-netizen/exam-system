@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import {
   BookMarked,
   BookOpen,
@@ -16,9 +15,10 @@ import HeatmapChart from "../components/charts/HeatmapChart.vue";
 import TagMasteryChart from "../components/charts/TagMasteryChart.vue";
 import TypeAccuracyChart from "../components/charts/TypeAccuracyChart.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { typeLabel } from "../utils/question";
 
-const router = useRouter();
+const { replaceTo } = useAppNavigation();
 const {
   stats,
   review,
@@ -142,16 +142,16 @@ onMounted(() => fetchAll());
           v-if="review.dueCount !== null && review.dueCount > 0"
           class="primary-button"
           type="button"
-          @click="router.push('/practice/due')"
+          @click="replaceTo('/practice/due')"
         >
           <RefreshCw :size="15" :stroke-width="2.5" />
           到期复习
         </button>
-        <button class="ghost-button" type="button" @click="router.push('/practice/wrong')">
+        <button class="ghost-button" type="button" @click="replaceTo('/practice/wrong')">
           <RefreshCw :size="15" :stroke-width="2.5" />
           错题强化
         </button>
-        <button class="ghost-button" type="button" @click="router.push('/practice')">
+        <button class="ghost-button" type="button" @click="replaceTo('/practice')">
           开始练习
         </button>
       </div>

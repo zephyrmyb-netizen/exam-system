@@ -5,12 +5,13 @@ import CourseList from "../CourseList.vue";
 import type { Course } from "../../types";
 
 const mocks = vi.hoisted(() => ({
-  push: vi.fn(),
+  replace: vi.fn(),
   requestGet: vi.fn(),
 }));
 
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push: mocks.push }),
+  useRouter: () => ({ replace: mocks.replace }),
+  useRoute: () => ({ query: {} }),
 }));
 
 vi.mock("../../api/request", () => ({
@@ -43,7 +44,7 @@ function course(overrides: Partial<Course>): Course {
 
 describe("CourseList UX polish", () => {
   beforeEach(() => {
-    mocks.push.mockClear();
+    mocks.replace.mockClear();
     mocks.requestGet.mockResolvedValue({
       data: [
         course({ id: 1, name: "线性代数复习题库", question_count: 8 }),
@@ -102,5 +103,24 @@ describe("CourseList UX polish", () => {
     const title = wrapper.find("[data-course-title]");
     expect(title.classes()).toContain("truncate");
     expect(title.attributes("title")).toBe("这是一个在手机端必须截断而不能撑破卡片布局的超长题库名称");
+  });
+
+  it("enters course practice with replace and a courses source", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const practiceButton = wrapper.findAll("button").find((button) => button.text().includes("开始练习"));
+    await practiceButton?.trigger("click");
+
+    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/1/practice", query: { from: "courses" } });
+  });
+
+  it("enters course detail with replace and a courses source", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    await wrapper.get("[data-course-title]").trigger("click");
+
+    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/1", query: { from: "courses" } });
   });
 });

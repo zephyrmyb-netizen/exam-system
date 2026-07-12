@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { BookMarked, Folder, Trash2 } from "@lucide/vue";
 
 import { listBookmarks, removeBookmark } from "@/api/bookmark";
+import { useAppNavigation } from "@/composables/useAppNavigation";
 import type { Bookmark, BookmarkList } from "@/types";
 
-const router = useRouter();
+const { replaceTo } = useAppNavigation();
 
 const data = ref<BookmarkList>({ items: [], total: 0, folders: [] });
 const activeFolder = ref("");
@@ -35,7 +35,7 @@ async function remove(item: Bookmark) {
 
 function openQuestion(item: Bookmark) {
   const courseId = item.question?.course_id;
-  if (courseId) router.push(`/courses/${courseId}`);
+  if (courseId) replaceTo({ path: `/courses/${courseId}`, query: { from: "mine" } });
 }
 
 onMounted(() => {

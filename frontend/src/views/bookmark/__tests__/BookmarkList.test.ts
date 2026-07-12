@@ -27,7 +27,8 @@ vi.mock("@/api/bookmark", () => ({
 }));
 
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn() }),
+  useRoute: () => ({ query: {} }),
 }));
 
 describe("BookmarkList", () => {

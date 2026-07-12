@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import GlobalSearch from "../GlobalSearch.vue";
 
-const push = vi.fn();
+const replace = vi.fn();
 
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ replace }),
 }));
 
 vi.mock("@/api/courses", () => ({

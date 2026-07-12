@@ -91,6 +91,66 @@ describe("AppLayout immersive routes", () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it("does not navigate when the current tab is clicked again", async () => {
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    await wrapper.findAll(".nav-button")[0].trigger("click");
+
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("returns a source-aware detail page with replace", async () => {
+    route.name = "study-overview";
+    route.path = "/study-overview";
+    route.query = { from: "home" };
+    route.meta = { title: "学习概览", navKey: "mine", parent: "mine" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    await wrapper.find(".layout-back-button").trigger("click");
+
+    expect(router.replace).toHaveBeenCalledWith({ name: "home" });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("returns a source-aware page back to mine", async () => {
+    route.name = "study-overview";
+    route.path = "/study-overview";
+    route.query = { from: "mine" };
+    route.meta = { title: "学习概览", navKey: "mine", parent: "mine" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    await wrapper.find(".layout-back-button").trigger("click");
+
+    expect(router.replace).toHaveBeenCalledWith({ name: "mine" });
+  });
+
   it("hides the shell header and bottom navigation on immersive routes", () => {
     route.name = "course-practice";
     route.path = "/courses/1/practice";

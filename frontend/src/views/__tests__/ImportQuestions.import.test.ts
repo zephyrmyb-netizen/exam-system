@@ -7,7 +7,7 @@ import { previewFile } from "../../api/imports";
 import { useAiImportTaskStore } from "../../stores/aiImportTask";
 import { ACCEPTED_IMPORT_FILE_TYPES } from "../../utils/importFiles";
 
-const router = { push: vi.fn() };
+const router = { replace: vi.fn() };
 const route = { query: {} };
 
 vi.mock("vue-router", () => ({

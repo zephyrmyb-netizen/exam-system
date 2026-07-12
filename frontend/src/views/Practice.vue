@@ -207,7 +207,7 @@ watch(sessionComplete, (complete) => {
           <Library :size="16" :stroke-width="2.5" />
           <span>返回题库</span>
         </button>
-        <button class="primary-button" type="button" @click="router.push('/import')">
+        <button class="primary-button" type="button" @click="router.replace({ name: 'import', query: { from: 'practice' } })">
           <Sparkles :size="16" :stroke-width="2.5" />
           <span>去导入题目</span>
         </button>

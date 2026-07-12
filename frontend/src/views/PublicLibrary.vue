@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import {
   Globe,
   ChevronRight,
@@ -10,7 +10,7 @@ import {
   Search,
 } from "@lucide/vue";
 
-const router = useRouter();
+const { replaceWithSource } = useAppNavigation();
 const libraries = ref([]);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -34,11 +34,11 @@ async function fetchPublicCourses() {
 }
 
 function viewCourse(course) {
-  router.push({
+  replaceWithSource({
     name: "course-detail",
     params: { courseId: course.id },
     query: { from: "public-library" },
-  });
+  }, "public-library");
 }
 
 // Debounced search: 300ms after last keystroke
@@ -89,7 +89,7 @@ onUnmounted(() => {
         v-if="!searchKeyword"
         class="ghost-button"
         type="button"
-        @click="router.push('/courses')"
+        @click="replaceWithSource('/courses', 'public-library')"
       >
         去我的题库
       </button>
