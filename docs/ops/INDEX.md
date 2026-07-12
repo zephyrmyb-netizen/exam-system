@@ -6,13 +6,14 @@
 
 | 任务 | 窗口 | 留档 | 状态 |
 | --- | --- | --- | --- |
-| 无 | - | - | - |
+| 2026-07-11 | Pencil Desktop 安装与 MCP 隔离验证 | GPT-5.6 Luna | [2026-07-11-pencil-mcp-install.md](./active/2026-07-11-pencil-mcp-install.md) | active |
 
 ## 已完成
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
 | 2026-07-10 | 建立开工必读规约与操作留档机制 | [2026-07-10-workflow-readme.md](./archive/2026-07-10-workflow-readme.md) |
+| 2026-07-12 | Pencil 1.1.69 安装与 Codex MCP 隔离验证（blocked） | [2026-07-12-pencil-install-and-mcp-validation-blocked.md](./archive/2026-07-12-pencil-install-and-mcp-validation-blocked.md) |
 | 2026-07-10 | 收口 AI 导入、练习、首页题库前端改动 | [2026-07-10-pending-frontend-integration.md](./archive/2026-07-10-pending-frontend-integration.md) |
 | 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
 
