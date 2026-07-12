@@ -174,7 +174,7 @@ onUnmounted(() => {
           <h1>{{ route.meta?.title || "" }}</h1>
         </div>
         <button class="theme-toggle" type="button" aria-label="切换主题" @click="theme.toggle()">
-          <Sun v-if="theme.mode === 'dark'" :size="18" :stroke-width="2.4" />
+          <Sun v-if="theme.isDark" :size="18" :stroke-width="2.4" />
           <Moon v-else :size="18" :stroke-width="2.4" />
         </button>
       </div>
@@ -219,6 +219,7 @@ onUnmounted(() => {
         class="nav-button"
         :class="{ active: activeNavKey === item.key, 'nav-button--ai': item.emphasis }"
         type="button"
+        :aria-label="item.label"
         @click.stop.prevent="handleTabClick(item)"
       >
         <span class="nav-icon" :class="{ 'nav-icon--ai': item.emphasis }" aria-hidden="true">
@@ -418,13 +419,13 @@ onUnmounted(() => {
 .nav-button.active { color: var(--primary); }
 .nav-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 14px; }
 .nav-icon--ai {
-  width: 58px;
-  height: 58px;
-  margin-top: -28px;
-  border-radius: 20px;
-  color: #fff;
-  background: linear-gradient(135deg, #3b82f6, #7c3aed);
-  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.32);
+  width: 38px;
+  height: 38px;
+  margin-top: 0;
+  border-radius: 12px;
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  box-shadow: none;
 }
 .nav-label { line-height: 1; }
 

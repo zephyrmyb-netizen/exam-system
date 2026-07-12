@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Layers,
   Lock,
+  MoreHorizontal,
   Pencil,
   Play,
   Plus,
@@ -35,6 +36,14 @@ const successMessage = ref("");
 const deleteLoading = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const searchText = ref("");
+const visibilityFilter = ref<"all" | "private" | "public">("all");
+const openCourseMenuId = ref<number | null>(null);
+
+const visibilityFilters = [
+  { key: "all", label: "全部" },
+  { key: "private", label: "私有" },
+  { key: "public", label: "公开" },
+] as const;
 
 function flashSuccess(msg: string) {
   successMessage.value = msg;
@@ -51,9 +60,9 @@ const form = reactive({ name: "", description: "", subject: "" });
 
 const filteredCourses = computed(() => {
   const keyword = searchText.value.trim().toLowerCase();
-  if (!keyword) return courses.value;
-
   return courses.value.filter((course) => {
+    if (visibilityFilter.value !== "all" && course.visibility !== visibilityFilter.value) return false;
+    if (!keyword) return true;
     const fields = [course.name, course.subject, course.description, course.visibility];
     return fields.some((field) => String(field || "").toLowerCase().includes(keyword));
   });
@@ -63,7 +72,7 @@ const courseSummary = computed(() => {
   const total = courses.value.length;
   const visible = filteredCourses.value.length;
   if (!total) return "创建题库或导入资料后，就可以开始练习。";
-  if (searchText.value.trim()) return `已筛选 ${visible} / ${total} 个题库`;
+  if (searchText.value.trim() || visibilityFilter.value !== "all") return `已筛选 ${visible} / ${total} 个题库`;
   return `共 ${total} 个题库，选择一个开始练习。`;
 });
 
@@ -84,6 +93,7 @@ function openEdit(course: Course) {
   form.subject = course.subject || "";
   editingCourse.value = course;
   formError.value = "";
+  openCourseMenuId.value = null;
   showForm.value = true;
 }
 
@@ -93,6 +103,10 @@ function closeForm() {
 
 function clearSearch() {
   searchText.value = "";
+}
+
+function toggleCourseMenu(courseId: number) {
+  openCourseMenuId.value = openCourseMenuId.value === courseId ? null : courseId;
 }
 
 async function handleSave() {
@@ -144,6 +158,7 @@ async function fetchCourses() {
 }
 
 async function deleteCourse(course: Course) {
+  openCourseMenuId.value = null;
   const confirmed = await confirmDialog.confirm({
     title: "删除题库",
     message: `确定删除「${getCourseDisplayName(course)}」吗？\n其中 ${course.question_count ?? 0} 道题会一起移除。`,
@@ -169,6 +184,7 @@ async function deleteCourse(course: Course) {
 }
 
 async function togglePublish(course: Course) {
+  openCourseMenuId.value = null;
   publishLoading.value = course.id;
   errorMessage.value = "";
 
@@ -219,17 +235,33 @@ onMounted(fetchCourses);
     <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
     <Card v-if="courses.length > 0" class="border-slate-200 bg-white">
-      <CardContent class="flex items-center gap-3 p-3">
-        <Search :size="19" :stroke-width="2.4" class="text-slate-400" />
-        <input
-          v-model="searchText"
-          class="min-h-10 min-w-0 flex-1 border-0 bg-transparent text-base font-bold text-slate-800 outline-none placeholder:text-slate-400"
-          type="search"
-          placeholder="搜索题库、科目或描述"
-        />
-        <button v-if="searchText" class="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" @click="clearSearch">
-          <X :size="15" :stroke-width="2.6" />
-        </button>
+      <CardContent class="grid gap-3 p-3">
+        <div class="flex items-center gap-3">
+          <Search :size="19" :stroke-width="2.4" class="shrink-0 text-slate-400" />
+          <input
+            v-model="searchText"
+            class="min-h-10 min-w-0 flex-1 border-0 bg-transparent text-base font-bold text-slate-800 outline-none placeholder:text-slate-400"
+            type="search"
+            placeholder="搜索题库、科目或描述"
+          />
+          <button v-if="searchText" class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" aria-label="清空搜索" @click="clearSearch">
+            <X :size="15" :stroke-width="2.6" />
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" aria-label="题库可见性筛选">
+          <button
+            v-for="filter in visibilityFilters"
+            :key="filter.key"
+            class="min-h-9 rounded-lg px-2 text-xs font-black text-slate-500 transition"
+            :class="visibilityFilter === filter.key ? 'bg-white text-blue-600 shadow-sm' : 'hover:bg-white/70'"
+            type="button"
+            :aria-label="`${filter.label}题库筛选`"
+            :aria-pressed="visibilityFilter === filter.key"
+            @click="visibilityFilter = filter.key"
+          >
+            {{ filter.label }}
+          </button>
+        </div>
       </CardContent>
     </Card>
 
@@ -300,37 +332,31 @@ onMounted(fetchCourses);
               <Button variant="outline" size="sm" class="min-w-0 px-3" @click="router.push(`/courses/${course.id}`)">查看题目</Button>
             </div>
 
-            <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <div class="relative flex justify-end">
               <button
                 class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 type="button"
-                :title="`编辑${getCourseDisplayName(course)}`"
-                :aria-label="`编辑${getCourseDisplayName(course)}`"
-                @click.stop="openEdit(course)"
+                :aria-label="`更多操作：${getCourseDisplayName(course)}`"
+                :aria-expanded="openCourseMenuId === course.id"
+                @click.stop="toggleCourseMenu(course.id)"
               >
-                <Pencil :size="15" :stroke-width="2.5" />
+                <MoreHorizontal :size="17" :stroke-width="2.5" />
               </button>
-              <button
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                type="button"
-                :title="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
-                :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
-                :disabled="publishLoading === course.id"
-                @click.stop="togglePublish(course)"
-              >
-                <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
-                <Lock v-else :size="15" :stroke-width="2.5" />
-              </button>
-              <button
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                type="button"
-                :title="`删除${getCourseDisplayName(course)}`"
-                :aria-label="`删除${getCourseDisplayName(course)}`"
-                :disabled="deleteLoading === course.id"
-                @click.stop="deleteCourse(course)"
-              >
-                <Trash2 :size="15" :stroke-width="2.5" />
-              </button>
+              <div v-if="openCourseMenuId === course.id" class="absolute right-0 top-10 z-20 grid min-w-40 gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50" type="button" :aria-label="`编辑${getCourseDisplayName(course)}`" @click.stop="openEdit(course)">
+                  <Pencil :size="15" :stroke-width="2.5" />
+                  编辑
+                </button>
+                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50" type="button" :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`" :disabled="publishLoading === course.id" @click.stop="togglePublish(course)">
+                  <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
+                  <Lock v-else :size="15" :stroke-width="2.5" />
+                  {{ course.visibility === "public" ? "撤回公开" : "发布到公共题库" }}
+                </button>
+                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50" type="button" :aria-label="`删除${getCourseDisplayName(course)}`" :disabled="deleteLoading === course.id" @click.stop="deleteCourse(course)">
+                  <Trash2 :size="15" :stroke-width="2.5" />
+                  删除
+                </button>
+              </div>
             </div>
           </div>
         </CardContent>

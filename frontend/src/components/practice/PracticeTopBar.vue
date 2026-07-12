@@ -113,4 +113,10 @@ defineEmits(["back", "end"]);
     font-weight: 800;
   }
 }
+
+@media (max-width: 639px) {
+  .practice-topbar__mode {
+    display: none;
+  }
+}
 </style>

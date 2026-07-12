@@ -201,7 +201,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
-  padding: var(--space-3) var(--space-3) var(--nav-bottom-clearance);
+  padding: var(--space-4) var(--space-4) var(--nav-bottom-clearance);
 }
 
 .app-shell--immersive {
@@ -1445,6 +1445,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-height: min(680px, calc(100dvh - var(--nav-bottom-clearance) - 24px));
   overflow: hidden;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-xl);
@@ -1615,6 +1616,21 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   resize: none;
   font-size: var(--text-sm);
   border-radius: var(--radius-lg);
+}
+
+@media (max-width: 420px) {
+  .chat-page {
+    min-height: calc(100dvh - var(--nav-bottom-clearance) - 16px);
+    border-radius: var(--radius-lg);
+  }
+
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .chat-composer {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
 }
 
 .chat-composer button {

@@ -69,6 +69,28 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".bottom-nav").exists()).toBe(true);
   });
 
+  it("renders the five tabs in order and replaces the current route", async () => {
+    route.name = "home";
+    route.path = "/";
+    route.meta = { navKey: "home" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.findAll(".nav-label").map((item) => item.text())).toEqual(["首页", "题库", "导入", "AI", "我的"]);
+    await wrapper.findAll(".nav-button")[1].trigger("click");
+
+    expect(router.replace).toHaveBeenCalledWith({ path: "/courses" });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it("hides the shell header and bottom navigation on immersive routes", () => {
     route.name = "course-practice";
     route.path = "/courses/1/practice";
