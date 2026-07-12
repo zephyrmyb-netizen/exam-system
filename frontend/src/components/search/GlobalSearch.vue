@@ -72,12 +72,12 @@ watch(keyword, () => {
 });
 
 function goCourse(course: Course) {
-  router.push(`/courses/${course.id}`);
+  router.replace({ path: `/courses/${course.id}`, query: { from: "home" } });
   close();
 }
 
 function goQuestion(question: Question) {
-  router.push(`/courses/${question.course_id || ""}`);
+  router.replace({ path: `/courses/${question.course_id || ""}`, query: { from: "home" } });
   close();
 }
 </script>

@@ -17,6 +17,7 @@
 | 2026-07-12 | Pencil 1.1.69 安装与 Codex MCP 隔离验证（blocked） | [2026-07-12-pencil-install-and-mcp-validation-blocked.md](./archive/2026-07-12-pencil-install-and-mcp-validation-blocked.md) |
 | 2026-07-12 | Pencil MCP 安装后隔离验证 | [2026-07-12-pencil-mcp-validation.md](./archive/2026-07-12-pencil-mcp-validation.md) |
 | 2026-07-13 | 核心前端用户体验收口 | [2026-07-13-core-ux-polish.md](./archive/2026-07-13-core-ux-polish.md) |
+| 2026-07-13 | 内部导航历史栈收口 | [2026-07-13-internal-history-stack-fix.md](./archive/2026-07-13-internal-history-stack-fix.md) |
 | 2026-07-10 | 收口 AI 导入、练习、首页题库前端改动 | [2026-07-10-pending-frontend-integration.md](./archive/2026-07-10-pending-frontend-integration.md) |
 | 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
 

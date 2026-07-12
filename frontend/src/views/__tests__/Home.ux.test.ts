@@ -5,12 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "../Home.vue";
 import type { Course } from "../../types";
 
-const push = vi.fn();
+const replace = vi.fn();
 const courses = ref<Course[]>([]);
 const authUser = ref({ username: "student" });
 
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ replace }),
+  useRoute: () => ({ query: {} }),
 }));
 
 vi.mock("../../stores/auth", () => ({
@@ -54,7 +55,7 @@ function course(id: number, name: string): Course {
 
 describe("Home UX polish", () => {
   beforeEach(() => {
-    push.mockClear();
+    replace.mockClear();
     courses.value = [];
     authUser.value = { username: "student" };
   });
@@ -82,6 +83,15 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).toContain("选择考试并提交成绩");
     expect(wrapper.text()).toContain("学习概览");
     expect(wrapper.text()).toContain("查看今日进度和正确率");
+  });
+
+  it("enters study overview with replace and an explicit home source", async () => {
+    const wrapper = mount(Home);
+    const overviewButton = wrapper.findAll("button").find((button) => button.text().includes("学习概览"));
+
+    await overviewButton?.trigger("click");
+
+    expect(replace).toHaveBeenCalledWith({ name: "study-overview", query: { from: "home" } });
   });
 
   it("shows at most three recent courses", async () => {

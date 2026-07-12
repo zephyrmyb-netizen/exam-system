@@ -28,10 +28,10 @@ async function handleLogin() {
     && !redirect.startsWith("/login")
     && !redirect.startsWith("/register")
   ) {
-    router.push(redirect);
+    router.replace(redirect);
     return;
   }
-  router.push({ name: "home" });
+  router.replace({ name: "home" });
 }
 </script>
 
@@ -87,7 +87,7 @@ async function handleLogin() {
 
     <p class="auth-switch">
       还没有账号？
-      <router-link :to="{ name: 'register' }">去注册</router-link>
+      <router-link replace :to="{ name: 'register' }">去注册</router-link>
     </p>
   </div>
 </template>

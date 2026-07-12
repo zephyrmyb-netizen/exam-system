@@ -60,7 +60,7 @@ onMounted(fetchStats);
       </article>
     </div>
 
-    <RouterLink class="admin-link" :to="{ name: 'admin-users' }">
+    <RouterLink replace class="admin-link" :to="{ name: 'admin-users' }">
       <Users :size="18" />
       用户角色管理
     </RouterLink>

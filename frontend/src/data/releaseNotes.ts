@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.4.1-navigation-history-fix",
+    version: "v2.4.1",
+    date: "2026-07-13",
+    type: "修复",
+    title: "修复移动端导航历史问题",
+    items: [
+      "优化应用内页面跳转和返回来源。",
+      "减少微信浏览器历史工具栏被激活。",
+      "修复部分页面重复返回入口。",
+      "改善登录、题库和练习流程的返回一致性。",
+    ],
+  },
+  {
     id: "v2.4.0-core-ux-polish",
     version: "v2.4.0",
     date: "2026-07-13",

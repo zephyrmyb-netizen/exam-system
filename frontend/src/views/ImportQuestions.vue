@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import {
   ArrowRight,
   BookOpen,
@@ -17,6 +17,7 @@ import ImportCapabilityStrip from "../components/import/ImportCapabilityStrip.vu
 import ImportPreview from "../components/import/ImportPreview.vue";
 import ImportTaskMonitor from "../components/import/ImportTaskMonitor.vue";
 import { useImportCourses } from "../composables/useImportCourses";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useManualQuestionImport } from "../composables/useManualQuestionImport";
 import { useAiImportTask } from "../stores/aiImportTask";
 import {
@@ -31,8 +32,8 @@ import {
   isLegacyPpt,
 } from "../utils/importFiles";
 
-const router = useRouter();
 const route = useRoute();
+const { replaceTo, replaceWithSource } = useAppNavigation();
 const aiTask = useAiImportTask();
 
 const ACCEPTED_FILE_TYPES = ACCEPTED_IMPORT_FILE_TYPES;
@@ -109,10 +110,10 @@ function deriveNameFromFile(file) {
 
 function goToCourse(courseId) {
   if (courseId) {
-    router.push({ name: "course-detail", params: { courseId } });
+    replaceWithSource({ name: "course-detail", params: { courseId } }, "import");
     return;
   }
-  router.push("/courses");
+  replaceTo("/courses");
 }
 
 function readTargetCourseIdFromRoute() {

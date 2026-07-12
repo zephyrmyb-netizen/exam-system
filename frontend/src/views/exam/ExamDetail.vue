@@ -11,15 +11,15 @@ const store = useExamStore();
 const examId = computed(() => Number(route.params.examId));
 
 function start() {
-  router.push({ name: "exam-take", params: { examId: examId.value } });
+  router.replace({ name: "exam-take", params: { examId: examId.value } });
 }
 
 function openLeaderboard() {
-  router.push({ name: "exam-leaderboard", params: { examId: examId.value } });
+  router.replace({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 
 function goBack() {
-  router.push({ name: "exams" });
+  router.replace({ name: "exams" });
 }
 
 function retry() {

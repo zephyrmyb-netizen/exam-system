@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import type { RouteLocationRaw } from "vue-router";
 import {
   BarChart3,
   Bookmark,
@@ -15,6 +15,7 @@ import {
 } from "@lucide/vue";
 
 import { useStudyOverview } from "../composables/useStudyOverview";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { releaseNotes } from "../data/releaseNotes";
 import { useAuth } from "../stores/auth";
 import { useThemeStore, type ThemeMode } from "../stores/theme";
@@ -22,7 +23,7 @@ import Button from "../components/ui/button/Button.vue";
 import Card from "../components/ui/card/Card.vue";
 import CardContent from "../components/ui/card/CardContent.vue";
 
-const router = useRouter();
+const { replaceTo } = useAppNavigation();
 const { user, logout } = useAuth();
 const theme = useThemeStore();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
@@ -57,7 +58,7 @@ const serviceGrid = computed(() => [
     desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道待复盘` : "集中复盘",
     icon: BookMarked,
     color: "var(--rose)",
-    to: "/wrongbook",
+    to: { name: "wrongbook", query: { from: "mine" } },
   },
   {
     label: "练习记录",
@@ -78,7 +79,7 @@ const serviceGrid = computed(() => [
     desc: "查看已收藏内容",
     icon: Bookmark,
     color: "var(--teal)",
-    to: "/bookmarks",
+    to: { name: "bookmarks", query: { from: "mine" } },
   },
   {
     label: "使用提示",
@@ -94,13 +95,13 @@ function updateTheme(event: Event) {
   theme.setMode(value);
 }
 
-function goTo(target: string | Record<string, unknown>) {
-  router.push(target);
+function goTo(target: RouteLocationRaw) {
+  replaceTo(target);
 }
 
 function handleLogout() {
   logout();
-  router.push({ name: "login" });
+  replaceTo({ name: "login" });
 }
 
 onMounted(() => fetchAll());

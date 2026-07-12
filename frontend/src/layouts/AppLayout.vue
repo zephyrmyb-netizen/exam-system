@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sparkles, Sun, User } from "@lucide/vue";
 
 import { getAuthEventName, getToken } from "../api/request";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
 import GlobalSearch from "../components/search/GlobalSearch.vue";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
 
 const route = useRoute();
-const router = useRouter();
+const { replaceTo, returnToSource } = useAppNavigation();
 const { fetchProfile } = useAuth();
 const theme = useThemeStore();
 
@@ -73,37 +74,28 @@ const showHeader = computed(() => !isImmersiveRoute.value && !["home", "courses"
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
-  const allowedFromRoutes = ["home", "mine", "courses", "practice", "public-library"];
-  const from = route.query.from;
-
-  if (sourceAwareRoutes.has(route.name as string) && typeof from === "string" && allowedFromRoutes.includes(from)) {
-    router.replace({ name: from });
-    return;
-  }
-
   const parent = route.meta?.parent;
-  if (typeof parent === "string") {
-    router.replace({ name: parent, params: { ...route.params } });
-    return;
-  }
-
-  router.replace({ name: "home" });
+  returnToSource(
+    typeof parent === "string"
+      ? { name: parent, params: { ...route.params } }
+      : { name: "home" },
+  );
 }
 
 function handleAuthChange() {
   if (!getToken() && route.name !== "login" && route.name !== "register") {
-    router.push({ name: "login", query: { redirect: route.fullPath } });
+    replaceTo({ name: "login", query: { redirect: route.fullPath } });
   }
 }
 
 function handleTabClick(item: { to: string }) {
   if (route.path === item.to) return;
-  router.replace({ path: item.to });
+  replaceTo({ path: item.to });
 }
 
 function goToImportTab() {
   if (route.path === "/import") return;
-  router.replace({ path: "/import" });
+  replaceTo({ path: "/import" });
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {

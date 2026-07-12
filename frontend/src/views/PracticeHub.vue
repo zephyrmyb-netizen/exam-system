@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import {
   BookMarked,
   BookOpen,
@@ -14,13 +13,14 @@ import {
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
 import PracticeModeCard from "../components/practice/PracticeModeCard.vue";
 import PracticeOverviewCard from "../components/practice/PracticeOverviewCard.vue";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 
-const router = useRouter();
+const { replaceTo, replaceWithSource } = useAppNavigation();
 
 const stats = ref({ todayCount: null as number | null, totalCount: null as number | null, wrongCount: null as number | null });
 const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as any[] });
@@ -89,14 +89,14 @@ const modeCards = computed(() => [
 
 function openPrimaryPractice() {
   if (primaryCourse.value) {
-    router.push(`/courses/${primaryCourse.value.id}/practice`);
+    replaceWithSource(`/courses/${primaryCourse.value.id}/practice`, "practice");
     return;
   }
-  router.push("/courses");
+  replaceTo("/courses");
 }
 
 function goToMode(card: { disabled: boolean; to: string }) {
-  if (!card.disabled) router.push(card.to);
+  if (!card.disabled) replaceTo(card.to);
 }
 
 async function fetchStatsReview() {
@@ -204,12 +204,12 @@ onMounted(() => {
     <div v-if="hasRecentCourses" class="hub-section">
       <div class="hub-section-head">
         <span class="hub-section-label">最近可练习</span>
-        <button class="hub-section-link" type="button" @click="router.push('/courses')">查看全部</button>
+        <button class="hub-section-link" type="button" @click="replaceTo('/courses')">查看全部</button>
       </div>
 
       <div class="recent-list">
         <div v-for="course in recentCourses" :key="course.id" class="recent-row">
-          <div class="recent-body" @click="router.push(`/courses/${course.id}`)">
+          <div class="recent-body" @click="replaceWithSource(`/courses/${course.id}`, 'practice')">
             <div class="recent-icon" :class="course.visibility === 'public' ? 'icon-public' : 'icon-private'">
               <BookOpen :size="16" :stroke-width="2" />
             </div>
@@ -221,7 +221,7 @@ onMounted(() => {
               </span>
             </div>
           </div>
-          <button class="recent-button" type="button" @click="router.push(`/courses/${course.id}/practice`)">
+          <button class="recent-button" type="button" @click="replaceWithSource(`/courses/${course.id}/practice`, 'practice')">
             <Play :size="12" :stroke-width="2.5" />
             练习
           </button>
@@ -234,17 +234,17 @@ onMounted(() => {
       <p class="hub-guidance-title">选择一个题库开始练习</p>
       <p class="hub-guidance-hint">还没有题库？先去导入题目创建一个题库。</p>
       <div class="hub-guidance-actions">
-        <button class="primary-button" type="button" @click="router.push('/courses')">
+        <button class="primary-button" type="button" @click="replaceTo('/courses')">
           <Library :size="16" :stroke-width="2.5" />
           去题库选择
         </button>
-        <button class="ghost-button" type="button" @click="router.push('/import')">
+        <button class="ghost-button" type="button" @click="replaceWithSource('/import', 'practice')">
           <Upload :size="16" :stroke-width="2.5" />
           导入题目
         </button>
       </div>
       <div v-if="hasWrongQuestions || stats.totalCount" class="hub-guidance-alts">
-        <button v-if="hasWrongQuestions" class="ghost-button" type="button" @click="router.push('/practice/wrong')">
+        <button v-if="hasWrongQuestions" class="ghost-button" type="button" @click="replaceTo('/practice/wrong')">
           错题强化
         </button>
       </div>

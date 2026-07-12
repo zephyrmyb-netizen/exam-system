@@ -1,21 +1,27 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import request, { getErrorMessage } from "../api/request";
 import CourseEditModal from "../components/course/CourseEditModal.vue";
 import CourseHeader from "../components/course/CourseHeader.vue";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuth } from "../stores/auth";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import { isPracticeReadyCourse } from "../utils/course";
 import QuestionList from "./QuestionList.vue";
 
 const route = useRoute();
-const router = useRouter();
+const { replaceTo, replaceWithSource } = useAppNavigation();
 const { user } = useAuth();
 const confirmDialog = useConfirmDialog();
 
 const courseId = computed(() => route.params.courseId);
+const navigationSource = computed(() =>
+  route.query.from === "public-library" || route.query.from === "practice"
+    ? route.query.from
+    : "courses",
+);
 const course = ref(null);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -135,7 +141,7 @@ async function deleteCourse() {
   errorMessage.value = "";
   try {
     await request.delete(`/courses/${courseId.value}`);
-    router.push({ name: "courses" });
+    replaceTo({ name: "courses" });
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "删除题库失败");
   } finally {
@@ -145,11 +151,11 @@ async function deleteCourse() {
 
 function goToPractice() {
   if (!canStartPractice.value) return;
-  router.push(`/courses/${courseId.value}/practice`);
+  replaceWithSource(`/courses/${courseId.value}/practice`, navigationSource.value);
 }
 
 function goToImport() {
-  router.push({ name: "import", query: { course_id: courseId.value } });
+  replaceWithSource({ name: "import", query: { course_id: courseId.value } }, "courses");
 }
 
 async function exportCourse() {

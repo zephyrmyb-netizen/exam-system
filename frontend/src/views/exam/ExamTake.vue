@@ -67,7 +67,7 @@ onUnmounted(() => {
 
     <div v-else-if="store.error" class="empty-panel">
       <p class="error-message">{{ store.error }}</p>
-      <button type="button" class="back-btn" @click="router.push({ name: 'exams' })">
+      <button type="button" class="back-btn" @click="router.replace({ name: 'exams' })">
         <ArrowLeft :size="16" /> 返回考试列表
       </button>
     </div>

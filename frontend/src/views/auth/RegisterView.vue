@@ -19,7 +19,7 @@ async function handleRegister() {
   resetFeedback();
   const ok = await register(form.value.username, form.value.password, form.value.inviteCode);
   if (ok) {
-    router.push({ name: "login" });
+    router.replace({ name: "login" });
   }
 }
 </script>
@@ -90,7 +90,7 @@ async function handleRegister() {
 
     <p class="auth-switch">
       已有账号？
-      <router-link :to="{ name: 'login' }">去登录</router-link>
+      <router-link replace :to="{ name: 'login' }">去登录</router-link>
     </p>
   </div>
 </template>
