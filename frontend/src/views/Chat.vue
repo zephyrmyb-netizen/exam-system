@@ -297,8 +297,25 @@ function getAssistantHtml(text) {
 .chat-composer button {
   display: grid;
   place-items: center;
-  min-width: 48px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--gold-strong), var(--gold));
+  box-shadow: var(--shadow-gold), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform var(--ease-spring), box-shadow var(--ease-out);
+}
+
+.chat-composer button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--gold-strong), var(--gold));
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.chat-composer button:active:not(:disabled) {
+  transform: scale(0.9);
 }
 
 .retry-btn {
@@ -347,8 +364,62 @@ function getAssistantHtml(text) {
   border-radius: 6px;
   background: var(--surface-soft);
   color: var(--primary-strong);
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.92em;
   overflow-wrap: anywhere;
+}
+
+/* ── 墨韵书房 · Chat 装饰 ── */
+
+/* 在线状态点 — 金色而非绿色 */
+.online-dot {
+  color: var(--gold-strong);
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-border);
+}
+
+/* AI 头像 — 金色印章风格（36x36 圆形，靛蓝渐变背景 + 金色虚线圆环） */
+.chat-row.assistant .chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary-strong), var(--primary));
+  font-family: var(--font-serif);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+}
+
+.chat-row.assistant .chat-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px dashed var(--gold-border);
+  pointer-events: none;
+}
+
+/* 用户头像 — 靛蓝渐变 */
+.chat-row.user .chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  font-family: var(--font-serif);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* AI 气泡 — 白色卡片 + 金色左边竖条 */
+.chat-row.assistant .chat-bubble {
+  border-left: 4px solid var(--gold);
+}
+
+/* 输入框圆角 */
+.chat-composer textarea {
+  border-radius: var(--radius-xl);
+  padding: 11px 18px;
 }
 </style>

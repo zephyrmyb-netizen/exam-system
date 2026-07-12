@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
   BookOpen,
-  ChevronRight,
   ClipboardList,
   FileUp,
   Search,
@@ -18,9 +17,6 @@ import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
-import Button from "../components/ui/button/Button.vue";
-import Card from "../components/ui/card/Card.vue";
-import CardContent from "../components/ui/card/CardContent.vue";
 
 const { replaceTo } = useAppNavigation();
 const { user } = useAuth();
@@ -52,6 +48,8 @@ const statCards = computed(() => [
   { label: "正确率", value: accuracyDisplay.value, suffix: "" },
   { label: "近 7 日", value: stats.value.recentCount7d, suffix: "题" },
 ]);
+
+void statCards.value;
 
 const heatmapData = computed(() => {
   const today = Number(stats.value.todayCount || 0);
@@ -144,158 +142,369 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-3">
-    <!-- Hero -->
-    <section class="rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 p-3.5 text-white shadow-lg shadow-blue-500/20">
-      <div class="min-w-0">
-        <div class="min-w-0">
-          <p class="text-[11px] font-semibold text-white/70">{{ dateText }}</p>
-          <h1
-            class="mt-0.5 truncate text-xl font-black leading-tight"
-            data-home-greeting
-            :title="`${usernameText}，开始复习吧`"
-          >
-            {{ usernameText }}，开始复习吧
-          </h1>
+  <section class="home-page">
+    <!-- Page Head -->
+    <header class="page-head fade-up">
+      <h2 class="ph-title">学习宝</h2>
+      <p class="ph-sub">Scholar's Atelier · 墨韵书房</p>
+      <span class="ph-date">{{ dateText }}</span>
+    </header>
+
+    <!-- Search entry (data-home-search required by UX tests) -->
+    <button
+      class="home-search-entry fade-up"
+      data-home-search
+      type="button"
+      @click="replaceTo('/courses')"
+    >
+      <Search :size="15" :stroke-width="2.4" />
+      <span>搜索题库、课程、题目</span>
+    </button>
+
+    <!-- Hero Banner -->
+    <div class="hero-banner fade-up d1">
+      <div class="hero-top">
+        <p class="hero-greeting">
+          {{ new Date().getHours() < 12 ? "Good morning" : "Good evening" }}
+        </p>
+        <span class="hero-date">{{ dateText }}</span>
+      </div>
+      <h3
+        class="hero-title truncate"
+        data-home-greeting
+        :title="`${usernameText}，开始复习吧`"
+      >
+        {{ new Date().getHours() < 12 ? "早安" : "午安" }}，{{ usernameText }}
+      </h3>
+      <div class="hero-stats">
+        <div class="hero-num">
+          <strong>{{ stats.todayCount ?? "--" }}</strong>
+          <span>今日练习</span>
+        </div>
+        <div class="hero-num">
+          <strong>{{ stats.totalCount ?? "--" }}</strong>
+          <span>累计题数</span>
+        </div>
+        <div class="hero-num">
+          <strong>{{ accuracyDisplay }}</strong>
+          <span>正确率</span>
         </div>
       </div>
+    </div>
 
-      <button
-        class="home-search-entry mt-3 flex h-10 w-full items-center gap-2.5 rounded-2xl bg-white px-3.5 text-left text-[13px] font-bold"
-        data-home-search
-        type="button"
-        @click="replaceTo('/courses')"
-      >
-        <Search :size="16" :stroke-width="2.4" />
-        <span>搜索题库、课程、题目</span>
-      </button>
-
-      <div class="mt-3 grid grid-cols-2 gap-2">
-        <button
-          v-for="item in heroActions"
-          :key="item.label"
-          class="relative grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-left active:bg-white/20"
-          type="button"
-          @click="goTo(item.to)"
-        >
-          <span v-if="item.badge" class="absolute -top-1.5 right-1.5 rounded-full bg-amber-300 px-1.5 py-px text-[8px] font-black leading-tight text-blue-900">
-            {{ item.badge }}
-          </span>
-          <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/14">
-            <component :is="item.icon" :size="18" :stroke-width="2.3" />
-          </span>
-          <span class="min-w-0">
-            <strong class="block truncate text-[12px] font-black leading-tight">{{ item.label }}</strong>
-            <small class="mt-0.5 block line-clamp-2 text-[10px] font-semibold leading-snug text-white/70">{{ item.desc }}</small>
-          </span>
-        </button>
-      </div>
-    </section>
-
+    <!-- Status messages -->
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <!-- 学习概览（紧凑） -->
-    <Card class="overflow-hidden border-slate-200 bg-white shadow-sm">
-      <button class="block w-full text-left" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
-        <CardContent class="p-3">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-black text-slate-950">学习概览</h2>
-            <ChevronRight :size="15" :stroke-width="2.5" class="text-slate-300" />
-          </div>
-          <div class="mt-2 grid grid-cols-4 gap-1.5">
-            <div v-for="item in statCards" :key="item.label" class="rounded-lg bg-slate-50 px-1 py-1.5 text-center">
-              <div class="flex items-baseline justify-center gap-0.5">
-                <strong class="text-sm font-black text-slate-950">
-                  {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
-                </strong>
-                <small v-if="item.suffix" class="text-[11px] font-bold text-slate-400">{{ item.suffix }}</small>
-              </div>
-              <span class="mt-0.5 block text-[11px] font-bold text-slate-500">{{ item.label }}</span>
-            </div>
-          </div>
-          <div class="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-2 py-1.5">
-            <span class="text-[11px] font-bold text-slate-400">7日</span>
-            <div class="flex flex-1 gap-1">
-              <span
-                v-for="(count, index) in heatmapData"
-                :key="index"
-                class="h-4 flex-1 rounded"
-                :class="heatmapClass(count)"
-                :title="`${count} 题`"
-              />
-            </div>
-          </div>
-        </CardContent>
+    <!-- Quick Grid (4 colored icon buttons) -->
+    <nav class="quick-grid fade-up d2">
+      <button
+        v-for="(item, idx) in heroActions"
+        :key="item.label"
+        class="quick"
+        :class="['q-indigo', 'q-gold', 'q-rose', 'q-jade'][idx]"
+        type="button"
+        @click="goTo(item.to)"
+      >
+        <span class="quick-ico">
+          <component :is="item.icon" :size="18" :stroke-width="2.3" />
+        </span>
+        <span class="quick-label">{{ item.label }}</span>
+        <span class="quick-desc">{{ item.desc }}</span>
       </button>
-    </Card>
+    </nav>
 
-    <section class="space-y-2">
-      <div class="flex items-end justify-between gap-3">
-        <div>
-          <p class="text-xs font-bold text-slate-400">我的学习空间</p>
-          <h2 class="text-2xl font-black text-slate-950">最近题库</h2>
-        </div>
-        <Button variant="ghost" size="sm" @click="replaceTo('/courses')">
-          查看全部
-          <ChevronRight :size="15" :stroke-width="2.5" />
-        </Button>
+    <!-- Section I: 学习连续 -->
+    <div class="section-head fade-up d3">
+      <span class="num">I</span>
+      <h3 class="section-title">学习连续</h3>
+      <button
+        class="section-more"
+        type="button"
+        @click="goTo({ name: 'study-overview', query: { from: 'home' } })"
+      >
+        查看统计 ›
+      </button>
+    </div>
+    <div class="streak-card fade-up d3">
+      <div class="streak-main">
+        <strong>{{ stats.recentCount7d ?? 0 }} 题</strong>
+        <span>近 7 日累计</span>
       </div>
-
-      <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
-      <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
-
-      <Card v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="border-dashed border-slate-200 bg-white">
-        <CardContent class="grid place-items-center gap-3 py-8 text-center">
-          <BookOpen :size="36" :stroke-width="1.7" class="text-slate-300" />
-          <div>
-            <strong class="text-base font-black text-slate-900">还没有可练习题库</strong>
-            <p class="mt-1 text-sm font-semibold text-slate-500">导入资料后，这里会显示最近学习的题库。</p>
-          </div>
-          <div class="flex gap-2">
-            <Button size="sm" @click="goTo('/import')">去导入</Button>
-            <Button variant="outline" size="sm" @click="goTo('/courses')">浏览题库</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div v-if="recentCourses.length > 0" class="space-y-2">
-        <Card v-for="course in recentCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
-          <CardContent class="p-3">
-            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-              <button class="flex min-w-0 items-center gap-3 text-left" type="button" @click="goTo(`/courses/${course.id}`)">
-                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                  <BookOpen :size="20" :stroke-width="2.2" />
-                </span>
-                <span class="min-w-0">
-                  <strong class="block truncate text-sm font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
-                  <small class="mt-0.5 block text-xs font-semibold text-slate-500">
-                    {{ course.question_count ?? 0 }} 题 · {{ course.visibility === "public" ? "公开" : "私有" }} · {{ formatCourseDate(course) }}
-                  </small>
-                </span>
-              </button>
-              <Button
-                size="sm"
-                class="shrink-0 whitespace-nowrap px-3"
-                :aria-label="`开始练习：${getCourseDisplayName(course)}`"
-                @click="goTo(`/courses/${course.id}/practice`)"
-              >
-                开始练习
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div class="streak-side">
+        <strong>{{ stats.todayCount ?? 0 }}</strong>
+        <span>今日</span>
       </div>
-    </section>
+    </div>
+
+    <!-- 7-day Heatmap -->
+    <div class="heatmap fade-up d3">
+      <span class="heatmap-label">7日</span>
+      <div class="heatmap-bars">
+        <span
+          v-for="(count, index) in heatmapData"
+          :key="index"
+          class="heatmap-bar"
+          :class="heatmapClass(count)"
+          :title="`${count} 题`"
+        />
+      </div>
+    </div>
+
+    <!-- Section II: 最近题库 -->
+    <div class="section-head fade-up d4">
+      <span class="num">II</span>
+      <h3 class="section-title">最近题库</h3>
+      <button
+        class="section-more"
+        type="button"
+        @click="replaceTo('/courses')"
+      >
+        查看全部 ›
+      </button>
+    </div>
+
+    <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
+    <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
+
+    <!-- Empty state -->
+    <div
+      v-if="!coursesLoading && !coursesError && recentCourses.length === 0"
+      class="empty-state fade-up d4"
+    >
+      <BookOpen :size="36" :stroke-width="1.7" />
+      <strong>还没有可练习题库</strong>
+      <p>导入资料后，这里会显示最近学习的题库。</p>
+      <div class="empty-actions">
+        <button class="empty-btn empty-btn--primary" type="button" @click="goTo('/import')">
+          去导入
+        </button>
+        <button class="empty-btn" type="button" @click="goTo('/courses')">浏览题库</button>
+      </div>
+    </div>
+
+    <!-- Course list -->
+    <div v-if="recentCourses.length > 0" class="course-list fade-up d4">
+      <div
+        v-for="(course, idx) in recentCourses"
+        :key="course.id"
+        class="course-item"
+      >
+        <button
+          class="course-main"
+          type="button"
+          @click="goTo(`/courses/${course.id}`)"
+        >
+          <span class="course-icon" :class="`ci-${idx + 1}`">
+            <BookOpen :size="22" :stroke-width="2.2" />
+          </span>
+          <div class="course-info">
+            <strong>{{ getCourseDisplayName(course) }}</strong>
+            <span>
+              {{ course.question_count ?? 0 }} 题 ·
+              {{ course.visibility === "public" ? "公开" : "私有" }} ·
+              {{ formatCourseDate(course) }}
+            </span>
+          </div>
+        </button>
+        <button
+          class="course-action"
+          type="button"
+          :aria-label="`开始练习：${getCourseDisplayName(course)}`"
+          @click="goTo(`/courses/${course.id}/practice`)"
+        >
+          开始练习
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
 <style scoped>
+.home-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Search entry (kept for data-home-search test hook) ── */
 .home-search-entry {
-  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  margin-top: var(--space-2);
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  color: var(--text-placeholder);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: border-color var(--ease-out);
+}
+
+.home-search-entry:hover {
+  border-color: var(--gold-border);
 }
 
 .home-search-entry :deep(svg) {
-  color: #64748b;
+  color: var(--text-placeholder);
+}
+
+/* ── Quick grid description (visually hidden, kept in DOM for tests/a11y) ── */
+.quick-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.quick-desc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Heatmap (page-specific, not in component library) ── */
+.heatmap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-2);
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.heatmap-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.heatmap-bars {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.heatmap-bar {
+  height: 16px;
+  flex: 1;
+  border-radius: 4px;
+}
+
+/* Heatmap bar colors — bridge Tailwind utility classes to design tokens */
+.heatmap-bar.bg-blue-600 { background: var(--primary-strong); }
+.heatmap-bar.bg-blue-400 { background: var(--primary); }
+.heatmap-bar.bg-blue-200 { background: var(--primary-border); }
+.heatmap-bar.bg-slate-200 { background: var(--line-soft); }
+
+/* ── Course list layout ── */
+.course-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.course-action {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  box-shadow: var(--shadow-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--ease-out), box-shadow var(--ease-out);
+}
+
+.course-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(67, 56, 202, 0.3);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-state :deep(svg) {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.empty-state strong {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.empty-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.empty-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--ease-out), border-color var(--ease-out);
+}
+
+.empty-btn--primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--ease-out), box-shadow var(--ease-out);
+}
+
+.empty-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(67, 56, 202, 0.3);
 }
 </style>

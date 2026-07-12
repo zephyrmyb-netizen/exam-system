@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import {
-  BookOpen,
-  ChevronRight,
+  Eye,
   Globe,
   GraduationCap,
-  Layers,
   Lock,
   MoreHorizontal,
   Pencil,
@@ -23,8 +21,6 @@ import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import Button from "../components/ui/button/Button.vue";
-import Card from "../components/ui/card/Card.vue";
-import CardContent from "../components/ui/card/CardContent.vue";
 
 const { replaceWithSource } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
@@ -214,193 +210,606 @@ onMounted(fetchCourses);
 </script>
 
 <template>
-  <section class="space-y-4 pb-24">
-    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-      <div class="min-w-0">
-        <p class="text-sm font-bold text-slate-400">选择课程开始练习</p>
-        <h1 class="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">我的题库</h1>
-        <p class="mt-2 text-sm font-semibold text-slate-500">{{ courseSummary }}</p>
-      </div>
-      <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-        <Button variant="outline" class="min-w-0 px-3" :disabled="loading" @click="fetchCourses">刷新</Button>
-        <Button class="min-w-0 px-3" @click="openCreate">
-          <Plus :size="16" :stroke-width="2.5" />
-          创建题库
-        </Button>
-      </div>
-    </div>
+  <section class="library-page">
+    <header class="page-head fade-up">
+      <p class="ph-sub">Library · 学海无涯</p>
+      <h2 class="ph-title">题库</h2>
+      <span class="ph-date">{{ courses.length }} 个题库</span>
+    </header>
 
     <p v-if="loading" class="status-banner status-banner--info">题库加载中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
     <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
-    <Card v-if="courses.length > 0" class="border-slate-200 bg-white">
-      <CardContent class="grid gap-3 p-3">
-        <div class="flex items-center gap-3">
-          <Search :size="19" :stroke-width="2.4" class="shrink-0 text-slate-400" />
-          <input
-            v-model="searchText"
-            class="min-h-10 min-w-0 flex-1 border-0 bg-transparent text-base font-bold text-slate-800 outline-none placeholder:text-slate-400"
-            type="search"
-            placeholder="搜索题库、科目或描述"
-          />
-          <button v-if="searchText" class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" aria-label="清空搜索" @click="clearSearch">
-            <X :size="15" :stroke-width="2.6" />
-          </button>
-        </div>
-        <div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" aria-label="题库可见性筛选">
-          <button
-            v-for="filter in visibilityFilters"
-            :key="filter.key"
-            class="min-h-9 rounded-lg px-2 text-xs font-black text-slate-500 transition"
-            :class="visibilityFilter === filter.key ? 'bg-white text-blue-600 shadow-sm' : 'hover:bg-white/70'"
-            type="button"
-            :aria-label="`${filter.label}题库筛选`"
-            :aria-pressed="visibilityFilter === filter.key"
-            @click="visibilityFilter = filter.key"
-          >
-            {{ filter.label }}
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="!loading && courses.length === 0 && !errorMessage" class="border-dashed border-slate-200 bg-white">
-      <CardContent class="grid place-items-center gap-4 py-12 text-center">
-        <GraduationCap :size="48" :stroke-width="1.5" class="text-slate-300" />
-        <div>
-          <strong class="text-lg font-black text-slate-900">还没有题库</strong>
-          <p class="mt-1 text-sm font-semibold text-slate-500">创建一门课程，或先去导入题目。</p>
-        </div>
-        <div class="flex gap-2">
-          <Button @click="openCreate">
-            <Plus :size="16" :stroke-width="2.5" />
-            创建题库
-          </Button>
-          <Button variant="outline" @click="replaceWithSource('/import', 'courses')">
-            <Sparkles :size="16" :stroke-width="2.5" />
-            去导入
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="!loading && courses.length > 0 && filteredCourses.length === 0 && !errorMessage" class="border-dashed border-slate-200 bg-white">
-      <CardContent class="grid place-items-center gap-4 py-10 text-center">
-        <Search :size="44" :stroke-width="1.5" class="text-slate-300" />
-        <div>
-          <strong class="text-lg font-black text-slate-900">没有找到匹配题库</strong>
-          <p class="mt-1 text-sm font-semibold text-slate-500">换个关键词，或者清空搜索查看全部。</p>
-        </div>
-        <Button variant="outline" @click="clearSearch">清空搜索</Button>
-      </CardContent>
-    </Card>
-
-    <div class="space-y-3">
-      <Card v-for="course in filteredCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
-        <CardContent class="p-4">
-          <button class="flex w-full min-w-0 items-center gap-3 text-left" type="button" @click="replaceWithSource(`/courses/${course.id}`, 'courses')">
-            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <BookOpen :size="22" :stroke-width="2.2" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <strong
-                class="block truncate text-base font-black text-slate-950 sm:text-lg"
-                data-course-title
-                :title="getCourseDisplayName(course)"
-              >
-                {{ getCourseDisplayName(course) }}
-              </strong>
-              <small class="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
-                <span class="inline-flex items-center gap-1"><Layers :size="13" />{{ course.question_count ?? 0 }} 道题</span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-                  <Lock v-if="course.visibility === 'private'" :size="12" />
-                  <Globe v-else :size="12" />
-                  {{ course.visibility === "public" ? "已公开" : "私有" }}
-                </span>
-              </small>
-            </span>
-            <ChevronRight :size="20" :stroke-width="2.5" class="text-slate-300" />
-          </button>
-
-          <div class="mt-4 grid gap-2 border-t border-slate-100 pt-3">
-            <div class="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-2">
-              <Button size="sm" class="min-w-0 px-3" :disabled="!isPracticeReadyCourse(course)" @click="goToPractice(course)">
-                <Play :size="14" :stroke-width="2.6" />
-                {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
-              </Button>
-              <Button variant="outline" size="sm" class="min-w-0 px-3" @click="replaceWithSource(`/courses/${course.id}`, 'courses')">查看题目</Button>
-            </div>
-
-            <div class="relative flex justify-end">
-              <button
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                type="button"
-                :aria-label="`更多操作：${getCourseDisplayName(course)}`"
-                :aria-expanded="openCourseMenuId === course.id"
-                @click.stop="toggleCourseMenu(course.id)"
-              >
-                <MoreHorizontal :size="17" :stroke-width="2.5" />
-              </button>
-              <div v-if="openCourseMenuId === course.id" class="absolute right-0 top-10 z-20 grid min-w-40 gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50" type="button" :aria-label="`编辑${getCourseDisplayName(course)}`" @click.stop="openEdit(course)">
-                  <Pencil :size="15" :stroke-width="2.5" />
-                  编辑
-                </button>
-                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-slate-600 hover:bg-slate-50" type="button" :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`" :disabled="publishLoading === course.id" @click.stop="togglePublish(course)">
-                  <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
-                  <Lock v-else :size="15" :stroke-width="2.5" />
-                  {{ course.visibility === "public" ? "撤回公开" : "发布到公共题库" }}
-                </button>
-                <button class="flex min-h-10 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold text-rose-600 hover:bg-rose-50" type="button" :aria-label="`删除${getCourseDisplayName(course)}`" :disabled="deleteLoading === course.id" @click.stop="deleteCourse(course)">
-                  <Trash2 :size="15" :stroke-width="2.5" />
-                  删除
-                </button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div v-if="courses.length > 0" class="search-bar ink-card fade-up d1">
+      <Search :size="18" :stroke-width="2.4" class="search-icon" />
+      <input
+        v-model="searchText"
+        type="search"
+        class="search-input"
+        placeholder="搜索题库、科目或描述"
+      />
+      <button
+        v-if="searchText"
+        class="search-clear"
+        type="button"
+        aria-label="清空搜索"
+        @click="clearSearch"
+      >
+        <X :size="14" :stroke-width="2.6" />
+      </button>
     </div>
 
-    <Button v-if="courses.length > 0 && filteredCourses.length > 0" variant="outline" class="w-full" @click="replaceWithSource('/public-library', 'courses')">
+    <div v-if="courses.length > 0" class="seg fade-up d1">
+      <button
+        v-for="filter in visibilityFilters"
+        :key="filter.key"
+        class="seg-item"
+        :class="{ active: visibilityFilter === filter.key }"
+        type="button"
+        :aria-label="`${filter.label}题库筛选`"
+        :aria-pressed="visibilityFilter === filter.key"
+        @click="visibilityFilter = filter.key"
+      >
+        {{ filter.label }}
+      </button>
+    </div>
+
+    <p v-if="courses.length > 0" class="lib-summary fade-up d1">{{ courseSummary }}</p>
+
+    <div
+      v-if="!loading && courses.length === 0 && !errorMessage"
+      class="empty-state ink-card fade-up d2"
+    >
+      <GraduationCap :size="48" :stroke-width="1.5" class="empty-icon" />
+      <strong class="empty-title">还没有题库</strong>
+      <p class="empty-desc">创建一门课程，或先去导入题目。</p>
+      <div class="empty-actions">
+        <button class="btn-solid" type="button" @click="openCreate">
+          <Plus :size="16" :stroke-width="2.5" />
+          创建题库
+        </button>
+        <button class="btn-outline" type="button" @click="replaceWithSource('/import', 'courses')">
+          <Sparkles :size="16" :stroke-width="2.5" />
+          去导入
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="!loading && courses.length > 0 && filteredCourses.length === 0 && !errorMessage"
+      class="empty-state ink-card fade-up d2"
+    >
+      <Search :size="44" :stroke-width="1.5" class="empty-icon" />
+      <strong class="empty-title">没有找到匹配题库</strong>
+      <p class="empty-desc">换个关键词，或者清空搜索查看全部。</p>
+      <button class="btn-outline" type="button" @click="clearSearch">清空搜索</button>
+    </div>
+
+    <div v-if="filteredCourses.length > 0" class="section-head fade-up d2">
+      <span class="num">I</span>
+      <h3 class="section-title">我的题库</h3>
+      <button
+        class="section-more"
+        type="button"
+        :disabled="loading"
+        aria-label="刷新题库列表"
+        @click="fetchCourses"
+      >
+        刷新
+      </button>
+    </div>
+
+    <div v-if="filteredCourses.length > 0" class="course-list fade-up d2">
+      <div
+        v-for="(course, idx) in filteredCourses"
+        :key="course.id"
+        class="course-row fade-up"
+        :class="'d' + ((idx % 5) + 1)"
+      >
+        <div
+          class="course-item"
+          role="button"
+          tabindex="0"
+          @click="replaceWithSource(`/courses/${course.id}`, 'courses')"
+          @keydown.enter="replaceWithSource(`/courses/${course.id}`, 'courses')"
+        >
+          <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
+          <div class="course-info">
+            <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</strong>
+            <span>{{ course.subject ? course.subject + ' · ' : '' }}{{ course.question_count ?? 0 }} 题</span>
+          </div>
+          <span
+            class="badge"
+            :class="course.visibility === 'public' ? 'badge-public' : 'badge-private'"
+          >
+            {{ course.visibility === 'public' ? '已公开' : '私有' }}
+          </span>
+          <button
+            class="more-btn"
+            type="button"
+            :aria-label="`更多操作：${getCourseDisplayName(course)}`"
+            :aria-expanded="openCourseMenuId === course.id"
+            @click.stop="toggleCourseMenu(course.id)"
+          >
+            <MoreHorizontal :size="18" :stroke-width="2.5" />
+          </button>
+        </div>
+
+        <div v-if="openCourseMenuId === course.id" class="course-menu">
+          <button
+            class="menu-option"
+            type="button"
+            :disabled="!isPracticeReadyCourse(course)"
+            @click.stop="goToPractice(course)"
+          >
+            <Play :size="15" :stroke-width="2.5" />
+            {{ isPracticeReadyCourse(course) ? '开始练习' : '暂无题目' }}
+          </button>
+          <button
+            class="menu-option"
+            type="button"
+            @click.stop="replaceWithSource(`/courses/${course.id}`, 'courses')"
+          >
+            <Eye :size="15" :stroke-width="2.5" />
+            查看题目
+          </button>
+          <div class="menu-divider"></div>
+          <button
+            class="menu-option"
+            type="button"
+            :aria-label="`编辑${getCourseDisplayName(course)}`"
+            @click.stop="openEdit(course)"
+          >
+            <Pencil :size="15" :stroke-width="2.5" />
+            编辑
+          </button>
+          <button
+            class="menu-option"
+            type="button"
+            :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
+            :disabled="publishLoading === course.id"
+            @click.stop="togglePublish(course)"
+          >
+            <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
+            <Lock v-else :size="15" :stroke-width="2.5" />
+            {{ course.visibility === 'public' ? '撤回公开' : '发布到公共题库' }}
+          </button>
+          <div class="menu-divider"></div>
+          <button
+            class="menu-option menu-danger"
+            type="button"
+            :aria-label="`删除${getCourseDisplayName(course)}`"
+            :disabled="deleteLoading === course.id"
+            @click.stop="deleteCourse(course)"
+          >
+            <Trash2 :size="15" :stroke-width="2.5" />
+            删除
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button
+      v-if="courses.length > 0 && filteredCourses.length > 0"
+      class="btn-outline btn-block"
+      type="button"
+      @click="replaceWithSource('/public-library', 'courses')"
+    >
       <Globe :size="17" :stroke-width="2.5" />
       浏览公共题库
-    </Button>
+    </button>
 
-    <div v-if="showForm" class="fixed inset-0 z-[100] grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm" @click.self="closeForm">
-      <Card class="w-full max-w-[430px] border-slate-200 bg-white shadow-2xl">
-        <CardContent class="space-y-4 p-5">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xl font-black text-slate-950">{{ isEdit ? "编辑题库" : "创建题库" }}</h3>
-            <button class="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" @click="closeForm">
-              <X :size="18" :stroke-width="2.5" />
-            </button>
-          </div>
+    <button class="fab" type="button" aria-label="创建题库" @click="openCreate">
+      <Plus :size="22" :stroke-width="2.5" />
+    </button>
 
-          <p v-if="formError" class="status-banner status-banner--error">{{ formError }}</p>
+    <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
+      <div class="ink-card modal-card">
+        <div class="modal-head">
+          <h3 class="modal-title">{{ isEdit ? '编辑题库' : '创建题库' }}</h3>
+          <button class="modal-close" type="button" aria-label="关闭" @click="closeForm">
+            <X :size="18" :stroke-width="2.5" />
+          </button>
+        </div>
 
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">题库名称</span>
-            <input v-model="form.name" class="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold outline-none focus:border-blue-400" type="text" placeholder="如：Java 期末复习" />
-          </label>
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">科目（可选）</span>
-            <input v-model="form.subject" class="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold outline-none focus:border-blue-400" type="text" placeholder="如：Java" />
-          </label>
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">描述（可选）</span>
-            <textarea v-model="form.description" class="min-h-20 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold outline-none focus:border-blue-400" placeholder="简单描述题库内容" />
-          </label>
+        <p v-if="formError" class="status-banner status-banner--error">{{ formError }}</p>
 
-          <div class="grid grid-cols-2 gap-2">
-            <Button variant="outline" @click="closeForm">取消</Button>
-            <Button :disabled="formLoading" @click="handleSave">
-              {{ formLoading ? "保存中..." : isEdit ? "保存修改" : "创建" }}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <label class="form-field">
+          <span class="field-label">题库名称</span>
+          <input v-model="form.name" class="text-input" type="text" placeholder="如：Java 期末复习" />
+        </label>
+        <label class="form-field">
+          <span class="field-label">科目（可选）</span>
+          <input v-model="form.subject" class="text-input" type="text" placeholder="如：Java" />
+        </label>
+        <label class="form-field">
+          <span class="field-label">描述（可选）</span>
+          <textarea
+            v-model="form.description"
+            class="text-input form-textarea"
+            placeholder="简单描述题库内容"
+          />
+        </label>
+
+        <div class="modal-actions">
+          <Button variant="outline" @click="closeForm">取消</Button>
+          <Button :disabled="formLoading" @click="handleSave">
+            {{ formLoading ? '保存中...' : isEdit ? '保存修改' : '创建' }}
+          </Button>
+        </div>
+      </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+/* ── Page container ── */
+.library-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: calc(var(--nav-bottom-clearance) + 72px);
+}
+
+/* ── Search bar ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+}
+.search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--text-base);
+  font-weight: 600;
+  outline: none;
+}
+.search-input::placeholder {
+  color: var(--text-placeholder);
+}
+.search-clear {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.search-clear:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+
+/* ── Summary line ── */
+.lib-summary {
+  margin: 0;
+  padding: 0 4px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+.empty-icon {
+  color: var(--text-placeholder);
+}
+.empty-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-main);
+}
+.empty-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.empty-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Section more button ── */
+.section-more {
+  cursor: pointer;
+}
+.section-more:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Course list ── */
+.course-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* ── Course row (single-line card: item + dropdown menu) ── */
+.course-row {
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-xs);
+  overflow: visible;
+  transition: box-shadow var(--ease-out);
+}
+.course-row:hover {
+  box-shadow: var(--shadow-card);
+}
+
+/* Override global .course-item to act as compact clickable row */
+.course-row .course-item {
+  cursor: pointer;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--radius-lg);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  transition: background var(--ease-out);
+}
+.course-row .course-item:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+.course-row .course-item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Course icon text character */
+.course-icon {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 900;
+}
+
+/* ── More button ── */
+.more-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.more-btn:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+
+/* ── Dropdown menu (anchored below more-btn) ── */
+.course-menu {
+  position: absolute;
+  right: var(--space-2);
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-card);
+}
+.menu-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.menu-option:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text-main);
+}
+.menu-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu-danger {
+  color: var(--rose);
+}
+.menu-danger:hover:not(:disabled) {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.menu-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--line-soft);
+}
+
+/* ── Buttons ── */
+.btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #ffffff;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  box-shadow: var(--shadow-primary);
+}
+.btn-solid:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary);
+}
+.btn-solid:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-strong);
+}
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: var(--text-xs);
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.modal-card {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-modal);
+  max-height: calc(100dvh - var(--space-8));
+  overflow-y: auto;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  color: var(--text-main);
+}
+.modal-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.modal-close:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+.form-field {
+  display: grid;
+  gap: 6px;
+}
+.form-textarea {
+  min-height: 72px;
+  padding: 10px 14px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+}
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* ── Mobile compact (≤400px / 6.3 inch) ── */
+@media (max-width: 400px) {
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+  .course-menu {
+    right: var(--space-1);
+    min-width: 160px;
+  }
+  .course-row .course-item {
+    min-height: 60px;
+    padding: var(--space-2);
+  }
+  .empty-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .empty-actions button {
+    width: 100%;
+  }
+}
+</style>
