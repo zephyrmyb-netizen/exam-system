@@ -9,7 +9,7 @@
 - 验证：`npm.cmd run lint` 通过；`npm.cmd run test -- --run` 通过（30 个测试文件，104 项）；`npm.cmd run build` 通过；`git diff --check` 通过；生产源码未发现 `router.push/back/go`、`history.back/go/pushState` 或 `location.href` 导航调用。
 - 后端：零改动。
 - 真机验收：未执行真实微信/iOS WebView 操作；已完成源码、单元测试、构建和 manifest 静态检查。原生工具栏不能由网页 CSS 隐藏。
-- Commit：待完成。
-- Push：待完成。
+- Commit：`4b97a35` - `fix: reduce mobile webview navigation history`。
+- Push：已成功推送至 `origin/codex/phase4-differentiation`。
 - 遗留风险：需在真实微信/iOS WebView 按人工路径确认原生工具栏实际激活频率；PWA manifest 已为 `standalone`，`start_url` 为 `/` 且图标存在。
-- 下一步：归档本记录，提交并推送当前分支。
+- 下一步：保留本记录供验收复核。
