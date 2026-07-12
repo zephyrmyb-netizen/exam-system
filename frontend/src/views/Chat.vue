@@ -42,7 +42,7 @@ function currentTime() {
 function goBack() {
   // 中断未完成的流式请求，避免离开页面后回调仍写入 state
   currentStreamController?.abort();
-  router.push({ name: "home" });
+  router.replace({ name: "home" });
 }
 
 function scrollToBottom() {
@@ -177,7 +177,7 @@ function getAssistantHtml(text) {
       <div class="chat-topbar-right">
         <span class="online-dot">在线</span>
         <button class="chat-theme-btn" type="button" aria-label="切换主题" @click="theme.toggle()">
-          <Sun v-if="theme.mode === 'dark'" :size="18" :stroke-width="2.4" />
+          <Sun v-if="theme.isDark" :size="18" :stroke-width="2.4" />
           <Moon v-else :size="18" :stroke-width="2.4" />
         </button>
       </div>

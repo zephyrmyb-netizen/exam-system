@@ -66,9 +66,29 @@ describe("CourseList UX polish", () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
+    const more = wrapper.find('button[aria-label="更多操作：线性代数复习题库"]');
+    expect(more.exists()).toBe(true);
+    await more.trigger("click");
+
     expect(wrapper.find('button[aria-label="编辑线性代数复习题库"]').exists()).toBe(true);
     expect(wrapper.find('button[aria-label="公开线性代数复习题库"]').exists()).toBe(true);
     expect(wrapper.find('button[aria-label="删除线性代数复习题库"]').exists()).toBe(true);
+  });
+
+  it("filters private and public courses without changing the API shape", async () => {
+    mocks.requestGet.mockResolvedValue({
+      data: [
+        course({ id: 1, name: "私有题库", visibility: "private" }),
+        course({ id: 2, name: "公开题库", visibility: "public" }),
+      ],
+    });
+
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    await wrapper.get('button[aria-label="公开题库筛选"]').trigger("click");
+    expect(wrapper.text()).toContain("公开题库");
+    expect(wrapper.text()).not.toContain("私有题库");
   });
 
   it("truncates long course names inside the card", async () => {

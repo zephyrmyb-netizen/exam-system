@@ -86,7 +86,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         <div class="settings-header-top">
           <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
           <div class="settings-info">
-            <h2>{{ getCourseDisplayName(course) }}</h2>
+            <h2 :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</h2>
             <p class="settings-meta">
               <Layers :size="13" :stroke-width="2" />
               <span>{{ course.question_count ?? 0 }} 道题</span>
@@ -140,7 +140,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
         v-if="course && !canStartPractice"
         class="ghost-button full-button"
         type="button"
-        @click="router.push({ name: 'import', query: { course_id: courseId } })"
+        @click="router.replace({ name: 'import', query: { course_id: courseId } })"
       >
         去导入题目
       </button>
@@ -170,7 +170,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 .settings-header-top { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--space-3); }
 .settings-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary-strong); flex-shrink: 0; }
 .settings-info { min-width: 0; }
-.settings-info h2 { margin: 0; font-size: var(--text-lg); font-weight: 800; line-height: 1.2; }
+.settings-info h2 { margin: 0; overflow: hidden; font-size: var(--text-lg); font-weight: 800; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .settings-meta { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
 
 .settings-section-label {

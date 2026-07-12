@@ -3,25 +3,28 @@ import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   BarChart3,
-  Bell,
+  Bookmark,
   BookMarked,
   ChevronRight,
   Clock,
   HelpCircle,
   LogOut,
   Megaphone,
+  Settings2,
   ShieldCheck,
 } from "@lucide/vue";
 
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { releaseNotes } from "../data/releaseNotes";
 import { useAuth } from "../stores/auth";
+import { useThemeStore, type ThemeMode } from "../stores/theme";
 import Button from "../components/ui/button/Button.vue";
 import Card from "../components/ui/card/Card.vue";
 import CardContent from "../components/ui/card/CardContent.vue";
 
 const router = useRouter();
 const { user, logout } = useAuth();
+const theme = useThemeStore();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const usernameText = computed(() => user.value?.username || "未登录");
@@ -71,6 +74,13 @@ const serviceGrid = computed(() => [
     to: { name: "announcements", query: { from: "mine" } },
   },
   {
+    label: "收藏题目",
+    desc: "查看已收藏内容",
+    icon: Bookmark,
+    color: "var(--teal)",
+    to: "/bookmarks",
+  },
+  {
     label: "使用提示",
     desc: "导入失败时先看这里",
     icon: HelpCircle,
@@ -78,6 +88,11 @@ const serviceGrid = computed(() => [
     to: { name: "announcements", query: { from: "mine" } },
   },
 ]);
+
+function updateTheme(event: Event) {
+  const value = (event.target as HTMLSelectElement).value as ThemeMode;
+  theme.setMode(value);
+}
 
 function goTo(target: string | Record<string, unknown>) {
   router.push(target);
@@ -106,9 +121,6 @@ onMounted(() => fetchAll());
           </p>
         </div>
       </div>
-      <button class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-slate-600 shadow-sm" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
-        <Bell :size="18" :stroke-width="2.4" />
-      </button>
     </div>
 
     <Card class="overflow-hidden border-blue-100 bg-gradient-to-br from-blue-50 to-white">
@@ -157,6 +169,23 @@ onMounted(() => fetchAll());
         </button>
       </div>
     </section>
+
+    <Card class="border-slate-200 bg-white">
+      <CardContent class="grid gap-3 p-3">
+        <div class="flex items-center gap-2">
+          <Settings2 :size="17" :stroke-width="2.3" class="text-slate-500" />
+          <strong class="text-sm font-black text-slate-900">设置</strong>
+        </div>
+        <label class="flex items-center justify-between gap-3 text-sm font-bold text-slate-600">
+          <span>主题</span>
+          <select class="min-h-10 min-w-32 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700" :value="theme.mode" @change="updateTheme">
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+      </CardContent>
+    </Card>
 
     <Card class="border-slate-200 bg-white">
       <CardContent class="space-y-2 p-3">

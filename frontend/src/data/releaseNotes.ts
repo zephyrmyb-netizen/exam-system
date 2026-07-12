@@ -17,6 +17,20 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.4.0-core-ux-polish",
+    version: "v2.4.0",
+    date: "2026-07-13",
+    type: "优化",
+    title: "核心学习体验收口",
+    items: [
+      "优化首页、题库和个人中心布局。",
+      "改善沉浸式刷题与练习完成逻辑。",
+      "完善 AI 导入任务状态和错误反馈。",
+      "修复 AI 对话 Markdown 与移动端键盘体验。",
+      "优化导航、返回和深色模式一致性。",
+    ],
+  },
+  {
     id: "v2.3.8-ai-import-experience",
     version: "v2.3.8",
     date: "2026-07-10",

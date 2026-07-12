@@ -39,6 +39,27 @@ describe("phase2 stores", () => {
     expect(window.localStorage.getItem("xuexibao-theme")).toBe("dark");
   });
 
+  it("applies and listens to the system theme preference", () => {
+    const listeners: Array<(event: MediaQueryListEvent) => void> = [];
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      matches: true,
+      addEventListener: (_event: string, listener: (event: MediaQueryListEvent) => void) => listeners.push(listener),
+    })));
+    window.localStorage.setItem("xuexibao-theme", "system");
+
+    const theme = useThemeStore();
+    theme.init();
+
+    expect(theme.mode).toBe("system");
+    expect(theme.isDark).toBe(true);
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    listeners[0]?.({ matches: false } as MediaQueryListEvent);
+    expect(theme.isDark).toBe(false);
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
   it("ui store tracks sidebar and global loading", () => {
     const ui = useUiStore();
     ui.toggleSidebar();
