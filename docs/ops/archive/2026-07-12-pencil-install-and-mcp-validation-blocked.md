@@ -48,5 +48,5 @@
 4. 删除 `D:\Devtools\Pencil`、安装包或测试证据前必须由用户确认。
 
 - 实际修改的项目文件：docs/ops/INDEX.md，以及本归档留档。
-- Commit：待提交。
-- Push：待推送。
+- Commit：0fb193c，`docs: record blocked Pencil MCP validation`。
+- Push：已成功推送至 `origin/codex/phase4-differentiation`。
