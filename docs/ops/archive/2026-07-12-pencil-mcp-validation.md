@@ -51,5 +51,5 @@
 
 - 结论：隔离安装和 Codex 本地 MCP 读写、布局、截图、保存、关闭重开验证通过，可以交给 Ferra 开始学习宝设计；Ferra 仍只能使用独立 Pencil 测试/设计文件，不得直接打开学习宝业务目录。
 - 实际修改的项目文件：docs/ops/INDEX.md，以及本归档留档。
-- Commit：待提交。
-- Push：待推送。
+- Commit：d27d00b，`docs: record Pencil MCP installation validation`。
+- Push：已成功推送至 `origin/codex/phase4-differentiation`。
