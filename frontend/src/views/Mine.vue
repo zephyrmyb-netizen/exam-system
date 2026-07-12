@@ -2,7 +2,6 @@
 import { computed, onMounted } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
-  BarChart3,
   Bookmark,
   BookMarked,
   ChevronRight,
@@ -19,9 +18,6 @@ import { useAppNavigation } from "../composables/useAppNavigation";
 import { releaseNotes } from "../data/releaseNotes";
 import { useAuth } from "../stores/auth";
 import { useThemeStore, type ThemeMode } from "../stores/theme";
-import Button from "../components/ui/button/Button.vue";
-import Card from "../components/ui/card/Card.vue";
-import CardContent from "../components/ui/card/CardContent.vue";
 
 const { replaceTo } = useAppNavigation();
 const { user, logout } = useAuth();
@@ -108,97 +104,228 @@ onMounted(() => fetchAll());
 </script>
 
 <template>
-  <section class="space-y-4">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex min-w-0 items-center gap-3">
-        <div class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-xl font-black text-white shadow-lg shadow-blue-500/20">
-          {{ avatarChar }}
+  <section class="mine-page">
+    <header class="page-head fade-up">
+      <h2 class="ph-title">我的</h2>
+      <p class="ph-sub">Profile · 个人中心</p>
+    </header>
+
+    <div class="profile-card fade-up d1">
+      <div class="profile-head">
+        <div class="avatar-wrap">
+          <div class="avatar-ring"></div>
+          <div class="avatar">{{ avatarChar }}</div>
         </div>
-        <div class="min-w-0">
-          <h1 class="truncate text-2xl font-black text-slate-950">{{ usernameText }}</h1>
-          <p class="mt-0.5 flex items-center gap-1.5 text-xs font-bold text-slate-500">
-            <ShieldCheck :size="13" :stroke-width="2.5" />
+        <div class="profile-info">
+          <h3 class="profile-name">{{ usernameText }}</h3>
+          <span class="profile-tag">
+            <ShieldCheck :size="11" :stroke-width="2.5" />
             {{ roleText }}
-          </p>
+          </span>
         </div>
       </div>
     </div>
 
-    <Card class="overflow-hidden border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-      <button class="block w-full text-left" type="button" @click="goTo({ name: 'study-overview', query: { from: 'mine' } })">
-        <CardContent class="flex items-center gap-3 p-3">
-          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-            <BarChart3 :size="22" :stroke-width="2.4" />
-          </span>
-          <span class="min-w-0 flex-1">
-            <strong class="block text-base font-black text-slate-950">学习概览</strong>
-            <small class="mt-0.5 block truncate text-xs font-bold text-slate-500">
-              今日 {{ overviewSummary.today ?? "--" }} 题 · 总计 {{ overviewSummary.total ?? "--" }} 题 · 正确率 {{ overviewSummary.accuracy }}
-            </small>
-          </span>
-          <span class="hidden rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-blue-600 shadow-sm sm:inline-flex">
-            近 7 日 {{ overviewSummary.recent ?? "--" }} 题
-          </span>
-          <ChevronRight :size="16" :stroke-width="2.5" class="text-slate-400" />
-        </CardContent>
-      </button>
-    </Card>
+    <button
+      class="stat-grid-3 fade-up d2 stat-link"
+      type="button"
+      @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
+    >
+      <div class="stat-cell">
+        <strong>{{ overviewSummary.today ?? "--" }}</strong>
+        <span>今日题数</span>
+      </div>
+      <div class="stat-cell">
+        <strong>{{ overviewSummary.total ?? "--" }}</strong>
+        <span>累计学习</span>
+      </div>
+      <div class="stat-cell">
+        <strong>{{ overviewSummary.accuracy }}</strong>
+        <span>正确率</span>
+      </div>
+    </button>
 
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <section class="space-y-2">
-      <div>
-        <h2 class="text-xl font-black text-slate-950">学习服务</h2>
-        <p class="mt-0.5 text-xs font-semibold text-slate-500">复盘、记录、公告和帮助</p>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button
-          v-for="item in serviceGrid"
-          :key="item.label"
-          class="grid min-h-[84px] gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition active:scale-[0.99]"
-          type="button"
-          @click="goTo(item.to)"
+    <div class="section-head fade-up d3">
+      <span class="num">I</span>
+      <h3 class="section-title">学习服务</h3>
+    </div>
+    <nav class="menu-list fade-up d3">
+      <button
+        v-for="item in serviceGrid"
+        :key="item.label"
+        class="menu-item"
+        type="button"
+        @click="goTo(item.to)"
+      >
+        <span
+          class="mi-ico"
+          :style="{ color: item.color, background: 'color-mix(in srgb, ' + item.color + ' 14%, transparent)' }"
         >
-          <span class="grid h-8 w-8 place-items-center rounded-lg bg-slate-50" :style="{ color: item.color }">
-            <component :is="item.icon" :size="19" :stroke-width="2.2" />
-          </span>
-          <span>
-            <strong class="block text-sm font-black text-slate-950">{{ item.label }}</strong>
-            <small class="mt-0.5 block text-[11px] font-bold text-slate-500">{{ item.desc }}</small>
-          </span>
-        </button>
-      </div>
-    </section>
+          <component :is="item.icon" :size="16" :stroke-width="2.2" />
+        </span>
+        <span class="mi-label">{{ item.label }}</span>
+        <span class="mi-arrow">
+          <ChevronRight :size="16" :stroke-width="2.2" />
+        </span>
+      </button>
+    </nav>
 
-    <Card class="border-slate-200 bg-white">
-      <CardContent class="grid gap-3 p-3">
-        <div class="flex items-center gap-2">
-          <Settings2 :size="17" :stroke-width="2.3" class="text-slate-500" />
-          <strong class="text-sm font-black text-slate-900">设置</strong>
-        </div>
-        <label class="flex items-center justify-between gap-3 text-sm font-bold text-slate-600">
-          <span>主题</span>
-          <select class="min-h-10 min-w-32 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700" :value="theme.mode" @change="updateTheme">
-            <option value="system">跟随系统</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </select>
-        </label>
-      </CardContent>
-    </Card>
+    <div class="section-head fade-up d4">
+      <span class="num">II</span>
+      <h3 class="section-title">设置</h3>
+    </div>
+    <div class="menu-list fade-up d4">
+      <label class="menu-item">
+        <span class="mi-ico mi-ico--neutral">
+          <Settings2 :size="16" :stroke-width="2.2" />
+        </span>
+        <span class="mi-label">主题</span>
+        <select
+          class="theme-select"
+          :value="theme.mode"
+          @change="updateTheme"
+        >
+          <option value="system">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </label>
+      <button class="menu-item" type="button" @click="handleLogout">
+        <span class="mi-ico mi-ico--danger">
+          <LogOut :size="16" :stroke-width="2.2" />
+        </span>
+        <span class="mi-label">退出登录</span>
+        <span class="mi-arrow">
+          <ChevronRight :size="16" :stroke-width="2.2" />
+        </span>
+      </button>
+    </div>
 
-    <Card class="border-slate-200 bg-white">
-      <CardContent class="space-y-2 p-3">
-        <div class="flex items-center justify-between text-xs font-bold text-slate-500">
-          <span>学习宝</span>
-          <span>{{ appVersion }}</span>
-        </div>
-        <Button variant="outline" class="w-full justify-start text-rose-600" @click="handleLogout">
-          <LogOut :size="17" :stroke-width="2.3" />
-          退出登录
-        </Button>
-      </CardContent>
-    </Card>
+    <div class="mine-foot">
+      <span class="mf-brand">学习宝</span>
+      <span class="mf-ver">{{ appVersion }}</span>
+    </div>
   </section>
 </template>
+
+<style scoped>
+.mine-page {
+  padding-bottom: var(--space-5);
+}
+
+/* Profile card internal layout */
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.profile-info .profile-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Clickable stat grid (button element reset) */
+button.stat-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: transform var(--ease-out);
+}
+button.stat-link:active {
+  transform: scale(0.985);
+}
+button.stat-link:active .stat-cell {
+  border-color: var(--primary-border);
+}
+
+/* Button / label menu-item resets */
+button.menu-item,
+label.menu-item {
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+.menu-item .mi-arrow {
+  display: inline-flex;
+  align-items: center;
+}
+.menu-item:active {
+  transform: translateX(2px);
+}
+.menu-item:active .mi-ico {
+  transform: scale(0.92);
+}
+
+/* Icon color variants for settings rows */
+.menu-item .mi-ico.mi-ico--neutral {
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+.menu-item .mi-ico.mi-ico--danger {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+/* Theme select */
+.theme-select {
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 5px 26px 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-soft);
+  background-color: var(--surface-soft);
+  color: var(--text-main);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 12px) center, calc(100% - 8px) center;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+.theme-select:focus {
+  outline: 2px solid var(--primary-border);
+  outline-offset: 1px;
+}
+
+/* Footer */
+.mine-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--line-soft);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.mf-brand {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.mf-ver {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--gold-strong);
+}
+</style>

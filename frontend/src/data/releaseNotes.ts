@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.5.0-ink-study-visual-refresh",
+    version: "v2.5.0",
+    date: "2026-07-13",
+    type: "\u4f18\u5316",
+    title: "\u66f4\u65b0\u5b66\u4e60\u5b9d\u7edf\u4e00\u89c6\u89c9\u98ce\u683c",
+    items: [
+      "\u66f4\u65b0\u5b66\u4e60\u5b9d\u7edf\u4e00\u89c6\u89c9\u98ce\u683c",
+      "\u4f18\u5316\u9996\u9875\u3001\u9898\u5e93\u3001\u4e2a\u4eba\u4e2d\u5fc3\u548c\u767b\u5f55\u6ce8\u518c\u754c\u9762",
+      "\u6539\u5584\u79fb\u52a8\u7aef\u5bfc\u822a\u4e0e\u9875\u9762\u5c42\u7ea7",
+      "\u5b8c\u5584\u6df1\u8272\u6a21\u5f0f\u4e0e\u5c0f\u5c4f\u663e\u793a",
+    ],
+  },
+  {
     id: "v2.4.1-navigation-history-fix",
     version: "v2.4.1",
     date: "2026-07-13",
