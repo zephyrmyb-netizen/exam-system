@@ -11,5 +11,5 @@
 - 未跟踪文件：`frontend-preview.html` 与旧 Pencil 留档未修改、未加入提交。
 - 后端：零改动。
 - 发布判断：自动化验收通过；达到 v2.5.0 发布标准，但移动端视觉仍需用户复验后再最终确认。
-- Commit：待完成。
-- Push：待完成。
+- Commit：`7e04792` - `feat: refresh ink study visual system`。
+- Push：已成功推送至 `origin/codex/phase4-differentiation`。
