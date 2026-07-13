@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.4-home-ai-entry-navigation",
+    version: "v2.7.4",
+    date: "2026-07-13",
+    type: "优化",
+    title: "首页 AI 入口与导航精简",
+    items: [
+      "AI 对话入口移至首页，不再占用底部导航位置。",
+      "底部导航精简为首页、题库、导入和我的四项。",
+      "首页增加紧凑 AI 学习助手入口，可直接进入对话复习。",
+    ],
+  },
+  {
     id: "v2.7.3-frontend-reliability-accessibility",
     version: "v2.7.3",
     date: "2026-07-13",
