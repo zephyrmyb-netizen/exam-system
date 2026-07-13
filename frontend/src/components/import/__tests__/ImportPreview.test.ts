@@ -60,6 +60,16 @@ describe("ImportPreview warnings and empty state", () => {
     expect(wrapper.text()).toContain("确认导入已禁用");
   });
 
+  it("keeps the confirmation entry available for a valid preview", () => {
+    const wrapper = mountPreview({
+      ...previewData,
+      questions: [{ type: "fill_blank", question: "Java", answer: "answer" }] as unknown as never[],
+      total_valid: 1,
+    });
+
+    expect(wrapper.get(".primary-button").attributes("disabled")).toBeUndefined();
+  });
+
   it("shows the source file, target course, and skipped fragment count", () => {
     const wrapper = mount(ImportPreview, {
       props: {

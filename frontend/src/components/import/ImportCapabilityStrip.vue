@@ -29,9 +29,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.88)),
-    var(--surface);
+  background: var(--surface);
 }
 
 .import-capability--wide {
@@ -48,5 +46,13 @@
   color: var(--text-main);
   font-size: var(--text-xs);
   line-height: 1.35;
+}
+/* A layout: concise capability notes without decorative panels. */
+.import-capability-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.import-capability { min-height: 0; border-radius: 6px; background: var(--surface); }
+.import-capability--wide { grid-column: auto; }
+@media (max-width: 520px) {
+  .import-capability-strip { grid-template-columns: 1fr; }
+  .import-capability--wide { grid-column: auto; }
 }
 </style>
