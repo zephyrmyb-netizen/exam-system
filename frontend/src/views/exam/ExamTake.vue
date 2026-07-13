@@ -9,6 +9,7 @@ import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
 import { useSwipe } from "@/composables/useSwipe";
 import { useConfirmDialog } from "@/stores/confirmDialog";
 import { useExamStore } from "@/stores/exam";
+import { toggleMultipleChoiceKey } from "@/utils/question";
 
 const route = useRoute();
 const router = useRouter();
@@ -30,6 +31,7 @@ const timerProgress = computed(() => {
   return Math.min(1, Math.max(0, seconds / totalSeconds));
 });
 const timerDashOffset = computed(() => timerCircumference * (1 - timerProgress.value));
+let componentActive = false;
 
 function formatRemaining(seconds: number | null) {
   if (seconds === null) return "--:--";
@@ -47,7 +49,10 @@ async function submit(): Promise<boolean> {
   if (store.submitting) return false;
   try {
     const result = await store.submitCurrentExam();
-    if (store.result !== result) return false;
+    const acceptedResult = store.result;
+    if (!componentActive || !acceptedResult || acceptedResult.exam_id !== result.exam_id) return false;
+    if (acceptedResult.submission_id !== undefined && result.submission_id !== undefined
+      && acceptedResult.submission_id !== result.submission_id) return false;
     router.replace({ name: "exam-result", params: { examId: result.exam_id } });
     return true;
   } catch {
@@ -73,7 +78,10 @@ function selectOption(index: number) {
   const question = store.currentQuestion;
   if (!question?.options) return;
   const key = Object.keys(question.options)[index];
-  if (key) answer(key);
+  if (!key) return;
+  answer(question.question_type === "multiple_choice"
+    ? toggleMultipleChoiceKey(store.answers[String(question.question_id)], key)
+    : key);
 }
 
 function jumpFromAnswerSheet(index: number) {
@@ -104,17 +112,21 @@ useSwipe(pageRef, {
 let timerHandle: number | undefined;
 
 onMounted(async () => {
+  componentActive = true;
   shortcuts.bind();
   try {
     await store.startAttempt(examId.value);
   } catch {
     return;
   }
+  if (!componentActive) return;
   await syncTimer();
+  if (!componentActive) return;
   timerHandle = window.setInterval(syncTimer, 1000);
 });
 
 onUnmounted(() => {
+  componentActive = false;
   shortcuts.unbind();
   if (timerHandle) window.clearInterval(timerHandle);
   if (!store.result) store.reset();
@@ -173,6 +185,13 @@ onUnmounted(() => {
         :total="store.totalQuestions"
         @answer="answer"
       />
+
+      <div v-if="store.submissionError" class="submit-error-banner" role="alert" data-exam-submit-error>
+        <p>{{ store.submissionError }}</p>
+        <button type="button" :disabled="store.submitting" data-exam-submit-retry @click="submit">
+          {{ store.submitting ? "重试中..." : "重新交卷" }}
+        </button>
+      </div>
 
       <footer class="exam-actions">
         <div class="question-nav">
@@ -276,6 +295,46 @@ onUnmounted(() => {
   color: var(--text-main);
   font: inherit;
   font-weight: 700;
+}
+
+.submit-error-banner {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--state-error-border);
+  border-radius: var(--radius-md);
+  background: var(--state-error-soft);
+  color: var(--state-error);
+}
+
+.submit-error-banner p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.submit-error-banner button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 0 14px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.submit-error-banner button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
 }
 
 .exam-topbar {

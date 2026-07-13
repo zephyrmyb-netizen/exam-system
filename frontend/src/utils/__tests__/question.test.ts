@@ -4,6 +4,7 @@ import {
   isTextQuestionType,
   getQuestionAnswerHint,
   normalizeMultipleChoiceKeys,
+  toggleMultipleChoiceKey,
   typeLabel,
 } from "../question.ts";
 
@@ -27,6 +28,14 @@ describe("normalizeMultipleChoiceKeys", () => {
 
   it("returns no keys for an unrecognized answer", () => {
     expect(normalizeMultipleChoiceKeys("没有可识别选项")).toEqual([]);
+  });
+});
+
+describe("toggleMultipleChoiceKey", () => {
+  it("adds, removes, normalizes and sorts option keys", () => {
+    expect(toggleMultipleChoiceKey("B", "a")).toBe("A,B");
+    expect(toggleMultipleChoiceKey("B，A", "B")).toBe("A");
+    expect(toggleMultipleChoiceKey("A,A", "C")).toBe("A,C");
   });
 });
 
