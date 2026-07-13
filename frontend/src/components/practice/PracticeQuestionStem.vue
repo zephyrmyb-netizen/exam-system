@@ -27,10 +27,7 @@ defineProps({
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: var(--surface);
+  padding: 4px 2px 2px;
 }
 
 .practice-stem__meta {
@@ -73,8 +70,7 @@ defineProps({
 
 @media (max-width: 420px) {
   .practice-stem {
-    padding: 9px;
-    border-radius: 8px;
+    padding: 2px 1px;
   }
 
   .practice-stem__meta {

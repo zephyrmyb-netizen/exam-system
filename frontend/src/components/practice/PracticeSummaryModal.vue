@@ -197,7 +197,7 @@ defineEmits(["end", "continue"]);
   border-radius: 6px;
   font-size: var(--text-base);
   font-weight: 800;
-  transition: transform var(--ease-out), box-shadow var(--ease-out), border-color var(--ease-out), background var(--ease-out);
+  transition: box-shadow 0.17s ease-out, border-color 0.17s ease-out, background 0.17s ease-out;
 }
 
 .practice-primary-button {
@@ -215,7 +215,7 @@ defineEmits(["end", "continue"]);
 
 .practice-primary-button:hover,
 .practice-secondary-button:hover {
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-xs);
 }
 
 .practice-secondary-button:hover {
@@ -225,12 +225,13 @@ defineEmits(["end", "continue"]);
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.17s ease-out, transform 0.17s ease-out;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(4px);
 }
 
 @media (max-width: 420px) {

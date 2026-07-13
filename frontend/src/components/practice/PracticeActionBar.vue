@@ -40,15 +40,15 @@ defineEmits(["submit"]);
   width: auto;
   max-width: 100%;
   min-width: 0;
-  padding: 4px 0 calc(12px + env(safe-area-inset-bottom));
+  padding: 2px 0 calc(8px + env(safe-area-inset-bottom));
 }
 
 .practice-action-bar__hint {
   margin: 0;
   min-width: 0;
-  padding: 7px 10px;
-  border-radius: var(--radius-md);
-  background: var(--surface-soft);
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text-placeholder);
   font-size: 13px;
   font-weight: 700;
@@ -62,11 +62,7 @@ defineEmits(["submit"]);
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  padding: 8px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
+  padding: 0;
 }
 
 .practice-submit-button {
@@ -92,7 +88,6 @@ defineEmits(["submit"]);
   box-shadow: var(--shadow-sm);
 }
 
-/* 按压反馈：用弹性曲线让按钮回弹更柔和 */
 .practice-submit-button:active:not(:disabled) {
   box-shadow: var(--shadow-xs);
 }

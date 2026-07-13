@@ -29,8 +29,8 @@ defineEmits(["update:modelValue", "keydown"]);
 
 .practice-text-answer__input {
   width: 100%;
-  min-height: 144px;
-  padding: 12px;
+  min-height: 128px;
+  padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface);
@@ -61,8 +61,8 @@ defineEmits(["update:modelValue", "keydown"]);
 
 @media (max-width: 420px) {
   .practice-text-answer__input {
-    min-height: 128px;
-    padding: 12px;
+    min-height: 116px;
+    padding: 10px;
   }
 }
 </style>
