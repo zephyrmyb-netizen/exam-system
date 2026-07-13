@@ -91,13 +91,13 @@ describe("ImportQuestions file import behavior", () => {
     vi.clearAllMocks();
   });
 
-  it("accepts Word, PDF, PPT, image, and TXT upload formats", () => {
+  it("states the exact AI-import formats instead of promising unsupported legacy files", () => {
     const wrapper = mountPage();
 
     expect(wrapper.findAll("input[type='file']")).toHaveLength(1);
     expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
-    expect(wrapper.text()).toContain("文件选择支持 Word / PDF / PPT / 图片 / TXT");
-    expect(wrapper.text()).toContain("AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP");
+    expect(wrapper.text()).toContain("支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP");
+    expect(wrapper.text()).not.toContain("图片 / TXT");
   });
 
   it("rejects legacy .ppt before upload with a save-as-PPTX message", async () => {
@@ -167,7 +167,7 @@ describe("ImportQuestions file import behavior", () => {
     await wrapper.get(".hero-cta").trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("AI 解析时间较长，请稍后重试或换一个更小的文件。");
+    expect(wrapper.text()).toContain("文件上传或 AI 解析耗时较长，请在稳定网络下重试；大文件最多可等待 2 分钟。");
     expect(wrapper.get(".hero-cta").text()).toContain("重新解析");
   });
 

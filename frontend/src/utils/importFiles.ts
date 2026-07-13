@@ -1,14 +1,10 @@
 export const ALLOWED_IMPORT_EXTENSIONS = [".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"] as const;
 export const UNSUPPORTED_LEGACY_EXTENSIONS = [".ppt"] as const;
 export const ACCEPTED_IMPORT_FILE_TYPES = [
-  ".doc",
-  "application/msword",
   ".docx",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ".pdf",
   "application/pdf",
-  ".ppt",
-  "application/vnd.ms-powerpoint",
   ".pptx",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   ".png",
@@ -18,8 +14,6 @@ export const ACCEPTED_IMPORT_FILE_TYPES = [
   "image/jpeg",
   ".webp",
   "image/webp",
-  ".txt",
-  "text/plain",
 ].join(",");
 
 type FileLike = Pick<File, "name" | "size"> | { name?: string; size?: number } | null | undefined;
@@ -75,5 +69,5 @@ export function getUnsupportedImportMessage(fileName: string | null | undefined)
   if (ext === ".txt") {
     return "已选择 TXT 文件；当前 AI 文件解析请先转换为 .docx 后上传，或复制文本后使用 JSON 导入。";
   }
-  return `不支持 ${ext || "未知"} 格式，目前可选择 Word、PDF、PPT、图片、TXT 文件；AI 直接解析支持 DOCX、PDF、PPTX、PNG、JPG、WEBP。`;
+  return `不支持 ${ext || "未知"} 格式；AI 直接解析支持 DOCX、PDF、PPTX、PNG、JPG、JPEG、WEBP。`;
 }

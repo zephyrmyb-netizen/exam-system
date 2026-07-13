@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.7-ai-import-long-document-reliability",
+    version: "v2.7.7",
+    date: "2026-07-13",
+    type: "修复",
+    title: "AI 长文档导入可靠性修复",
+    items: [
+      "长 Word 文档会按题目边界分块，减少只解析首题的情况。",
+      "文档内图片改为小批次补充识别，不再覆盖已解析的文本题。",
+      "大文件创建导入任务最多等待 2 分钟，并明确实际支持格式。",
+    ],
+  },
+  {
     id: "v2.7.6-practice-surface-polish",
     version: "v2.7.6",
     date: "2026-07-13",

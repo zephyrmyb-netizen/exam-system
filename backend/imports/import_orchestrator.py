@@ -39,6 +39,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
 AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
+AI_IMAGE_BATCH_SIZE = 3
+_NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
 
 
 @dataclass
@@ -710,16 +712,47 @@ def deduplicate_questions(questions: list[dict[str, Any]]) -> list[dict[str, Any
 
 def chunk_document_text(text: str) -> tuple[list[str], int]:
     chunk_start = time.perf_counter()
-    paragraphs = [paragraph for paragraph in text.split("\n") if paragraph.strip()]
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n") if paragraph.strip()]
+    units: list[str] = []
+    for paragraph in paragraphs:
+        if len(paragraph) <= AI_CHUNK_SIZE:
+            units.append(paragraph)
+            continue
+
+        boundaries = list(_NUMBERED_QUESTION_BOUNDARY.finditer(paragraph))
+        if len(boundaries) > 1:
+            prefix = paragraph[: boundaries[0].start()].strip()
+            if prefix:
+                units.append(prefix)
+            units.extend(
+                paragraph[match.start() : next_match.start()].strip()
+                for match, next_match in zip(boundaries, boundaries[1:])
+            )
+            units.append(paragraph[boundaries[-1].start() :].strip())
+            continue
+
+        remaining = paragraph
+        while len(remaining) > AI_CHUNK_SIZE:
+            window = remaining[: AI_CHUNK_SIZE + 1]
+            split_at = max(window.rfind(mark) for mark in ("。", "！", "？", "；", ";", "，", ",", " "))
+            if split_at < max(1, AI_CHUNK_SIZE // 2):
+                split_at = AI_CHUNK_SIZE
+            else:
+                split_at += 1
+            units.append(remaining[:split_at].strip())
+            remaining = remaining[split_at:].strip()
+        if remaining:
+            units.append(remaining)
+
     chunks: list[str] = []
     current = ""
-    for paragraph in paragraphs:
-        if len(current) + len(paragraph) + 1 > AI_CHUNK_SIZE:
+    for unit in units:
+        if len(current) + len(unit) + 1 > AI_CHUNK_SIZE:
             if current:
                 chunks.append(current)
-            current = paragraph
+            current = unit
         else:
-            current = current + "\n" + paragraph if current else paragraph
+            current = current + "\n" + unit if current else unit
     if current:
         chunks.append(current)
     return chunks, elapsed_ms(chunk_start)
@@ -819,20 +852,52 @@ def preview_import_from_file_content(
     text: str,
     images: list[ImagePayload],
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
-    if images:
-        try:
-            return call_ai_parse_multimodal(text, images)
-        except HTTPException as exc:
-            if text.strip():
-                questions, warnings, timing = call_ai_parse(text)
-                warnings.insert(0, f"图片识别失败：{exc.detail}")
-                ensure_questions_found(questions, warnings)
-                return questions, warnings, timing
-            raise
+    all_questions: list[dict[str, Any]] = []
+    all_warnings: list[str] = []
+    timings: list[dict[str, Any]] = []
+    failures: list[HTTPException] = []
 
-    questions, warnings, timing = call_ai_parse(text)
-    ensure_questions_found(questions, warnings)
-    return questions, warnings, timing
+    # Text is the most complete source for Word/PDF/PPT exports. Parse it first
+    # so embedded logos or screenshots cannot collapse a long document into one
+    # multimodal request with a truncated answer.
+    if text.strip():
+        try:
+            questions, warnings, timing = call_ai_parse(text)
+            all_questions.extend(questions)
+            all_warnings.extend(warnings)
+            timings.append(timing)
+        except HTTPException as exc:
+            failures.append(exc)
+            all_warnings.append(f"文本解析失败：{exc.detail}")
+
+    # Keep image recognition available, but bound each request. A document can
+    # contain up to 12 images; one oversized multimodal request is both slower
+    # and more likely to return only a sample of the questions.
+    for index in range(0, len(images), AI_IMAGE_BATCH_SIZE):
+        batch = images[index : index + AI_IMAGE_BATCH_SIZE]
+        try:
+            questions, warnings, timing = call_ai_parse_multimodal("", batch)
+            all_questions.extend(questions)
+            all_warnings.extend(warnings)
+            timings.append(timing)
+        except HTTPException as exc:
+            failures.append(exc)
+            all_warnings.append(f"第 {index // AI_IMAGE_BATCH_SIZE + 1} 组图片解析失败：{exc.detail}")
+
+    all_questions = deduplicate_questions(all_questions)
+    if all_questions:
+        return all_questions, all_warnings, {
+            "chunk_ms": sum(int(item.get("chunk_ms") or 0) for item in timings),
+            "ai_ms": sum(int(item.get("ai_ms") or 0) for item in timings),
+            "total_ms": sum(int(item.get("total_ms") or 0) for item in timings),
+            "chunks": sum(int(item.get("chunks") or 0) for item in timings),
+            "ai_chunks": [duration for item in timings for duration in item.get("ai_chunks") or []],
+        }
+
+    if failures:
+        raise failures[0]
+    ensure_questions_found(all_questions, all_warnings)
+    return all_questions, all_warnings, {"chunk_ms": 0, "ai_ms": 0, "total_ms": 0, "chunks": 0, "ai_chunks": []}
 
 
 def validate_imported_questions(
