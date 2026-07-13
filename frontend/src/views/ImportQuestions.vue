@@ -305,7 +305,7 @@ onMounted(() => {
       <p>文件选择支持 Word / PDF / PPT / 图片 / TXT；AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP</p>
     </div>
 
-    <div class="import-flow" aria-label="AI 瀵煎叆杩涘害">
+    <div class="import-flow" aria-label="AI 导入进度">
       <span class="import-flow-step is-done">1 选择文件</span>
       <span class="import-flow-step" :class="{ 'is-active': isParsing, 'is-done': hasPreview || hasImportSuccess }">2 识别</span>
       <span class="import-flow-step" :class="{ 'is-active': hasPreview, 'is-done': hasImportSuccess }">3 预览</span>
