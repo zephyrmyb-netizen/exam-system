@@ -47,7 +47,7 @@ let pollTimer: ReturnType<typeof setTimeout> | null = null;
 function getPreviewErrorMessage(error: unknown): string {
   const requestError = error as { code?: string; response?: { status?: number; data?: { detail?: unknown } } } | undefined;
   if (requestError?.code === "ECONNABORTED" || requestError?.code === "ETIMEDOUT" || requestError?.response?.status === 504) {
-    return "AI 解析时间较长，请稍后重试或换一个更小的文件。";
+    return "文件上传或 AI 解析耗时较长，请在稳定网络下重试；大文件最多可等待 2 分钟。";
   }
   const detail = requestError?.response?.data?.detail;
   if (typeof detail === "string" && /AI 未能解析出题目|非 JSON|未找到 questions 数组|返回格式异常/.test(detail)) {

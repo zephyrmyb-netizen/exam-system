@@ -82,7 +82,7 @@ export function createImportTask(
 ): Promise<ImportTaskResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  return request.post("/imports/tasks", formData, { params, timeout: 30000 }).then(({ data }) => data as ImportTaskResponse);
+  return request.post("/imports/tasks", formData, { params, timeout: 120000 }).then(({ data }) => data as ImportTaskResponse);
 }
 
 export function getImportTask(taskId: string): Promise<ImportTaskResponse> {

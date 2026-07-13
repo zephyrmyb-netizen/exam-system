@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { previewFile } from "../imports";
+import { createImportTask, previewFile } from "../imports";
 import request from "../request.ts";
 
 vi.mock("../request.ts", () => ({
@@ -25,6 +25,21 @@ describe("imports api", () => {
       expect.objectContaining({
         params: { course_name: "图片题目" },
         timeout: 420000,
+      }),
+    );
+  });
+
+  it("allows enough time for a large mobile upload to create its background task", async () => {
+    const file = new File(["large"], "long-review.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+
+    await createImportTask(file, { course_name: "期末复习" });
+
+    expect(request.post).toHaveBeenCalledWith(
+      "/imports/tasks",
+      expect.any(FormData),
+      expect.objectContaining({
+        params: { course_name: "期末复习" },
+        timeout: 120000,
       }),
     );
   });

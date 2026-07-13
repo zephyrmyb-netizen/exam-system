@@ -36,18 +36,18 @@ describe("import file helpers", () => {
     expect(getFileKindLabel(file("old.ppt"))).toBe("旧版 PPT，不支持");
   });
 
-  it("includes Word, PDF, PPT, image, and TXT extensions for mobile file pickers", () => {
+  it("offers only formats the AI importer can parse directly in mobile file pickers", () => {
     expect(ACCEPTED_IMPORT_FILE_TYPES.split(",")).toEqual(expect.arrayContaining([
-      ".doc",
       ".docx",
       ".pdf",
-      ".ppt",
       ".pptx",
       ".png",
       ".jpg",
       ".jpeg",
       ".webp",
-      ".txt",
     ]));
+    expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".doc,");
+    expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".ppt,");
+    expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".txt");
   });
 });

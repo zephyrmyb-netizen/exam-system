@@ -305,7 +305,7 @@ onMounted(() => {
   <section class="stack">
     <div class="section-heading">
       <h2>导入题目</h2>
-      <p>文件选择支持 Word / PDF / PPT / 图片 / TXT；AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP</p>
+      <p>支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，最大 10MB</p>
     </div>
 
     <div class="import-flow" aria-label="AI 导入进度">
@@ -333,13 +333,13 @@ onMounted(() => {
         <label class="hero-drop-zone">
           <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" @change="onFileChange" />
           <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-          <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPT / 图片 / TXT</span>
+          <span v-if="!hasActiveFile" class="hero-drop-text">选择 DOCX / PDF / PPTX / 图片</span>
           <span v-else class="hero-drop-text hero-drop-selected">
             <CheckCircle :size="15" :stroke-width="2.5" />
             {{ activeFileDisplay }}
           </span>
           <span class="hero-drop-hint">
-            支持 .doc、.docx、.pdf、.ppt、.pptx、.png、.jpg、.jpeg、.webp、.txt，最大 10MB
+            支持 .docx、.pdf、.pptx、.png、.jpg、.jpeg、.webp，最大 10MB
           </span>
         </label>
 

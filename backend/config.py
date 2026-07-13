@@ -139,7 +139,7 @@ CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "90"))
 # AI import is usually slower than chat because one file may need several
 # sequential model calls. Keep these limits aligned with the frontend timeout.
 IMPORT_UPSTREAM_TIMEOUT = float(os.getenv("IMPORT_UPSTREAM_TIMEOUT", "90"))
-IMPORT_CHUNK_SIZE = int(os.getenv("IMPORT_CHUNK_SIZE", "5000"))
+IMPORT_CHUNK_SIZE = int(os.getenv("IMPORT_CHUNK_SIZE", "2000"))
 IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "20"))
 IMPORT_MAX_TOKENS = int(os.getenv("IMPORT_MAX_TOKENS", "6000"))
 # Per-user limit for AI import calls (each call may cost several model requests).
