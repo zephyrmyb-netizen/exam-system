@@ -305,13 +305,13 @@ function getAssistantHtml(text) {
   border-radius: 50%;
   color: #ffffff;
   background: var(--primary);
-  box-shadow: var(--shadow-gold), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-primary);
   transition: transform var(--ease-spring), box-shadow var(--ease-out);
 }
 
 .chat-composer button:hover:not(:disabled) {
   background: var(--primary-strong);
-  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-primary);
 }
 
 .chat-composer button:active:not(:disabled) {
@@ -373,9 +373,9 @@ function getAssistantHtml(text) {
 
 /* 在线状态点 — 金色而非绿色 */
 .online-dot {
-  color: var(--gold-strong);
-  background: var(--gold-soft);
-  border: 1px solid var(--gold-border);
+  color: var(--emerald);
+  background: var(--emerald-soft);
+  border: 1px solid var(--emerald-border);
 }
 
 /* AI 头像 — 金色印章风格（36x36 圆形，靛蓝渐变背景 + 金色虚线圆环） */
@@ -385,7 +385,7 @@ function getAssistantHtml(text) {
   border-radius: 50%;
   color: #ffffff;
   background: var(--primary-soft);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-weight: 800;
   box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   position: relative;
@@ -396,7 +396,7 @@ function getAssistantHtml(text) {
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 1px dashed var(--gold-border);
+  border: 1px solid var(--primary-border);
   pointer-events: none;
 }
 
@@ -407,14 +407,14 @@ function getAssistantHtml(text) {
   border-radius: 50%;
   color: #ffffff;
   background: var(--surface-strong);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-weight: 800;
   box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* AI 气泡 — 白色卡片 + 金色左边竖条 */
 .chat-row.assistant .chat-bubble {
-  border-left: 4px solid var(--gold);
+  border-left: 4px solid var(--primary);
 }
 
 /* 输入框圆角 */
