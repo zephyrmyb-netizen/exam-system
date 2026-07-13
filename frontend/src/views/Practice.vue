@@ -315,7 +315,7 @@ watch(sessionComplete, (complete) => {
 <style scoped>
 .practice-page {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -330,7 +330,7 @@ watch(sessionComplete, (complete) => {
 .practice-content {
   position: relative;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -338,14 +338,14 @@ watch(sessionComplete, (complete) => {
 
 .practice-card-shell {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
+  padding: 2px 0 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
 }
 
 /* 高频答题只保留一次轻量交接，不再使用 out-in 留出空白帧。 */
@@ -511,9 +511,8 @@ watch(sessionComplete, (complete) => {
   }
 
   .practice-card-shell {
-    gap: 8px;
-    padding: 9px;
-    border-radius: 8px;
+    gap: 10px;
+    padding: 0;
   }
 
   .practice-answer-section,

@@ -42,6 +42,7 @@ function pickOption(key) {
       class="practice-boolean-button practice-boolean-button--true"
       :class="[getOptionState(TRUE_FALSE_TRUE), { 'is-selected': isSelected(TRUE_FALSE_TRUE) && !result }]"
       type="button"
+      :aria-pressed="isSelected(TRUE_FALSE_TRUE)"
       :disabled="!!result"
       @click="pickOption(TRUE_FALSE_TRUE)"
     >
@@ -52,6 +53,7 @@ function pickOption(key) {
       class="practice-boolean-button practice-boolean-button--false"
       :class="[getOptionState(TRUE_FALSE_FALSE), { 'is-selected': isSelected(TRUE_FALSE_FALSE) && !result }]"
       type="button"
+      :aria-pressed="isSelected(TRUE_FALSE_FALSE)"
       :disabled="!!result"
       @click="pickOption(TRUE_FALSE_FALSE)"
     >
@@ -67,6 +69,8 @@ function pickOption(key) {
       class="practice-option-card"
       :class="[getOptionState(option.key), { 'is-selected': isSelected(option.key) && !result }]"
       type="button"
+      :aria-label="`选项 ${option.key}：${option.value}`"
+      :aria-pressed="isSelected(option.key)"
       :disabled="!!result"
       @click="pickOption(option.key)"
     >
@@ -82,7 +86,7 @@ function pickOption(key) {
 <style scoped>
 .practice-options-grid {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -98,15 +102,15 @@ function pickOption(key) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 48px;
-  padding: 8px 10px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-md);
+  min-height: 46px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
   background: var(--surface);
   text-align: left;
   color: var(--text-main);
   transition: border-color var(--ease-out), background var(--ease-out),
-              box-shadow var(--ease-out);
+              box-shadow var(--ease-out), transform 0.14s ease-out;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -118,6 +122,7 @@ function pickOption(key) {
 
 .practice-option-card:active:not(:disabled) {
   background: var(--primary-soft);
+  transform: scale(0.985);
 }
 
 .practice-option-card.is-selected {
@@ -150,10 +155,10 @@ function pickOption(key) {
 }
 
 .practice-option-card__key {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  background: #f1f5f9;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-soft);
   color: var(--primary-strong);
   font-size: 12px;
   font-weight: 800;
@@ -166,8 +171,8 @@ function pickOption(key) {
 
 .practice-option-card__value {
   min-width: 0;
-  font-size: 13px;
-  line-height: 1.38;
+  font-size: 14px;
+  line-height: 1.42;
   font-weight: 700;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -271,7 +276,7 @@ function pickOption(key) {
 @media (max-width: 420px) {
   .practice-option-card {
     grid-template-columns: auto minmax(0, 1fr);
-    min-height: 48px;
+    min-height: 44px;
     padding: 7px 9px;
     gap: 7px;
     border-radius: 8px;
@@ -292,7 +297,7 @@ function pickOption(key) {
   }
 
   .practice-boolean-button {
-    min-height: 48px;
+    min-height: 44px;
     padding: 8px 10px;
     font-size: 13px;
     border-radius: var(--radius-md);

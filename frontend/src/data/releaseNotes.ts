@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.6-practice-surface-polish",
+    version: "v2.7.6",
+    date: "2026-07-13",
+    type: "优化",
+    title: "答题界面体验优化",
+    items: [
+      "压缩答题顶栏与题目上下文，手机端可更专注地阅读题干。",
+      "选项改为更紧凑、易扫读的列表，选择反馈更清晰。",
+      "答对提供短确认后自动进入下一题，答错才展开答案与解析。",
+    ],
+  },
+  {
     id: "v2.7.5-mobile-layout-import-progress",
     version: "v2.7.5",
     date: "2026-07-13",

@@ -15,14 +15,21 @@ const swipeHint = computed(() =>
 </script>
 
 <template>
-  <div class="practice-result" :class="result.is_correct ? 'practice-result--correct' : 'practice-result--wrong'">
+  <div
+    class="practice-result"
+    :class="result.is_correct ? 'practice-result--correct' : 'practice-result--wrong'"
+    role="status"
+    aria-live="polite"
+  >
     <div class="practice-result__head">
       <CheckCircle v-if="result.is_correct" :size="22" class="practice-result__icon" />
       <XCircle v-else :size="22" class="practice-result__icon" />
       <span class="practice-result__title">{{ result.is_correct ? "答对了" : "答错了" }}</span>
     </div>
 
-    <div class="practice-result__body">
+    <p v-if="result.is_correct" class="practice-result__next">正确，正在进入下一题</p>
+
+    <div v-else class="practice-result__body">
       <div class="practice-result__item">
         <span class="practice-result__label">你的答案</span>
         <span :class="result.is_correct ? 'practice-result__value--ok' : 'practice-result__value--bad'">
@@ -48,7 +55,7 @@ const swipeHint = computed(() =>
       <span>{{ result.wrongbook_recorded ? "已记录到错题本" : "已加入错题本" }}</span>
     </div>
 
-    <div class="practice-swipe-hint">
+    <div v-if="!result.is_correct" class="practice-swipe-hint">
       <ChevronLeft :size="15" :stroke-width="2.5" class="practice-swipe-hint__icon" />
       <span>{{ swipeHint }}</span>
     </div>
@@ -58,9 +65,9 @@ const swipeHint = computed(() =>
 <style scoped>
 .practice-result {
   display: grid;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: 8px;
+  gap: 7px;
+  padding: 10px 11px;
+  border-radius: 10px;
   border: 1px solid var(--line-soft);
 }
 
@@ -99,6 +106,13 @@ const swipeHint = computed(() =>
 .practice-result__title {
   font-size: 15px;
   font-weight: 800;
+}
+
+.practice-result__next {
+  margin: 0;
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .practice-result__body {
