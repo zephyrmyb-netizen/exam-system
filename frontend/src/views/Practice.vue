@@ -316,11 +316,11 @@ watch(sessionComplete, (complete) => {
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .practice-page--with-action {
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .practice-content {
@@ -337,11 +337,10 @@ watch(sessionComplete, (complete) => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 12px;
-  border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 253, 0.96));
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(226, 232, 240, 0.88);
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
   /* 跟手位移用 transform，加 will-change 提示浏览器优化合成层 */
   will-change: transform, opacity;
   transition: transform 0.06s linear, opacity 0.06s linear;
@@ -454,10 +453,8 @@ watch(sessionComplete, (complete) => {
 .practice-skeleton__line {
   height: 14px;
   margin-bottom: 12px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  background: var(--surface-soft);
 }
 
 .practice-skeleton__line--short {
@@ -481,10 +478,8 @@ watch(sessionComplete, (complete) => {
 
 .practice-skeleton__block {
   height: 52px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+  background: var(--surface-soft);
 }
 
 .msg {
@@ -497,8 +492,8 @@ watch(sessionComplete, (complete) => {
 }
 
 .msg-warn {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--primary-soft);
+  color: var(--text-secondary);
 }
 
 .msg-err {
@@ -506,30 +501,20 @@ watch(sessionComplete, (complete) => {
   color: var(--rose);
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
 @media (max-width: 420px) {
   .practice-page {
     gap: 6px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   .practice-page--with-action {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   .practice-card-shell {
     gap: 8px;
     padding: 9px;
-    border-radius: var(--radius-lg);
+    border-radius: 8px;
   }
 
   .practice-answer-section,

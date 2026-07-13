@@ -56,7 +56,7 @@ defineProps({
 }
 
 .practice-stat-chip--streak {
-  color: var(--amber);
+  color: var(--primary-strong);
 }
 
 .practice-stat-sep {
