@@ -35,6 +35,7 @@ acceptance-*.png
 test-results/
 playwright-report/
 .playwright-cli/
+artifacts/
 .reasonix/
 .trae/
 
