@@ -159,6 +159,21 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.text()).toContain("AI 正在解析，请稍候，通常需要 30 秒左右");
   });
 
+  it("shows an already imported task as a completion state after returning", async () => {
+    const store = useAiImportTaskStore();
+    store.status = "success";
+    store.imported = true;
+    store.importedCount = 8;
+    store.resultCourseId = 3;
+    store.resultCourseName = "Java 复习";
+
+    const wrapper = mountPage();
+
+    expect(wrapper.text()).toContain("导入成功");
+    expect(wrapper.text()).toContain("8");
+    expect(wrapper.text()).not.toContain("预览解析结果");
+  });
+
   it("shows the AI-specific timeout guidance", async () => {
     vi.mocked(createImportTask).mockRejectedValueOnce({ code: "ECONNABORTED" });
     const wrapper = mountPage();

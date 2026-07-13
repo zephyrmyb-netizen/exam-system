@@ -59,4 +59,18 @@ describe("ExamTake", () => {
     expect(store.reset).toHaveBeenCalledOnce();
     expect(router.replace).toHaveBeenCalledWith({ name: "exam-detail", params: { examId: 7 } });
   });
+
+  it("opens the answer card on demand and jumps to a selected question", async () => {
+    const wrapper = mount(ExamTake, {
+      global: {
+        stubs: { ExamQuestionCard: true },
+      },
+    });
+
+    expect(wrapper.find("[data-exam-answer-sheet]").exists()).toBe(false);
+    await wrapper.get('[aria-label="打开答题卡"]').trigger("click");
+    expect(wrapper.find("[data-exam-answer-sheet]").exists()).toBe(true);
+    await wrapper.get("[data-exam-answer-sheet] .answer-map button").trigger("click");
+    expect(store.jumpTo).toHaveBeenCalledWith(0);
+  });
 });

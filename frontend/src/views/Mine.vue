@@ -19,7 +19,7 @@ import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { releaseNotes } from "../data/releaseNotes";
 import { useAuth } from "../stores/auth";
-import { useThemeStore, type ThemeMode } from "../stores/theme";
+import { useThemeStore } from "../stores/theme";
 
 const { replaceTo } = useAppNavigation();
 const { user, logout } = useAuth();
@@ -50,8 +50,7 @@ const overviewSummary = computed(() => ({
   recent: stats.value.recentCount7d,
 }));
 
-const learningLevel = computed(() => Math.max(1, Math.floor((stats.value.totalCount || 0) / 100) + 1));
-const levelProgress = computed(() => ((stats.value.totalCount || 0) % 100));
+const isDarkMode = computed(() => theme.mode === "dark");
 
 const quickItems = computed(() => [
   {
@@ -66,9 +65,8 @@ const quickItems = computed(() => [
   { label: "AI 对话", desc: "智能复习助手", icon: MessageCircle, to: { name: "chat", query: { from: "mine" } }, tone: "emerald" },
 ]);
 
-function updateTheme(event: Event) {
-  const value = (event.target as HTMLSelectElement).value as ThemeMode;
-  theme.setMode(value);
+function toggleTheme() {
+  theme.setMode(isDarkMode.value ? "light" : "dark");
 }
 
 function goTo(target: RouteLocationRaw) {
@@ -85,7 +83,7 @@ onMounted(() => fetchAll());
 
 <template>
   <section class="mine-page">
-    <div class="profile-card fade-up d1">
+    <div class="profile-card profile-card--centered fade-up d1">
       <div class="profile-head">
         <div class="avatar-wrap">
           <div class="avatar-ring"></div>
@@ -100,14 +98,14 @@ onMounted(() => fetchAll());
         </div>
       </div>
       <div class="profile-level">
-        <span>学习等级 · Lv.{{ learningLevel }}</span>
-        <span>距离下一等级 {{ 100 - levelProgress }} 题</span>
+        <span>学习等级</span>
+        <span>--</span>
       </div>
-      <div class="profile-level__track"><i :style="{ width: `${levelProgress}%` }"></i></div>
+      <div class="profile-level__track" aria-label="学习等级数据暂未开放"><i></i></div>
     </div>
 
     <button
-      class="stat-grid-3 fade-up d2 stat-link"
+      class="stat-grid-4 fade-up d2 stat-link"
       type="button"
       @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
     >
@@ -119,9 +117,13 @@ onMounted(() => fetchAll());
         <strong>{{ overviewSummary.accuracy }}</strong>
         <span>正确率</span>
       </div>
-      <div class="stat-cell">
-        <strong>{{ overviewSummary.recent ?? "--" }}</strong>
-        <span>近 7 日</span>
+      <div class="stat-cell" data-stat-streak>
+        <strong>--</strong>
+        <span>连续打卡</span>
+      </div>
+      <div class="stat-cell" data-stat-badges>
+        <strong>--</strong>
+        <span>徽章</span>
       </div>
     </button>
 
@@ -154,21 +156,13 @@ onMounted(() => fetchAll());
         <span class="mi-label">更新公告</span>
         <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
       </button>
-      <label class="menu-item">
+      <button class="menu-item" data-theme-toggle type="button" @click="toggleTheme">
         <span class="mi-ico mi-ico--neutral">
           <Settings2 :size="16" :stroke-width="2.2" />
         </span>
-        <span class="mi-label">主题</span>
-        <select
-          class="theme-select"
-          :value="theme.mode"
-          @change="updateTheme"
-        >
-          <option value="system">跟随系统</option>
-          <option value="light">浅色</option>
-          <option value="dark">深色</option>
-        </select>
-      </label>
+        <span class="mi-label">主题 · 深色模式</span>
+        <span class="theme-switch" :class="{ 'is-active': isDarkMode }" aria-hidden="true"><i></i></span>
+      </button>
       <button class="menu-item" type="button" @click="goTo({ name: 'study-overview', query: { from: 'mine' } })">
         <span class="mi-ico mi-ico--neutral"><Palette :size="16" :stroke-width="2.2" /></span>
         <span class="mi-label">学习概览</span>
@@ -225,6 +219,9 @@ onMounted(() => fetchAll());
 
 .profile-card { padding: var(--space-3); }
 .profile-card { border-radius: var(--radius-xl); }
+.profile-card--centered { text-align: center; }
+.profile-card--centered .profile-head { flex-direction: column; align-items: center; }
+.profile-card--centered .profile-info { align-items: center; }
 
 .profile-level {
   display: flex;
@@ -236,7 +233,7 @@ onMounted(() => fetchAll());
   font-weight: 700;
 }
 .profile-level__track { height: 5px; margin-top: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.28); }
-.profile-level__track i { display: block; height: 100%; border-radius: inherit; background: rgba(255,255,255,.94); }
+.profile-level__track i { display: block; width: 0; height: 100%; border-radius: inherit; background: rgba(255,255,255,.94); }
 
 .profile-head { min-height: 44px; }
 
@@ -263,6 +260,7 @@ button.stat-link:active .stat-cell {
 }
 
 .stat-cell { border-radius: 8px; }
+.stat-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 
 .mine-quick-grid {
   display: grid;
@@ -294,8 +292,7 @@ button.stat-link:active .stat-cell {
 .mine-quick small { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
 
 /* Button / label menu-item resets */
-button.menu-item,
-label.menu-item {
+button.menu-item {
   font: inherit;
   text-align: left;
   width: 100%;
@@ -329,25 +326,20 @@ label.menu-item {
   color: var(--rose);
 }
 
-/* Theme select */
-.theme-select {
-  font: inherit;
-  font-size: var(--text-xs);
-  font-weight: 700;
-  min-height: 44px;
-  padding: 5px 26px 5px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--line-soft);
-  background-color: var(--surface-soft);
-  color: var(--text-main);
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
+.theme-switch {
+  display: inline-flex;
+  width: 38px;
+  height: 22px;
+  align-items: center;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition: background var(--ease-out);
 }
-.theme-select:focus {
-  outline: 2px solid var(--primary-border);
-  outline-offset: 1px;
-}
+.theme-switch i { display: block; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-xs); transition: transform var(--ease-out); }
+.theme-switch.is-active { background: var(--primary); }
+.theme-switch.is-active i { transform: translateX(16px); }
 
 /* Footer */
 .mine-foot {

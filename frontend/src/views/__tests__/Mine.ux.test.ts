@@ -35,12 +35,15 @@ describe("Mine UX polish", () => {
     expect(wrapper.text()).toContain("收藏题目");
     expect(wrapper.text()).toContain("更新公告");
     expect(wrapper.text()).toContain("主题");
-    expect(wrapper.findAll(".stat-cell")).toHaveLength(3);
+    expect(wrapper.findAll(".stat-cell")).toHaveLength(4);
+    expect(wrapper.get("[data-stat-streak]").text()).toContain("连续打卡");
+    expect(wrapper.get("[data-stat-badges]").text()).toContain("徽章");
+    expect(wrapper.find(".profile-card--centered").exists()).toBe(true);
   });
 
   it("keeps the theme setting usable", async () => {
     const wrapper = mount(Mine);
-    await wrapper.get(".theme-select").setValue("dark");
+    await wrapper.get("[data-theme-toggle]").trigger("click");
     expect(setMode).toHaveBeenCalledWith("dark");
   });
 

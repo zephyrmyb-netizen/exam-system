@@ -79,13 +79,14 @@ describe("Home UX polish", () => {
     expect(wrapper.find(".home-hero").exists()).toBe(true);
   });
 
-  it("keeps AI conversation on the home page and opens it with replace", async () => {
+  it("uses the reference page order: core actions, study overview, recent courses, then a daily recommendation", async () => {
     const wrapper = mount(Home);
 
-    expect(wrapper.get("[data-home-ai-chat]").text()).toContain("AI 学习助手");
-    await wrapper.get("[data-home-ai-chat]").trigger("click");
-
-    expect(replace).toHaveBeenCalledWith("/chat");
+    expect(wrapper.find("[data-home-ai-chat]").exists()).toBe(false);
+    expect(wrapper.find("[data-home-recommendation]").exists()).toBe(true);
+    expect(wrapper.find(".home-recommendation__tag").text()).toContain("每日一练");
+    expect(wrapper.findAll(".overview-stat")).toHaveLength(4);
+    expect(wrapper.text()).toContain("连续学习");
   });
 
   it("enters study overview with replace and an explicit home source", async () => {
