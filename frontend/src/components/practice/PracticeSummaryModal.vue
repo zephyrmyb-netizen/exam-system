@@ -1,18 +1,29 @@
-<script setup>
-import { computed } from "vue";
-import { ArrowRight, CheckCircle, Clock3, Play, RefreshCw, Target, XCircle } from "@lucide/vue";
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { Award, ArrowRight, CheckCircle, Clock3, Play, RefreshCw, Target, XCircle } from "@lucide/vue";
 
-const props = defineProps({
-  show: { type: Boolean, default: false },
-  answeredCount: { type: Number, default: 0 },
-  correctCount: { type: Number, default: 0 },
-  wrongCount: { type: Number, default: 0 },
-  accuracy: { type: Number, default: null },
-  durationSeconds: { type: Number, default: null },
-  courseName: { type: String, default: "" },
-  modeLabel: { type: String, default: "" },
-  completed: { type: Boolean, default: false },
-  canContinue: { type: Boolean, default: true },
+const props = withDefaults(defineProps<{
+  show?: boolean;
+  answeredCount?: number;
+  correctCount?: number;
+  wrongCount?: number;
+  accuracy?: number | null;
+  durationSeconds?: number | null;
+  courseName?: string;
+  modeLabel?: string;
+  completed?: boolean;
+  canContinue?: boolean;
+}>(), {
+  show: false,
+  answeredCount: 0,
+  correctCount: 0,
+  wrongCount: 0,
+  accuracy: null,
+  durationSeconds: null,
+  courseName: "",
+  modeLabel: "",
+  completed: false,
+  canContinue: true,
 });
 
 const accuracyValue = computed(() => Math.max(0, Math.min(100, Number(props.accuracy) || 0)));
@@ -35,14 +46,138 @@ const encouragement = computed(() => {
   return `正确率达到 ${props.accuracy}%，${props.accuracy >= 80 ? "继续保持！" : "下次会更好。"}`;
 });
 
-defineEmits(["end", "continue", "review"]);
+const emit = defineEmits<{
+  end: [];
+  continue: [];
+  review: [];
+}>();
+const panelRef = ref<HTMLElement | null>(null);
+let previouslyFocused: HTMLElement | null = null;
+let documentListenersAttached = false;
+
+const focusableSelector = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function focusableElements(): HTMLElement[] {
+  if (!panelRef.value) return [];
+  return Array.from(panelRef.value.querySelectorAll<HTMLElement>(focusableSelector));
+}
+
+function restoreFocus() {
+  if (previouslyFocused instanceof HTMLElement && document.contains(previouslyFocused)) {
+    previouslyFocused.focus();
+  }
+  previouslyFocused = null;
+}
+
+async function focusDialog() {
+  await nextTick();
+  const [first] = focusableElements();
+  (first || panelRef.value)?.focus();
+}
+
+function focusInsideDialog() {
+  const [first] = focusableElements();
+  (first || panelRef.value)?.focus();
+}
+
+function handleDocumentFocusIn(event: { composedPath: () => unknown[] }) {
+  const panel = panelRef.value;
+  if (!props.show || !panel) return;
+  if (event.composedPath().includes(panel)) return;
+  focusInsideDialog();
+}
+
+function handleDocumentKeydown(event: KeyboardEvent) {
+  if (!props.show) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!props.completed && props.canContinue) {
+      emit("continue");
+    }
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+  const focusable = focusableElements();
+  if (!focusable.length) {
+    event.preventDefault();
+    panelRef.value?.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const activeElement = document.activeElement;
+  const focusIsOutside = !panelRef.value?.contains(activeElement);
+  if (event.shiftKey && (activeElement === first || focusIsOutside)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (activeElement === last || focusIsOutside)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function attachDocumentListeners() {
+  if (documentListenersAttached) return;
+  document.addEventListener("keydown", handleDocumentKeydown, true);
+  document.addEventListener("focusin", handleDocumentFocusIn, true);
+  documentListenersAttached = true;
+}
+
+function detachDocumentListeners() {
+  if (!documentListenersAttached) return;
+  document.removeEventListener("keydown", handleDocumentKeydown, true);
+  document.removeEventListener("focusin", handleDocumentFocusIn, true);
+  documentListenersAttached = false;
+}
+
+watch(
+  () => props.show,
+  (show) => {
+    if (show) {
+      previouslyFocused = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+      attachDocumentListeners();
+      void focusDialog();
+    } else {
+      detachDocumentListeners();
+      restoreFocus();
+    }
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  detachDocumentListeners();
+  restoreFocus();
+});
 </script>
 
 <template>
   <transition name="fade">
     <div v-if="show" class="practice-summary">
-      <div class="practice-summary__backdrop"></div>
-      <div class="practice-summary__panel">
+      <div class="practice-summary__backdrop" aria-hidden="true"></div>
+      <div
+        ref="panelRef"
+        class="practice-summary__panel"
+        data-reference-page="practice-complete"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="practice-summary-title"
+        aria-describedby="practice-summary-description"
+        tabindex="-1"
+      >
         <div
           class="practice-summary__icon"
           :class="answeredCount > 0 && accuracy !== null && accuracy >= 60
@@ -53,10 +188,10 @@ defineEmits(["end", "continue", "review"]);
           <RefreshCw v-else :size="36" />
         </div>
 
-        <p class="practice-summary__title">{{ completed ? "练习完成！" : "结束练习" }}</p>
+        <p id="practice-summary-title" class="practice-summary__title">{{ completed ? "练习完成！" : "结束练习" }}</p>
         <p v-if="completed" class="practice-summary__subtitle">{{ courseName || "本题库" }} · {{ modeLabel || "练习" }}</p>
-        <span v-if="completed" class="practice-summary__badge">{{ performanceLabel }}</span>
-        <p class="practice-summary__desc">{{ completed ? encouragement : answeredCount > 0 ? `本次练习已完成 ${answeredCount} 题，是否返回练习设置？` : "还没有完成题目，确定要退出本次练习吗？" }}</p>
+        <span v-if="completed" class="practice-summary__badge"><Award :size="14" />{{ performanceLabel }}</span>
+        <p id="practice-summary-description" class="practice-summary__desc">{{ completed ? encouragement : answeredCount > 0 ? `本次练习已完成 ${answeredCount} 题，你可以继续练习或结束本次会话。` : "还没有完成题目，你可以继续练习或结束本次会话。" }}</p>
 
         <div v-if="answeredCount > 0" class="practice-summary__score">
           <div class="practice-summary__ring" :style="{ '--summary-score': `${accuracyValue}%` }">
@@ -115,7 +250,9 @@ defineEmits(["end", "continue", "review"]);
 .practice-summary__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.38);
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .practice-summary__panel {
@@ -124,26 +261,33 @@ defineEmits(["end", "continue", "review"]);
   display: grid;
   gap: var(--space-3);
   width: min(100%, 360px);
-  padding: 20px 18px;
-  border: 1px solid var(--line-soft);
+  max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 20px;
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  background: var(--surface);
-  box-shadow: var(--shadow-modal);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-modal), var(--glass-inner-highlight);
   text-align: center;
+  backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+  scrollbar-width: thin;
 }
 
 .practice-summary__icon {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 72px;
+  height: 72px;
   margin: 0 auto;
   border-radius: 50%;
 }
 
 .practice-summary__icon--good {
-  color: var(--emerald);
-  background: var(--emerald-soft);
+  color: #fff;
+  background: var(--emerald);
+  box-shadow: var(--shadow-primary);
 }
 
 .practice-summary__icon--keep {
@@ -159,7 +303,7 @@ defineEmits(["end", "continue", "review"]);
 }
 
 .practice-summary__subtitle { margin: -4px 0 0; color: var(--text-muted); font-size: 13px; font-weight: 650; }
-.practice-summary__badge { display: inline-flex; justify-self: center; padding: 5px 12px; border: 1px solid var(--primary-border); border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary-strong); font-size: 12px; font-weight: 800; }
+.practice-summary__badge { display: inline-flex; align-items: center; gap: 5px; justify-self: center; padding: 5px 12px; border: 1px solid var(--primary-border); border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary-strong); font-size: 12px; font-weight: 800; }
 .practice-summary__desc {
   margin: 0;
   font-size: var(--text-sm);
@@ -174,7 +318,9 @@ defineEmits(["end", "continue", "review"]);
   gap: 14px;
   padding: 12px;
   border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
   background: var(--surface-soft);
+  box-shadow: var(--glass-inner-highlight);
   text-align: left;
 }
 .practice-summary__score-copy { display: grid; gap: 10px; color: var(--text-secondary); font-size: 13px; }
@@ -183,14 +329,14 @@ defineEmits(["end", "continue", "review"]);
 .practice-summary__score-copy svg { color: var(--text-muted); }
 .practice-summary__ring {
   display: grid;
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   place-items: center;
   align-content: center;
   border-radius: 50%;
   background: conic-gradient(var(--primary) var(--summary-score), var(--line-soft) 0);
   color: var(--text-main);
-  box-shadow: inset 0 0 0 7px var(--surface);
+  box-shadow: inset 0 0 0 8px var(--surface);
 }
 .practice-summary__ring span { font-size: 15px; font-weight: 900; line-height: 1; }
 .practice-summary__ring small { margin-top: 3px; color: var(--text-muted); font-size: 9px; font-weight: 750; }
@@ -270,5 +416,34 @@ defineEmits(["end", "continue", "review"]);
   }
 
   .practice-summary__score { gap: 12px; padding: 10px; }
+}
+
+@media (max-width: 360px) {
+  .practice-summary {
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+
+  .practice-summary__panel {
+    gap: 9px;
+    padding: 16px 13px;
+  }
+
+  .practice-summary__icon {
+    width: 58px;
+    height: 58px;
+  }
+
+  .practice-summary__score {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .practice-summary__ring {
+    width: 72px;
+    height: 72px;
+  }
+
+  .practice-summary__detail {
+    padding: 9px 10px;
+  }
 }
 </style>

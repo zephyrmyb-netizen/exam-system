@@ -1,6 +1,11 @@
 <script setup>
+import { computed } from "vue";
 import { CheckCircle, XCircle } from "@lucide/vue";
-import { TRUE_FALSE_FALSE, TRUE_FALSE_TRUE } from "../../utils/question";
+import {
+  normalizeMultipleChoiceKeys,
+  TRUE_FALSE_FALSE,
+  TRUE_FALSE_TRUE,
+} from "../../utils/question";
 
 const props = defineProps({
   questionType: { type: String, required: true },
@@ -13,6 +18,10 @@ const props = defineProps({
 
 const emit = defineEmits(["pick-single", "toggle-multiple"]);
 
+const correctAnswerKeys = computed(() => new Set(
+  normalizeMultipleChoiceKeys(props.correctAnswerDisplay),
+));
+
 function isSelected(key) {
   return props.questionType === "multiple_choice"
     ? props.selectedAnswers.includes(key)
@@ -21,6 +30,11 @@ function isSelected(key) {
 
 function getOptionState(key) {
   if (!props.result) return "";
+  if (props.questionType === "multiple_choice") {
+    if (correctAnswerKeys.value.has(String(key).toUpperCase())) return "is-correct";
+    if (isSelected(key)) return "is-wrong";
+    return "";
+  }
   if (key === props.correctAnswerDisplay) return "is-correct";
   if (isSelected(key)) return "is-wrong";
   return "";
@@ -86,7 +100,7 @@ function pickOption(key) {
 <style scoped>
 .practice-options-grid {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -102,11 +116,14 @@ function pickOption(key) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 46px;
-  padding: 7px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface);
+  min-height: 56px;
+  padding: 11px 12px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: var(--glass-inner-highlight);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
   text-align: left;
   color: var(--text-main);
   transition: border-color var(--ease-out), background var(--ease-out),
@@ -155,12 +172,12 @@ function pickOption(key) {
 }
 
 .practice-option-card__key {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--surface-soft);
   color: var(--primary-strong);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 

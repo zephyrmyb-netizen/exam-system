@@ -37,14 +37,23 @@ defineEmits(["back", "end"]);
 
 <style scoped>
 .practice-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 52px;
+  min-height: 64px;
+  padding: 10px 16px;
   overflow: hidden;
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--glass-header);
+  box-shadow: var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
 }
 
 .practice-topbar__center {
@@ -78,7 +87,7 @@ defineEmits(["back", "end"]);
 .practice-topbar__track {
   display: block;
   flex-basis: 100%;
-  height: 5px;
+  height: 6px;
   overflow: hidden;
   border-radius: var(--radius-full);
   background: var(--surface-soft);
@@ -101,7 +110,7 @@ defineEmits(["back", "end"]);
   width: 36px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.42);
   color: var(--text-muted);
   transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out), box-shadow var(--ease-out);
   flex-shrink: 0;
@@ -139,7 +148,14 @@ defineEmits(["back", "end"]);
 }
 
 @media (max-width: 360px) {
-  .practice-topbar__meta { display: none; }
+  .practice-topbar {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .practice-topbar__title { max-width: 96px; }
+
+  .practice-topbar__meta { font-size: 10px; }
 }
 
 </style>

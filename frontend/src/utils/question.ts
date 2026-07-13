@@ -43,6 +43,57 @@ export function normalizeAnswerDisplay(answer: string): string {
   return trimmed;
 }
 
+const multipleChoicePrefix = /^\s*(?:选\s*项|选|答案|答|选择|option\s*|choice\s*)[：:.\s]*/i;
+
+function extractMultipleChoiceKeys(value: unknown): string[] {
+  if (typeof value !== "string") return [];
+  const cleaned = value.replace(multipleChoicePrefix, "").trim().toUpperCase();
+  if (!cleaned) return [];
+
+  const singleKey = cleaned.match(/^([A-Z])[.)\s]*$/);
+  if (singleKey) return [singleKey[1]];
+  if (/^[A-Z]+$/.test(cleaned)) return Array.from(cleaned);
+  return [];
+}
+
+/**
+ * Normalize the answer formats accepted by the backend into stable option keys.
+ * The result is uppercase, de-duplicated and sorted for direct Set conversion.
+ */
+export function normalizeMultipleChoiceKeys(answer: unknown): string[] {
+  if (Array.isArray(answer)) {
+    return Array.from(new Set(answer.flatMap(extractMultipleChoiceKeys))).sort();
+  }
+  if (typeof answer !== "string") return [];
+
+  const cleaned = answer.replace(multipleChoicePrefix, "").trim();
+  if (!cleaned) return [];
+
+  const jsonCandidate = cleaned
+    .normalize("NFKC")
+    .replace(/[“”]/g, '"')
+    .replace(/、/g, ",");
+  if (jsonCandidate.startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(jsonCandidate);
+      if (Array.isArray(parsed)) {
+        return Array.from(new Set(parsed.flatMap(extractMultipleChoiceKeys))).sort();
+      }
+    } catch {
+      // Fall through to the same separator/compact-letter tolerance as the backend.
+    }
+  }
+
+  const parts = cleaned.split(/[,，、/;；\s]+/).filter(Boolean);
+  const separatedKeys = parts.flatMap(extractMultipleChoiceKeys);
+  if (separatedKeys.length > 0) {
+    return Array.from(new Set(separatedKeys)).sort();
+  }
+
+  const compactKeys = cleaned.toUpperCase().match(/[A-Z]/g) || [];
+  return Array.from(new Set(compactKeys)).sort();
+}
+
 export function isTextQuestionType(type: string): boolean {
   return ["fill_blank", "short_answer"].includes(type);
 }
