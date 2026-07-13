@@ -7,6 +7,6 @@
 - 实际修改的文件：`frontend/src/layouts/AppLayout.vue`、`frontend/src/router.ts`、`frontend/src/views/Home.vue`、`frontend/src/layouts/__tests__/AppLayout.test.ts`、`frontend/src/views/__tests__/Home.ux.test.ts`、版本公告与本留档。
 - 验证命令与结果：定向测试通过；`npm.cmd run test -- --run` 通过（36 文件、119 用例）；`npm.cmd run lint` 通过；`npm.cmd run build` 通过；`git diff --check` 待提交前执行。
 - Commit：`235df3b feat: move AI chat entry to home`。
-- Push：待推送。
+- Push：已推送至 `origin/codex/phase4-differentiation`。
 - 遗留风险：仅迁移入口，不改变聊天、导入或练习接口与业务逻辑。
-- 下一步：提交、推送，并在手机端复验四项导航和首页 AI 入口。
+- 下一步：在手机端复验四项导航和首页 AI 入口。
