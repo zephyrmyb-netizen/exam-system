@@ -369,7 +369,7 @@ function getAssistantHtml(text) {
   overflow-wrap: anywhere;
 }
 
-/* ── 墨韵书房 · Chat 装饰 ── */
+/* ── AI 对话视觉装饰 ── */
 
 /* 在线状态点 — 金色而非绿色 */
 .online-dot {
