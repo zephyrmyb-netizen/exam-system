@@ -47,9 +47,10 @@ describe("CourseList UX polish", () => {
     await flushPromises();
 
     await wrapper.findAll(".more-btn")[0].trigger("click");
-    expect(wrapper.findAll(".course-menu .menu-option")[0].text()).not.toBe("");
+    expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("开始练习");
 
     await wrapper.findAll(".more-btn")[1].trigger("click");
+    expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("暂无题目");
     expect(wrapper.findAll(".course-menu .menu-option")[0].attributes("disabled")).toBeDefined();
   });
 
@@ -60,7 +61,7 @@ describe("CourseList UX polish", () => {
 
     const options = wrapper.findAll(".course-menu .menu-option");
     expect(options).toHaveLength(5);
-    expect(options[0].text()).not.toBe("");
+    expect(options[0].text()).toContain("开始练习");
     expect(options[1].text()).not.toBe("");
   });
 
