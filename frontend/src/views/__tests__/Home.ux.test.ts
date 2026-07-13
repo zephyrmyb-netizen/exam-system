@@ -58,18 +58,17 @@ describe("Home UX polish", () => {
     errorMessage.value = "";
   });
 
-  it("starts with the search entry and removes the old greeting and date copy", () => {
+  it("starts with a compact greeting header and the search entry", () => {
     const wrapper = mount(Home);
     const searchEntry = wrapper.get("[data-home-search]");
 
-    expect(wrapper.find(".page-head").exists()).toBe(false);
-    expect(wrapper.text()).not.toContain("今天学什么");
-    expect(wrapper.text()).not.toContain("开始学习吧");
-    expect(wrapper.text()).not.toMatch(/202\d年|星期[一二三四五六日天]/);
+    expect(wrapper.find(".home-hero").exists()).toBe(true);
+    expect(wrapper.text()).toContain("同学");
+    expect(wrapper.text()).toContain("从一小步开始");
     expect(searchEntry.classes()).toContain("home-search-entry");
   });
 
-  it("renders four same-size core entries without decorative copy", () => {
+  it("renders four same-size core entries below the compact header", () => {
     const wrapper = mount(Home);
 
     expect(wrapper.text()).toContain("AI 导入");
@@ -77,7 +76,7 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).toContain("正式考试");
     expect(wrapper.text()).toContain("学习概览");
     expect(wrapper.findAll(".quick")).toHaveLength(4);
-    expect(wrapper.find(".hero-banner").exists()).toBe(false);
+    expect(wrapper.find(".home-hero").exists()).toBe(true);
   });
 
   it("keeps AI conversation on the home page and opens it with replace", async () => {

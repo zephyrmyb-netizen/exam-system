@@ -29,6 +29,14 @@ const startButtonText = computed(() => {
 
 const showPractice = ref(false);
 
+function syncPracticeRequest() {
+  const requestedMode = String(route.query?.mode || "");
+  selectedMode.value = requestedMode === "wrong" ? "wrong_review" : "normal";
+  if (route.query?.autostart === "1" && course.value && isPracticeReadyCourse(course.value)) {
+    showPractice.value = true;
+  }
+}
+
 function startPractice() {
   if (!canStartPractice.value) return;
   showPractice.value = true;
@@ -50,15 +58,16 @@ async function fetchCourse() {
     errorMessage.value = getErrorMessage(error, "获取题库信息失败");
   } finally {
     loading.value = false;
+    syncPracticeRequest();
   }
 }
 
 onMounted(fetchCourse);
-watch(() => route.params.courseId, () => { showPractice.value = false; fetchCourse(); });
+watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); });
 </script>
 
 <template>
-  <section class="stack">
+  <section class="stack course-practice-page">
     <template v-if="!showPractice">
       <div v-if="course" class="settings-header">
         <div class="settings-header-top">
@@ -122,6 +131,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
       <Practice
         :course-id="courseId"
         :course-name="course?.name || ''"
+        :total-questions="course?.question_count ?? 0"
         :mode="selectedMode"
         mode-param=""
         @end-practice="endPractice"

@@ -302,8 +302,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="stack">
-    <div class="section-heading">
+  <section class="stack import-page">
+    <div class="section-heading import-page__head">
       <h2>导入题目</h2>
       <p>支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，最大 10MB</p>
     </div>
@@ -315,6 +315,14 @@ onMounted(() => {
       <span class="import-flow-step" :class="{ 'is-active': hasImportSuccess }">4 确认导入</span>
     </div>
     <ImportCapabilityStrip />
+
+    <div class="import-format-tags" aria-label="支持的导入格式">
+      <span class="format-tag format-tag--word">Word</span>
+      <span class="format-tag format-tag--ppt">PPT</span>
+      <span class="format-tag format-tag--pdf">PDF</span>
+      <span class="format-tag format-tag--image">图片</span>
+      <span class="format-tag format-tag--text">文本</span>
+    </div>
 
     <template v-if="phase === 'select'">
       <section v-if="isParsing" class="import-running-state" aria-live="polite">
@@ -419,6 +427,12 @@ onMounted(() => {
             </div>
           </div>
         </details>
+
+        <ol class="import-guide" aria-label="导入步骤说明">
+          <li><span>1</span><p><strong>上传文件或粘贴 JSON</strong><small>选择资料并确认导入题库名称</small></p></li>
+          <li><span>2</span><p><strong>AI 智能解析</strong><small>自动识别题干、选项、答案和解析</small></p></li>
+          <li><span>3</span><p><strong>预览确认后导入</strong><small>检查结果后一次性写入题库</small></p></li>
+        </ol>
       </template>
     </template>
 
@@ -484,6 +498,43 @@ onMounted(() => {
   text-align: center;
   cursor: pointer;
 }
+
+.import-format-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.format-tag {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 800;
+}
+.format-tag--word { background: #eff6ff; color: #2563eb; }
+.format-tag--ppt { background: #fff7ed; color: #ea580c; }
+.format-tag--pdf { background: var(--rose-soft); color: var(--rose); }
+.format-tag--image { background: #f5f3ff; color: #7c3aed; }
+.format-tag--text { background: var(--primary-soft); color: var(--primary-strong); }
+
+.import-guide {
+  display: grid;
+  gap: 9px;
+  margin: 4px 0 0;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-xs), var(--glass-inner-highlight);
+  list-style: none;
+}
+.import-guide li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; align-items: center; }
+.import-guide li > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--primary-soft); color: var(--primary-strong); font-size: 11px; font-weight: 850; }
+.import-guide p { display: grid; gap: 2px; margin: 0; }
+.import-guide strong { font-size: 12px; color: var(--text-main); }
+.import-guide small { color: var(--text-muted); font-size: 11px; }
 
 .import-running-state {
   display: grid;

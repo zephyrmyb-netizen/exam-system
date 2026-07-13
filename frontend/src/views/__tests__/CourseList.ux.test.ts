@@ -91,13 +91,19 @@ describe("CourseList UX polish", () => {
     expect(title.attributes("title")).toBe(longName);
   });
 
-  it("enters course practice with replace and a courses source", async () => {
+  it("opens a practice-mode sheet before entering course practice", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
     await wrapper.findAll(".more-btn")[0].trigger("click");
     await wrapper.findAll(".course-menu .menu-option")[0].trigger("click");
+    expect(wrapper.find(".practice-sheet").exists()).toBe(true);
+    await wrapper.findAll(".practice-sheet__option")[0].trigger("click");
 
-    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/1/practice", query: { from: "courses" } });
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "course-practice",
+      params: { courseId: 1 },
+      query: { mode: "sequential", autostart: "1", from: "courses" },
+    });
   });
 
   it("enters course detail with replace and a courses source", async () => {
