@@ -7,6 +7,6 @@
 - 实际修改的文件：`Practice.vue`、`PracticeTopBar.vue`、`PracticeStatsBar.vue`、`PracticeQuestionStem.vue`、`PracticeChoiceOptions.vue`、`PracticeResultPanel.vue`、`PracticeInteraction.test.ts`、`releaseNotes.ts` 与本留档。
 - 验证命令与结果：先复现结果播报缺失的失败测试；定向测试通过（3 文件、13 用例）；`npm.cmd run lint` 通过；`npm.cmd run test -- --run` 通过（36 文件、120 用例）；`npm.cmd run build` 通过；`git diff --check` 通过。
 - Commit：`c95a7f4 feat: streamline practice answering surface`。
-- Push：待推送。
+- Push：已推送至 `origin/codex/phase4-differentiation`。
 - 遗留风险：当前环境没有可用的手机截图自动化，仍需在真实手机 WebView 复验长题干与四选项的可视范围。
-- 下一步：提交、推送，并在手机端复验答对自动下一题和答错解析。
+- 下一步：在手机端复验答对自动下一题和答错解析。
