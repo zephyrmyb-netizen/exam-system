@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.1-learning-core-modularization",
+    version: "v2.7.1",
+    date: "2026-07-13",
+    type: "升级",
+    title: "学习核心模块化升级",
+    items: [
+      "刷题流程改为明确会话状态，完成后不再循环回到已答题目。",
+      "结束练习会取消待执行的自动跳题，手势只在题面区域生效。",
+      "AI 文件解析升级为可查询任务，切换页面或刷新后可恢复进度与预览。",
+      "缩短高频答题动效，减少页面切换与滚动动画互相干扰。",
+    ],
+  },
+  {
     id: "v2.6.1-practice-flow-and-motion",
     version: "v2.6.1",
     date: "2026-07-13",

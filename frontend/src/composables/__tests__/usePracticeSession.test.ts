@@ -129,6 +129,27 @@ describe("usePracticeSession", () => {
     expect(session.question.value).toBeNull();
     expect(session.sessionComplete.value).toBe(true);
     expect(session.errorMessage.value).toBe("");
+
+    const requestsAtCompletion = getRandomPracticeQuestion.mock.calls.length;
+    await session.fetchRandomQuestion();
+    expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(requestsAtCompletion);
+  });
+
+  it("cancels the pending correct-answer advance when the user ends a session", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({ courseId: 9 });
+    getRandomPracticeQuestion.mockResolvedValueOnce(makeQuestion(1));
+    submitPracticeAnswer.mockResolvedValueOnce(correctResult());
+
+    session.startSession();
+    await flushPromises();
+    session.setSingleAnswer("A");
+    await flushPromises();
+    session.cancelPendingAdvance();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(1);
+    expect(session.question.value?.id).toBe(1);
   });
 
   it("moves to the next question after a correct single-choice answer", async () => {

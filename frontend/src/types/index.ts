@@ -263,6 +263,28 @@ export interface ConfirmImportResponse {
   course_name: string;
 }
 
+export type ImportTaskStatus = "queued" | "extracting" | "parsing" | "ready" | "importing" | "imported" | "failed";
+
+export interface ImportTaskResponse {
+  id: string;
+  status: ImportTaskStatus;
+  source_filename: string;
+  course_id: number | null;
+  course_name: string;
+  progress_current: number;
+  progress_total: number;
+  questions: Question[];
+  suggested_course_name: string;
+  warnings: string[];
+  total_valid: number;
+  total_invalid: number;
+  timing: ImportTiming | null;
+  error_message: string;
+  created_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
 export interface FileExtractResponse {
   text: string;
   filename: string;

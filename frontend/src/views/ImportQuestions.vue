@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "@lucide/vue";
 
-import { confirmImport, extractFileText } from "../api/imports";
+import { confirmImport, confirmImportTask, extractFileText } from "../api/imports";
 import { getErrorMessage } from "../api/request";
 import ImportCapabilityStrip from "../components/import/ImportCapabilityStrip.vue";
 import ImportPreview from "../components/import/ImportPreview.vue";
@@ -197,7 +197,9 @@ async function handleConfirm(payload) {
   confirmError.value = "";
   confirmLoading.value = true;
   try {
-    const result = await confirmImport(payload);
+    const result = aiTask.taskId.value
+      ? await confirmImportTask(aiTask.taskId.value, payload)
+      : await confirmImport(payload);
     importResult.value = result;
     aiTask.markImported(result);
   } catch (error) {
@@ -295,6 +297,7 @@ async function copyPromptAndText() {
 onMounted(() => {
   syncTargetCourseFromRoute();
   fetchCourses();
+  void aiTask.resume();
 });
 </script>
 

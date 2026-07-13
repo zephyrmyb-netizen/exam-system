@@ -1,4 +1,6 @@
-import { computed, ref, type Ref, type ComputedRef } from "vue";
+import { computed, getCurrentScope, onScopeDispose, ref, type ComputedRef, type Ref } from "vue";
+import { createActor } from "xstate";
+
 import { getErrorMessage } from "../api/request";
 import {
   getRandomPracticeQuestion,
@@ -13,7 +15,11 @@ import {
   isTextQuestionType,
   TRUE_FALSE_OPTIONS,
 } from "../utils/question";
-import type { Question, SubmitResponse, OptionItem } from "../types";
+import {
+  practiceSessionMachine,
+  type PracticeSessionPhase,
+} from "../features/practice/practiceSessionMachine";
+import type { OptionItem, Question, SubmitResponse } from "../types";
 
 interface SessionStats {
   answeredCount: number;
@@ -37,6 +43,7 @@ export interface UsePracticeSessionReturn {
   answerOptions: ComputedRef<OptionItem[]>;
   accuracy: ComputedRef<number | null>;
   canSubmit: ComputedRef<boolean>;
+  cancelPendingAdvance: () => void;
   correctAnswerDisplay: ComputedRef<string>;
   currentAnswer: ComputedRef<string>;
   errorMessage: Ref<string>;
@@ -45,6 +52,7 @@ export interface UsePracticeSessionReturn {
   hasAnswerSelected: ComputedRef<boolean>;
   isTextQuestion: ComputedRef<boolean>;
   loading: Ref<boolean>;
+  phase: Ref<PracticeSessionPhase>;
   question: Ref<Question | null>;
   result: Ref<SubmitResponse | null>;
   selectedAnswer: Ref<string>;
@@ -78,13 +86,9 @@ function isQuestionLike(value: unknown): value is Question {
 
 function extractDueReviewQuestion(value: unknown): Question | null {
   if (isQuestionLike(value)) return value;
-
   if (typeof value !== "object" || value === null) return null;
-  const payload = value as {
-    question?: unknown;
-    items?: Array<{ question?: unknown }>;
-  };
 
+  const payload = value as { question?: unknown; items?: Array<{ question?: unknown }> };
   if (isQuestionLike(payload.question)) return payload.question;
   const item = payload.items?.find((entry) => isQuestionLike(entry.question));
   return isQuestionLike(item?.question) ? item.question : null;
@@ -92,18 +96,35 @@ function extractDueReviewQuestion(value: unknown): Question | null {
 
 export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePracticeSessionReturn {
   const question = ref<Question | null>(null);
-  const selectedAnswer = ref<string>("");
+  const selectedAnswer = ref("");
   const selectedAnswers = ref<string[]>([]);
-  const textAnswer = ref<string>("");
+  const textAnswer = ref("");
   const result = ref<SubmitResponse | null>(null);
-  const loading = ref<boolean>(false);
-  const submitting = ref<boolean>(false);
-  const errorMessage = ref<string>("");
-  const validationMessage = ref<string>("");
-  const sessionComplete = ref<boolean>(false);
+  const loading = ref(false);
+  const submitting = ref(false);
+  const errorMessage = ref("");
+  const validationMessage = ref("");
+  const sessionComplete = ref(false);
   const sessionStats = ref<SessionStats>(createSessionStats());
+  const phase = ref<PracticeSessionPhase>("idle");
   const answeredQuestionIds = new Set<number>();
+  const actor = createActor(practiceSessionMachine);
+  const subscription = actor.subscribe((snapshot) => {
+    phase.value = snapshot.value as PracticeSessionPhase;
+  });
   let correctAutoNextTimer: ReturnType<typeof setTimeout> | null = null;
+  let requestVersion = 0;
+
+  actor.start();
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      clearCorrectAutoNextTimer();
+      requestVersion += 1;
+      subscription.unsubscribe();
+      actor.stop();
+    });
+  }
 
   function clearCorrectAutoNextTimer(): void {
     if (correctAutoNextTimer) {
@@ -112,55 +133,47 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     }
   }
 
+  /** Stop a pending correct-answer advance before a summary or route exit. */
+  function cancelPendingAdvance(): void {
+    clearCorrectAutoNextTimer();
+    requestVersion += 1;
+  }
+
   const accuracy = computed<number | null>(() => {
     const answered = sessionStats.value.answeredCount;
-    if (answered === 0) return null;
-    return Math.round((sessionStats.value.correctCount / answered) * 100);
+    return answered ? Math.round((sessionStats.value.correctCount / answered) * 100) : null;
   });
 
-  const streakText = computed<string>(() => {
+  const streakText = computed(() => {
     const streak = sessionStats.value.streak;
-    if (streak === 0) return "0";
+    if (!streak) return "0";
     if (streak >= 5) return `🔥 ${streak}`;
     if (streak >= 3) return `⭐ ${streak}`;
     return `✓ ${streak}`;
   });
 
-  const isTextQuestion = computed<boolean>(() => isTextQuestionType(question.value?.type ?? ""));
-
-  const currentAnswer = computed<string>(() => {
+  const isTextQuestion = computed(() => isTextQuestionType(question.value?.type ?? ""));
+  const currentAnswer = computed(() => {
     if (!question.value) return "";
-    if (question.value.type === "multiple_choice") {
-      return [...selectedAnswers.value].sort().join(",");
-    }
+    if (question.value.type === "multiple_choice") return [...selectedAnswers.value].sort().join(",");
     if (isTextQuestion.value) return textAnswer.value.trim();
     return selectedAnswer.value;
   });
-
   const answerOptions = computed<OptionItem[]>(() => {
     if (!question.value) return [];
     if (question.value.type === "true_false") return TRUE_FALSE_OPTIONS;
-
     const options = formatOptions(question.value.options);
-    return options.length > 0
-      ? options
-      : ["A", "B", "C", "D"].map((key) => ({ key, value: key }));
+    return options.length ? options : ["A", "B", "C", "D"].map((key) => ({ key, value: key }));
   });
-
-  const hasAnswerSelected = computed<boolean>(() => {
+  const hasAnswerSelected = computed(() => {
     if (!question.value) return false;
-    if (question.value.type === "multiple_choice") {
-      return selectedAnswers.value.length > 0;
-    }
+    if (question.value.type === "multiple_choice") return selectedAnswers.value.length > 0;
     if (isTextQuestion.value) return textAnswer.value.trim().length > 0;
     return selectedAnswer.value.length > 0;
   });
-
-  const canSubmit = computed<boolean>(() => hasAnswerSelected.value && !submitting.value);
-
-  const answerHint = computed<string>(() => getQuestionAnswerHint(question.value?.type ?? ""));
-
-  const correctAnswerDisplay = computed<string>(() =>
+  const canSubmit = computed(() => hasAnswerSelected.value && phase.value === "answering" && !submitting.value);
+  const answerHint = computed(() => getQuestionAnswerHint(question.value?.type ?? ""));
+  const correctAnswerDisplay = computed(() =>
     getResultCorrectAnswer(question.value?.type ?? "", result.value?.correct_answer ?? ""),
   );
 
@@ -172,9 +185,40 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     validationMessage.value = "";
   }
 
-  async function fetchRandomQuestion(): Promise<void> {
-    if (loading.value) return;
+  function enterLoading(allowSessionRestart = false): boolean {
+    if (phase.value === "idle") {
+      actor.send({ type: "START" });
+      return true;
+    }
+    if (phase.value === "completed") {
+      if (!allowSessionRestart) return false;
+      actor.send({ type: "START" });
+      return true;
+    }
+    if (phase.value === "correct" || phase.value === "wrong") {
+      actor.send({ type: "NEXT" });
+      return true;
+    }
+    if (phase.value === "error") {
+      actor.send({ type: "RETRY" });
+      return true;
+    }
+    return false;
+  }
+
+  function completeSession(): void {
     clearCorrectAutoNextTimer();
+    question.value = null;
+    resetAnswerState();
+    sessionComplete.value = true;
+    if (phase.value !== "completed") actor.send({ type: "NO_MORE_QUESTIONS" });
+  }
+
+  async function fetchRandomQuestion(allowSessionRestart = false): Promise<void> {
+    if (loading.value || !enterLoading(allowSessionRestart)) return;
+
+    clearCorrectAutoNextTimer();
+    const currentRequest = ++requestVersion;
     loading.value = true;
     errorMessage.value = "";
     validationMessage.value = "";
@@ -183,10 +227,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     try {
       const params: Record<string, string | number> = {};
       if (props.courseId) params.course_id = props.courseId;
-      if (answeredQuestionIds.size > 0) {
-        params.exclude_ids = Array.from(answeredQuestionIds).join(",");
-      }
-
+      if (answeredQuestionIds.size) params.exclude_ids = Array.from(answeredQuestionIds).join(",");
       if (props.mode === "type_practice" && props.modeParam) params.type = props.modeParam;
       if (props.mode === "chapter_practice" && props.modeParam) params.chapter = props.modeParam;
 
@@ -200,96 +241,93 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
           data = await getRandomPracticeQuestion(params);
         }
 
-        if (data && !answeredQuestionIds.has(data.id)) break;
+        if (!data) break;
+        if (!answeredQuestionIds.has(data.id)) break;
         data = null;
       }
 
+      if (currentRequest !== requestVersion) return;
       if (!data) {
-        sessionComplete.value = true;
-        question.value = null;
+        completeSession();
         return;
       }
 
       question.value = data;
       sessionComplete.value = false;
+      actor.send({ type: "QUESTION_READY" });
     } catch (error: unknown) {
+      if (currentRequest !== requestVersion) return;
       question.value = null;
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status === 404) {
-        sessionComplete.value = true;
-        errorMessage.value = "";
+        completeSession();
       } else {
         errorMessage.value = getErrorMessage(error, "获取题目失败");
+        actor.send({ type: "LOAD_FAILED" });
       }
     } finally {
-      loading.value = false;
+      if (currentRequest === requestVersion) loading.value = false;
     }
   }
 
   function setSingleAnswer(value: string): void {
-    if (result.value || submitting.value) return;
+    if (phase.value !== "answering" || result.value || submitting.value) return;
     selectedAnswer.value = value;
     validationMessage.value = "";
-    // 选择题点击即提交：选定单选/判断答案后立即判定
     void submitAnswer();
   }
 
   function toggleMultipleAnswer(key: string): void {
-    if (result.value || submitting.value) return;
-    if (selectedAnswers.value.includes(key)) {
-      selectedAnswers.value = selectedAnswers.value.filter((item) => item !== key);
-    } else {
-      selectedAnswers.value = [...selectedAnswers.value, key];
-    }
+    if (phase.value !== "answering" || result.value || submitting.value) return;
+    selectedAnswers.value = selectedAnswers.value.includes(key)
+      ? selectedAnswers.value.filter((item) => item !== key)
+      : [...selectedAnswers.value, key];
     validationMessage.value = "";
-    // 多选题保留显式提交，避免用户尚未选完就被提前判定。
   }
 
   function updateTextAnswer(value: string): void {
+    if (phase.value !== "answering") return;
     textAnswer.value = value;
     validationMessage.value = "";
   }
 
   async function submitAnswer(): Promise<void> {
-    if (!question.value || submitting.value || result.value) return;
-
-    if (question.value.type === "multiple_choice" && selectedAnswers.value.length === 0) {
-      validationMessage.value = "请选择一个选项";
-      return;
-    }
-
+    if (!question.value || phase.value !== "answering" || result.value) return;
     if (!currentAnswer.value) {
-      validationMessage.value = isTextQuestion.value
-        ? "请先填写你的答案。"
-        : "请选择一个选项";
+      validationMessage.value = isTextQuestion.value ? "请先填写你的答案。" : "请选择一个选项";
       return;
     }
 
+    const questionId = question.value.id;
+    actor.send({ type: "SUBMIT" });
     submitting.value = true;
     errorMessage.value = "";
     validationMessage.value = "";
 
     try {
-      const data = await submitPracticeAnswer({
-        question_id: question.value.id,
-        user_answer: currentAnswer.value,
-      });
+      const data = await submitPracticeAnswer({ question_id: questionId, user_answer: currentAnswer.value });
+      if (question.value?.id !== questionId) return;
 
       result.value = data;
       sessionStats.value.answeredCount += 1;
-      answeredQuestionIds.add(question.value.id);
+      answeredQuestionIds.add(questionId);
+
       if (data.is_correct) {
         sessionStats.value.correctCount += 1;
         sessionStats.value.streak += 1;
+        actor.send({ type: "ANSWER_CORRECT" });
         correctAutoNextTimer = setTimeout(() => {
-          fetchRandomQuestion();
+          correctAutoNextTimer = null;
+          void fetchRandomQuestion();
         }, CORRECT_AUTO_NEXT_DELAY_MS);
       } else {
         sessionStats.value.wrongCount += 1;
         sessionStats.value.streak = 0;
+        actor.send({ type: "ANSWER_WRONG" });
       }
     } catch (error: unknown) {
       errorMessage.value = getErrorMessage(error, "提交答案失败");
+      actor.send({ type: "SUBMIT_FAILED" });
     } finally {
       submitting.value = false;
     }
@@ -298,21 +336,20 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   function handleTextKeydown(event: KeyboardEvent): void {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!result.value && !submitting.value) {
-        submitAnswer();
-      }
+      void submitAnswer();
     }
   }
 
   function startSession(): void {
-    clearCorrectAutoNextTimer();
+    cancelPendingAdvance();
     answeredQuestionIds.clear();
     sessionComplete.value = false;
-    sessionStats.value = {
-      ...createSessionStats(),
-      startedAt: new Date(),
-    };
-    fetchRandomQuestion();
+    sessionStats.value = { ...createSessionStats(), startedAt: new Date() };
+    resetAnswerState();
+    if (phase.value !== "idle" && phase.value !== "completed") {
+      question.value = null;
+    }
+    void fetchRandomQuestion(true);
   }
 
   return {
@@ -320,6 +357,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     answerOptions,
     accuracy,
     canSubmit,
+    cancelPendingAdvance,
     correctAnswerDisplay,
     currentAnswer,
     errorMessage,
@@ -328,6 +366,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     hasAnswerSelected,
     isTextQuestion,
     loading,
+    phase,
     question,
     result,
     selectedAnswer,

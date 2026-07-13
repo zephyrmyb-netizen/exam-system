@@ -68,7 +68,7 @@ defineEmits(["back", "end"]);
   border-radius: 6px;
   background: var(--surface);
   color: var(--text-muted);
-  transition: all var(--ease-out);
+  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out), box-shadow var(--ease-out);
   flex-shrink: 0;
 }
 

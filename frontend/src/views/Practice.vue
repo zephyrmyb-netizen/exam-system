@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowRight, AlertTriangle, CheckCircle, Library, RefreshCw, Sparkles } from "@lucide/vue";
 import PracticeActionBar from "../components/practice/PracticeActionBar.vue";
@@ -24,12 +24,14 @@ const props = defineProps({
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
 const showSummary = ref(false);
+const practiceSurface = ref<HTMLElement | null>(null);
 
 const {
   answerHint,
   answerOptions,
   accuracy,
   canSubmit,
+  cancelPendingAdvance,
   correctAnswerDisplay,
   currentAnswer,
   errorMessage,
@@ -38,6 +40,7 @@ const {
   hasAnswerSelected,
   isTextQuestion,
   loading,
+  phase,
   question,
   result,
   selectedAnswer,
@@ -58,7 +61,12 @@ const {
 // 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
 // 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
 // fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
-const canSwipeNext = computed(() => !!result.value && !loading.value && !submitting.value);
+const canSwipeNext = computed(() =>
+  !!result.value
+  && !loading.value
+  && !submitting.value
+  && (phase.value === "correct" || phase.value === "wrong"),
+);
 const requiresManualSubmit = computed(() =>
   isTextQuestion.value || question.value?.type === "multiple_choice",
 );
@@ -69,6 +77,7 @@ useSwipeNext({
     }
   },
   enabled: canSwipeNext,
+  target: practiceSurface,
 });
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
@@ -107,6 +116,7 @@ const isCourseEmpty = computed(() =>
 );
 
 function goBack() {
+  cancelPendingAdvance?.();
   if (props.courseId) {
     router.replace(`/courses/${props.courseId}`);
   } else if (props.mode === "wrong_review" || props.mode === "due_review") {
@@ -117,10 +127,12 @@ function goBack() {
 }
 
 function endPractice() {
+  cancelPendingAdvance?.();
   showSummary.value = true;
 }
 
 function handleEndPractice() {
+  cancelPendingAdvance?.();
   showSummary.value = false;
   if (props.courseId) {
     emit("end-practice");
@@ -138,6 +150,8 @@ onMounted(() => {
     startSession();
   }
 });
+
+onBeforeUnmount(() => cancelPendingAdvance?.());
 
 watch(sessionComplete, (complete) => {
   if (complete) {
@@ -226,8 +240,8 @@ watch(sessionComplete, (complete) => {
       </div>
     </div>
 
-    <div v-else-if="question" class="practice-content">
-      <Transition name="question-fade" mode="out-in">
+    <div v-else-if="question" ref="practiceSurface" class="practice-content">
+      <Transition name="question-fade">
         <div
           :key="question.id"
           class="practice-card-shell"
@@ -314,6 +328,7 @@ watch(sessionComplete, (complete) => {
 }
 
 .practice-content {
+  position: relative;
   display: grid;
   gap: 8px;
   width: 100%;
@@ -333,29 +348,33 @@ watch(sessionComplete, (complete) => {
   border: 1px solid var(--line-soft);
 }
 
-/* ── 题目切换过渡：稳定题面，只做短暂的淡入轻移 ── */
+/* 高频答题只保留一次轻量交接，不再使用 out-in 留出空白帧。 */
 .question-fade-enter-active {
-  transition: opacity var(--ease-smooth), transform var(--ease-smooth);
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .question-fade-leave-active {
-  transition: opacity 0.16s cubic-bezier(0.22, 1, 0.36, 1), transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
 }
 
 .question-fade-enter-from {
   opacity: 0;
-  transform: translateX(16px);
+  transform: translateX(8px);
 }
 
 .question-fade-leave-to {
   opacity: 0;
-  transform: translateX(-16px);
+  transform: translateX(-8px);
 }
 
 /* ── 结果面板出现：短暂淡入轻移 ── */
 .result-fade-enter-active,
 .result-fade-leave-active {
-  transition: opacity 0.17s ease-out, transform 0.17s ease-out;
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
 }
 
 .result-fade-enter-from,
