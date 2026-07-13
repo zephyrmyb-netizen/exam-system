@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.2-import-recovery-and-tooling-security",
+    version: "v2.7.2",
+    date: "2026-07-13",
+    type: "修复",
+    title: "导入恢复与开发工具安全修复",
+    items: [
+      "服务重启后会恢复未完成的 AI 解析任务，文件丢失时会明确提示重新上传。",
+      "确认导入改为原子写入，避免异常中断后重复导入题目。",
+      "升级前端测试运行环境，依赖安全检查不再报告已知漏洞。",
+    ],
+  },
+  {
     id: "v2.7.1-learning-core-modularization",
     version: "v2.7.1",
     date: "2026-07-13",

@@ -12,6 +12,7 @@
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
+| 2026-07-13 | AI 导入重启恢复、原子写入与前端测试工具链安全修复 | [2026-07-13-import-recovery-and-tooling-security.md](./archive/2026-07-13-import-recovery-and-tooling-security.md) |
 | 2026-07-13 | v2.6.1 练习流程与动效收口 | [2026-07-13-practice-flow-motion-polish.md](./archive/2026-07-13-practice-flow-motion-polish.md) |
 | 2026-07-13 | v2.7.1 学习核心模块化升级 | [2026-07-13-modular-learning-core-upgrade.md](./archive/2026-07-13-modular-learning-core-upgrade.md) |
 | 2026-07-13 | v2.6.0 界面体验升级合入与验收 | [2026-07-13-calm-learning-visual-refresh.md](./archive/2026-07-13-calm-learning-visual-refresh.md) |
