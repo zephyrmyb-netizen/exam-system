@@ -104,9 +104,8 @@ function pickOption(key) {
   background: var(--surface);
   text-align: left;
   color: var(--text-main);
-  /* 用 ease-spring 让点击回弹更柔和有弹性 */
   transition: border-color var(--ease-out), background var(--ease-out),
-              box-shadow var(--ease-out), transform var(--ease-spring);
+              box-shadow var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -118,14 +117,13 @@ function pickOption(key) {
 
 /* 点击反馈：从 0.99 加强到 0.97，加弹性曲线让按压更真实 */
 .practice-option-card:active:not(:disabled) {
-  transform: scale(0.97);
-  transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--primary-soft);
 }
 
 .practice-option-card.is-selected {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .practice-option-card__check,
@@ -154,7 +152,7 @@ function pickOption(key) {
 .practice-option-card__key {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: 4px;
   background: #f1f5f9;
   color: var(--primary-strong);
   font-size: 12px;
@@ -214,19 +212,18 @@ function pickOption(key) {
   min-width: 0;
   padding: 10px 10px;
   border: 2px solid var(--line-strong);
-  border-radius: var(--radius-lg);
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
   transition: border-color var(--ease-out), background var(--ease-out),
-              color var(--ease-out), box-shadow var(--ease-out),
-              transform var(--ease-spring);
+              color var(--ease-out), box-shadow var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 
 .practice-boolean-button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  border-color: var(--line-accent);
 }
 
 .practice-boolean-button--true:hover:not(:disabled) {
@@ -244,7 +241,7 @@ function pickOption(key) {
 .practice-boolean-button.is-selected {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: inset 3px 0 0 var(--primary);
   color: var(--primary-strong);
 }
 
@@ -276,7 +273,7 @@ function pickOption(key) {
     grid-template-columns: auto minmax(0, 1fr);
     padding: 8px 9px;
     gap: 7px;
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .practice-option-card__check {

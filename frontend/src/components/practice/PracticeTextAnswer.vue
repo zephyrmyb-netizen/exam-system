@@ -30,10 +30,10 @@ defineEmits(["update:modelValue", "keydown"]);
 .practice-text-answer__input {
   width: 100%;
   min-height: 144px;
-  padding: 16px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface-soft);
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--text-main);
   font-size: 15px;
   line-height: 1.75;
@@ -44,7 +44,7 @@ defineEmits(["update:modelValue", "keydown"]);
 .practice-text-answer__input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: 0 0 0 2px var(--primary-soft);
   background: var(--surface);
 }
 
@@ -62,7 +62,7 @@ defineEmits(["update:modelValue", "keydown"]);
 @media (max-width: 420px) {
   .practice-text-answer__input {
     min-height: 128px;
-    padding: 14px;
+    padding: 12px;
   }
 }
 </style>

@@ -65,31 +65,18 @@ const swipeHint = computed(() =>
   display: grid;
   gap: 8px;
   padding: 10px;
-  border-radius: var(--radius-lg);
-  border: 1px solid transparent;
-  /* 内部子项错开入场，营造流畅的层次感 */
-  animation: result-item-stagger 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes result-item-stagger {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  border-radius: 8px;
+  border: 1px solid var(--line-soft);
 }
 
 .practice-result--correct {
-  background: var(--emerald-soft);
-  border-color: var(--emerald-border);
+  background: var(--surface);
+  border-left: 3px solid var(--emerald);
 }
 
 .practice-result--wrong {
-  background: var(--rose-soft);
-  border-color: var(--rose-border);
+  background: var(--surface);
+  border-left: 3px solid var(--rose);
 }
 
 .practice-result__head {
@@ -129,16 +116,14 @@ const swipeHint = computed(() =>
   display: grid;
   gap: 4px;
   padding: 7px 9px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.65);
+  border-radius: 6px;
+  background: var(--surface-soft);
 }
 
 .practice-result__label {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.3;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -163,7 +148,7 @@ const swipeHint = computed(() =>
   justify-self: start;
   padding: 6px 10px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--surface-soft);
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
@@ -171,7 +156,7 @@ const swipeHint = computed(() =>
 
 .practice-result__wrongbook--recorded {
   color: var(--emerald);
-  background: rgba(236, 253, 245, 0.9);
+  background: var(--emerald-soft);
 }
 
 .practice-swipe-hint {
@@ -180,8 +165,8 @@ const swipeHint = computed(() =>
   gap: 6px;
   justify-self: start;
   padding: 4px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  background: var(--surface-soft);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 650;
@@ -189,18 +174,6 @@ const swipeHint = computed(() =>
 }
 
 .practice-swipe-hint__icon {
-  animation: swipe-hint-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes swipe-hint-pulse {
-  0%, 100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(-4px);
-    opacity: 0.6;
-  }
 }
 
 @media (max-width: 420px) {
