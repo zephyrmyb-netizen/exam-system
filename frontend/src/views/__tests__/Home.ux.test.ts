@@ -7,17 +7,12 @@ import type { Course } from "../../types";
 
 const replace = vi.fn();
 const courses = ref<Course[]>([]);
-const authUser = ref({ username: "student" });
 const loading = ref(false);
 const errorMessage = ref("");
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({ replace }),
   useRoute: () => ({ query: {} }),
-}));
-
-vi.mock("../../stores/auth", () => ({
-  useAuth: () => ({ user: authUser }),
 }));
 
 vi.mock("../../composables/useStudyOverview", () => ({
@@ -59,20 +54,18 @@ describe("Home UX polish", () => {
   beforeEach(() => {
     replace.mockClear();
     courses.value = [];
-    authUser.value = { username: "student" };
     loading.value = false;
     errorMessage.value = "";
   });
 
-  it("keeps long greetings contained and the search entry visibly styled", () => {
-    authUser.value = { username: "accept_v235_mobile_u3_178361" };
-
+  it("starts with the search entry and removes the old greeting and date copy", () => {
     const wrapper = mount(Home);
-    const greeting = wrapper.get("[data-home-greeting]");
     const searchEntry = wrapper.get("[data-home-search]");
 
-    expect(greeting.classes()).toContain("truncate");
-    expect(greeting.attributes("title")).toContain("accept_v235_mobile_u3_178361");
+    expect(wrapper.find(".page-head").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("今天学什么");
+    expect(wrapper.text()).not.toContain("开始学习吧");
+    expect(wrapper.text()).not.toMatch(/202\d年|星期[一二三四五六日天]/);
     expect(searchEntry.classes()).toContain("home-search-entry");
   });
 

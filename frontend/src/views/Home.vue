@@ -14,27 +14,15 @@ import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
-import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 
 const { replaceTo } = useAppNavigation();
-const { user } = useAuth();
 const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
-
-const usernameText = computed(() => user.value?.username || "同学");
-
-const dateText = computed(() =>
-  new Intl.DateTimeFormat("zh-CN", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date()),
-);
 
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
@@ -125,14 +113,6 @@ onMounted(() => {
 
 <template>
   <section class="home-page">
-    <header class="page-head fade-up">
-      <h2 class="ph-title">今天学什么</h2>
-      <p class="home-welcome truncate" data-home-greeting :title="`${usernameText}，开始学习吧`">
-        {{ usernameText }}，开始学习吧
-      </p>
-      <span class="ph-date">{{ dateText }}</span>
-    </header>
-
     <button
       class="home-search-entry fade-up"
       data-home-search
@@ -174,8 +154,8 @@ onMounted(() => {
       <p v-else-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
       <div v-else class="overview-grid">
         <div v-for="card in statCards" :key="card.label" class="overview-stat">
-          <strong>{{ card.value ?? "--" }}{{ card.suffix }}</strong>
-          <span>{{ card.label }}</span>
+          <strong>{{ card.value ?? "--" }}</strong>
+          <span>{{ card.label }}{{ card.suffix }}</span>
         </div>
       </div>
     </div>
@@ -254,13 +234,6 @@ onMounted(() => {
   min-width: 0;
 }
 
-.home-welcome {
-  margin: 4px 0 0;
-  max-width: 100%;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
 .home-search-entry {
   display: flex;
   align-items: center;
@@ -310,10 +283,14 @@ onMounted(() => {
 }
 
 .quick-desc {
+  max-width: 100%;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: 1.4;
+  text-overflow: ellipsis;
   text-align: center;
+  white-space: nowrap;
 }
 
 .overview-surface {
