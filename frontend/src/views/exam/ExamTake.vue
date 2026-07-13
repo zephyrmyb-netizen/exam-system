@@ -17,7 +17,7 @@ const store = useExamStore();
 const confirmDialog = useConfirmDialog();
 const pageRef = ref<HTMLElement | null>(null);
 const showAnswerSheet = ref(false);
-const timerExpiredSubmitting = ref(false);
+const timerExpiredAutoAttempted = ref(false);
 const examId = computed(() => Number(route.params.examId));
 const currentAnswer = computed(() => {
   const question = store.currentQuestion;
@@ -62,19 +62,21 @@ async function submit(): Promise<boolean> {
 }
 
 async function exitExam() {
+  if (store.submitting) return;
   const confirmed = await confirmDialog.confirm({
     title: "退出考试",
     message: "退出后本次未交卷的答案不会保存。",
     confirmText: "退出",
     tone: "warning",
   });
-  if (!confirmed) return;
+  if (!confirmed || store.submitting) return;
 
   store.reset();
   router.replace({ name: "exam-detail", params: { examId: examId.value } });
 }
 
 function selectOption(index: number) {
+  if (showAnswerSheet.value) return;
   const question = store.currentQuestion;
   if (!question?.options) return;
   const key = Object.keys(question.options)[index];
@@ -91,22 +93,29 @@ function jumpFromAnswerSheet(index: number) {
 
 async function syncTimer() {
   store.syncRemainingSeconds();
-  if (store.remainingSeconds === 0 && !timerExpiredSubmitting.value) {
-    timerExpiredSubmitting.value = true;
-    const submitted = await submit();
-    if (!submitted && !store.result) timerExpiredSubmitting.value = false;
+  if (store.remainingSeconds === 0 && !timerExpiredAutoAttempted.value) {
+    timerExpiredAutoAttempted.value = true;
+    await submit();
   }
 }
 
 const shortcuts = useKeyboardShortcuts({
-  next: () => store.next(),
-  prev: () => store.prev(),
+  next: () => {
+    if (!showAnswerSheet.value) store.next();
+  },
+  prev: () => {
+    if (!showAnswerSheet.value) store.prev();
+  },
   selectOption,
 });
 
 useSwipe(pageRef, {
-  onSwipeLeft: () => store.next(),
-  onSwipeRight: () => store.prev(),
+  onSwipeLeft: () => {
+    if (!showAnswerSheet.value) store.next();
+  },
+  onSwipeRight: () => {
+    if (!showAnswerSheet.value) store.prev();
+  },
 });
 
 let timerHandle: number | undefined;
@@ -146,7 +155,14 @@ onUnmounted(() => {
 
     <template v-else-if="store.currentExam && store.currentQuestion">
       <header class="exam-topbar">
-        <button class="exam-exit" type="button" aria-label="退出考试" @click="exitExam">
+        <button
+          class="exam-exit"
+          type="button"
+          aria-label="退出考试"
+          :disabled="store.submitting"
+          :aria-disabled="store.submitting"
+          @click="exitExam"
+        >
           <ArrowLeft :size="20" :stroke-width="2.25" />
         </button>
         <div class="exam-heading">
@@ -417,6 +433,11 @@ onUnmounted(() => {
 .submit-button:active,
 .answer-map button:active {
   transform: scale(.94);
+}
+
+.exam-exit:disabled {
+  cursor: not-allowed;
+  opacity: .48;
 }
 
 .exam-timer-ring {

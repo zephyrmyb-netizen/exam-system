@@ -9,6 +9,7 @@ import {
 } from "@/api/exams";
 import { getErrorMessage } from "@/api/request";
 import type { Exam, ExamAttempt, ExamDetail, ExamLeaderboard, ExamQuestion, ExamResult } from "@/types";
+import { parseApiTimestamp } from "@/utils/date";
 
 const pendingSubmissions = new WeakMap<object, Promise<ExamResult>>();
 const examSessionGenerations = new WeakMap<object, number>();
@@ -145,8 +146,8 @@ export const useExamStore = defineStore("exam", {
         return;
       }
 
-      const startedAtMs = Date.parse(startedAt);
-      if (!Number.isFinite(startedAtMs)) {
+      const startedAtMs = parseApiTimestamp(startedAt);
+      if (startedAtMs === null) {
         this.remainingSeconds = null;
         return;
       }
