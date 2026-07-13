@@ -23,14 +23,29 @@ describe("practice interaction surfaces", () => {
     expect(wrapper.find(".practice-action-bar").exists()).toBe(false);
   });
 
-  it("shows the swipe hint only after a result is available", () => {
+  it("shows the swipe hint after a wrong answer needs manual continuation", () => {
     const wrapper = mount(PracticeResultPanel, {
       props: {
-        result: { is_correct: true, analysis: "", wrongbook_recorded: false },
-        currentAnswer: "A",
+        result: { is_correct: false, analysis: "答案解析", wrongbook_recorded: true },
+        currentAnswer: "B",
+        correctAnswerDisplay: "A",
       },
     });
 
     expect(wrapper.find(".practice-swipe-hint").exists()).toBe(true);
+  });
+
+  it("announces an answer result without relying on color alone", () => {
+    const wrapper = mount(PracticeResultPanel, {
+      props: {
+        result: { is_correct: false, analysis: "答案解析", wrongbook_recorded: true },
+        currentAnswer: "B",
+        correctAnswerDisplay: "A",
+      },
+    });
+
+    const announcement = wrapper.get("[role='status']");
+    expect(announcement.attributes("aria-live")).toBe("polite");
+    expect(announcement.text()).toContain("答错了");
   });
 });

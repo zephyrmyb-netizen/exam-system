@@ -10,7 +10,7 @@ defineEmits(["back", "end"]);
 </script>
 
 <template>
-  <div class="practice-topbar">
+  <nav class="practice-topbar" aria-label="答题导航">
     <button class="practice-icon-button" type="button" aria-label="返回" @click="$emit('back')">
       <ChevronLeft :size="18" :stroke-width="2.5" />
     </button>
@@ -23,7 +23,7 @@ defineEmits(["back", "end"]);
       <LogOut :size="16" :stroke-width="2.5" />
       <span class="practice-end-button__label">结束练习</span>
     </button>
-  </div>
+  </nav>
 </template>
 
 <style scoped>
@@ -62,11 +62,11 @@ defineEmits(["back", "end"]);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  width: 40px;
+  min-height: 36px;
+  width: 36px;
   border: 1px solid var(--line-soft);
-  border-radius: 6px;
-  background: var(--surface);
+  border-radius: 50%;
+  background: transparent;
   color: var(--text-muted);
   transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out), box-shadow var(--ease-out);
   flex-shrink: 0;
@@ -91,8 +91,8 @@ defineEmits(["back", "end"]);
 @media (min-width: 420px) {
   .practice-end-button {
     width: auto;
-    padding: 0 12px;
-    border-radius: 6px;
+    padding: 0 10px;
+    border-radius: 18px;
     gap: 4px;
   }
 

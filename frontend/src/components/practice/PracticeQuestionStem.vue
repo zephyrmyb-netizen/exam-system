@@ -10,8 +10,9 @@ defineProps({
   <header class="practice-stem">
     <div class="practice-stem__meta">
       <span class="practice-stem__tag">{{ typeLabel(question.type) }}</span>
-      <span v-if="question.subject" class="practice-stem__tag">{{ question.subject }}</span>
-      <span v-if="question.chapter" class="practice-stem__tag">{{ question.chapter }}</span>
+      <span v-if="question.subject || question.chapter" class="practice-stem__context">
+        {{ [question.subject, question.chapter].filter(Boolean).join(" · ") }}
+      </span>
       <span v-if="question.type === 'multiple_choice'" class="practice-stem__hint">
         多选题，请选择所有正确选项
       </span>
@@ -23,11 +24,11 @@ defineProps({
 <style scoped>
 .practice-stem {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 4px 2px 2px;
+  padding: 6px 2px 4px;
 }
 
 .practice-stem__meta {
@@ -47,6 +48,16 @@ defineProps({
   line-height: 1.3;
 }
 
+.practice-stem__context {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .practice-stem__tag {
   background: rgba(255, 255, 255, 0.9);
   color: var(--text-secondary);
@@ -61,8 +72,8 @@ defineProps({
 .practice-stem__title {
   margin: 0;
   min-width: 0;
-  font-size: 1rem;
-  line-height: 1.42;
+  font-size: 1.06rem;
+  line-height: 1.48;
   font-weight: 800;
   color: var(--text-main);
   word-break: break-word;
@@ -70,7 +81,7 @@ defineProps({
 
 @media (max-width: 420px) {
   .practice-stem {
-    padding: 2px 1px;
+    padding: 4px 1px 3px;
   }
 
   .practice-stem__meta {
@@ -84,8 +95,8 @@ defineProps({
   }
 
   .practice-stem__title {
-    font-size: 0.96rem;
-    line-height: 1.38;
+    font-size: 1rem;
+    line-height: 1.44;
   }
 }
 </style>
