@@ -362,6 +362,36 @@ class ConfirmImportResponse(BaseModel):
     warnings: list[str] = []
 
 
+class ImportTaskOut(BaseModel):
+    id: str
+    status: str
+    source_filename: str
+    course_id: int | None = None
+    course_name: str = ""
+    progress_current: int = 0
+    progress_total: int = 0
+    questions: list[ImportedQuestion] = []
+    suggested_course_name: str = "未分类题库"
+    warnings: list[str] = []
+    total_valid: int = 0
+    total_invalid: int = 0
+    timing: ImportTiming | None = None
+    error_message: str = ""
+    created_at: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None
+
+
+class ConfirmImportTaskRequest(ConfirmImportRequest):
+    """Confirmation payload for a persisted import task.
+
+    ``questions`` may be an edited subset of the stored preview. An empty
+    list intentionally means use the stored preview as-is.
+    """
+
+    questions: list[ImportedQuestion] = []
+
+
 # -- Practice Stats & History -----------------------------------------------
 
 
