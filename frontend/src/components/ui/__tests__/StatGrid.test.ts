@@ -32,4 +32,20 @@ describe("StatGrid", () => {
 
     expect(wrapper.get(".stat-grid__value").text()).toBe("--");
   });
+
+  it("places data keys on the exact stat item instead of the whole grid", () => {
+    const wrapper = mount(StatGrid, {
+      props: {
+        items: [
+          { label: "连续学习", value: "5天", dataKey: "streak" },
+          { label: "徽章", value: null, dataKey: "badges" },
+        ],
+      },
+    });
+
+    expect(wrapper.get("[data-stat-streak]").text()).toContain("连续学习");
+    expect(wrapper.get("[data-stat-streak]").text()).not.toContain("徽章");
+    expect(wrapper.get("[data-stat-badges]").text()).toContain("徽章");
+    expect(wrapper.get("[data-stat-badges]").text()).not.toContain("连续学习");
+  });
 });

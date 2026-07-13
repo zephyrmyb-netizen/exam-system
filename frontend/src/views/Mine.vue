@@ -15,6 +15,7 @@ import {
   ShieldCheck,
 } from "@lucide/vue";
 
+import StatGrid from "../components/ui/StatGrid.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { releaseNotes } from "../data/releaseNotes";
@@ -24,11 +25,12 @@ import { useThemeStore } from "../stores/theme";
 const { replaceTo } = useAppNavigation();
 const { user, logout } = useAuth();
 const theme = useThemeStore();
-const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
+const { stats, streak, streakAvailable, loading, errorMessage, fetchAll } = useStudyOverview();
 
 const usernameText = computed(() => user.value?.username || "未登录");
 const avatarChar = computed(() => usernameText.value.slice(0, 1).toUpperCase());
 const roleText = computed(() => {
+  if (!user.value) return "未登录";
   const role = user.value?.role;
   if (role === "admin") return "管理员";
   if (role === "teacher") return "教师";
@@ -43,12 +45,16 @@ const accuracyDisplay = computed(() => {
 
 const appVersion = computed(() => releaseNotes[0]?.version || "v1.0.0");
 
-const overviewSummary = computed(() => ({
-  today: stats.value.todayCount,
-  total: stats.value.totalCount,
-  accuracy: accuracyDisplay.value,
-  recent: stats.value.recentCount7d,
-}));
+const mineStatItems = computed(() => [
+  { label: "累计题数", value: stats.value.totalCount, tone: "primary" as const },
+  { label: "正确率", value: accuracyDisplay.value },
+  {
+    label: "连续打卡",
+    value: streakAvailable.value === true ? `${streak.value.current_streak}天` : null,
+    dataKey: "streak",
+  },
+  { label: "徽章", value: null, dataKey: "badges" },
+]);
 
 const isDarkMode = computed(() => theme.mode === "dark");
 
@@ -105,26 +111,15 @@ onMounted(() => fetchAll());
     </div>
 
     <button
-      class="stat-grid-4 fade-up d2 stat-link"
+      class="fade-up d2 stat-link"
       type="button"
       @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
     >
-      <div class="stat-cell">
-        <strong>{{ overviewSummary.total ?? "--" }}</strong>
-        <span>累计题数</span>
-      </div>
-      <div class="stat-cell">
-        <strong>{{ overviewSummary.accuracy }}</strong>
-        <span>正确率</span>
-      </div>
-      <div class="stat-cell" data-stat-streak>
-        <strong>--</strong>
-        <span>连续打卡</span>
-      </div>
-      <div class="stat-cell" data-stat-badges>
-        <strong>--</strong>
-        <span>徽章</span>
-      </div>
+      <StatGrid
+        class="stat-grid-4"
+        label="我的学习统计"
+        :items="mineStatItems"
+      />
     </button>
 
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
@@ -255,12 +250,18 @@ button.stat-link {
 button.stat-link:active {
   transform: scale(0.985);
 }
-button.stat-link:active .stat-cell {
+button.stat-link:active :deep(.stat-grid__item) {
   border-color: var(--primary-border);
 }
 
-.stat-cell { border-radius: 8px; }
 .stat-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat-grid-4 :deep(.stat-grid__item) {
+  min-height: 72px;
+  padding: 14px 4px;
+  border-radius: var(--radius-md);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+}
 
 .mine-quick-grid {
   display: grid;
@@ -364,7 +365,7 @@ button.menu-item {
 }
 
 @media (max-width: 420px) {
-  .stat-cell strong { font-size: var(--text-lg); }
+  .stat-grid-4 :deep(.stat-grid__value) { font-size: var(--text-lg); }
   .menu-item { min-height: 52px; }
 }
 
@@ -373,7 +374,6 @@ button.menu-item {
 .profile-card--centered .avatar-wrap, .profile-card--centered .avatar { width: 64px; height: 64px; }
 .profile-card--centered .profile-name { font-size: 20px; }
 .stat-grid-4 { position: relative; z-index: 2; margin-top: -12px; }
-.stat-cell { min-height: 72px; padding: 14px 4px; }
 .mine-quick { min-height: 112px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
 .mine-quick__icon { grid-row: auto; width: 48px; height: 48px; border-radius: 50%; }
 .mine-quick strong, .mine-quick small { max-width: 100%; }
