@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ExamQuestion } from "@/types";
+import { normalizeMultipleChoiceKeys, toggleMultipleChoiceKey } from "@/utils/question";
 
 const props = defineProps<{
   question: ExamQuestion;
@@ -14,6 +15,9 @@ const emit = defineEmits<{
 }>();
 
 const optionEntries = computed(() => Object.entries(props.question.options || {}));
+const selectedOptionKeys = computed(() => props.question.question_type === "multiple_choice"
+  ? new Set(normalizeMultipleChoiceKeys(props.answer))
+  : new Set(props.answer ? [props.answer] : []));
 
 const questionTypeLabel = computed(() => {
   const labels: Record<string, string> = {
@@ -28,6 +32,12 @@ const questionTypeLabel = computed(() => {
 
 function onTextInput(event: Event) {
   emit("answer", (event.target as HTMLTextAreaElement).value);
+}
+
+function selectOption(key: string) {
+  emit("answer", props.question.question_type === "multiple_choice"
+    ? toggleMultipleChoiceKey(props.answer, key)
+    : key);
 }
 </script>
 
@@ -46,8 +56,9 @@ function onTextInput(event: Event) {
         :key="key"
         type="button"
         class="option-button"
-        :class="{ active: answer === key }"
-        @click="emit('answer', key)"
+        :class="{ active: selectedOptionKeys.has(key) }"
+        :aria-pressed="selectedOptionKeys.has(key)"
+        @click="selectOption(key)"
       >
         <strong>{{ key }}</strong>
         <span>{{ value }}</span>

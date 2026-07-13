@@ -33,6 +33,7 @@ export const useExamStore = defineStore("exam", {
     loading: false,
     submitting: false,
     error: "",
+    submissionError: "",
   }),
   getters: {
     currentQuestion: (state): ExamQuestion | null => state.currentExam?.questions[state.currentIndex] || null,
@@ -76,49 +77,59 @@ export const useExamStore = defineStore("exam", {
 
     async loadExam(id: number): Promise<ExamDetail> {
       const storeKey = this as object;
-      advanceExamSession(storeKey);
+      const sessionGeneration = advanceExamSession(storeKey);
       pendingSubmissions.delete(storeKey);
       this.submitting = false;
       this.loading = true;
       this.error = "";
+      this.submissionError = "";
       try {
         const detail = await getExamDetail(id);
-        this.currentExam = detail;
-        this.currentIndex = 0;
-        this.answers = {};
-        this.remainingSeconds = null;
-        this.result = null;
-        this.leaderboard = null;
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) {
+          this.currentExam = detail;
+          this.currentIndex = 0;
+          this.answers = {};
+          this.remainingSeconds = null;
+          this.result = null;
+          this.leaderboard = null;
+        }
         return detail;
       } catch (error) {
-        this.error = getErrorMessage(error, "考试详情加载失败");
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) {
+          this.error = getErrorMessage(error, "考试详情加载失败");
+        }
         throw error;
       } finally {
-        this.loading = false;
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) this.loading = false;
       }
     },
 
     async startAttempt(id: number): Promise<void> {
       const storeKey = this as object;
-      advanceExamSession(storeKey);
+      const sessionGeneration = advanceExamSession(storeKey);
       pendingSubmissions.delete(storeKey);
       this.submitting = false;
       this.loading = true;
       this.error = "";
+      this.submissionError = "";
       try {
         const [detail, attempt] = await Promise.all([getExamDetail(id), startExam(id)]);
-        this.currentExam = detail;
-        this.currentAttempt = attempt;
-        this.currentIndex = 0;
-        this.answers = {};
-        this.syncRemainingSeconds();
-        this.result = null;
-        this.leaderboard = null;
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) {
+          this.currentExam = detail;
+          this.currentAttempt = attempt;
+          this.currentIndex = 0;
+          this.answers = {};
+          this.syncRemainingSeconds();
+          this.result = null;
+          this.leaderboard = null;
+        }
       } catch (error) {
-        this.error = getErrorMessage(error, "考试开始失败");
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) {
+          this.error = getErrorMessage(error, "考试开始失败");
+        }
         throw error;
       } finally {
-        this.loading = false;
+        if (examSessionGenerations.get(storeKey) === sessionGeneration) this.loading = false;
       }
     },
 
@@ -169,6 +180,7 @@ export const useExamStore = defineStore("exam", {
       const answers = { ...this.answers };
       this.submitting = true;
       this.error = "";
+      this.submissionError = "";
       const submission = submitExam(examId, { answers })
         .then((result) => {
           if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration) this.result = result;
@@ -176,7 +188,7 @@ export const useExamStore = defineStore("exam", {
         })
         .catch((error: unknown) => {
           if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration) {
-            this.error = getErrorMessage(error, "交卷失败");
+            this.submissionError = getErrorMessage(error, "交卷失败");
           }
           throw error;
         })
@@ -218,6 +230,8 @@ export const useExamStore = defineStore("exam", {
       this.answers = {};
       this.remainingSeconds = null;
       this.error = "";
+      this.submissionError = "";
+      this.loading = false;
       this.submitting = false;
     },
   },

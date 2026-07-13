@@ -94,6 +94,15 @@ export function normalizeMultipleChoiceKeys(answer: unknown): string[] {
   return Array.from(new Set(compactKeys)).sort();
 }
 
+export function toggleMultipleChoiceKey(answer: unknown, key: string): string {
+  const normalizedKey = key.trim().toUpperCase();
+  const keys = new Set(normalizeMultipleChoiceKeys(answer));
+  if (!/^[A-Z]$/.test(normalizedKey)) return [...keys].sort().join(",");
+  if (keys.has(normalizedKey)) keys.delete(normalizedKey);
+  else keys.add(normalizedKey);
+  return [...keys].sort().join(",");
+}
+
 export function isTextQuestionType(type: string): boolean {
   return ["fill_blank", "short_answer"].includes(type);
 }

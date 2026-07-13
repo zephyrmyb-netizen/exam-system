@@ -1,4 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ExamTake from "../ExamTake.vue";
@@ -15,9 +16,10 @@ const firstQuestion = {
   order_index: 0,
   options: { A: "SYN=1, ACK=0", B: "SYN=1, ACK=1" },
 };
-const store = {
+const store = reactive({
   loading: false,
   error: "",
+  submissionError: "",
   currentExam: {
     id: 7,
     title: "期末考试",
@@ -30,7 +32,7 @@ const store = {
   answeredCount: 0,
   progress: 0,
   remainingSeconds: null as number | null,
-  answers: {},
+  answers: {} as Record<string, string>,
   result: null as { exam_id: number } | null,
   submitting: false,
   startAttempt: vi.fn(),
@@ -41,7 +43,11 @@ const store = {
   jumpTo: vi.fn(),
   syncRemainingSeconds: vi.fn(),
   reset: vi.fn(),
-};
+});
+
+let shortcutHandlers: { selectOption?: (index: number) => void } = {};
+const shortcutBind = vi.fn();
+const shortcutUnbind = vi.fn();
 
 let wrapper: VueWrapper | undefined;
 
@@ -63,7 +69,12 @@ vi.mock("vue-router", () => ({
 
 vi.mock("@/stores/exam", () => ({ useExamStore: () => store }));
 vi.mock("@/stores/confirmDialog", () => ({ useConfirmDialog: () => ({ confirm }) }));
-vi.mock("@/composables/useKeyboardShortcuts", () => ({ useKeyboardShortcuts: () => ({ bind: vi.fn(), unbind: vi.fn() }) }));
+vi.mock("@/composables/useKeyboardShortcuts", () => ({
+  useKeyboardShortcuts: (handlers: typeof shortcutHandlers) => {
+    shortcutHandlers = handlers;
+    return { bind: shortcutBind, unbind: shortcutUnbind };
+  },
+}));
 vi.mock("@/composables/useSwipe", () => ({ useSwipe: vi.fn() }));
 
 describe("ExamTake", () => {
@@ -72,6 +83,7 @@ describe("ExamTake", () => {
     confirm.mockResolvedValue(true);
     store.loading = false;
     store.error = "";
+    store.submissionError = "";
     store.currentExam = { id: 7, title: "期末考试", time_limit: 60, questions: [firstQuestion] };
     store.currentQuestion = firstQuestion;
     store.currentIndex = 0;
@@ -83,6 +95,9 @@ describe("ExamTake", () => {
     store.result = null;
     store.submitting = false;
     store.startAttempt.mockResolvedValue(undefined);
+    store.setAnswer.mockImplementation((questionId: number, value: string) => {
+      store.answers[String(questionId)] = value;
+    });
     store.submitCurrentExam.mockImplementation(async () => {
       const result = { exam_id: 7 };
       store.result = result;
@@ -121,6 +136,44 @@ describe("ExamTake", () => {
     expect(mounted.text()).toContain("考试开始失败");
     await mounted.get(".back-btn").trigger("click");
     expect(router.replace).toHaveBeenCalledWith({ name: "exams" });
+  });
+
+  it("does not sync or start a timer after a slow start resolves post-unmount", async () => {
+    vi.useFakeTimers();
+    let resolveStart!: () => void;
+    store.startAttempt.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveStart = resolve;
+    }));
+    const mounted = mountExam();
+
+    mounted.unmount();
+    resolveStart();
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(store.syncRemainingSeconds).not.toHaveBeenCalled();
+    expect(store.submitCurrentExam).not.toHaveBeenCalled();
+  });
+
+  it("toggles normalized multiple-choice answers from number shortcuts", () => {
+    const multipleQuestion = { ...firstQuestion, question_type: "multiple_choice" };
+    store.currentExam.questions = [multipleQuestion];
+    store.currentQuestion = multipleQuestion;
+    store.answers = { "9": "B" };
+    mountExam();
+
+    shortcutHandlers.selectOption?.(0);
+    expect(store.setAnswer).toHaveBeenLastCalledWith(9, "A,B");
+    shortcutHandlers.selectOption?.(1);
+    expect(store.setAnswer).toHaveBeenLastCalledWith(9, "A");
+  });
+
+  it("keeps single-choice number shortcuts replacing the answer", () => {
+    store.answers = { "9": "A" };
+    mountExam();
+
+    shortcutHandlers.selectOption?.(1);
+    expect(store.setAnswer).toHaveBeenLastCalledWith(9, "B");
   });
 
   it("confirms and leaves an in-progress exam without forcing submission", async () => {
@@ -205,6 +258,34 @@ describe("ExamTake", () => {
     expect(store.submitCurrentExam).toHaveBeenCalledOnce();
 
     await vi.advanceTimersByTimeAsync(1_000);
+    await flushPromises();
+    expect(store.submitCurrentExam).toHaveBeenCalledTimes(2);
+    expect(router.replace).toHaveBeenCalledWith({ name: "exam-result", params: { examId: 7 } });
+  });
+
+  it("keeps the paper and answers visible after manual submit failure and retries in place", async () => {
+    store.answers = { "9": "A" };
+    store.submitCurrentExam
+      .mockImplementationOnce(async () => {
+        store.submissionError = "网络异常，请重试交卷";
+        throw new Error("network down");
+      })
+      .mockImplementationOnce(async () => {
+        store.submissionError = "";
+        const result = { exam_id: 7 };
+        store.result = result;
+        return result;
+      });
+    const mounted = mountExam();
+
+    await mounted.get(".submit-button").trigger("click");
+    await flushPromises();
+    expect(mounted.find(".exam-topbar").exists()).toBe(true);
+    expect(store.currentExam?.id).toBe(7);
+    expect(store.answers).toEqual({ "9": "A" });
+    expect(mounted.get("[data-exam-submit-error]").text()).toContain("网络异常，请重试交卷");
+
+    await mounted.get("[data-exam-submit-retry]").trigger("click");
     await flushPromises();
     expect(store.submitCurrentExam).toHaveBeenCalledTimes(2);
     expect(router.replace).toHaveBeenCalledWith({ name: "exam-result", params: { examId: 7 } });
