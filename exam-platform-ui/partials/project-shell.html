@@ -1,0 +1,282 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     project-shell.html — 考试学习平台 · 移动端应用外壳片段
+     ─────────────────────────────────────────────────────────────────
+     品牌：清新活力 · iOS 26 Liquid Glass · Emerald #10B981
+     设备：移动端，420px 居中框架（桌面预览附带柔和投影）
+     ═══════════════════════════════════════════════════════════════ -->
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     PART 1 · Shell CSS · iOS 26 Liquid Glass Floating Capsule Nav
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── 1.1 基础重置 ── */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── 1.2 应用容器 ── */
+  .shell-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.10);
+    overflow: hidden;
+  }
+
+  /* ── 1.2b 装饰性背景光斑 · iOS 26 深度感 ──
+     两个模糊渐变光斑固定在容器顶部，透过玻璃卡片产生色彩折射。 */
+  .shell-container::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .shell-container::after {
+    content: '';
+    position: absolute;
+    top: 120px;
+    left: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 内容区在光斑之上 */
+  .shell-content { position: relative; z-index: 1; }
+  .bottom-nav { z-index: 50; }
+
+  /* ── 1.3 内容区 · 底部预留悬浮导航空间 ── */
+  .shell-content {
+    flex: 1;
+    padding-bottom: 96px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     1.4 底部悬浮胶囊导航 · iOS 26 Liquid Glass Floating Capsule
+     ─────────────────────────────────────────────────────────────────
+     核心特征：
+     · 悬浮于内容之上，不贴底边（bottom: 20px）
+     · 左右留边距（width: calc(100% - 32px)）
+     · 胶囊外形（border-radius: 9999px）
+     · 液态玻璃材质（半透明 + 模糊 + 饱和度增强 + 内高光）
+     · 选中项有玻璃透镜高亮（glass lens blob）
+     ═══════════════════════════════════════════════════════════════ */
+  .bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 388px;
+    height: 64px;
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 6px;
+    gap: 2px;
+    z-index: 50;
+    box-shadow:
+      0 8px 32px rgba(15, 23, 42, 0.12),
+      0 2px 8px rgba(15, 23, 42, 0.06),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.5 单个标签 ──
+     胶囊内等分；选中项有玻璃透镜背景。 */
+  .nav-item {
+    flex: 1;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color var(--ease-out), background var(--ease-spring), box-shadow var(--ease-spring);
+  }
+
+  .nav-item:active {
+    transform: scale(0.92);
+  }
+
+  .nav-item svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+    transition: transform var(--ease-spring);
+  }
+
+  /* ── 1.6 选中态 · Glass Lens 透镜高亮 ──
+     iOS 26 标志性效果：选中项背后出现玻璃透镜圆角矩形 */
+  .nav-item.active,
+  .nav-item[data-active="true"] {
+    color: var(--primary);
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item.active svg,
+  .nav-item[data-active="true"] svg {
+    transform: scale(1.1);
+  }
+
+  /* ── 1.7 强调标签 · 导入 ──
+     不再凸出导航栏；改为胶囊内的实心圆形图标按钮。 */
+  .nav-item--emphasis {
+    flex: 0 0 auto;
+    width: 52px;
+  }
+
+  .nav-emphasis-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      var(--glass-inner-highlight);
+    transition: box-shadow var(--ease-out), transform var(--ease-spring);
+  }
+
+  .nav-item--emphasis:active .nav-emphasis-badge {
+    transform: scale(0.90);
+  }
+
+  .nav-emphasis-badge svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5;
+  }
+
+  /* 强调标签选中态 · 玻璃透镜环 */
+  .nav-item--emphasis.active,
+  .nav-item--emphasis[data-active="true"] {
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item--emphasis.active .nav-emphasis-badge,
+  .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      0 0 0 3px var(--primary-soft),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.8 标签文字 ── */
+  .nav-label {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Dark Mode 深色模式
+     ═══════════════════════════════════════════════════════════════ */
+  .dark .bottom-nav {
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border-color: var(--glass-border);
+  }
+
+  .dark .nav-item.active,
+  .dark .nav-item[data-active="true"] {
+    background: rgba(16, 185, 129, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.20), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-item--emphasis.active .nav-emphasis-badge,
+  .dark .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), 0 0 0 3px var(--primary-soft), var(--glass-inner-highlight);
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PART 2 · Shell Structure
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="shell-container">
+  <main class="shell-content">
+    <!-- PAGE_CONTENT_START -->
+    <!-- PAGE_CONTENT_END -->
+  </main>
+
+  <!-- 底部悬浮胶囊导航（5 标签） -->
+  <nav class="bottom-nav" aria-label="主导航">
+
+    <!-- 1. 首页 -->
+    <button type="button" class="nav-item" data-nav-key="home" data-dom-id="nav-home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">首页</span>
+    </button>
+
+    <!-- 2. 题库 -->
+    <button type="button" class="nav-item" data-nav-key="courses" data-dom-id="nav-courses">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span class="nav-label">题库</span>
+    </button>
+
+    <!-- 3. 导入 -->
+    <button type="button" class="nav-item" data-nav-key="import" data-dom-id="nav-import">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="nav-label">导入</span>
+    </button>
+
+    <!-- 4. 我的 -->
+    <button type="button" class="nav-item" data-nav-key="mine" data-dom-id="nav-mine">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">我的</span>
+    </button>
+
+  </nav>
+</div>

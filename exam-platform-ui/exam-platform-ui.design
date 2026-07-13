@@ -1,0 +1,351 @@
+{
+  "data": [
+    {
+      "id": "page-home",
+      "title": "首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/home.html",
+        "interactions": [
+          {
+            "domId": "cta-browse-courses",
+            "targetPageId": "page-course-list",
+            "hideEdge": false
+          },
+          {
+            "domId": "quick-start-practice",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-ai-import",
+            "targetPageId": "page-ai-import",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-exam",
+            "targetPageId": "page-exam-take",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-overview",
+            "targetPageId": "page-mine",
+            "hideEdge": true
+          },
+          {
+            "domId": "recent-practice-1",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "recent-practice-2",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "recent-practice-3",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "cta-view-all",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-courses",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-import",
+            "targetPageId": "page-ai-import",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mine",
+            "targetPageId": "page-mine",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-course-list",
+      "title": "题库列表",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 420,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/course-list.html",
+        "interactions": [
+          {
+            "domId": "cta-go-practice",
+            "targetPageId": "page-course-practice",
+            "hideEdge": false
+          },
+          {
+            "domId": "mode-sequence",
+            "targetPageId": "page-course-practice",
+            "hideEdge": true
+          },
+          {
+            "domId": "mode-random",
+            "targetPageId": "page-course-practice",
+            "hideEdge": true
+          },
+          {
+            "domId": "mode-wrong",
+            "targetPageId": "page-course-practice",
+            "hideEdge": true
+          },
+          {
+            "domId": "mode-favorite",
+            "targetPageId": "page-course-practice",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-home",
+            "targetPageId": "page-home",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-import",
+            "targetPageId": "page-ai-import",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mine",
+            "targetPageId": "page-mine",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-course-practice",
+      "title": "题库练习",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 840,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/course-practice.html",
+        "interactions": [
+          {
+            "domId": "btn-prev",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "cta-finish-practice",
+            "targetPageId": "page-practice-complete",
+            "hideEdge": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-practice-complete",
+      "title": "练习完成",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 0,
+        "y": 779,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/practice-complete.html",
+        "interactions": [
+          {
+            "domId": "cta-review-wrong",
+            "targetPageId": "page-course-practice",
+            "hideEdge": false
+          },
+          {
+            "domId": "cta-back-to-courses",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ai-import",
+      "title": "AI 导入",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 0,
+        "y": 2157,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ai-import.html",
+        "interactions": [
+          {
+            "domId": "nav-home",
+            "targetPageId": "page-home",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-courses",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mine",
+            "targetPageId": "page-mine",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-exam-take",
+      "title": "考试答题",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 620,
+        "y": 1429,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/exam-take.html",
+        "interactions": [
+          {
+            "domId": "btn-next",
+            "targetPageId": "page-exam-complete",
+            "hideEdge": true
+          },
+          {
+            "domId": "cta-view-profile",
+            "targetPageId": "page-exam-complete",
+            "hideEdge": false
+          },
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-exam-complete",
+      "title": "考试完成",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 200,
+        "y": 1429,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/exam-complete.html",
+        "interactions": [
+          {
+            "domId": "cta-view-report",
+            "targetPageId": "page-exam-take",
+            "hideEdge": false
+          },
+          {
+            "domId": "cta-back-home",
+            "targetPageId": "page-home",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-mine",
+      "title": "我的",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752400000000,
+      "canvasData": {
+        "x": 420,
+        "y": 2157,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mine.html",
+        "interactions": [
+          {
+            "domId": "quick-wrong-book",
+            "targetPageId": "page-course-practice",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-favorites",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-history",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "quick-ai-chat",
+            "targetPageId": "page-ai-import",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-home",
+            "targetPageId": "page-home",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-courses",
+            "targetPageId": "page-course-list",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-import",
+            "targetPageId": "page-ai-import",
+            "hideEdge": true
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "考试学习平台",
+    "designLibrary": null,
+    "showEdge": true,
+    "windowSize": {
+      "width": 800,
+      "height": 600
+    }
+  }
+}

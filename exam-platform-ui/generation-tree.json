@@ -1,0 +1,91 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-home", "page-course-list", "page-practice-hub", "page-course-practice", "page-ai-import", "page-exam-take", "page-mine"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["mobile-app-frame", "bottom-navigation-bar", "common-styles", "page-header-pattern"],
+    "privateRegions": [],
+    "mutableSlots": ["activeNavItem", "pageTitle", "pageContent"],
+    "status": "generated",
+    "children": [
+      {
+        "nodeId": "gen-page-home",
+        "kind": "page-leaf",
+        "pageIds": ["page-home"],
+        "output": "pages/home.html",
+        "sharedRegions": [],
+        "privateRegions": ["home-content-area"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-course-list",
+        "kind": "page-leaf",
+        "pageIds": ["page-course-list"],
+        "output": "pages/course-list.html",
+        "sharedRegions": [],
+        "privateRegions": ["course-list-content-area"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-practice-hub",
+        "kind": "page-leaf",
+        "pageIds": ["page-practice-hub"],
+        "output": "pages/practice-hub.html",
+        "sharedRegions": [],
+        "privateRegions": ["practice-hub-content-area"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-course-practice",
+        "kind": "page-leaf",
+        "pageIds": ["page-course-practice"],
+        "output": "pages/course-practice.html",
+        "sharedRegions": [],
+        "privateRegions": ["practice-content-area", "immersive-topbar"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-ai-import",
+        "kind": "page-leaf",
+        "pageIds": ["page-ai-import"],
+        "output": "pages/ai-import.html",
+        "sharedRegions": [],
+        "privateRegions": ["ai-import-content-area"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-exam-take",
+        "kind": "page-leaf",
+        "pageIds": ["page-exam-take"],
+        "output": "pages/exam-take.html",
+        "sharedRegions": [],
+        "privateRegions": ["exam-content-area", "immersive-topbar"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-mine",
+        "kind": "page-leaf",
+        "pageIds": ["page-mine"],
+        "output": "pages/mine.html",
+        "sharedRegions": [],
+        "privateRegions": ["mine-content-area"],
+        "mutableSlots": ["activeNavItem"],
+        "status": "generated",
+        "children": []
+      }
+    ]
+  }
+}

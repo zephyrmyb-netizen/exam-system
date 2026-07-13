@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的</title>
+    <style id="theme-vars">
+/* ═══════════════════════════════════════════════════════════════
+   Design System — 考试学习平台
+   清新活力 · iOS 26 Liquid Glass
+   Translucent materials, frosted glass, spring motion, generous radii.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand Primary · Emerald Green ── */
+  --primary: #10B981;
+  --primary-strong: #059669;
+  --primary-soft: #ECFDF5;
+  --primary-border: #A7F3D0;
+  --primary-glow: rgba(16, 185, 129, 0.2);
+
+  /* ── Surfaces · iOS 26 Liquid Glass ── */
+  --bg: #F2F4F8;
+  --surface: #FFFFFF;
+  --surface-muted: #F1F5F9;
+  --surface-elevated: #FFFFFF;
+
+  /* ── Glass Materials (Liquid Glass核心) ── */
+  --glass-nav: rgba(255, 255, 255, 0.72);
+  --glass-nav-blur: 24px;
+  --glass-card: rgba(255, 255, 255, 0.65);
+  --glass-card-blur: 20px;
+  --glass-header: rgba(255, 255, 255, 0.68);
+  --glass-header-blur: 20px;
+  --glass-overlay: rgba(255, 255, 255, 0.55);
+  --glass-overlay-blur: 40px;
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.6);
+
+  /* ── Text ── */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-placeholder: #CBD5E1;
+
+  /* ── Borders ── */
+  --border: #E2E8F0;
+  --border-soft: #F1F5F9;
+  --border-strong: #CBD5E1;
+
+  /* ── State Colors (semantic only, not identity) ── */
+  --state-success: #10B981;
+  --state-success-soft: #ECFDF5;
+  --state-warning: #F59E0B;
+  --state-warning-soft: #FFFBEB;
+  --state-warning-border: #FDE68A;
+  --state-error: #EF4444;
+  --state-error-soft: #FEF2F2;
+  --state-error-border: #FECACA;
+  --state-info: #3B82F6;
+  --state-info-soft: #EFF6FF;
+
+  /* ── Radii · iOS 26 generous scale ── */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows · Liquid Glass depth ── */
+  --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 8px 32px rgba(15, 23, 42, 0.10);
+  --shadow-modal: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --shadow-primary: 0 8px 24px rgba(16, 185, 129, 0.22);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  /* ── Typography ── */
+  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* ── Font sizes ── */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-md: 0.875rem;    /* 14px */
+  --text-base: 0.9375rem;  /* 15px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.375rem;    /* 22px */
+  --text-2xl: 1.75rem;    /* 28px */
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ── Transitions · iOS 26 Spring Motion ── */
+  --ease-out: 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-gentle: 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ── Dark Mode · iOS 26 ── */
+.dark {
+  --bg: #000000;
+  --surface: #1C1C1E;
+  --surface-muted: #2C2C2E;
+  --surface-elevated: #1C1C1E;
+
+  --glass-nav: rgba(28, 28, 30, 0.72);
+  --glass-card: rgba(44, 44, 46, 0.65);
+  --glass-header: rgba(28, 28, 30, 0.68);
+  --glass-overlay: rgba(28, 28, 30, 0.55);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --text-placeholder: #475569;
+
+  --border: #3A3A3C;
+  --border-soft: #2C2C2E;
+  --border-strong: #475569;
+
+  --primary-soft: #064E3B;
+  --primary-border: #065F46;
+
+  --state-success-soft: #064E3B;
+  --state-warning-soft: #451A03;
+  --state-warning-border: #78350F;
+  --state-error-soft: #450A0A;
+  --state-error-border: #7F1D1D;
+  --state-info-soft: #172554;
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Typography Classes
+   ═══════════════════════════════════════════════════════════════ */
+
+.ep-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.ep-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.ep-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.ep-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.ep-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-caption {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.ep-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--text-primary);
+    --color-secondary: var(--text-secondary);
+    --color-muted: var(--text-muted);
+  }
+  @layer base {
+    body { background: var(--text-background); color: var(--text-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Shell CSS · 自包含样式（来自 project-shell.html）
+     放置于 <body> 内（Free-Explore 模式规则）
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     PART 1 · Shell CSS · iOS 26 Liquid Glass Floating Capsule Nav
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── 1.1 基础重置 ── */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── 1.2 应用容器 ── */
+  .shell-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.10);
+    overflow: hidden;
+  }
+
+  /* ── 1.2b 装饰性背景光斑 · iOS 26 深度感 ──
+     两个模糊渐变光斑固定在容器顶部，透过玻璃卡片产生色彩折射。 */
+  .shell-container::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .shell-container::after {
+    content: '';
+    position: absolute;
+    top: 120px;
+    left: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 内容区在光斑之上 */
+  .shell-content { position: relative; z-index: 1; }
+  .bottom-nav { z-index: 50; }
+
+  /* ── 1.3 内容区 · 底部预留悬浮导航空间 ── */
+  .shell-content {
+    flex: 1;
+    padding-bottom: 96px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     1.4 底部悬浮胶囊导航 · iOS 26 Liquid Glass Floating Capsule
+     ─────────────────────────────────────────────────────────────────
+     核心特征：
+     · 悬浮于内容之上，不贴底边（bottom: 20px）
+     · 左右留边距（width: calc(100% - 32px)）
+     · 胶囊外形（border-radius: 9999px）
+     · 液态玻璃材质（半透明 + 模糊 + 饱和度增强 + 内高光）
+     · 选中项有玻璃透镜高亮（glass lens blob）
+     ═══════════════════════════════════════════════════════════════ */
+  .bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 388px;
+    height: 64px;
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 6px;
+    gap: 2px;
+    z-index: 50;
+    box-shadow:
+      0 8px 32px rgba(15, 23, 42, 0.12),
+      0 2px 8px rgba(15, 23, 42, 0.06),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.5 单个标签 ──
+     胶囊内等分；选中项有玻璃透镜背景。 */
+  .nav-item {
+    flex: 1;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color var(--ease-out), background var(--ease-spring), box-shadow var(--ease-spring);
+  }
+
+  .nav-item:active {
+    transform: scale(0.92);
+  }
+
+  .nav-item svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+    transition: transform var(--ease-spring);
+  }
+
+  /* ── 1.6 选中态 · Glass Lens 透镜高亮 ──
+     iOS 26 标志性效果：选中项背后出现玻璃透镜圆角矩形 */
+  .nav-item.active,
+  .nav-item[data-active="true"] {
+    color: var(--primary);
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item.active svg,
+  .nav-item[data-active="true"] svg {
+    transform: scale(1.1);
+  }
+
+  /* ── 1.7 强调标签 · 导入 ──
+     不再凸出导航栏；改为胶囊内的实心圆形图标按钮。 */
+  .nav-item--emphasis {
+    flex: 0 0 auto;
+    width: 52px;
+  }
+
+  .nav-emphasis-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      var(--glass-inner-highlight);
+    transition: box-shadow var(--ease-out), transform var(--ease-spring);
+  }
+
+  .nav-item--emphasis:active .nav-emphasis-badge {
+    transform: scale(0.90);
+  }
+
+  .nav-emphasis-badge svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5;
+  }
+
+  /* 强调标签选中态 · 玻璃透镜环 */
+  .nav-item--emphasis.active,
+  .nav-item--emphasis[data-active="true"] {
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item--emphasis.active .nav-emphasis-badge,
+  .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      0 0 0 3px var(--primary-soft),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.8 标签文字 ── */
+  .nav-label {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Dark Mode 深色模式
+     ═══════════════════════════════════════════════════════════════ */
+  .dark .bottom-nav {
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border-color: var(--glass-border);
+  }
+
+  .dark .nav-item.active,
+  .dark .nav-item[data-active="true"] {
+    background: rgba(16, 185, 129, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.20), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-item--emphasis.active .nav-emphasis-badge,
+  .dark .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), 0 0 0 3px var(--primary-soft), var(--glass-inner-highlight);
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Page-Specific CSS · 我的 (Mine) · iOS 26 Liquid Glass
+     覆盖内联样式以应用液态玻璃材质与弹簧动效。
+     仅修改 <style> 块内 CSS 值；未改动任何 HTML 结构 / 文本 / data-dom-id。
+     ═══════════════════════════════════════════════════════════════ -->
+<style>
+  /* ── 1 · Profile Header (gradient) ──
+     保留渐变；底部圆角加大至 --radius-xl，并叠加底部玻璃内高光。 */
+  .shell-content > section:first-child {
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl) !important;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.25) !important;
+  }
+
+  /* ── 2 · Achievement Stats Card (overlapping) · Liquid Glass ── */
+  .shell-content > section:nth-child(2) > div {
+    background: var(--glass-card) !important;
+    backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    box-shadow: var(--shadow-elevated), var(--glass-inner-highlight) !important;
+    border-radius: var(--radius-lg) !important;
+    border-color: var(--glass-border) !important;
+    transition: transform var(--ease-spring), box-shadow var(--ease-spring) !important;
+  }
+  .shell-content > section:nth-child(2) > div:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  /* ── 3 · Quick Menu Grid Cards · Liquid Glass ── */
+  .quick-card {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--glass-card) !important;
+    backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    border-radius: var(--radius-lg) !important;
+    border-color: var(--glass-border) !important;
+    box-shadow: var(--shadow-card), var(--glass-inner-highlight) !important;
+    transition: transform var(--ease-spring), box-shadow var(--ease-spring) !important;
+  }
+  .quick-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-elevated), var(--glass-inner-highlight) !important;
+  }
+  .quick-card:active {
+    transform: scale(0.97) !important;
+  }
+  .quick-card:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Quick menu icon circles: 52px + spring transition */
+  .quick-card > div:first-child {
+    width: 52px !important;
+    height: 52px !important;
+    transition: transform var(--ease-spring) !important;
+  }
+  .quick-card:hover > div:first-child {
+    transform: scale(1.06);
+  }
+  .quick-card:active > div:first-child {
+    transform: scale(0.96);
+  }
+
+  /* ── 4 · Menu List Card · Liquid Glass ── */
+  .shell-content > section:nth-child(4) > div {
+    background: var(--glass-card) !important;
+    backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+    border-radius: var(--radius-lg) !important;
+    border-color: var(--glass-border) !important;
+    box-shadow: var(--shadow-card), var(--glass-inner-highlight) !important;
+  }
+
+  /* Menu list icon circles: 40px */
+  .menu-row > div:first-child {
+    width: 40px !important;
+    height: 40px !important;
+    transition: transform var(--ease-spring) !important;
+  }
+
+  /* Menu rows: spring transition + scale(0.98) active + hover bg */
+  .menu-row {
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color var(--ease-spring), transform var(--ease-spring) !important;
+  }
+  .menu-row:hover {
+    background-color: var(--surface-muted) !important;
+  }
+  .menu-row:active {
+    transform: scale(0.98) !important;
+    background-color: var(--surface-muted) !important;
+  }
+  .menu-row:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+
+  /* ── 4b · Menu Group Titles ──
+     分组小标题，将菜单列表划分为「学习工具」与「系统」两个逻辑区块。 */
+  .menu-group-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    margin-left: 4px;
+    background: var(--surface-muted);
+    border-radius: var(--radius-full);
+  }
+  .menu-group-title:first-child {
+    margin-top: 0;
+  }
+  .menu-group-title::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary);
+    flex-shrink: 0;
+  }
+
+  /* ── 4c · Dark Mode Toggle Switch ──
+     iOS 风格开关，静态展示 off 状态。 */
+  .menu-row:has(div[style*="border-strong"]) > div:last-child {
+    transition: background var(--ease-spring) !important;
+  }
+
+  /* ── 4d · 主题颜色弹出层 ── */
+  .theme-sheet {
+    position: fixed; inset: 0; z-index: 100;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 0.3s, opacity 0.3s ease;
+  }
+  .theme-sheet--open {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0s, opacity 0.3s ease;
+  }
+  .theme-sheet__backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .theme-sheet__panel {
+    position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%; max-width: 420px;
+    background: var(--glass-overlay);
+    backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-top: 1px solid var(--glass-border);
+    border-left: 1px solid var(--glass-border);
+    border-right: 1px solid var(--glass-border);
+    box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.15);
+    padding: 8px 20px 32px;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .theme-sheet--open .theme-sheet__panel {
+    transform: translateX(-50%) translateY(0);
+  }
+  .theme-sheet__handle {
+    width: 36px; height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--border-strong);
+    margin: 0 auto 16px;
+  }
+  .theme-sheet__header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .theme-sheet__title {
+    font-size: 20px; font-weight: 800;
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    margin: 0;
+  }
+  .theme-sheet__close-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: var(--surface-muted);
+    color: var(--text-muted); cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: background var(--ease-spring), transform var(--ease-spring);
+  }
+  .theme-sheet__close-btn:active { transform: scale(0.90); }
+  .theme-sheet__subtitle {
+    font-size: 13px; color: var(--text-muted);
+    margin: 0 0 20px 0;
+  }
+  .theme-sheet__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .theme-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring);
+    text-align: left;
+    font: inherit;
+    color: inherit;
+  }
+  .theme-option:active { transform: scale(0.97); }
+  .theme-option__circle {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.3);
+  }
+  .theme-option__name {
+    flex: 1;
+    font-size: 14px; font-weight: 600;
+    color: var(--text-primary);
+  }
+  .theme-option__check {
+    color: var(--primary);
+    opacity: 0;
+    transition: opacity var(--ease-spring);
+  }
+  .theme-option--active {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+  }
+  .theme-option--active .theme-option__check {
+    opacity: 1;
+  }
+
+  /* Nav focus ring (shell a11y carry-over) */
+  .nav-item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+
+  /* ── 5 · Level progress bar ──
+     内联已为 4px 高度 + --radius-full 圆角，符合 iOS 26 规范，无需覆盖。 */
+
+  /* ── Reduced motion · 无障碍 ── */
+  @media (prefers-reduced-motion: reduce) {
+    .quick-card,
+    .menu-row,
+    .quick-card > div:first-child,
+    .menu-row > div:first-child,
+    .nav-item,
+    .nav-item svg,
+    .nav-emphasis-badge {
+      transition: none !important;
+    }
+    .quick-card:hover,
+    .shell-content > section:nth-child(2) > div:hover,
+    .quick-card > div:first-child,
+    .menu-row:active {
+      transform: none !important;
+    }
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     Shell Structure · 应用框架 + 底部导航
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="shell-container">
+  <main class="shell-content">
+    <!-- PAGE_CONTENT_START -->
+
+    <!-- ══ 1 · PROFILE HEADER ══ -->
+    <section style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%); border-radius: 0 0 var(--radius-lg) var(--radius-lg); padding: var(--space-6);">
+      <div class="flex flex-col items-center" style="gap: 10px;">
+        <!-- Avatar: 64px circle, white bg, initials "张" in var(--primary) -->
+        <div style="width: 64px; height: 64px; border-radius: var(--radius-full); background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <span style="font-size: 28px; font-weight: 800; color: var(--primary); font-family: var(--font-display); line-height: 1;">张</span>
+        </div>
+        <!-- Name: "张同学" (20px, 800, white) -->
+        <h1 style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0; font-family: var(--font-display); line-height: 1.2; text-wrap: balance; word-break: keep-all;">张同学</h1>
+        <!-- Subtitle: "学习等级 · 进阶" (13px, white 80%) -->
+        <p style="font-size: 13px; color: rgba(255,255,255,0.8); margin: 0; line-height: 1.4;">学习等级 · 进阶</p>
+        <!-- Level progress bar: 4px, white 30% bg, white fill 65%, "Lv. 8 → Lv. 9" (11px, white 70%) -->
+        <div style="width: 100%; max-width: 220px;">
+          <div style="height: 6px; background: rgba(255,255,255,0.3); border-radius: var(--radius-full); overflow: hidden;">
+            <div style="width: 65%; height: 100%; background: #FFFFFF; border-radius: var(--radius-full);"></div>
+          </div>
+          <p style="font-size: 11px; color: rgba(255,255,255,0.7); margin: 6px 0 0; text-align: center; line-height: 1;">Lv. 8 → Lv. 9</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 2 · ACHIEVEMENT STATS ROW (overlapping header, -12px margin top) ══ -->
+    <section style="margin-top: -12px; padding: 0 var(--space-4); position: relative; z-index: 10;">
+      <div style="background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--border); box-shadow: var(--shadow-card);">
+        <div class="grid grid-cols-4" style="gap: 4px;">
+          <!-- Stat 1: 1,248 / 总题数 -->
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 20px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.2;">1,248</span>
+            <span style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">总题数</span>
+          </div>
+          <!-- Stat 2: 85% / 正确率 -->
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 20px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1.2;">85%</span>
+            <span style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">正确率</span>
+          </div>
+          <!-- Stat 3: 7天 / 连续打卡 -->
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 20px; font-weight: 800; color: var(--state-warning); font-variant-numeric: tabular-nums; line-height: 1.2;">7天</span>
+            <span style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">连续打卡</span>
+          </div>
+          <!-- Stat 4: 12 / 徽章 -->
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 20px; font-weight: 800; color: var(--state-info); font-variant-numeric: tabular-nums; line-height: 1.2;">12</span>
+            <span style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">徽章</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 3 · QUICK MENU GRID (2x2, 12px gap) ══ -->
+    <section style="padding: var(--space-4);">
+      <div class="grid grid-cols-2" style="gap: var(--space-3);">
+        <!-- Card a: 错题本 -->
+        <button type="button" data-dom-id="quick-wrong-book" class="quick-card flex flex-col items-center" style="background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--border); gap: 10px; cursor: pointer; font: inherit; color: inherit;">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--state-error-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="alert-circle" class="w-7 h-7" style="color: var(--state-error);"></i>
+          </div>
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3;">错题本</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">23题待复习</span>
+          </div>
+        </button>
+        <!-- Card b: 我的收藏 -->
+        <button type="button" data-dom-id="quick-favorites" class="quick-card flex flex-col items-center" style="background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--border); gap: 10px; cursor: pointer; font: inherit; color: inherit;">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--state-warning-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="bookmark" class="w-7 h-7" style="color: var(--state-warning);"></i>
+          </div>
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3;">我的收藏</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">56道题目</span>
+          </div>
+        </button>
+        <!-- Card c: 练习记录 -->
+        <button type="button" data-dom-id="quick-history" class="quick-card flex flex-col items-center" style="background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--border); gap: 10px; cursor: pointer; font: inherit; color: inherit;">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--state-info-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="history" class="w-7 h-7" style="color: var(--state-info);"></i>
+          </div>
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3;">练习记录</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">本周12次</span>
+          </div>
+        </button>
+        <!-- Card d: AI 对话 -->
+        <button type="button" data-dom-id="quick-ai-chat" class="quick-card flex flex-col items-center" style="background: var(--surface); border-radius: var(--radius-md); padding: var(--space-4); border: 1px solid var(--border); gap: 10px; cursor: pointer; font: inherit; color: inherit;">
+          <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--primary-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="message-circle" class="w-7 h-7" style="color: var(--primary);"></i>
+          </div>
+          <div class="flex flex-col items-center" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3;">AI 对话</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">智能辅导</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ══ 4 · MENU LIST (card with dividers) ══ -->
+    <section style="padding: 0 var(--space-4); margin-bottom: var(--space-4);">
+      <div style="background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); overflow: hidden;">
+        <!-- Group 1: 学习工具 -->
+        <div class="menu-group-title">学习工具</div>
+        <!-- Item a: 更新公告 -->
+        <button type="button" data-dom-id="menu-update" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="bell" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">更新公告</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">v2.3.0 新版上线</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+        <!-- Item b: 学习设置 -->
+        <button type="button" data-dom-id="menu-settings" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="settings" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">学习设置</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">提醒、显示、下载</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+        <!-- Group 2: 系统 -->
+        <div class="menu-group-title">系统</div>
+        <!-- Item: 深色模式 (with toggle switch) -->
+        <button type="button" data-dom-id="menu-dark-mode" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="moon" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">深色模式</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">护眼夜间使用</span>
+          </div>
+          <!-- iOS-style toggle switch (off state) -->
+          <div style="width: 44px; height: 26px; border-radius: var(--radius-full); background: var(--border-strong); position: relative; flex-shrink: 0; transition: background var(--ease-spring);">
+            <div style="position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: var(--radius-full); background: #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform var(--ease-spring);"></div>
+          </div>
+        </button>
+        <!-- Item: 主题颜色 -->
+        <button type="button" data-dom-id="menu-theme" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;" onclick="document.getElementById('themeSheet').classList.add('theme-sheet--open')">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="palette" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">主题颜色</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">个性化你的界面</span>
+          </div>
+          <span id="currentThemeDot" style="width: 20px; height: 20px; border-radius: 50%; background: var(--primary); border: 2px solid var(--surface); box-shadow: 0 0 0 1.5px var(--border); flex-shrink: 0;"></span>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+        <!-- Item c: 帮助与反馈 -->
+        <button type="button" data-dom-id="menu-help" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="help-circle" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">帮助与反馈</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">常见问题</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+        <!-- Item d: 管理后台 (with primary dot badge) -->
+        <button type="button" data-dom-id="menu-admin" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; border-bottom: 1px solid var(--border); background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative;">
+            <i data-lucide="shield" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+            <!-- Primary dot badge -->
+            <span style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--primary); border: 2px solid var(--surface);"></span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">管理后台</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">管理员入口</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+        <!-- Item e: 关于我们 (last item, no bottom border) -->
+        <button type="button" data-dom-id="menu-about" class="menu-row flex items-center w-full" style="padding: 14px var(--space-4); border: none; background: transparent; cursor: pointer; gap: 12px; text-align: left; font: inherit; color: inherit;">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-full); background: var(--surface-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i data-lucide="info" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col" style="gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">关于我们</span>
+            <span style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">版本 v2.3.0</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5" style="color: var(--text-muted); flex-shrink: 0;"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- PAGE_CONTENT_END -->
+  </main>
+
+  <!-- ══ 底部固定主导航（4 标签：首页 / 题库 / 导入 / 我的） ══ -->
+  <nav class="bottom-nav" aria-label="主导航">
+
+    <!-- 1. 首页 -->
+    <button type="button" class="nav-item" data-nav-key="home" data-dom-id="nav-home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">首页</span>
+    </button>
+
+    <!-- 2. 题库 -->
+    <button type="button" class="nav-item" data-nav-key="courses" data-dom-id="nav-courses">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span class="nav-label">题库</span>
+    </button>
+
+    <!-- 3. 导入 -->
+    <button type="button" class="nav-item" data-nav-key="import" data-dom-id="nav-import">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="nav-label">导入</span>
+    </button>
+
+    <!-- 5. 我的（当前选中） -->
+    <button type="button" class="nav-item" data-nav-key="mine" data-dom-id="nav-mine" data-active="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">我的</span>
+    </button>
+
+  </nav>
+</div>
+
+  <!-- ═══ 主题颜色弹出层 ═══ -->
+  <div class="theme-sheet" id="themeSheet">
+    <div class="theme-sheet__backdrop" onclick="document.getElementById('themeSheet').classList.remove('theme-sheet--open')"></div>
+    <div class="theme-sheet__panel">
+      <div class="theme-sheet__handle"></div>
+      <div class="theme-sheet__header">
+        <h2 class="theme-sheet__title">主题颜色</h2>
+        <button type="button" data-dom-id="theme-close" class="theme-sheet__close-btn" onclick="document.getElementById('themeSheet').classList.remove('theme-sheet--open')">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="theme-sheet__subtitle">选择你喜欢的主题色</p>
+      <div class="theme-sheet__grid">
+        <button type="button" class="theme-option theme-option--active" data-color="emerald" data-primary="#10B981" data-strong="#059669" data-soft="#ECFDF5" data-border="#A7F3D0" data-glow="rgba(16,185,129,0.2)" data-name="翡翠绿">
+          <div class="theme-option__circle" style="background: #10B981;"></div>
+          <span class="theme-option__name">翡翠绿</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+        <button type="button" class="theme-option" data-color="blue" data-primary="#3B82F6" data-strong="#2563EB" data-soft="#EFF6FF" data-border="#93C5FD" data-glow="rgba(59,130,246,0.2)" data-name="海洋蓝">
+          <div class="theme-option__circle" style="background: #3B82F6;"></div>
+          <span class="theme-option__name">海洋蓝</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+        <button type="button" class="theme-option" data-color="purple" data-primary="#8B5CF6" data-strong="#7C3AED" data-soft="#F5F3FF" data-border="#C4B5FD" data-glow="rgba(139,92,246,0.2)" data-name="优雅紫">
+          <div class="theme-option__circle" style="background: #8B5CF6;"></div>
+          <span class="theme-option__name">优雅紫</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+        <button type="button" class="theme-option" data-color="orange" data-primary="#F97316" data-strong="#EA580C" data-soft="#FFF7ED" data-border="#FDBA74" data-glow="rgba(249,115,22,0.2)" data-name="日落橙">
+          <div class="theme-option__circle" style="background: #F97316;"></div>
+          <span class="theme-option__name">日落橙</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+        <button type="button" class="theme-option" data-color="pink" data-primary="#EC4899" data-strong="#DB2777" data-soft="#FDF2F8" data-border="#F9A8D4" data-glow="rgba(236,72,153,0.2)" data-name="玫瑰粉">
+          <div class="theme-option__circle" style="background: #EC4899;"></div>
+          <span class="theme-option__name">玫瑰粉</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+        <button type="button" class="theme-option" data-color="teal" data-primary="#14B8A6" data-strong="#0D9488" data-soft="#F0FDFA" data-border="#5EEAD4" data-glow="rgba(20,184,166,0.2)" data-name="青碧">
+          <div class="theme-option__circle" style="background: #14B8A6;"></div>
+          <span class="theme-option__name">青碧</span>
+          <i data-lucide="check" class="theme-option__check w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>lucide.createIcons();</script>
+<script>
+  // ── 主题颜色 ──
+  document.querySelectorAll('.theme-option').forEach(function(option) {
+    option.addEventListener('click', function() {
+      // 移除所有 active
+      document.querySelectorAll('.theme-option').forEach(function(o) {
+        o.classList.remove('theme-option--active');
+      });
+      // 设置当前
+      option.classList.add('theme-option--active');
+      // 覆盖 CSS 变量
+      var root = document.documentElement;
+      root.style.setProperty('--primary', option.dataset.primary);
+      root.style.setProperty('--primary-strong', option.dataset.strong);
+      root.style.setProperty('--primary-soft', option.dataset.soft);
+      root.style.setProperty('--primary-border', option.dataset.border);
+      root.style.setProperty('--primary-glow', option.dataset.glow);
+      // 更新菜单行预览圆点
+      var dot = document.getElementById('currentThemeDot');
+      if (dot) {
+        dot.style.background = option.dataset.primary;
+      }
+      // 关闭弹出层
+      document.getElementById('themeSheet').classList.remove('theme-sheet--open');
+    });
+  });
+</script>
+</body>
+</html>

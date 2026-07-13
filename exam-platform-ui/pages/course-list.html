@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库列表</title>
+    <style id="theme-vars">
+/* ═══════════════════════════════════════════════════════════════
+   Design System — 考试学习平台
+   清新活力 · iOS 26 Liquid Glass
+   Translucent materials, frosted glass, spring motion, generous radii.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand Primary · Emerald Green ── */
+  --primary: #10B981;
+  --primary-strong: #059669;
+  --primary-soft: #ECFDF5;
+  --primary-border: #A7F3D0;
+  --primary-glow: rgba(16, 185, 129, 0.2);
+
+  /* ── Surfaces · iOS 26 Liquid Glass ── */
+  --bg: #F2F4F8;
+  --surface: #FFFFFF;
+  --surface-muted: #F1F5F9;
+  --surface-elevated: #FFFFFF;
+
+  /* ── Glass Materials (Liquid Glass核心) ── */
+  --glass-nav: rgba(255, 255, 255, 0.72);
+  --glass-nav-blur: 24px;
+  --glass-card: rgba(255, 255, 255, 0.65);
+  --glass-card-blur: 20px;
+  --glass-header: rgba(255, 255, 255, 0.68);
+  --glass-header-blur: 20px;
+  --glass-overlay: rgba(255, 255, 255, 0.55);
+  --glass-overlay-blur: 40px;
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.6);
+
+  /* ── Text ── */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-placeholder: #CBD5E1;
+
+  /* ── Borders ── */
+  --border: #E2E8F0;
+  --border-soft: #F1F5F9;
+  --border-strong: #CBD5E1;
+
+  /* ── State Colors (semantic only, not identity) ── */
+  --state-success: #10B981;
+  --state-success-soft: #ECFDF5;
+  --state-warning: #F59E0B;
+  --state-warning-soft: #FFFBEB;
+  --state-warning-border: #FDE68A;
+  --state-error: #EF4444;
+  --state-error-soft: #FEF2F2;
+  --state-error-border: #FECACA;
+  --state-info: #3B82F6;
+  --state-info-soft: #EFF6FF;
+
+  /* ── Radii · iOS 26 generous scale ── */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows · Liquid Glass depth ── */
+  --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 8px 32px rgba(15, 23, 42, 0.10);
+  --shadow-modal: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --shadow-primary: 0 8px 24px rgba(16, 185, 129, 0.22);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  /* ── Typography ── */
+  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* ── Font sizes ── */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-md: 0.875rem;    /* 14px */
+  --text-base: 0.9375rem;  /* 15px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.375rem;    /* 22px */
+  --text-2xl: 1.75rem;    /* 28px */
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ── Transitions · iOS 26 Spring Motion ── */
+  --ease-out: 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-gentle: 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ── Dark Mode · iOS 26 ── */
+.dark {
+  --bg: #000000;
+  --surface: #1C1C1E;
+  --surface-muted: #2C2C2E;
+  --surface-elevated: #1C1C1E;
+
+  --glass-nav: rgba(28, 28, 30, 0.72);
+  --glass-card: rgba(44, 44, 46, 0.65);
+  --glass-header: rgba(28, 28, 30, 0.68);
+  --glass-overlay: rgba(28, 28, 30, 0.55);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --text-placeholder: #475569;
+
+  --border: #3A3A3C;
+  --border-soft: #2C2C2E;
+  --border-strong: #475569;
+
+  --primary-soft: #064E3B;
+  --primary-border: #065F46;
+
+  --state-success-soft: #064E3B;
+  --state-warning-soft: #451A03;
+  --state-warning-border: #78350F;
+  --state-error-soft: #450A0A;
+  --state-error-border: #7F1D1D;
+  --state-info-soft: #172554;
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Typography Classes
+   ═══════════════════════════════════════════════════════════════ */
+
+.ep-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.ep-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.ep-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.ep-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.ep-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-caption {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.ep-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--text-primary);
+    --color-secondary: var(--text-secondary);
+    --color-muted: var(--text-muted);
+  }
+  @layer base {
+    body { background: var(--text-background); color: var(--text-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Shell Container · 移动端应用框架
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="shell-container">
+
+      <!-- ── 主内容区 · Shell Content ── -->
+      <main class="shell-content">
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             1. PAGE HEADER · 页面标题栏
+             白色背景 · sticky · 标题 + 副标题 + 添加按钮
+             ═══════════════════════════════════════════════════════════════ -->
+        <header class="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--border)]">
+          <div class="px-4 py-3 flex items-center justify-between gap-3">
+            <!-- 左：标题 + 副标题 -->
+            <div class="min-w-0">
+              <h1 class="text-[22px] font-extrabold text-[var(--text-primary)] leading-tight" style="text-wrap: balance; word-break: keep-all;">题库</h1>
+              <p class="text-[13px] text-[var(--text-muted)] mt-0.5">我的题库 · 12个</p>
+            </div>
+            <!-- 右：添加按钮（圆形，primary 底色，白色 plus 图标，36px） -->
+            <button type="button" data-dom-id="cta-add-course"
+                    class="shrink-0 w-9 h-9 rounded-full bg-[var(--primary)] flex items-center justify-center text-white transition-transform duration-150 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                    aria-label="添加题库">
+              <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </header>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             2. SEARCH BAR · 搜索栏
+             全宽 · 44px 高 · surface-muted 底色 · 12px 圆角
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="px-4 pt-3">
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[var(--text-muted)] pointer-events-none"></i>
+            <input type="text"
+                   placeholder="搜索题库..."
+                   class="w-full h-11 pl-10 pr-3 bg-[var(--surface-muted)] rounded-[12px] text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] border-0 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow duration-150">
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             3. FILTER CHIPS · 筛选标签
+             水平滚动 · 8px 间距 · 药丸形 · 13px 字体 · 600 字重
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="px-4 pt-3 pb-1 flex gap-2 overflow-x-auto no-scrollbar">
+          <!-- 选中态：primary 底色 + 白色文字 -->
+          <button type="button" data-dom-id="filter-all"
+                  class="shrink-0 px-4 py-2 rounded-full bg-[var(--primary)] text-white text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1">
+            全部
+          </button>
+          <!-- 未选中态：surface 底色 + secondary 文字 + border -->
+          <button type="button" data-dom-id="filter-mine"
+                  class="shrink-0 px-4 py-2 rounded-full bg-[var(--surface)] text-[var(--text-secondary)] text-[13px] font-semibold whitespace-nowrap border border-[var(--border)] hover:border-[var(--primary-border)] hover:text-[var(--primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1">
+            我的
+          </button>
+          <button type="button" data-dom-id="filter-public"
+                  class="shrink-0 px-4 py-2 rounded-full bg-[var(--surface)] text-[var(--text-secondary)] text-[13px] font-semibold whitespace-nowrap border border-[var(--border)] hover:border-[var(--primary-border)] hover:text-[var(--primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1">
+            公共
+          </button>
+          <button type="button" data-dom-id="filter-recent"
+                  class="shrink-0 px-4 py-2 rounded-full bg-[var(--surface)] text-[var(--text-secondary)] text-[13px] font-semibold whitespace-nowrap border border-[var(--border)] hover:border-[var(--primary-border)] hover:text-[var(--primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-1">
+            最近练习
+          </button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             4. COURSE CARDS · 题库卡片列表
+             垂直列表 · 12px 间距 · 白色底 · 12px 圆角 · border
+             布局：左图标圆 + 内容 + 右练习按钮
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="px-4 py-3 flex flex-col gap-3">
+
+          <!-- Card 1 · 高等数学（首卡，按钮带 data-dom-id="cta-go-practice"） -->
+          <div class="bg-[var(--surface)] rounded-[12px] border border-[var(--border)] p-3 flex items-center gap-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--primary-border)] cursor-pointer">
+            <!-- 图标圆：48px，primary-soft 底色，primary 图标 -->
+            <div class="shrink-0 w-12 h-12 rounded-full bg-[var(--primary-soft)] flex items-center justify-center text-[var(--primary)]">
+              <i data-lucide="sigma" class="w-5 h-5"></i>
+            </div>
+            <!-- 内容区：标题 + 元数据 + 进度条 -->
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[var(--text-primary)] truncate">高等数学</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[12px] text-[var(--text-muted)] truncate">128题 · 上次练习 2天前</p>
+                <span class="shrink-0 text-[11px] font-bold tabular-nums" style="color: var(--primary);">65%</span>
+              </div>
+              <div class="mt-2 h-[3px] bg-[var(--surface-muted)] rounded-full overflow-hidden">
+                <div class="h-full bg-[var(--primary)] rounded-full w-[65%]"></div>
+              </div>
+            </div>
+            <!-- 练习按钮：点击弹出练习方式选择 -->
+            <button type="button" data-dom-id="cta-go-practice"
+                    class="shrink-0 h-9 px-4 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 hover:text-[var(--primary-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    onclick="document.getElementById('practiceModeSheet').classList.add('mode-sheet--open')">
+              练习
+            </button>
+          </div>
+
+          <!-- Card 2 · 英语四级核心 -->
+          <div class="bg-[var(--surface)] rounded-[12px] border border-[var(--border)] p-3 flex items-center gap-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--primary-border)] cursor-pointer">
+            <div class="shrink-0 w-12 h-12 rounded-full bg-[var(--state-info-soft)] flex items-center justify-center text-[var(--state-info)]">
+              <i data-lucide="book-open" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[var(--text-primary)] truncate">英语四级核心</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[12px] text-[var(--text-muted)] truncate">256题 · 上次练习 5小时前</p>
+                <span class="shrink-0 text-[11px] font-bold tabular-nums" style="color: var(--state-info);">40%</span>
+              </div>
+              <div class="mt-2 h-[3px] bg-[var(--surface-muted)] rounded-full overflow-hidden">
+                <div class="h-full bg-[var(--state-info)] rounded-full w-[40%]"></div>
+              </div>
+            </div>
+            <button type="button" data-dom-id="cta-go-practice"
+                    class="shrink-0 h-9 px-4 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 hover:text-[var(--primary-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    onclick="document.getElementById('practiceModeSheet').classList.add('mode-sheet--open')">
+              练习
+            </button>
+          </div>
+
+          <!-- Card 3 · 计算机基础 -->
+          <div class="bg-[var(--surface)] rounded-[12px] border border-[var(--border)] p-3 flex items-center gap-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--primary-border)] cursor-pointer">
+            <div class="shrink-0 w-12 h-12 rounded-full bg-[var(--state-warning-soft)] flex items-center justify-center text-[var(--state-warning)]">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[var(--text-primary)] truncate">计算机基础</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[12px] text-[var(--text-muted)] truncate">89题 · 上次练习 1周前</p>
+                <span class="shrink-0 text-[11px] font-bold tabular-nums" style="color: var(--state-warning);">80%</span>
+              </div>
+              <div class="mt-2 h-[3px] bg-[var(--surface-muted)] rounded-full overflow-hidden">
+                <div class="h-full bg-[var(--state-warning)] rounded-full w-[80%]"></div>
+              </div>
+            </div>
+            <button type="button" data-dom-id="cta-go-practice"
+                    class="shrink-0 h-9 px-4 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 hover:text-[var(--primary-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    onclick="document.getElementById('practiceModeSheet').classList.add('mode-sheet--open')">
+              练习
+            </button>
+          </div>
+
+          <!-- Card 4 · 思想政治教育 -->
+          <div class="bg-[var(--surface)] rounded-[12px] border border-[var(--border)] p-3 flex items-center gap-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--primary-border)] cursor-pointer">
+            <div class="shrink-0 w-12 h-12 rounded-full bg-[var(--state-error-soft)] flex items-center justify-center text-[var(--state-error)]">
+              <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[var(--text-primary)] truncate">思想政治教育</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[12px] text-[var(--text-muted)] truncate">175题 · 未练习</p>
+                <span class="shrink-0 text-[11px] font-bold tabular-nums" style="color: var(--text-muted);">15%</span>
+              </div>
+              <div class="mt-2 h-[3px] bg-[var(--surface-muted)] rounded-full overflow-hidden">
+                <div class="h-full bg-[var(--state-error)] rounded-full w-[15%]"></div>
+              </div>
+            </div>
+            <button type="button" data-dom-id="cta-go-practice"
+                    class="shrink-0 h-9 px-4 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 hover:text-[var(--primary-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    onclick="document.getElementById('practiceModeSheet').classList.add('mode-sheet--open')">
+              练习
+            </button>
+          </div>
+
+          <!-- Card 5 · 数据结构 -->
+          <div class="bg-[var(--surface)] rounded-[12px] border border-[var(--border)] p-3 flex items-center gap-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--primary-border)] cursor-pointer">
+            <div class="shrink-0 w-12 h-12 rounded-full bg-[var(--primary-soft)] flex items-center justify-center text-[var(--primary)]">
+              <i data-lucide="database" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-[15px] font-bold text-[var(--text-primary)] truncate">数据结构</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[12px] text-[var(--text-muted)] truncate">203题 · 上次练习 3天前</p>
+                <span class="shrink-0 text-[11px] font-bold tabular-nums" style="color: var(--primary);">55%</span>
+              </div>
+              <div class="mt-2 h-[3px] bg-[var(--surface-muted)] rounded-full overflow-hidden">
+                <div class="h-full bg-[var(--primary)] rounded-full w-[55%]"></div>
+              </div>
+            </div>
+            <button type="button" data-dom-id="cta-go-practice"
+                    class="shrink-0 h-9 px-4 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] text-[13px] font-semibold whitespace-nowrap transition-colors duration-150 hover:text-[var(--primary-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    onclick="document.getElementById('practiceModeSheet').classList.add('mode-sheet--open')">
+              练习
+            </button>
+          </div>
+
+        </div>
+        <!-- ═══════════════════════════════════════════════════════════════
+             END COURSE CARDS
+             ═══════════════════════════════════════════════════════════════ -->
+
+      </main>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           底部固定主导航（4 标签：首页 / 题库 / 导入 / 我的）
+           ═══════════════════════════════════════════════════════════════ -->
+      <nav class="bottom-nav" aria-label="主导航">
+
+        <!-- 1. 首页 -->
+        <button type="button" class="nav-item" data-nav-key="home" data-dom-id="nav-home">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="nav-label">首页</span>
+        </button>
+
+        <!-- 2. 题库（当前页 · data-active="true"） -->
+        <button type="button" class="nav-item" data-nav-key="courses" data-dom-id="nav-courses" data-active="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span class="nav-label">题库</span>
+        </button>
+
+        <!-- 3. 导入 -->
+        <button type="button" class="nav-item" data-nav-key="import" data-dom-id="nav-import">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="nav-label">导入</span>
+        </button>
+
+        <!-- 5. 我的 -->
+        <button type="button" class="nav-item" data-nav-key="mine" data-dom-id="nav-mine">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="nav-label">我的</span>
+        </button>
+
+      </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Shell Styles · iOS 26 Liquid Glass（放在 <body> 内）
+         毛玻璃材质 · 弹簧动效 · 慷慨圆角 · 内高光
+         ═══════════════════════════════════════════════════════════════ -->
+    <style>
+      /* ═══════════════════════════════════════════════════════════════
+         PART 1 · Shell CSS · iOS 26 Liquid Glass Floating Capsule Nav
+         ═══════════════════════════════════════════════════════════════ */
+
+      /* ── 1.1 基础重置 ── */
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        margin: 0; padding: 0;
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* ── 1.2 应用容器 ── */
+      .shell-container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        max-width: 420px;
+        min-height: 100vh;
+        margin: 0 auto;
+        background: var(--bg);
+        box-shadow: 0 0 40px rgba(15, 23, 42, 0.10);
+        overflow: hidden;
+      }
+
+      /* ── 1.2b 装饰性背景光斑 · iOS 26 深度感 ──
+         两个模糊渐变光斑固定在容器顶部，透过玻璃卡片产生色彩折射。 */
+      .shell-container::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -40px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .shell-container::after {
+        content: '';
+        position: absolute;
+        top: 120px;
+        left: -60px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* 内容区在光斑之上 */
+      .shell-content { position: relative; z-index: 1; }
+      .bottom-nav { z-index: 50; }
+
+      /* ── 1.3 内容区 · 底部预留悬浮导航空间 ── */
+      .shell-content {
+        flex: 1;
+        padding-bottom: 96px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         1.4 底部悬浮胶囊导航 · iOS 26 Liquid Glass Floating Capsule
+         ─────────────────────────────────────────────────────────────────
+         核心特征：
+         · 悬浮于内容之上，不贴底边（bottom: 20px）
+         · 左右留边距（width: calc(100% - 32px)）
+         · 胶囊外形（border-radius: 9999px）
+         · 液态玻璃材质（半透明 + 模糊 + 饱和度增强 + 内高光）
+         · 选中项有玻璃透镜高亮（glass lens blob）
+         ═══════════════════════════════════════════════════════════════ */
+      .bottom-nav {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 388px;
+        height: 64px;
+        background: var(--glass-nav);
+        backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        border: 1px solid var(--glass-border);
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        padding: 6px;
+        gap: 2px;
+        z-index: 50;
+        box-shadow:
+          0 8px 32px rgba(15, 23, 42, 0.12),
+          0 2px 8px rgba(15, 23, 42, 0.06),
+          var(--glass-inner-highlight);
+      }
+
+      /* ── 1.5 单个标签 ──
+         胶囊内等分；选中项有玻璃透镜背景。 */
+      .nav-item {
+        flex: 1;
+        height: 52px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        background: transparent;
+        border: none;
+        border-radius: 9999px;
+        color: var(--text-muted);
+        font-family: var(--font-sans);
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        position: relative;
+        transition: color var(--ease-out), background var(--ease-spring), box-shadow var(--ease-spring);
+      }
+
+      .nav-item:active {
+        transform: scale(0.92);
+      }
+
+      .nav-item svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 2;
+        transition: transform var(--ease-spring);
+      }
+
+      /* ── 1.6 选中态 · Glass Lens 透镜高亮 ──
+         iOS 26 标志性效果：选中项背后出现玻璃透镜圆角矩形 */
+      .nav-item.active,
+      .nav-item[data-active="true"] {
+        color: var(--primary);
+        background: rgba(16, 185, 129, 0.12);
+        box-shadow:
+          inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+          var(--glass-inner-highlight);
+      }
+
+      .nav-item.active svg,
+      .nav-item[data-active="true"] svg {
+        transform: scale(1.1);
+      }
+
+      /* ── 1.7 强调标签 · 导入 ──
+         不再凸出导航栏；改为胶囊内的实心圆形图标按钮。 */
+      .nav-item--emphasis {
+        flex: 0 0 auto;
+        width: 52px;
+      }
+
+      .nav-emphasis-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #FFFFFF;
+        box-shadow:
+          0 4px 12px rgba(16, 185, 129, 0.30),
+          var(--glass-inner-highlight);
+        transition: box-shadow var(--ease-out), transform var(--ease-spring);
+      }
+
+      .nav-item--emphasis:active .nav-emphasis-badge {
+        transform: scale(0.90);
+      }
+
+      .nav-emphasis-badge svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2.5;
+      }
+
+      /* 强调标签选中态 · 玻璃透镜环 */
+      .nav-item--emphasis.active,
+      .nav-item--emphasis[data-active="true"] {
+        background: rgba(16, 185, 129, 0.12);
+        box-shadow:
+          inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+          var(--glass-inner-highlight);
+      }
+
+      .nav-item--emphasis.active .nav-emphasis-badge,
+      .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+        box-shadow:
+          0 4px 12px rgba(16, 185, 129, 0.30),
+          0 0 0 3px var(--primary-soft),
+          var(--glass-inner-highlight);
+      }
+
+      /* ── 1.8 标签文字 ── */
+      .nav-label {
+        font-family: var(--font-sans);
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         Dark Mode 深色模式
+         ═══════════════════════════════════════════════════════════════ */
+      .dark .bottom-nav {
+        background: var(--glass-nav);
+        backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        border-color: var(--glass-border);
+      }
+
+      .dark .nav-item.active,
+      .dark .nav-item[data-active="true"] {
+        background: rgba(16, 185, 129, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.20), var(--glass-inner-highlight);
+      }
+
+      .dark .nav-emphasis-badge {
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), var(--glass-inner-highlight);
+      }
+
+      .dark .nav-item--emphasis.active .nav-emphasis-badge,
+      .dark .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), 0 0 0 3px var(--primary-soft), var(--glass-inner-highlight);
+      }
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Page-Specific Component Styles · iOS 26 Liquid Glass
+         仅修改样式值；不改动 HTML 结构 / 类名 / data-dom-id / 文本。
+         ═══════════════════════════════════════════════════════════════ -->
+    <style>
+      /* ── 1. Sticky Page Header · 玻璃材质标题栏 ──
+         半透明玻璃背景 + 模糊，内容滚动时呈毛玻璃效果。 */
+      .shell-content > header {
+        background: var(--glass-header);
+        backdrop-filter: blur(var(--glass-header-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(180%);
+        border-bottom-color: var(--glass-border);
+      }
+
+      /* 标题栏添加按钮：弹簧过渡（与 Tailwind 的 scale 属性一致） */
+      .shell-content > header button {
+        transition: scale var(--ease-spring), transform var(--ease-spring),
+                    box-shadow var(--ease-spring);
+      }
+
+      /* ── 2. Search Bar · 玻璃搜索栏 ──
+         圆角提升至 radius-md，叠加柔和玻璃背景。 */
+      .shell-content input[type="text"] {
+        border-radius: var(--radius-md);
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        transition: box-shadow var(--ease-spring), background var(--ease-spring);
+      }
+
+      /* ── 3. Filter Chips · 药丸筛选标签 ── */
+      .shell-content .no-scrollbar > button {
+        border-radius: var(--radius-full);
+        transition: background var(--ease-spring), color var(--ease-spring),
+                    border-color var(--ease-spring), scale var(--ease-spring);
+      }
+
+      /* 选中态（首个标签）：玻璃材质 + 模糊 + 内高光 */
+      .shell-content .no-scrollbar > button:first-child {
+        background: rgba(16, 185, 129, 0.82);
+        backdrop-filter: blur(12px) saturate(180%);
+        -webkit-backdrop-filter: blur(12px) saturate(180%);
+        box-shadow: var(--glass-inner-highlight), 0 4px 12px var(--primary-glow);
+      }
+
+      /* ── 4. Course Cards · 液态玻璃卡片 ──
+         半透明玻璃 + 模糊 + 卡片阴影 + 内高光；圆角提升至 radius-lg。
+         使用原生 translate/scale 属性，与 Tailwind v4 变换一致，避免叠加。 */
+      .shell-content .flex.flex-col.gap-3 > div {
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border-radius: var(--radius-lg);
+        border-color: var(--glass-border);
+        box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+        transition: translate var(--ease-spring), scale var(--ease-spring),
+                    border-color var(--ease-spring), box-shadow var(--ease-spring);
+      }
+
+      .shell-content .flex.flex-col.gap-3 > div:hover {
+        translate: 0 -2px;
+      }
+
+      .shell-content .flex.flex-col.gap-3 > div:active {
+        scale: 0.98;
+      }
+
+      /* ── 5. Icon Circles · 52px ── */
+      .shell-content .shrink-0.w-12.h-12.rounded-full {
+        width: 52px;
+        height: 52px;
+        transition: transform var(--ease-spring);
+      }
+
+      /* ── 6. Practice Buttons · 弹簧过渡 + 按压缩放 ──
+         圆角 radius-sm；按下时 scale(0.94)（覆盖 Tailwind 的 0.95）。 */
+      .shell-content .flex.flex-col.gap-3 > div > button {
+        border-radius: var(--radius-sm);
+        transition: color var(--ease-spring), background var(--ease-spring),
+                    scale var(--ease-spring);
+      }
+
+      .shell-content .flex.flex-col.gap-3 > div > button:active {
+        scale: 0.94;
+      }
+
+      /* ── 7. Progress Bars · 4px 高 · 全圆角 ── */
+      .shell-content .mt-2 {
+        height: 4px;
+        border-radius: var(--radius-full);
+      }
+
+      /* ── Reduced Motion · 无障碍 ── */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+
+    <!-- ═══ 练习方式选择弹出层 ═══ -->
+    <div class="mode-sheet" id="practiceModeSheet">
+      <div class="mode-sheet__backdrop" onclick="document.getElementById('practiceModeSheet').classList.remove('mode-sheet--open')"></div>
+      <div class="mode-sheet__panel">
+        <div class="mode-sheet__handle"></div>
+        <div class="mode-sheet__header">
+          <h2 class="mode-sheet__title">选择练习方式</h2>
+          <button type="button" data-dom-id="mode-close" class="mode-sheet__close" onclick="document.getElementById('practiceModeSheet').classList.remove('mode-sheet--open')">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <p class="mode-sheet__subtitle">高等数学 · 128题</p>
+        <div class="mode-sheet__list">
+          <button type="button" data-dom-id="mode-sequence" class="mode-option">
+            <div class="mode-option__icon" style="background: var(--primary-soft); color: var(--primary);">
+              <i data-lucide="list-ordered" class="w-5 h-5"></i>
+            </div>
+            <div class="mode-option__body">
+              <div class="mode-option__name">顺序练习</div>
+              <div class="mode-option__desc">按题号顺序逐题练习</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 mode-option__arrow"></i>
+          </button>
+          <button type="button" data-dom-id="mode-random" class="mode-option">
+            <div class="mode-option__icon" style="background: var(--state-info-soft); color: var(--state-info);">
+              <i data-lucide="shuffle" class="w-5 h-5"></i>
+            </div>
+            <div class="mode-option__body">
+              <div class="mode-option__name">随机练习</div>
+              <div class="mode-option__desc">打乱顺序，随机出题</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 mode-option__arrow"></i>
+          </button>
+          <button type="button" data-dom-id="mode-wrong" class="mode-option">
+            <div class="mode-option__icon" style="background: var(--state-error-soft); color: var(--state-error);">
+              <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+            </div>
+            <div class="mode-option__body">
+              <div class="mode-option__name">错题强化</div>
+              <div class="mode-option__desc">专攻错题，查漏补缺</div>
+            </div>
+            <span class="mode-option__badge" style="background: var(--state-error-soft); color: var(--state-error);">23题</span>
+            <i data-lucide="chevron-right" class="w-5 h-5 mode-option__arrow"></i>
+          </button>
+          <button type="button" data-dom-id="mode-favorite" class="mode-option">
+            <div class="mode-option__icon" style="background: var(--state-warning-soft); color: var(--state-warning);">
+              <i data-lucide="star" class="w-5 h-5"></i>
+            </div>
+            <div class="mode-option__body">
+              <div class="mode-option__name">收藏练习</div>
+              <div class="mode-option__desc">仅练习收藏的题目</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 mode-option__arrow"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <style>
+      .mode-sheet {
+        position: fixed; inset: 0; z-index: 100;
+        visibility: hidden; opacity: 0;
+        transition: visibility 0s 0.3s, opacity 0.3s ease;
+      }
+      .mode-sheet--open { visibility: visible; opacity: 1; transition: visibility 0s, opacity 0.3s ease; }
+      .mode-sheet__backdrop {
+        position: absolute; inset: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      }
+      .mode-sheet__panel {
+        position: absolute; bottom: 0; left: 50%;
+        transform: translateX(-50%) translateY(100%);
+        width: 100%; max-width: 420px;
+        background: var(--glass-overlay);
+        backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        border-top: 1px solid var(--glass-border);
+        border-left: 1px solid var(--glass-border);
+        border-right: 1px solid var(--glass-border);
+        box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.15);
+        padding: 8px 20px 32px;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .mode-sheet--open .mode-sheet__panel { transform: translateX(-50%) translateY(0); }
+      .mode-sheet__handle {
+        width: 36px; height: 4px; border-radius: var(--radius-full);
+        background: var(--border-strong); margin: 0 auto 16px;
+      }
+      .mode-sheet__header {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+      }
+      .mode-sheet__title { font-size: 20px; font-weight: 800; color: var(--text-primary); font-family: var(--font-display); margin: 0; }
+      .mode-sheet__close {
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        border: none; background: var(--surface-muted); color: var(--text-muted); cursor: pointer;
+        border-radius: var(--radius-full); transition: background var(--ease-spring), transform var(--ease-spring);
+      }
+      .mode-sheet__close:active { transform: scale(0.90); }
+      .mode-sheet__subtitle { font-size: 13px; color: var(--text-muted); margin: 0 0 20px 0; }
+      .mode-sheet__list { display: flex; flex-direction: column; gap: 8px; }
+      .mode-option {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px; border: 1px solid var(--border);
+        border-radius: var(--radius-lg); background: var(--surface);
+        cursor: pointer; text-align: left; font: inherit; color: inherit;
+        transition: border-color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring);
+      }
+      .mode-option:active { transform: scale(0.98); }
+      .mode-option:hover { border-color: var(--primary-border); background: var(--primary-soft); }
+      .mode-option__icon {
+        width: 40px; height: 40px; border-radius: var(--radius-full);
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      }
+      .mode-option__body { flex: 1; min-width: 0; }
+      .mode-option__name { font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+      .mode-option__desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 2px; }
+      .mode-option__badge {
+        font-size: 11px; font-weight: 700; padding: 3px 8px;
+        border-radius: var(--radius-full); flex-shrink: 0;
+      }
+      .mode-option__arrow { color: var(--text-muted); flex-shrink: 0; }
+    </style>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>
