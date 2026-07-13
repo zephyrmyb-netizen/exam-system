@@ -4,9 +4,11 @@ import { useRoute } from "vue-router";
 import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sparkles, Sun, User } from "@lucide/vue";
 
 import { getAuthEventName, getToken } from "../api/request";
+import { flushPendingPracticeSubmissions } from "../api/practice";
 import ConfirmDialog from "../components/common/ConfirmDialog.vue";
 import GlobalSearch from "../components/search/GlobalSearch.vue";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import { useOfflineSync } from "../composables/useOfflineSync";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
@@ -15,6 +17,7 @@ const route = useRoute();
 const { replaceTo, returnToSource } = useAppNavigation();
 const { fetchProfile } = useAuth();
 const theme = useThemeStore();
+const { isOnline, pendingCount, refreshPendingCount } = useOfflineSync();
 
 const {
   status: aiStatus,
@@ -33,6 +36,7 @@ const inputFocusActive = ref(false);
 const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take"]);
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
+const showOfflineSyncBanner = computed(() => !isOnline.value || pendingCount.value > 0);
 
 const isImmersiveRoute = computed(() => immersiveRouteNames.has(route.name as string));
 const showBottomNav = computed(() => !keyboardActive.value && !inputFocusActive.value && !isImmersiveRoute.value);
@@ -129,16 +133,26 @@ function handleFocusOut() {
   }, 0);
 }
 
+async function syncPendingPracticeActions() {
+  try {
+    await flushPendingPracticeSubmissions();
+  } finally {
+    await refreshPendingCount();
+  }
+}
+
 onMounted(() => {
   if (getToken()) {
     fetchProfile();
     void resumeAiImportTask();
   }
+  void refreshPendingCount();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
   window.addEventListener("keydown", handleGlobalKeydown);
   window.addEventListener("focusin", handleFocusIn);
   window.addEventListener("focusout", handleFocusOut);
+  window.addEventListener("online", syncPendingPracticeActions);
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleViewportResize);
   }
@@ -150,6 +164,7 @@ onUnmounted(() => {
   window.removeEventListener("keydown", handleGlobalKeydown);
   window.removeEventListener("focusin", handleFocusIn);
   window.removeEventListener("focusout", handleFocusOut);
+  window.removeEventListener("online", syncPendingPracticeActions);
   if (window.visualViewport) {
     window.visualViewport.removeEventListener("resize", handleViewportResize);
   }
@@ -198,6 +213,12 @@ onUnmounted(() => {
     <div v-if="showSuccessToast" class="ai-task-toast">
       <CheckCircle :size="16" :stroke-width="2.5" />
       <span>导入解析完成</span>
+    </div>
+
+    <div v-if="showOfflineSyncBanner" class="offline-sync-banner" role="status" aria-live="polite">
+      <span class="offline-sync-dot" aria-hidden="true"></span>
+      <span v-if="!isOnline">当前离线，练习记录将在联网后自动同步。</span>
+      <span v-else>{{ pendingCount }} 条练习记录待同步，正在尝试同步。</span>
     </div>
 
     <main class="app-main">
@@ -375,6 +396,29 @@ onUnmounted(() => {
   font-weight: 800;
   transform: translateX(-50%);
   box-shadow: var(--shadow-modal);
+}
+
+.offline-sync-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--amber-border);
+  border-radius: var(--radius-md);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.offline-sync-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .bottom-nav {

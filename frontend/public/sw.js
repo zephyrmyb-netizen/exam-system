@@ -1,5 +1,14 @@
-const CACHE_NAME = "xuexibao-shell-v1";
+const CACHE_NAME = "xuexibao-shell-v2";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/icon.svg"];
+const API_PREFIXES = [
+  "/auth", "/courses", "/practice", "/questions", "/wrongbook", "/imports",
+  "/library", "/chat", "/exams", "/admin", "/tags", "/recommendations",
+  "/analytics", "/exports", "/bookmarks", "/health",
+];
+
+function isApiRequest(url) {
+  return API_PREFIXES.some((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -31,5 +40,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
+  // Learning records must always come from the server while online. Caching
+  // API responses here caused stale statistics, wrong-book entries and exams.
+  if (isApiRequest(url)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (["script", "style", "image", "font"].includes(request.destination)) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (response.ok) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+        }
+        return response;
+      })),
+    );
+  }
 });

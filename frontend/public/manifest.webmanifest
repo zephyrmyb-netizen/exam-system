@@ -1,7 +1,7 @@
 {
-  "name": "Xuexibao",
-  "short_name": "Xuexibao",
-  "description": "AI question import and study tool",
+  "name": "学习宝",
+  "short_name": "学习宝",
+  "description": "AI 导入题库、刷题复习与学习数据分析工具",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f7fb",
@@ -12,6 +12,16 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "开始练习",
+      "url": "/courses"
+    },
+    {
+      "name": "错题本",
+      "url": "/wrongbook"
     }
   ]
 }

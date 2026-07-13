@@ -263,9 +263,9 @@ onMounted(() => fetchAll());
   display: grid;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--amber-soft);
+  border: 1px solid var(--amber-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #fffbeb, #fff7ed);
+  background: var(--amber-soft);
 }
 
 .review-row {
@@ -281,7 +281,7 @@ onMounted(() => fetchAll());
 
 .review-lbl,
 .review-val {
-  color: #92400e;
+  color: var(--amber-strong);
   font-size: var(--text-sm);
   font-weight: 800;
 }
@@ -299,8 +299,8 @@ onMounted(() => fetchAll());
   gap: 3px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--amber-soft);
+  color: var(--amber-strong);
   font-size: 11px;
   font-weight: 700;
 }

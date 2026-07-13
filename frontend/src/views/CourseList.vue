@@ -243,6 +243,7 @@ onMounted(fetchCourses);
           type="search"
           class="search-input"
           placeholder="搜索题库、科目或描述"
+          aria-label="搜索题库、科目或描述"
         />
         <button
           v-if="searchText"
