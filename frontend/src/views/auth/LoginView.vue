@@ -37,6 +37,7 @@ async function handleLogin() {
 
 <template>
   <div class="auth-card fade-up d1">
+    <p class="auth-brand">学习宝 <span>学习与练习</span></p>
     <div class="auth-tabs">
       <button class="auth-tab active" type="button">登录</button>
       <router-link class="auth-tab" replace to="/register">注册</router-link>
@@ -44,6 +45,11 @@ async function handleLogin() {
 
     <p v-if="authMessage" class="success-message">{{ authMessage }}</p>
     <p v-if="authError" class="error-message">{{ authError }}</p>
+
+    <div class="auth-heading">
+      <h1>登录</h1>
+      <p>继续使用你的学习空间</p>
+    </div>
 
     <form @submit.prevent="handleLogin">
       <div class="auth-field">
@@ -101,8 +107,24 @@ button.auth-tab {
 
 .success-message,
 .error-message {
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
 }
+.auth-card { max-width: 400px; padding: 24px; border-radius: 6px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
+.auth-brand { margin: 0 0 22px; color: var(--text-main); font-size: 15px; font-weight: 800; }
+.auth-brand span { margin-left: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.auth-tabs { margin-bottom: 22px; padding: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
+.auth-tab { min-height: 44px; padding: 0 12px; border-radius: 0; }
+.auth-tab.active { border-bottom: 2px solid var(--primary); box-shadow: none; }
+.auth-heading { margin-bottom: 20px; }
+.auth-heading h1 { margin: 0; color: var(--text-main); font-family: var(--font-sans); font-size: 22px; font-weight: 800; }
+.auth-heading p { margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
+.auth-field { gap: 7px; margin-bottom: 16px; }
+.auth-field label { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.auth-field input { height: 48px; border-radius: 5px; }
 
 .auth-field-control {
   position: relative;
@@ -117,8 +139,8 @@ button.auth-tab {
   right: 6px;
   top: 50%;
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: none;
   border-radius: var(--radius-sm);
@@ -138,4 +160,6 @@ button.auth-tab {
 .auth-field input {
   font-size: 16px;
 }
+.auth-btn { height: 48px; margin-top: 8px; border-radius: 5px; background: var(--primary); box-shadow: none; }
+.auth-btn:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
 </style>
