@@ -4,18 +4,18 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Palette · 墨韵书房 ── */
-  --page-bg: #faf8f3;
+  /* ── Palette · quiet light study tool ── */
+  --page-bg: #f6f8fc;
   --surface: #ffffff;
-  --surface-soft: #f5f1e8;
-  --surface-strong: #eef2ff;
-  --text-main: #1c1917;
-  --text-secondary: #44403c;
-  --text-muted: #78716c;
-  --text-placeholder: #a8a29e;
-  --line-soft: #e7e5e4;
-  --line-strong: #d6d3d1;
-  --line-accent: #a5b4fc;
+  --surface-soft: #f1f5f9;
+  --surface-strong: #eff6ff;
+  --text-main: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #64748b;
+  --text-placeholder: #94a3b8;
+  --line-soft: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --line-accent: #bfdbfe;
 
   /* ── Semantic aliases (used by Card, CardTitle, Button components) ── */
   --border: var(--line-soft);
@@ -23,18 +23,10 @@
   --surface-muted: var(--surface-soft);
 
   /* ── Brand · 靛蓝 ── */
-  --primary: #4338ca;
-  --primary-strong: #3730a3;
-  --primary-soft: #eef2ff;
-  --primary-border: #c7d2fe;
-  --primary-glow: rgba(67, 56, 202, 0.18);
-
-  /* ── 金箔 ── */
-  --gold: #d97706;
-  --gold-strong: #b45309;
-  --gold-soft: #fef3c7;
-  --gold-border: #fcd34d;
-  --gold-glow: rgba(245, 158, 11, 0.22);
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #eff6ff;
+  --primary-border: #bfdbfe;
 
   --teal: #0d9488;
   --teal-strong: #0f766e;
@@ -55,10 +47,8 @@
   --emerald-border: #a7f3d0;
 
   /* ── Typography ── */
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
-  --font-display: "Cormorant Garamond", "Noto Serif SC", serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Consolas", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
 
   --text-xs: 0.6875rem;    /* 11px */
   --text-sm: 0.8125rem;    /* 13px */
@@ -81,21 +71,20 @@
 
   /* ── Radii ── */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
   --radius-full: 9999px;
 
   /* ── Shadows · 带靛蓝色调 ── */
   --shadow-xs: 0 1px 2px rgba(30, 27, 23, 0.04);
   --shadow-sm: 0 2px 8px rgba(30, 27, 23, 0.05);
-  --shadow-card: 0 4px 16px rgba(67, 56, 202, 0.08);
-  --shadow-elevated: 0 12px 28px -6px rgba(67, 56, 202, 0.12);
-  --shadow-modal: 0 20px 48px -12px rgba(67, 56, 202, 0.2);
-  --shadow-primary: 0 6px 18px rgba(67, 56, 202, 0.28);
+  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-elevated: 0 4px 12px rgba(15, 23, 42, 0.07);
+  --shadow-modal: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-primary: 0 2px 6px rgba(37, 99, 235, 0.18);
   --shadow-teal: 0 6px 18px rgba(13, 148, 136, 0.22);
-  --shadow-gold: 0 6px 18px rgba(245, 158, 11, 0.28);
 
   /* ── Transitions ── */
   /* ease-out: 通用快速反馈（hover / 选中态），柔和的减速曲线 */
@@ -346,7 +335,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   height: 52px;
   border-radius: var(--radius-md);
   color: #ffffff;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: var(--primary);
   box-shadow: var(--shadow-primary);
   transition: box-shadow var(--ease-out), transform var(--ease-out);
 }
@@ -389,7 +378,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .btn--default {
   padding: 12px 18px;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   border: 1px solid rgba(37, 99, 235, 0.7);
   box-shadow: var(--shadow-primary);
 }
@@ -485,7 +474,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .primary-button {
   padding: 12px 18px;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   border-color: rgba(37, 99, 235, 0.7);
   box-shadow: var(--shadow-primary);
 }
@@ -525,7 +514,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .ai-button {
-  background: linear-gradient(135deg, var(--teal), var(--teal-strong));
+  background: var(--teal);
   border-color: rgba(15, 118, 110, 0.7);
   box-shadow: var(--shadow-teal);
 }
@@ -582,7 +571,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   padding: var(--space-5);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 253, 0.96));
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
 
@@ -799,7 +788,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .surface-card--soft {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 253, 0.96));
+  background: var(--surface);
 }
 
 .icon-button {
@@ -1302,7 +1291,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   padding: var(--space-4);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 253, 0.98));
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1313,7 +1302,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   height: 52px;
   border-radius: var(--radius-md);
   color: #ffffff;
-  background: linear-gradient(135deg, var(--primary), var(--violet));
+  background: var(--primary);
   font-size: var(--text-lg);
   font-weight: 800;
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.22);
@@ -1533,7 +1522,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .chat-row.user .chat-avatar {
   grid-column: 2;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
 }
 
 .chat-bubble {
@@ -1562,7 +1551,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   grid-row: 1;
   color: #ffffff;
   border-color: transparent;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
 }
 
@@ -1927,359 +1916,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   墨韵书房 · Decorative Enhancements
-   纸张纹理 · 宋体标题 · 金箔装饰 · 学院雅致
-   ═══════════════════════════════════════════════════════════ */
-
-/* 纸张纹理 — 暖底双色圆点 */
-body {
-  background-image:
-    radial-gradient(circle at 25% 25%, rgba(67, 56, 202, 0.025) 1px, transparent 1px),
-    radial-gradient(circle at 75% 75%, rgba(180, 83, 9, 0.02) 1px, transparent 1px);
-  background-size: 18px 18px, 24px 24px;
-  background-color: var(--page-bg);
-}
-
-/* 顶部柔光 */
-.app-shell::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 240px;
-  background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.08), transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.app-shell > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* 标题用思源宋体 — 学院书卷感 */
-.app-header h1,
-.hero-card h2,
-.home-title h2,
-.section-heading h2,
-.profile-copy h2,
-.auth-form-section h2,
-.chat-topbar h2 {
-  font-family: var(--font-serif);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* Kicker 用 Cormorant Garamond 斜体 */
-.page-kicker,
-.hero-eyebrow,
-.chat-kicker {
-  font-family: var(--font-display);
-  font-style: italic;
-  letter-spacing: 0.06em;
-  text-transform: none;
-  color: var(--gold-strong);
-}
-
-/* 页面主标题前金色短线 */
-.app-header h1::before {
-  content: "";
-  display: inline-block;
-  width: 4px;
-  height: 0.85em;
-  margin-right: 10px;
-  vertical-align: -2%;
-  background: linear-gradient(180deg, var(--gold), var(--gold-border));
-  border-radius: 2px;
-}
-
-/* Hero 卡片 — 靛蓝渐变 + 金箔描边 */
-.hero-card {
-  position: relative;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(129, 140, 248, 0.22), transparent 50%),
-    linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%);
-  border-color: transparent;
-  color: #ffffff;
-  box-shadow: 0 16px 40px -12px rgba(67, 56, 202, 0.45);
-}
-
-.hero-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.5), rgba(255, 255, 255, 0.1) 40%, rgba(251, 191, 36, 0.3));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.hero-card h2,
-.hero-card p {
-  color: #ffffff;
-}
-
-.hero-card p {
-  opacity: 0.85;
-}
-
-.hero-card .page-kicker,
-.hero-card .hero-eyebrow {
-  color: var(--gold-border);
-}
-
-/* 入口卡片 hover 金色边 */
-.home-entry:hover {
-  border-color: var(--gold-border);
-  box-shadow: var(--shadow-gold);
-}
-
-.home-entry-icon {
-  position: relative;
-  overflow: hidden;
-}
-
-.home-entry-icon::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 50%);
-  pointer-events: none;
-}
-
-/* 统计卡片顶部金色装饰条 */
-.stat-card::before {
-  background: linear-gradient(90deg, var(--gold), var(--gold-border));
-  opacity: 0.7;
-}
-
-.stat-value {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--primary-strong);
-}
-
-/* 数字 / meta 用等宽字体 */
-.meta-row span,
-.stat-badge,
-.page-info,
-.online-dot {
-  font-family: var(--font-mono);
-}
-
-/* 底部导航激活态金色光点 */
-.nav-button.active .nav-icon:not(.nav-icon--ai)::after {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 8px var(--gold);
-}
-
-.nav-icon {
-  position: relative;
-}
-
-/* AI 导航按钮 — 靛蓝 + 金色高光 */
-.nav-icon--ai {
-  background: linear-gradient(135deg, #3730a3, #6366f1);
-  box-shadow: 0 8px 22px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.nav-icon--ai::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), transparent 50%);
-  pointer-events: none;
-}
-
-/* 主按钮 — 靛蓝渐变 + 玻璃高光 */
-.btn--default,
-.primary-button {
-  background: linear-gradient(135deg, var(--primary-strong), var(--primary));
-  position: relative;
-  overflow: hidden;
-}
-
-.btn--default::before,
-.primary-button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
-  pointer-events: none;
-  border-radius: inherit;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-/* AI 按钮 — 翡翠绿保留但加金边高光 */
-.ai-button {
-  position: relative;
-  overflow: hidden;
-}
-
-.ai-button::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
-  pointer-events: none;
-  border-radius: inherit;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-/* 个人头像 — 金色虚线圆环旋转 */
-.profile-avatar {
-  position: relative;
-  background: linear-gradient(135deg, var(--primary-strong), var(--primary));
-  box-shadow: 0 8px 16px rgba(67, 56, 202, 0.28);
-}
-
-/* 选项选中态 — 靛蓝 + 金色描边 */
-.answer-button.selected {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-}
-
-/* 题目标签 — 圆点前缀 */
-.meta-row span::before {
-  content: "";
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.6;
-  vertical-align: middle;
-}
-
-/* 卡片左侧金色装饰条（可选类） */
-.card--accent {
-  position: relative;
-  overflow: hidden;
-}
-
-.card--accent::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--gold), var(--gold-border));
-}
-
-/* 区块标题前罗马序号（可选类） */
-.section-heading--numbered::before {
-  content: counter(section-roman, upper-roman);
-  counter-increment: section-roman;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--gold-strong);
-  background: var(--gold-soft);
-  border: 1px solid var(--gold-border);
-  border-radius: 50%;
-  vertical-align: middle;
-}
-
-.section-heading--numbered {
-  counter-reset: none;
-}
-
-/* 数字徽章用等宽 */
-.stat-badge,
-.online-dot {
-  letter-spacing: 0.02em;
-}
-
-/* 输入框聚焦 — 靛蓝光晕 */
-.text-input:focus,
-.large-textarea:focus,
-.answer-textarea:focus,
-.filter-input:focus,
-.chat-composer textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-}
-
-/* 章节标题装饰下划线 */
-.section-heading h2 {
-  position: relative;
-  display: inline-block;
-}
-
-/* 聊天气泡（用户）— 靛蓝渐变 */
-.chat-row.user .chat-bubble {
-  background: linear-gradient(135deg, var(--primary-strong), var(--primary));
-  box-shadow: 0 4px 12px -2px rgba(67, 56, 202, 0.3);
-}
-
-/* 卡片 hover 提升金色微光 */
-.card:hover,
-.surface-card:hover {
-  box-shadow: var(--shadow-card);
-}
-
-/* 滚动条美化 */
-.main::-webkit-scrollbar,
-.chat-messages::-webkit-scrollbar {
-  width: 4px;
-}
-
-.main::-webkit-scrollbar-thumb,
-.chat-messages::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
-  border-radius: 2px;
-}
-
-/* 品牌水印（可选，放在 AppLayout 底部） */
-.brand-watermark {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--text-xs);
-  color: var(--text-placeholder);
-  text-align: center;
-  opacity: 0.6;
-  letter-spacing: 0.5px;
-  padding: var(--space-4) 0;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   墨韵书房 · Component Library
-   Reusable building blocks mapped 1:1 to frontend-preview.html
-   ═══════════════════════════════════════════════════════════ */
+/* Shared component primitives */
 
 /* ── Page Head ── */
 .page-head {
@@ -2293,7 +1930,7 @@ body {
   align-items: baseline;
   gap: var(--space-3);
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   font-weight: 900;
   letter-spacing: -0.01em;
@@ -2303,13 +1940,13 @@ body {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--gold), transparent);
+  background: var(--line-soft);
   opacity: 0.7;
 }
 .page-head .ph-sub {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
+  font-family: var(--font-sans);
+  font-style: normal;
   font-size: var(--text-sm);
   color: var(--text-muted);
   letter-spacing: 0.5px;
@@ -2317,52 +1954,33 @@ body {
 .page-head .ph-date {
   align-self: flex-start;
   padding: 2px 10px;
-  border: 1px solid var(--gold-border);
+  border: 1px solid var(--line-soft);
   border-radius: 999px;
-  background: var(--gold-soft);
-  color: var(--gold-strong);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
 
-/* ── Hero Banner (indigo gradient + gold foil border) ── */
+/* ── Hero Banner ── */
 .hero-banner {
   position: relative;
   overflow: hidden;
   margin-top: var(--space-2);
   padding: var(--space-5) var(--space-5) var(--space-6);
-  border-radius: var(--radius-2xl);
-  background:
-    radial-gradient(120% 80% at 100% 0%, rgba(217, 119, 6, 0.35), transparent 60%),
-    radial-gradient(140% 100% at 0% 100%, rgba(99, 102, 241, 0.55), transparent 55%),
-    linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%);
-  color: #ffffff;
-  box-shadow: 0 16px 32px -10px rgba(30, 27, 75, 0.45);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-card);
 }
 .hero-banner::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.9), rgba(217, 119, 6, 0.2) 40%, transparent 70%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  display: none;
 }
 .hero-banner::after {
-  content: "";
-  position: absolute;
-  top: -40%;
-  right: -10%;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.25), transparent 65%);
-  pointer-events: none;
+  display: none;
 }
 .hero-banner > * { position: relative; z-index: 1; }
 
@@ -2374,18 +1992,18 @@ body {
 }
 .hero-greeting {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
+  font-family: var(--font-sans);
+  font-style: normal;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   letter-spacing: 0.5px;
 }
 .hero-date {
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  color: #FBBF24;
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -2394,7 +2012,7 @@ body {
 }
 .hero-title {
   margin: var(--space-2) 0 var(--space-3);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   font-weight: 900;
   line-height: 1.2;
@@ -2412,20 +2030,19 @@ body {
   gap: 2px;
   padding: var(--space-3) var(--space-2);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
+  background: var(--surface-soft);
+  border: 1px solid var(--line-soft);
 }
 .hero-num strong {
   font-family: var(--font-mono);
   font-size: var(--text-xl);
   font-weight: 800;
-  color: #FBBF24;
+  color: var(--primary-strong);
   letter-spacing: -0.02em;
 }
 .hero-num span {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   font-weight: 600;
 }
 .hero-ring {
@@ -2434,7 +2051,7 @@ body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: conic-gradient(var(--gold) 0deg, var(--gold) calc(var(--p, 60) * 3.6deg), rgba(255,255,255,0.15) calc(var(--p, 60) * 3.6deg));
+  background: var(--primary-soft);
   position: relative;
 }
 .hero-ring::before {
@@ -2442,7 +2059,7 @@ body {
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  background: rgba(30, 27, 75, 0.85);
+  background: var(--surface);
 }
 .hero-ring-text {
   position: relative;
@@ -2455,12 +2072,12 @@ body {
 .hero-ring-text strong {
   font-family: var(--font-mono);
   font-size: var(--text-lg);
-  color: #FBBF24;
+  color: var(--primary-strong);
   font-weight: 800;
 }
 .hero-ring-text small {
   font-size: 9px;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 .hero-nums {
@@ -2501,14 +2118,14 @@ body {
   color: #ffffff;
 }
 .quick-ico svg { width: 18px; height: 18px; stroke-width: 2.2; }
-.q-indigo .quick-ico { background: linear-gradient(135deg, #4338CA, #6366F1); box-shadow: 0 6px 14px rgba(67,56,202,0.28); }
-.q-gold .quick-ico   { background: linear-gradient(135deg, #B45309, #D97706); box-shadow: 0 6px 14px rgba(217,119,6,0.28); }
-.q-rose .quick-ico   { background: linear-gradient(135deg, #BE123C, #F43F5E); box-shadow: 0 6px 14px rgba(244,63,94,0.28); }
-.q-jade .quick-ico   { background: linear-gradient(135deg, #047857, #10B981); box-shadow: 0 6px 14px rgba(16,185,129,0.28); }
-.q-violet .quick-ico { background: linear-gradient(135deg, #6D28D9, #8B5CF6); box-shadow: 0 6px 14px rgba(139,92,246,0.28); }
-.q-teal .quick-ico   { background: linear-gradient(135deg, #0F766E, #14B8A6); box-shadow: 0 6px 14px rgba(20,184,166,0.28); }
+.q-indigo .quick-ico,
+.q-gold .quick-ico,
+.q-rose .quick-ico,
+.q-jade .quick-ico,
+.q-violet .quick-ico,
+.q-teal .quick-ico { background: var(--primary); box-shadow: var(--shadow-primary); }
 
-/* ── Section Head with Roman numeral ── */
+/* ── Section Head ── */
 .section-head {
   display: flex;
   align-items: center;
@@ -2521,18 +2138,18 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--gold-soft);
-  color: var(--gold-strong);
-  font-family: var(--font-display);
-  font-style: italic;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-family: var(--font-sans);
+  font-style: normal;
   font-weight: 700;
   font-size: var(--text-sm);
-  border: 1px solid var(--gold-border);
+  border: 1px solid var(--primary-border);
 }
 .section-title {
   flex: 1;
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 800;
   color: var(--text-main);
@@ -2547,15 +2164,15 @@ body {
   padding: 4px 6px;
 }
 
-/* ── Streak Card (gold left bar) ── */
+/* ── Streak Card ── */
 .streak-card {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4);
-  border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
-  border: 1px solid var(--gold-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
   position: relative;
   overflow: hidden;
 }
@@ -2564,7 +2181,7 @@ body {
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #FBBF24, #D97706);
+  background: var(--primary);
 }
 .streak-main {
   flex: 1;
@@ -2573,15 +2190,15 @@ body {
   gap: 2px;
 }
 .streak-main strong {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 900;
-  color: #92400E;
+  color: var(--text-main);
   letter-spacing: -0.01em;
 }
 .streak-main span {
   font-size: var(--text-xs);
-  color: #B45309;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 .streak-side {
@@ -2594,12 +2211,12 @@ body {
   font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: 800;
-  color: #B45309;
+  color: var(--primary-strong);
   line-height: 1;
 }
 .streak-side span {
   font-size: 10px;
-  color: #92400E;
+  color: var(--text-secondary);
   font-weight: 700;
 }
 
@@ -2628,12 +2245,7 @@ body {
   flex-shrink: 0;
 }
 .course-icon svg { width: 22px; height: 22px; stroke-width: 2.2; }
-.ci-1 { background: linear-gradient(135deg, #4338CA, #6366F1); }
-.ci-2 { background: linear-gradient(135deg, #B45309, #D97706); }
-.ci-3 { background: linear-gradient(135deg, #BE123C, #F43F5E); }
-.ci-4 { background: linear-gradient(135deg, #047857, #10B981); }
-.ci-5 { background: linear-gradient(135deg, #6D28D9, #8B5CF6); }
-.ci-6 { background: linear-gradient(135deg, #0F766E, #14B8A6); }
+.ci-1, .ci-2, .ci-3, .ci-4, .ci-5, .ci-6 { background: var(--primary); }
 .course-info {
   flex: 1;
   min-width: 0;
@@ -2643,7 +2255,7 @@ body {
 }
 .course-info strong {
   display: block;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-base);
   font-weight: 800;
   color: var(--text-main);
@@ -2671,7 +2283,7 @@ body {
 }
 .badge-private  { background: var(--surface-soft); color: var(--text-secondary); border: 1px solid var(--line-soft); }
 .badge-public   { background: var(--primary-soft); color: var(--primary-strong); border: 1px solid var(--primary-border); }
-.badge-due      { background: var(--gold-soft); color: var(--gold-strong); border: 1px solid var(--gold-border); }
+.badge-due      { background: var(--primary-soft); color: var(--primary-strong); border: 1px solid var(--primary-border); }
 .badge-jade     { background: var(--emerald-soft); color: var(--emerald); border: 1px solid var(--emerald-border); }
 .badge-rose     { background: var(--rose-soft); color: var(--rose); border: 1px solid var(--rose-border); }
 
@@ -2705,24 +2317,14 @@ body {
   position: relative;
   overflow: hidden;
   padding: var(--space-5);
-  border-radius: var(--radius-2xl);
-  background:
-    radial-gradient(120% 80% at 100% 0%, rgba(217, 119, 6, 0.25), transparent 60%),
-    linear-gradient(135deg, #1E1B4B 0%, #312E81 60%, #4338CA 100%);
-  color: #ffffff;
-  box-shadow: 0 16px 32px -10px rgba(30, 27, 75, 0.45);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-card);
 }
 .profile-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.8), rgba(217, 119, 6, 0.2) 50%, transparent 80%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  display: none;
 }
 .profile-card > * { position: relative; z-index: 1; }
 
@@ -2740,26 +2342,22 @@ body {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   font-weight: 900;
   color: #ffffff;
-  background: linear-gradient(135deg, #6366F1, #4338CA);
-  box-shadow: 0 6px 14px rgba(67, 56, 202, 0.4);
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
 }
 .avatar-ring {
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 1.5px dashed rgba(251, 191, 36, 0.7);
-  animation: rotate 18s linear infinite;
-}
-@keyframes rotate {
-  to { transform: rotate(360deg); }
+  border: 1px solid var(--primary-border);
 }
 .profile-name {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-xl);
   font-weight: 900;
   letter-spacing: -0.01em;
@@ -2770,9 +2368,9 @@ body {
   gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(251, 191, 36, 0.18);
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  color: #FBBF24;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  color: var(--primary-strong);
   font-size: 11px;
   font-weight: 700;
   margin-top: 4px;
@@ -2856,11 +2454,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: var(--space-6) var(--space-4);
-  background:
-    radial-gradient(80% 50% at 20% 0%, rgba(99, 102, 241, 0.4), transparent 60%),
-    radial-gradient(80% 60% at 90% 100%, rgba(217, 119, 6, 0.25), transparent 60%),
-    linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%);
-  color: #ffffff;
+  background: var(--page-bg);
+  color: var(--text-main);
 }
 .auth-logo {
   display: flex;
@@ -2875,12 +2470,12 @@ body {
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #B45309, #D97706);
-  color: #FFFBEB;
-  font-family: var(--font-serif);
+  background: var(--primary);
+  color: #ffffff;
+  font-family: var(--font-sans);
   font-size: var(--text-2xl);
   font-weight: 900;
-  box-shadow: 0 12px 28px -6px rgba(217, 119, 6, 0.5);
+  box-shadow: var(--shadow-primary);
   position: relative;
 }
 .auth-logo .seal::before {
@@ -2888,30 +2483,31 @@ body {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  border: 1.5px dashed rgba(251, 191, 36, 0.7);
+  border: 1px solid var(--primary-border);
 }
 .auth-logo h1 {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-xl);
   font-weight: 900;
   letter-spacing: 0.05em;
 }
 .auth-logo p {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
+  font-family: var(--font-sans);
+  font-style: normal;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 .auth-card {
   width: 100%;
   max-width: 380px;
   padding: var(--space-5);
-  border-radius: var(--radius-2xl);
-  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   color: var(--text-main);
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-elevated);
 }
 .auth-tabs {
   display: flex;
@@ -2970,15 +2566,15 @@ body {
   margin-top: var(--space-3);
   border-radius: var(--radius-md);
   border: none;
-  background: linear-gradient(135deg, #4338CA, #6366F1);
+  background: var(--primary);
   color: #ffffff;
   font-size: var(--text-base);
   font-weight: 800;
   letter-spacing: 0.05em;
-  box-shadow: 0 10px 22px -4px rgba(67, 56, 202, 0.4);
+  box-shadow: var(--shadow-primary);
   transition: transform var(--ease-out), box-shadow var(--ease-out);
 }
-.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 26px -4px rgba(67, 56, 202, 0.5); }
+.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-elevated); }
 
 /* ── FAB ── */
 .fab {
@@ -2992,9 +2588,9 @@ body {
   height: 52px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #B45309, #D97706);
+  background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 12px 24px -4px rgba(217, 119, 6, 0.45);
+  box-shadow: var(--shadow-primary);
   transition: transform var(--ease-out);
 }
 .fab:hover { transform: translateY(-2px) rotate(90deg); }
@@ -3016,7 +2612,7 @@ body {
 .d6 { animation-delay: 0.3s; }
 .d7 { animation-delay: 0.35s; }
 
-/* ── Shimmer Progress Bar ── */
+/* ── Progress Bar ── */
 .shimmer-bar {
   position: relative;
   overflow: hidden;
@@ -3028,19 +2624,8 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), var(--gold));
+  background: var(--primary);
   position: relative;
-}
-.shimmer-bar > i::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-  animation: shimmer 2s linear infinite;
-}
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 /* ── Question Type Tags ── */
@@ -3056,7 +2641,7 @@ body {
 .q-tag-single { background: var(--primary-soft); color: var(--primary-strong); }
 .q-tag-multi  { background: var(--violet-soft); color: var(--violet); }
 .q-tag-judge  { background: var(--emerald-soft); color: var(--emerald); }
-.q-tag-fill   { background: var(--gold-soft); color: var(--gold-strong); }
+.q-tag-fill   { background: var(--primary-soft); color: var(--primary-strong); }
 .q-tag-short  { background: var(--rose-soft); color: var(--rose); }
 
 /* ── Ink Card ── */
@@ -3067,9 +2652,7 @@ body {
   border: 1px solid var(--line-soft);
   box-shadow: var(--shadow-card);
 }
-.ink-card--accent {
-  border-top: 3px solid var(--gold);
-}
+.ink-card--accent { border-top: 3px solid var(--primary); }
 
 
 /* Dark theme
@@ -3112,10 +2695,7 @@ html.dark {
 html.dark,
 html.dark body,
 html.dark #app {
-  background:
-    radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.18), transparent 32%),
-    radial-gradient(circle at 100% 10%, rgba(124, 58, 237, 0.13), transparent 28%),
-    var(--page-bg);
+  background: var(--page-bg);
   color: var(--text-main);
 }
 

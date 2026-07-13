@@ -1,14 +1,8 @@
-<script setup>
-// Standalone auth layout — clean brand entry
+<script setup lang="ts">
 </script>
 
 <template>
   <div class="auth-page">
-    <div class="auth-logo fade-up">
-      <div class="seal">宝</div>
-      <h1>学习宝</h1>
-      <p>Scholar's Atelier · 墨韵书房</p>
-    </div>
     <router-view />
   </div>
 </template>
@@ -20,6 +14,11 @@
   position: fixed;
   inset: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--page-bg);
+  color: var(--text-main);
   padding: calc(var(--space-6) + env(safe-area-inset-top)) var(--space-4)
            calc(var(--space-6) + env(safe-area-inset-bottom));
 }
