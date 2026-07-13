@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.6.1-practice-flow-and-motion",
+    version: "v2.6.1",
+    date: "2026-07-13",
+    type: "优化",
+    title: "练习流程与动效收口",
+    items: [
+      "首页移除占空间的问候和日期，直接进入学习入口。",
+      "题库练习入口改为先选模式、再开始，信息更集中。",
+      "答题反馈和切题动效更短更稳，减少刷题过程中的打断感。",
+      "优化小屏选项密度、题库标题截断和无障碍动效设置。",
+    ],
+  },
+  {
     id: "v2.6.0-calm-learning-visual-refresh",
     version: "v2.6.0",
     date: "2026-07-13",

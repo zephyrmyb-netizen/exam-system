@@ -12,6 +12,7 @@
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
+| 2026-07-13 | v2.6.1 练习流程与动效收口 | [2026-07-13-practice-flow-motion-polish.md](./archive/2026-07-13-practice-flow-motion-polish.md) |
 | 2026-07-13 | v2.6.0 界面体验升级合入与验收 | [2026-07-13-calm-learning-visual-refresh.md](./archive/2026-07-13-calm-learning-visual-refresh.md) |
 | 2026-07-12 | Pencil MCP CLI/无界面文件模式切换验证（blocked） | [2026-07-12-pencil-cli-mcp-switch-blocked.md](./archive/2026-07-12-pencil-cli-mcp-switch-blocked.md) |
 | 2026-07-10 | 建立开工必读规约与操作留档机制 | [2026-07-10-workflow-readme.md](./archive/2026-07-10-workflow-readme.md) |
