@@ -343,6 +343,7 @@ onMounted(fetchCourses);
           <button
             class="practice-action"
             type="button"
+            aria-label="开始练习"
             :disabled="!isPracticeReadyCourse(course)"
             @click.stop="goToPractice(course)"
           >
@@ -954,13 +955,21 @@ onMounted(fetchCourses);
   .library-title { font-size: 24px; }
   .primary-action { padding: 0 10px; }
   .course-row .course-item {
-    grid-template-columns: 36px minmax(0, 1fr) auto auto;
+    grid-template-columns: 36px minmax(0, 1fr) auto 44px 44px;
     gap: 8px;
     min-height: 72px;
     padding: 10px 8px;
   }
   .course-stat { grid-column: 3; grid-row: 1; }
-  .practice-action { display: none; }
+  .practice-action {
+    grid-column: 4;
+    grid-row: 1;
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .practice-action svg { width: 17px; height: 17px; }
   .visibility-label, .course-recent { display: none; }
   .course-subline { font-size: 11px; }
   .course-menu { right: 8px; bottom: 8px; min-width: 188px; }

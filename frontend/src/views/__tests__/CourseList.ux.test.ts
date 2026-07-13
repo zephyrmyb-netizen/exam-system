@@ -46,6 +46,11 @@ describe("CourseList UX polish", () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
+    const primaryPracticeActions = wrapper.findAll(".practice-action");
+    expect(primaryPracticeActions).toHaveLength(2);
+    expect(primaryPracticeActions[0].attributes("aria-label")).toBe("开始练习");
+    expect(primaryPracticeActions[1].attributes("disabled")).toBeDefined();
+
     await wrapper.findAll(".more-btn")[0].trigger("click");
     expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("开始练习");
 
