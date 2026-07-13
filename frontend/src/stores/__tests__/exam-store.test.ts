@@ -135,11 +135,15 @@ describe("exam store", () => {
     expect(store.result?.accuracy_rate).toBe(100);
   });
 
-  it("derives remaining time from the attempt start time", async () => {
+  it.each([
+    "2026-07-14T02:00:00.000000",
+    "2026-07-14T02:00:00.000Z",
+    "2026-07-14T10:00:00.000+08:00",
+  ])("derives remaining time from API start time %s", async (startedAt) => {
     const store = useExamStore();
     await store.startAttempt(1);
 
-    store.currentAttempt!.started_at = "2026-07-14T02:00:00.000Z";
+    store.currentAttempt!.started_at = startedAt;
     store.syncRemainingSeconds(Date.parse("2026-07-14T02:12:34.000Z"));
 
     expect(store.remainingSeconds).toBe(47 * 60 + 26);

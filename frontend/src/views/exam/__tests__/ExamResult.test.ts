@@ -65,7 +65,12 @@ describe("ExamResult", () => {
     expect(wrapper.get("[data-question-status]").text()).toBe("--");
   });
 
-  it("derives duration only from valid server timestamps when duration is absent", () => {
+  it.each([
+    "2026-07-14T02:00:00.000000",
+    "2026-07-14T02:00:00.000Z",
+    "2026-07-14T10:00:00.000+08:00",
+  ])("derives duration from API start time %s", (startedAt) => {
+    store.currentAttempt.started_at = startedAt;
     const wrapper = mount(ExamResult);
 
     expect(wrapper.get("[data-exam-result-duration]").text()).toBe("30分0秒");

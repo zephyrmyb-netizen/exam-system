@@ -45,7 +45,12 @@ const store = reactive({
   reset: vi.fn(),
 });
 
-let shortcutHandlers: { selectOption?: (index: number) => void } = {};
+let shortcutHandlers: {
+  next?: () => void;
+  prev?: () => void;
+  selectOption?: (index: number) => void;
+} = {};
+let swipeHandlers: { onSwipeLeft?: () => void; onSwipeRight?: () => void } = {};
 const shortcutBind = vi.fn();
 const shortcutUnbind = vi.fn();
 
@@ -75,7 +80,11 @@ vi.mock("@/composables/useKeyboardShortcuts", () => ({
     return { bind: shortcutBind, unbind: shortcutUnbind };
   },
 }));
-vi.mock("@/composables/useSwipe", () => ({ useSwipe: vi.fn() }));
+vi.mock("@/composables/useSwipe", () => ({
+  useSwipe: (_target: unknown, handlers: typeof swipeHandlers) => {
+    swipeHandlers = handlers;
+  },
+}));
 
 describe("ExamTake", () => {
   beforeEach(() => {
@@ -242,25 +251,79 @@ describe("ExamTake", () => {
     wrapper.unmount();
   });
 
-  it("retries an expired attempt after a failed automatic submission", async () => {
+  it("attempts an expired submission once automatically and waits for manual retry after failure", async () => {
     vi.useFakeTimers();
     store.remainingSeconds = 0;
     store.submitCurrentExam
-      .mockRejectedValueOnce(new Error("network down"))
       .mockImplementationOnce(async () => {
+        store.submissionError = "网络异常，请手动重试交卷";
+        throw new Error("network down");
+      })
+      .mockImplementationOnce(async () => {
+        store.submissionError = "";
         const result = { exam_id: 7 };
         store.result = result;
         return result;
       });
-    mountExam();
+    const mounted = mountExam();
 
     await flushPromises();
     expect(store.submitCurrentExam).toHaveBeenCalledOnce();
 
-    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.advanceTimersByTimeAsync(5_000);
+    await flushPromises();
+    expect(store.submitCurrentExam).toHaveBeenCalledOnce();
+    expect(mounted.get("[data-exam-submit-error]").text()).toContain("请手动重试");
+
+    await mounted.get("[data-exam-submit-retry]").trigger("click");
     await flushPromises();
     expect(store.submitCurrentExam).toHaveBeenCalledTimes(2);
     expect(router.replace).toHaveBeenCalledWith({ name: "exam-result", params: { examId: 7 } });
+  });
+
+  it("does not let background shortcuts or swipes change the paper while the answer card is open", async () => {
+    const mounted = mountExam();
+    await mounted.get('[aria-label="打开答题卡"]').trigger("click");
+
+    shortcutHandlers.next?.();
+    shortcutHandlers.prev?.();
+    shortcutHandlers.selectOption?.(0);
+    swipeHandlers.onSwipeLeft?.();
+    swipeHandlers.onSwipeRight?.();
+
+    expect(store.next).not.toHaveBeenCalled();
+    expect(store.prev).not.toHaveBeenCalled();
+    expect(store.setAnswer).not.toHaveBeenCalled();
+  });
+
+  it("disables and blocks exit while a submission is pending", async () => {
+    let resolveSubmission!: () => void;
+    store.submitCurrentExam.mockImplementationOnce(() => {
+      store.submitting = true;
+      return new Promise((resolve) => {
+        resolveSubmission = () => {
+          const result = { exam_id: 7 };
+          store.result = result;
+          store.submitting = false;
+          resolve(result);
+        };
+      });
+    });
+    const mounted = mountExam();
+
+    void mounted.get(".submit-button").trigger("click");
+    await flushPromises();
+    const exitButton = mounted.get('[aria-label="退出考试"]');
+    expect(exitButton.attributes("disabled")).toBeDefined();
+    expect(exitButton.attributes("aria-disabled")).toBe("true");
+
+    await exitButton.trigger("click");
+    expect(confirm).not.toHaveBeenCalled();
+    expect(store.reset).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+
+    resolveSubmission();
+    await flushPromises();
   });
 
   it("keeps the paper and answers visible after manual submit failure and retries in place", async () => {

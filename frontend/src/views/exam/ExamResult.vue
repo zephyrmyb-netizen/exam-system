@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle2, ClipboardList, Clock3, RotateCcw, Trophy, XCir
 
 import type { ExamQuestion, ExamResult as ExamResultData } from "@/types";
 import { useExamStore } from "@/stores/exam";
+import { parseApiTimestamp } from "@/utils/date";
 
 type ExtendedResult = ExamResultData & {
   passed?: boolean;
@@ -39,9 +40,9 @@ const durationSeconds = computed(() => {
   const startedAt = store.currentAttempt?.started_at;
   const submittedAt = currentResult.submitted_at;
   if (!startedAt || !submittedAt) return null;
-  const startedAtMs = Date.parse(startedAt);
-  const submittedAtMs = Date.parse(submittedAt);
-  if (!Number.isFinite(startedAtMs) || !Number.isFinite(submittedAtMs) || submittedAtMs < startedAtMs) return null;
+  const startedAtMs = parseApiTimestamp(startedAt);
+  const submittedAtMs = parseApiTimestamp(submittedAt);
+  if (startedAtMs === null || submittedAtMs === null || submittedAtMs < startedAtMs) return null;
   return Math.floor((submittedAtMs - startedAtMs) / 1000);
 });
 const durationLabel = computed(() => {
