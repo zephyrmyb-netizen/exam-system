@@ -260,22 +260,24 @@ def confirm_import_task(
             detail=f"部分题目校验不通过，未导入任何题目：{'；'.join(errors)}",
         )
 
-    task.status = "importing"
-    db.add(task)
-    db.commit()
     try:
+        task.status = "importing"
+        task.error_message = ""
+        db.flush()
         bank = imports_service.resolve_target_course(
             db,
             current_user.id,
             course_id=body.course_id or task.course_id or 0,
             course_name=body.course_name or task.course_name or "",
             filename=task.source_filename,
+            commit=False,
         )
         imported = imports_service.persist_imported_questions(
             db,
             user_id=current_user.id,
             course_id=bank.id,
             questions=validated_items,
+            commit=False,
         )
         task.status = "imported"
         task.course_id = bank.id
@@ -285,7 +287,10 @@ def confirm_import_task(
         db.add(task)
         db.commit()
     except Exception:
+        db.rollback()
+        task = import_task_service.get_owned_task(db, task_id=task_id, owner_id=current_user.id)
         task.status = "ready"
+        task.error_message = "导入写入失败，请检查题库后重试。"
         db.add(task)
         db.commit()
         raise

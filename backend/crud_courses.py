@@ -22,7 +22,12 @@ def create_question_bank(db: Session, bank_in: schemas.CourseCreate, owner_id: i
     return bank
 
 
-def get_or_create_uncategorized_bank(db: Session, user_id: int) -> models.QuestionBank:
+def get_or_create_uncategorized_bank(
+    db: Session,
+    user_id: int,
+    *,
+    commit: bool = True,
+) -> models.QuestionBank:
     """Find the user's 'Uncategorized' bank or create one."""
     bank = (
         db.query(models.QuestionBank)
@@ -39,8 +44,11 @@ def get_or_create_uncategorized_bank(db: Session, user_id: int) -> models.Questi
         created_at=datetime.now(UTC),
     )
     db.add(bank)
-    db.commit()
-    db.refresh(bank)
+    if commit:
+        db.commit()
+        db.refresh(bank)
+    else:
+        db.flush()
     return bank
 
 
@@ -49,6 +57,8 @@ def resolve_course(
     user_id: int,
     course_id: int | None = None,
     course_name: str | None = None,
+    *,
+    commit: bool = True,
 ) -> tuple[models.QuestionBank, bool]:
     """Resolve course_id to bank, or course_name to find-or-create, or fallback."""
     if course_id is not None:
@@ -76,11 +86,14 @@ def resolve_course(
             created_at=datetime.now(UTC),
         )
         db.add(bank)
-        db.commit()
-        db.refresh(bank)
+        if commit:
+            db.commit()
+            db.refresh(bank)
+        else:
+            db.flush()
         return bank, True
 
-    bank = get_or_create_uncategorized_bank(db, user_id)
+    bank = get_or_create_uncategorized_bank(db, user_id, commit=commit)
     return bank, True
 
 

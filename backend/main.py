@@ -1,4 +1,5 @@
 import warnings
+from asyncio import create_task, to_thread
 from contextlib import asynccontextmanager
 
 import structlog
@@ -12,12 +13,15 @@ from .config import (
     _RAW_CORS,
     CORS_IS_WILDCARD,
     CORS_ORIGINS,
+    IMPORT_TASK_RECOVERY_ENABLED,
+    IMPORT_TASK_RECOVERY_LIMIT,
     IS_PRODUCTION,
 )
 from .database import Base, engine
 from .logging_config import configure_logging
 from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
+from .services import import_task_service
 
 configure_logging()
 logger = structlog.get_logger("xuexibao")
@@ -26,6 +30,16 @@ logger = structlog.get_logger("xuexibao")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    if IMPORT_TASK_RECOVERY_ENABLED:
+        def schedule_import_task(task_id: str) -> None:
+            create_task(to_thread(import_task_service.process_task, task_id))
+
+        recovered = import_task_service.recover_pending_tasks(
+            schedule=schedule_import_task,
+            limit=IMPORT_TASK_RECOVERY_LIMIT,
+        )
+        if recovered:
+            logger.info("recovered_import_tasks", count=len(recovered))
     yield
 
 

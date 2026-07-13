@@ -856,15 +856,16 @@ def resolve_target_course(
     course_id: int = 0,
     course_name: str = "",
     filename: str = "",
+    commit: bool = True,
 ):
     try:
         if course_id > 0:
-            bank, _ = crud.resolve_course(db, user_id, course_id=course_id)
+            bank, _ = crud.resolve_course(db, user_id, course_id=course_id, commit=commit)
         elif course_name.strip():
-            bank, _ = crud.resolve_course(db, user_id, course_name=course_name.strip())
+            bank, _ = crud.resolve_course(db, user_id, course_name=course_name.strip(), commit=commit)
         else:
             derived = derive_course_name_from_filename(filename)
-            bank, _ = crud.resolve_course(db, user_id, course_name=derived)
+            bank, _ = crud.resolve_course(db, user_id, course_name=derived, commit=commit)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return bank
@@ -876,6 +877,7 @@ def persist_imported_questions(
     user_id: int,
     course_id: int,
     questions: list[schemas.ImportedQuestion | dict[str, Any]],
+    commit: bool = True,
 ) -> int:
     now = datetime.now(UTC)
     models_to_add: list[QuestionModel] = []
@@ -900,7 +902,10 @@ def persist_imported_questions(
 
     try:
         db.add_all(models_to_add)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail="导入失败，已回滚") from exc

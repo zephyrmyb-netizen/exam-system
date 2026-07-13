@@ -23,6 +23,7 @@ from sqlalchemy.pool import StaticPool
 # backend modules below.
 os.environ["SKIP_DOTENV"] = "1"
 os.environ["APP_ENV"] = "development"
+os.environ["IMPORT_TASK_RECOVERY_ENABLED"] = "0"
 os.environ["INVITE_CODE"] = "dev-invite"
 os.environ["SECRET_KEY"] = "test-secret-key-for-pytest"
 

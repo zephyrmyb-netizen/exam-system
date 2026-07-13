@@ -27,6 +27,7 @@ from . import imports_service
 
 
 TASK_UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "import_tasks"
+RECOVERABLE_STATUSES = ("queued", "extracting", "parsing")
 
 
 def _now() -> datetime:
@@ -52,6 +53,9 @@ def _decode_dict(value: str | None) -> dict:
 def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
     question_data = _decode_list(task.preview_questions_json)
     timing_data = _decode_dict(task.timing_json)
+    warnings = [str(item) for item in _decode_list(task.warnings_json)]
+    if task.status == "ready" and task.error_message:
+        warnings.append(task.error_message)
     return schemas.ImportTaskOut(
         id=task.id,
         status=task.status,
@@ -62,7 +66,7 @@ def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
         progress_total=task.progress_total,
         questions=[schemas.ImportedQuestion.model_validate(item) for item in question_data],
         suggested_course_name=task.course_name or "未分类题库",
-        warnings=[str(item) for item in _decode_list(task.warnings_json)],
+        warnings=warnings,
         total_valid=task.total_valid,
         total_invalid=task.total_invalid,
         timing=schemas.ImportTiming.model_validate(timing_data) if timing_data else None,
@@ -132,9 +136,58 @@ def _mark_failed(db: Session, task: ImportTask, message: str) -> None:
     _save(db, task)
 
 
+def recover_pending_tasks(
+    session_factory: Callable[[], Session] = SessionLocal,
+    schedule: Callable[[str], None] | None = None,
+    *,
+    limit: int = 2,
+) -> list[str]:
+    """Requeue persisted parsing tasks after an application restart.
+
+    Files are kept until parsing reaches a terminal state, so queued and
+    interrupted extraction/parsing tasks can safely restart. Import
+    confirmation is never replayed: an interrupted write is returned to
+    ``ready`` so the user can review the preview and confirm it again.
+    """
+
+    db = session_factory()
+    recovered: list[str] = []
+    try:
+        tasks = (
+            db.query(ImportTask)
+            .filter(ImportTask.status.in_((*RECOVERABLE_STATUSES, "importing")))
+            .order_by(ImportTask.created_at.asc())
+            .limit(max(limit, 0))
+            .all()
+        )
+        for task in tasks:
+            if task.status == "importing":
+                task.status = "ready"
+                task.error_message = "服务重启时确认导入被中断，题目尚未写入；请确认后重试。"
+                continue
+            if task.file_path and os.path.exists(task.file_path):
+                task.status = "queued"
+                task.error_message = ""
+                task.progress_current = 0
+                task.progress_total = 0
+                recovered.append(task.id)
+            else:
+                task.status = "failed"
+                task.error_message = "服务重启时未找到待解析文件，请重新上传。"
+                task.finished_at = _now()
+        db.commit()
+    finally:
+        db.close()
+
+    if schedule is not None:
+        for task_id in recovered:
+            schedule(task_id)
+    return recovered
+
+
 def process_task(
     task_id: str,
-    sync_ai_overrides: Callable[[], None],
+    sync_ai_overrides: Callable[[], None] | None = None,
     session_factory: Callable[[], Session] = SessionLocal,
 ) -> None:
     """Run one task in the background and persist every observable outcome."""
@@ -164,7 +217,8 @@ def process_task(
         task.progress_total = 0
         _save(db, task)
 
-        sync_ai_overrides()
+        if sync_ai_overrides is not None:
+            sync_ai_overrides()
         questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
         if not questions:
             _mark_failed(db, task, "AI 未能解析出可导入题目，请检查文档内容后重试。")
