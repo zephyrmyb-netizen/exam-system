@@ -40,6 +40,9 @@ AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
 MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
 AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
 AI_IMAGE_BATCH_SIZE = 3
+MAX_NUMBERED_QUESTIONS_PER_CHUNK = 6
+RETRY_NUMBERED_QUESTIONS_PER_CHUNK = 2
+MIN_NUMBERED_QUESTION_COVERAGE_RATIO = 0.8
 _NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
 
 
@@ -324,12 +327,19 @@ def extract_text_or_raise(file_path: str) -> tuple[str, list[str]]:
     raise HTTPException(status_code=400, detail="文档中未提取到任何文本内容")
 
 
-def build_ai_prompt(text_chunk: str) -> str:
+def build_ai_prompt(text_chunk: str, expected_question_count: int = 0) -> str:
+    coverage_rule = ""
+    if expected_question_count:
+        coverage_rule = (
+            f"This chunk contains exactly {expected_question_count} numbered question blocks. "
+            f"Return exactly {expected_question_count} question objects, one for every numbered block.\n"
+        )
     return (
         "You are an exam-question extraction assistant. Convert the document text into strict JSON.\n"
         "Extract EVERY complete question in this chunk. Do not summarize. Do not return only one sample.\n"
         "If the chunk contains 12 complete questions, return 12 question objects. Preserve numbered questions.\n"
-        "If there are no complete questions in this chunk, return {\"questions\": []}.\n"
+        + coverage_rule
+        + "If there are no complete questions in this chunk, return {\"questions\": []}.\n"
         "Return ONLY a JSON object with this shape:\n"
         "{\n"
         '  "questions": [\n'
@@ -648,12 +658,21 @@ def call_ai_extract_text_from_images(images: list[ImagePayload]) -> tuple[str, l
     return text.strip(), [], timing
 
 
-def call_ai_parse_chunk(text_chunk: str, chunk_index: int) -> tuple[list[dict[str, Any]], list[str]]:
+def call_ai_parse_chunk(
+    text_chunk: str,
+    chunk_index: int,
+    expected_question_count: int = 0,
+) -> tuple[list[dict[str, Any]], list[str]]:
     client = _build_import_client()
     try:
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
-            messages=[{"role": "user", "content": build_ai_prompt(text_chunk)}],
+            messages=[
+                {
+                    "role": "user",
+                    "content": build_ai_prompt(text_chunk, expected_question_count),
+                }
+            ],
             response_format={"type": "json_object"},
             temperature=0.1,
             max_tokens=AI_MAX_TOKENS,
@@ -710,40 +729,88 @@ def deduplicate_questions(questions: list[dict[str, Any]]) -> list[dict[str, Any
     return result
 
 
+def count_numbered_question_blocks(text: str) -> int:
+    """Return the number of numbered question starts in a text fragment."""
+    return len(list(_NUMBERED_QUESTION_BOUNDARY.finditer(text or "")))
+
+
+def split_numbered_question_blocks(text: str) -> list[str]:
+    """Split a document into complete numbered-question blocks when possible."""
+    boundaries = list(_NUMBERED_QUESTION_BOUNDARY.finditer(text or ""))
+    if len(boundaries) < 2:
+        return []
+
+    prefix = text[: boundaries[0].start()].strip()
+    blocks = [
+        text[match.start() : next_match.start()].strip()
+        for match, next_match in zip(boundaries, boundaries[1:])
+    ]
+    blocks.append(text[boundaries[-1].start() :].strip())
+    if prefix and blocks:
+        blocks[0] = f"{prefix}\n{blocks[0]}"
+    return [block for block in blocks if block]
+
+
+def split_text_unit_for_size(unit: str) -> list[str]:
+    """Split one oversized unit without breaking the normal paragraph path."""
+    remaining = unit.strip()
+    pieces: list[str] = []
+    while len(remaining) > AI_CHUNK_SIZE:
+        window = remaining[: AI_CHUNK_SIZE + 1]
+        split_at = max(window.rfind(mark) for mark in ("。", "！", "？", "；", ";", "，", ",", " "))
+        if split_at < max(1, AI_CHUNK_SIZE // 2):
+            split_at = AI_CHUNK_SIZE
+        else:
+            split_at += 1
+        pieces.append(remaining[:split_at].strip())
+        remaining = remaining[split_at:].strip()
+    if remaining:
+        pieces.append(remaining)
+    return pieces
+
+
+def pack_question_blocks(question_blocks: list[str], *, max_questions: int) -> list[str]:
+    """Pack complete numbered questions with both size and count limits."""
+    chunks: list[str] = []
+    current_parts: list[str] = []
+    current_size = 0
+    current_question_count = 0
+
+    def flush() -> None:
+        nonlocal current_parts, current_size, current_question_count
+        if current_parts:
+            chunks.append("\n".join(current_parts))
+        current_parts = []
+        current_size = 0
+        current_question_count = 0
+
+    for question_block in question_blocks:
+        pieces = split_text_unit_for_size(question_block)
+        for piece_index, piece in enumerate(pieces):
+            starts_question = piece_index == 0
+            would_exceed_size = current_parts and current_size + len(piece) + 1 > AI_CHUNK_SIZE
+            would_exceed_count = starts_question and current_question_count >= max_questions
+            if would_exceed_size or would_exceed_count:
+                flush()
+            current_parts.append(piece)
+            current_size += len(piece) + (1 if current_size else 0)
+            if starts_question:
+                current_question_count += 1
+    flush()
+    return chunks
+
+
 def chunk_document_text(text: str) -> tuple[list[str], int]:
     chunk_start = time.perf_counter()
+    question_blocks = split_numbered_question_blocks(text)
+    if question_blocks:
+        return (
+            pack_question_blocks(question_blocks, max_questions=MAX_NUMBERED_QUESTIONS_PER_CHUNK),
+            elapsed_ms(chunk_start),
+        )
+
     paragraphs = [paragraph.strip() for paragraph in text.split("\n") if paragraph.strip()]
-    units: list[str] = []
-    for paragraph in paragraphs:
-        if len(paragraph) <= AI_CHUNK_SIZE:
-            units.append(paragraph)
-            continue
-
-        boundaries = list(_NUMBERED_QUESTION_BOUNDARY.finditer(paragraph))
-        if len(boundaries) > 1:
-            prefix = paragraph[: boundaries[0].start()].strip()
-            if prefix:
-                units.append(prefix)
-            units.extend(
-                paragraph[match.start() : next_match.start()].strip()
-                for match, next_match in zip(boundaries, boundaries[1:])
-            )
-            units.append(paragraph[boundaries[-1].start() :].strip())
-            continue
-
-        remaining = paragraph
-        while len(remaining) > AI_CHUNK_SIZE:
-            window = remaining[: AI_CHUNK_SIZE + 1]
-            split_at = max(window.rfind(mark) for mark in ("。", "！", "？", "；", ";", "，", ",", " "))
-            if split_at < max(1, AI_CHUNK_SIZE // 2):
-                split_at = AI_CHUNK_SIZE
-            else:
-                split_at += 1
-            units.append(remaining[:split_at].strip())
-            remaining = remaining[split_at:].strip()
-        if remaining:
-            units.append(remaining)
-
+    units = [piece for paragraph in paragraphs for piece in split_text_unit_for_size(paragraph)]
     chunks: list[str] = []
     current = ""
     for unit in units:
@@ -756,6 +823,54 @@ def chunk_document_text(text: str) -> tuple[list[str], int]:
     if current:
         chunks.append(current)
     return chunks, elapsed_ms(chunk_start)
+
+
+def parse_chunk_with_coverage_retry(
+    text_chunk: str,
+    chunk_index: int,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Retry an incomplete numbered chunk in smaller batches before importing it."""
+    expected_question_count = count_numbered_question_blocks(text_chunk)
+    items, warnings = call_ai_parse_chunk(text_chunk, chunk_index, expected_question_count)
+    if expected_question_count < 2 or len(items) >= expected_question_count:
+        return items, warnings
+
+    question_blocks = split_numbered_question_blocks(text_chunk)
+    retry_chunks = pack_question_blocks(
+        question_blocks,
+        max_questions=RETRY_NUMBERED_QUESTIONS_PER_CHUNK,
+    )
+    if len(retry_chunks) <= 1:
+        warnings.append(
+            f"第 {chunk_index + 1} 部分检测到约 {expected_question_count} 道编号题，"
+            f"AI 仅返回 {len(items)} 道，请重新解析后再确认导入。"
+        )
+        return items, warnings
+
+    retry_items: list[dict[str, Any]] = []
+    retry_warnings: list[str] = []
+    for retry_chunk in retry_chunks:
+        expected_retry_count = count_numbered_question_blocks(retry_chunk)
+        parsed_items, parsed_warnings = call_ai_parse_chunk(
+            retry_chunk,
+            chunk_index,
+            expected_retry_count,
+        )
+        retry_items.extend(parsed_items)
+        retry_warnings.extend(parsed_warnings)
+
+    retry_items = deduplicate_questions(retry_items)
+    if len(retry_items) > len(items):
+        items = retry_items
+    warnings.extend(retry_warnings)
+    if len(items) >= expected_question_count:
+        warnings.append(f"第 {chunk_index + 1} 部分初次返回不完整，已自动拆分重试并补全题目。")
+    else:
+        warnings.append(
+            f"第 {chunk_index + 1} 部分检测到约 {expected_question_count} 道编号题，"
+            f"自动拆分重试后仍仅返回 {len(items)} 道，请重新解析后再确认导入。"
+        )
+    return items, warnings
 
 
 def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
@@ -778,9 +893,15 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     chunks, timing["chunk_ms"] = chunk_document_text(text)
 
     if len(chunks) > MAX_CHUNKS:
-        all_warnings.append(f"文档过长，仅处理前 {MAX_CHUNKS} 部分（共 {len(chunks)} 部分）")
-        chunks = chunks[:MAX_CHUNKS]
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"文档需要分成 {len(chunks)} 部分，超过安全处理上限 {MAX_CHUNKS} 部分。"
+                "为避免只导入前半部分题目，系统未创建预览；请拆分文件后重新导入。"
+            ),
+        )
     timing["chunks"] = len(chunks)
+    expected_numbered_questions = sum(count_numbered_question_blocks(chunk) for chunk in chunks)
 
     saw_timeout = False
     saw_invalid_json = False
@@ -790,7 +911,7 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     for index, chunk in enumerate(chunks):
         ai_start = time.perf_counter()
         try:
-            items, warnings = call_ai_parse_chunk(chunk, index)
+            items, warnings = parse_chunk_with_coverage_retry(chunk, index)
             all_items.extend(items)
             all_warnings.extend(warnings)
             if any("非 JSON" in warning for warning in warnings):
@@ -820,6 +941,19 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
             all_warnings.append(f"第 {index + 1} 题格式有误: {error}")
 
     timing["total_ms"] = elapsed_ms(total_start)
+
+    if (
+        expected_numbered_questions >= MAX_NUMBERED_QUESTIONS_PER_CHUNK
+        and len(valid) / expected_numbered_questions < MIN_NUMBERED_QUESTION_COVERAGE_RATIO
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"AI 解析不完整：检测到约 {expected_numbered_questions} 道编号题，"
+                f"当前仅解析到 {len(valid)} 道。系统已自动缩小分块重试，"
+                "仍无法保证题目完整，请重新解析后再确认导入。"
+            ),
+        )
 
     if not valid and other_http_error:
         raise other_http_error

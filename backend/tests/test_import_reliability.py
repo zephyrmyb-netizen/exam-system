@@ -1,5 +1,8 @@
 """Regression coverage for resilient long-document AI imports."""
 
+import pytest
+from fastapi import HTTPException
+
 from backend.imports.image_extractor import ImagePayload
 
 
@@ -28,6 +31,64 @@ def test_chunk_document_text_splits_one_large_numbered_paragraph(monkeypatch):
     assert all(len(chunk) <= 120 for chunk in chunks)
     assert "1." in chunks[0]
     assert "6." in chunks[-1]
+
+
+def test_chunk_document_text_caps_short_numbered_questions_per_ai_request(monkeypatch):
+    """Short Word paragraphs must not let one AI request contain dozens of questions."""
+    from backend.imports import import_orchestrator
+
+    monkeypatch.setattr(import_orchestrator, "AI_CHUNK_SIZE", 10_000)
+    text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 15))
+
+    chunks, _ = import_orchestrator.chunk_document_text(text)
+
+    assert len(chunks) == 3
+    assert all(import_orchestrator.count_numbered_question_blocks(chunk) <= 6 for chunk in chunks)
+    assert "1." in chunks[0]
+    assert "14." in chunks[-1]
+
+
+def test_incomplete_numbered_chunk_is_retried_in_smaller_batches(monkeypatch):
+    """A partial JSON response must be retried instead of silently importing a subset."""
+    from backend.imports import import_orchestrator
+
+    text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 7))
+    calls: list[int] = []
+
+    def fake_parse(chunk: str, _index: int, expected_question_count: int = 0):
+        calls.append(expected_question_count)
+        numbers = [int(match.group(1)) for match in __import__("re").finditer(r"(?m)^(\d+)\.", chunk)]
+        if expected_question_count == 6:
+            return [_question("question 1")], []
+        return [_question(f"question {number}") for number in numbers], []
+
+    monkeypatch.setattr(import_orchestrator, "call_ai_parse_chunk", fake_parse)
+
+    items, warnings = import_orchestrator.parse_chunk_with_coverage_retry(text, 0)
+
+    assert [item["question"] for item in items] == [f"question {index}" for index in range(1, 7)]
+    assert calls == [6, 2, 2, 2]
+    assert any("自动拆分重试" in warning for warning in warnings)
+
+
+def test_numbered_document_over_chunk_limit_is_not_silently_imported(monkeypatch):
+    """A configured safety limit must fail clearly instead of importing only the first pages."""
+    from backend.imports import import_orchestrator
+
+    monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(import_orchestrator, "MAX_CHUNKS", 1)
+    text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 13))
+
+    def fake_parse(chunk: str, _index: int, expected_question_count: int = 0):
+        return [_question(f"question {index}") for index in range(1, expected_question_count + 1)], []
+
+    monkeypatch.setattr(import_orchestrator, "call_ai_parse_chunk", fake_parse)
+
+    with pytest.raises(HTTPException) as exc_info:
+        import_orchestrator.call_ai_parse(text)
+
+    assert exc_info.value.status_code == 422
+    assert "超过安全处理上限" in exc_info.value.detail
 
 
 def test_file_content_combines_chunked_text_and_image_questions(monkeypatch):
