@@ -208,4 +208,36 @@ describe("usePracticeSession", () => {
     expect(submitPracticeAnswer).not.toHaveBeenCalled();
     expect(session.canSubmit.value).toBe(true);
   });
+
+  it("submits multiple-choice and text answers manually and ignores repeated submits", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const multipleQuestion = { ...makeQuestion(1), type: "multiple_choice" } as Question;
+    const textQuestion = { ...makeQuestion(2), type: "short_answer", options: null } as Question;
+    const session = usePracticeSession({ courseId: 9 });
+
+    getRandomPracticeQuestion
+      .mockResolvedValueOnce(multipleQuestion)
+      .mockResolvedValueOnce(textQuestion);
+    submitPracticeAnswer
+      .mockResolvedValueOnce(wrongResult())
+      .mockResolvedValueOnce(correctResult());
+
+    session.startSession();
+    await flushPromises();
+    session.toggleMultipleAnswer("B");
+    session.toggleMultipleAnswer("A");
+    const firstSubmit = session.submitAnswer();
+    const duplicateSubmit = session.submitAnswer();
+    await Promise.all([firstSubmit, duplicateSubmit]);
+
+    expect(submitPracticeAnswer).toHaveBeenCalledTimes(1);
+    expect(submitPracticeAnswer).toHaveBeenLastCalledWith({ question_id: 1, user_answer: "A,B" });
+
+    await session.fetchRandomQuestion();
+    session.updateTextAnswer("  规范化答案  ");
+    await session.submitAnswer();
+
+    expect(submitPracticeAnswer).toHaveBeenCalledTimes(2);
+    expect(submitPracticeAnswer).toHaveBeenLastCalledWith({ question_id: 2, user_answer: "规范化答案" });
+  });
 });

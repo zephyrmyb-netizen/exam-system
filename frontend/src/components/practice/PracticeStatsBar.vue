@@ -29,7 +29,8 @@ defineProps({
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
-  padding: 0 2px;
+  margin: 0;
+  padding: 0;
   font-size: 12px;
   font-weight: 800;
   color: var(--text-muted);
@@ -44,6 +45,11 @@ defineProps({
 .practice-stat-chip {
   white-space: nowrap;
   color: var(--text-secondary);
+  padding: 5px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-card);
+  box-shadow: var(--glass-inner-highlight);
 }
 
 .practice-stat-chip--good {

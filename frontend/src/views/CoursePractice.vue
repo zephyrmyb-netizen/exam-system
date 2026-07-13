@@ -21,6 +21,9 @@ const modes = [
 
 const selectedMode = ref("normal");
 const canStartPractice = computed(() => !!course.value && isPracticeReadyCourse(course.value));
+const practiceTotalQuestions = computed(() =>
+  selectedMode.value === "normal" ? course.value?.question_count ?? 0 : 0,
+);
 const startButtonText = computed(() => {
   if (loading.value) return "加载中...";
   if (!canStartPractice.value) return "暂无题目";
@@ -129,7 +132,7 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
     v-else
     :course-id="courseId"
     :course-name="course?.name || ''"
-    :total-questions="course?.question_count ?? 0"
+    :total-questions="practiceTotalQuestions"
     :mode="selectedMode"
     mode-param=""
     @end-practice="endPractice"

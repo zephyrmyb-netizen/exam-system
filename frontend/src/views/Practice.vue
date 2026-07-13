@@ -109,7 +109,8 @@ const isDueReviewEmpty = computed(() =>
 
 const isCourseEmpty = computed(() =>
   props.mode === "normal"
-    && !props.courseId
+    && !!props.courseId
+    && sessionComplete.value
     && !loading.value
     && !errorMessage.value
     && question.value === null
@@ -164,15 +165,14 @@ onMounted(() => {
 onBeforeUnmount(() => cancelPendingAdvance?.());
 
 watch(sessionComplete, (complete) => {
-  if (complete) {
-    showSummary.value = true;
-  }
+  showSummary.value = complete && sessionStats.value.answeredCount > 0;
 });
 </script>
 
 <template>
   <section
     class="practice-page"
+    data-reference-page="course-practice"
     :class="{ 'practice-page--with-action': requiresManualSubmit && question && !result }"
   >
     <PracticeTopBar
@@ -331,13 +331,20 @@ watch(sessionComplete, (complete) => {
 
 <style scoped>
 .practice-page {
+  position: relative;
   display: grid;
-  gap: 6px;
+  align-content: start;
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.09), transparent 34%),
+    var(--page-bg);
 }
 
 .practice-page--with-action {
@@ -355,14 +362,18 @@ watch(sessionComplete, (complete) => {
 
 .practice-card-shell {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 2px 0 0;
-  border-radius: 0;
-  background: transparent;
-  border: none;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
 }
 
 /* 高频答题只保留一次轻量交接，不再使用 out-in 留出空白帧。 */
@@ -411,7 +422,12 @@ watch(sessionComplete, (complete) => {
   display: grid;
   place-items: center;
   gap: var(--space-2);
+  margin: 0;
   padding: var(--space-8) var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
   text-align: center;
 }
 
@@ -463,7 +479,11 @@ watch(sessionComplete, (complete) => {
 
 .practice-skeleton {
   width: 100%;
+  margin: 0;
   padding: var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
 }
 
 .practice-skeleton__line {
@@ -519,7 +539,7 @@ watch(sessionComplete, (complete) => {
 
 @media (max-width: 420px) {
   .practice-page {
-    gap: 6px;
+    gap: 10px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
@@ -528,8 +548,8 @@ watch(sessionComplete, (complete) => {
   }
 
   .practice-card-shell {
-    gap: 10px;
-    padding: 0;
+    gap: 14px;
+    padding: 16px;
   }
 
   .practice-answer-section,
