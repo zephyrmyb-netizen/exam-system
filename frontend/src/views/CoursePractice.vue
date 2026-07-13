@@ -3,50 +3,30 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
-import {
-  BookOpen, Layers, Play, Shuffle, RefreshCw,
-} from "@lucide/vue";
+import { BookOpen, Layers, Play, Shuffle, RefreshCw } from "@lucide/vue";
 import Practice from "./Practice.vue";
 
 const route = useRoute();
 const router = useRouter();
 const courseId = computed(() => route.params.courseId);
 
-// ── Course info ──
 const course = ref(null);
 const loading = ref(false);
 const errorMessage = ref("");
 
-// ── Mode selection ──
 const modes = [
   { key: "normal", label: "随机练习", desc: "从当前题库随机抽题", icon: Shuffle, color: "var(--primary)" },
-  { key: "wrong_review", label: "错题强化", desc: "复盘当前题库做错的题", icon: RefreshCw, color: "var(--rose)" },
+  { key: "wrong_review", label: "错题强化", desc: "复习当前题库做错的题", icon: RefreshCw, color: "var(--rose)" },
 ];
 
 const selectedMode = ref("normal");
-const selectedModeInfo = computed(() => modes.find((mode) => mode.key === selectedMode.value) || modes[0]);
 const canStartPractice = computed(() => !!course.value && isPracticeReadyCourse(course.value));
 const startButtonText = computed(() => {
   if (loading.value) return "加载中...";
   if (!canStartPractice.value) return "暂无题目";
   return selectedMode.value === "wrong_review" ? "开始错题强化" : "开始练习";
 });
-const settingsTips = computed(() => [
-  {
-    label: "当前题库",
-    value: course.value ? getCourseDisplayName(course.value) : "加载中",
-  },
-  {
-    label: "出题范围",
-    value: `${course.value?.question_count ?? "--"} 道题`,
-  },
-  {
-    label: "练习方式",
-    value: selectedModeInfo.value.label,
-  },
-]);
 
-// ── Start practice ──
 const showPractice = ref(false);
 
 function startPractice() {
@@ -79,9 +59,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 
 <template>
   <section class="stack">
-    <!-- ── Practice Mode ── -->
     <template v-if="!showPractice">
-      <!-- Course header -->
       <div v-if="course" class="settings-header">
         <div class="settings-header-top">
           <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
@@ -98,55 +76,48 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
       <p v-if="loading" class="info-message">正在加载题库...</p>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
-      <!-- Mode selection -->
-      <p class="settings-section-label">选择练习方式</p>
-      <div class="mode-grid">
-        <button
-          v-for="m in modes"
-          :key="m.key"
-          class="mode-card"
-          :class="{ 'mode-active': selectedMode === m.key }"
-          type="button"
-          @click="selectedMode = m.key"
-        >
-          <span class="mode-card-icon" :style="{ color: m.color }">
-            <component :is="m.icon" :size="20" :stroke-width="2" />
-          </span>
-          <span class="mode-card-text">
-            <span class="mode-card-title">{{ m.label }}</span>
-            <span class="mode-card-desc">{{ m.desc }}</span>
-          </span>
-        </button>
-      </div>
-
-      <div class="settings-summary">
-        <div v-for="item in settingsTips" :key="item.label" class="settings-summary-item">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
+      <div class="mode-section">
+        <p class="settings-section-label">练习模式</p>
+        <div class="mode-grid">
+          <button
+            v-for="m in modes"
+            :key="m.key"
+            class="mode-card"
+            :class="{ 'mode-active': selectedMode === m.key }"
+            :aria-pressed="selectedMode === m.key"
+            type="button"
+            @click="selectedMode = m.key"
+          >
+            <span class="mode-card-icon" :style="{ color: m.color }">
+              <component :is="m.icon" :size="20" :stroke-width="2" />
+            </span>
+            <span class="mode-card-text">
+              <span class="mode-card-title">{{ m.label }}</span>
+              <span class="mode-card-desc">{{ m.desc }}</span>
+            </span>
+          </button>
         </div>
       </div>
 
-      <p v-if="course && !canStartPractice" class="status-banner status-banner--info">
-        当前题库还没有题目，先导入题目后再开始练习。
-      </p>
-
-      <!-- Stats summary -->
-      <p class="settings-section-label">开始练习</p>
-      <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
-        <Play :size="18" :stroke-width="2.5" style="margin-right:6px" />
-        {{ startButtonText }}
-      </button>
-      <button
-        v-if="course && !canStartPractice"
-        class="ghost-button full-button"
-        type="button"
-        @click="router.replace({ name: 'import', query: { course_id: courseId } })"
-      >
-        去导入题目
-      </button>
+      <div class="settings-actions">
+        <p v-if="course && !canStartPractice" class="empty-state">
+          当前题库还没有题目。先导入题目后再开始练习。
+        </p>
+        <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
+          <Play :size="18" :stroke-width="2.5" style="margin-right: 6px" />
+          {{ startButtonText }}
+        </button>
+        <button
+          v-if="course && !canStartPractice"
+          class="ghost-button full-button"
+          type="button"
+          @click="router.replace({ name: 'import', query: { course_id: courseId } })"
+        >
+          去导入题目
+        </button>
+      </div>
     </template>
 
-    <!-- ── Immersive Practice ── -->
     <template v-else>
       <Practice
         :course-id="courseId"
@@ -171,19 +142,12 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 .settings-info { min-width: 0; }
 .settings-info h2 { margin: 0; overflow: hidden; font-size: var(--text-lg); font-weight: 800; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .settings-meta { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
-
-.settings-section-label {
-  margin: 4px 0 2px;
-  font-size: var(--text-xs);
-  font-weight: 800;
-  color: var(--text-muted);
-}
-
+.mode-section { display: grid; gap: 6px; }
+.settings-section-label { margin: 4px 0 0; font-size: var(--text-xs); font-weight: 800; color: var(--text-muted); }
 .mode-grid { display: grid; gap: 6px; }
-
 .mode-card {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
@@ -195,98 +159,24 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   text-align: left;
   font: inherit;
   cursor: pointer;
-  transition: all var(--ease-out);
+  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out);
 }
-
-.mode-card:hover:not(:disabled) {
-  border-color: var(--line-accent);
-  box-shadow: var(--shadow-xs);
-}
-
-.mode-card:active:not(:disabled) {
-  transform: scale(0.985);
-}
-
-.mode-active {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  box-shadow: inset 3px 0 0 var(--primary);
-}
-
-.mode-active .mode-card-title {
-  color: var(--primary-strong);
-}
-
-.mode-card-icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
-  flex-shrink: 0;
-}
-
-.mode-active .mode-card-icon {
-  background: var(--surface);
-}
-
-.mode-card-text {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.mode-card-title {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.mode-card-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.settings-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.settings-summary-item {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding: 7px 8px;
-  border-radius: 4px;
-  background: var(--surface-soft);
-}
-
-.settings-summary-item span {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 800;
-}
-
-.settings-summary-item strong {
-  overflow: hidden;
-  color: var(--text-main);
-  font-size: var(--text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+.mode-card:hover { border-color: var(--line-accent); }
+.mode-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 3px 0 0 var(--primary); }
+.mode-active .mode-card-title { color: var(--primary-strong); }
+.mode-card-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--surface-soft); flex-shrink: 0; }
+.mode-active .mode-card-icon { background: var(--surface); }
+.mode-card-text { display: grid; gap: 1px; min-width: 0; }
+.mode-card-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-main); }
+.mode-card-desc { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.settings-actions { display: grid; gap: 8px; }
+.empty-state { margin: 0; color: var(--text-muted); font-size: var(--text-sm); line-height: 1.5; }
 .start-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 48px;
   padding: 12px;
   border: none;
   border-radius: 8px;
@@ -297,36 +187,11 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   cursor: pointer;
   box-shadow: var(--shadow-xs);
   transition: background var(--ease-out), box-shadow var(--ease-out);
-  min-height: 48px;
 }
-
-.start-btn:hover {
-  background: var(--primary-strong);
-  box-shadow: var(--shadow-sm);
-}
-
-.start-btn:active {
-  box-shadow: var(--shadow-xs);
-}
-
-.start-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.start-btn:disabled:hover {
-  transform: none;
-}
-
+.start-btn:hover:not(:disabled) { background: var(--primary-strong); box-shadow: var(--shadow-sm); }
+.start-btn:active:not(:disabled) { box-shadow: var(--shadow-xs); }
+.start-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 @media (max-width: 420px) {
-  .settings-summary {
-    gap: 4px;
-    padding: 8px;
-  }
-
-  .settings-summary-item { padding: 6px; }
-
   .settings-info h2 { font-size: 16px; }
 }
 </style>
