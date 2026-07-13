@@ -4,6 +4,7 @@ import request, { getErrorMessage } from "../api/request";
 import { typeLabel, typeOptions, formatOptions } from "../utils/question";
 import { Search, RefreshCw, Trash2, ChevronLeft, ChevronRight } from "@lucide/vue";
 import { useConfirmDialog } from "../stores/confirmDialog";
+import { useDebouncedCallback } from "../composables/useDebouncedCallback";
 
 const confirmDialog = useConfirmDialog();
 
@@ -27,7 +28,17 @@ const chapters = ref([]);
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const hasMore = computed(() => page.value < totalPages.value);
 
-function onFilterChange() { page.value = 1; fetchWrongBook(); }
+const { cancel: cancelKeywordSearch, schedule: scheduleKeywordSearch } = useDebouncedCallback(() => {
+  page.value = 1;
+  void fetchWrongBook();
+});
+
+function onKeywordInput() { scheduleKeywordSearch(); }
+function onFilterChange() {
+  cancelKeywordSearch();
+  page.value = 1;
+  void fetchWrongBook();
+}
 
 async function fetchMeta() {
   metaLoading.value = true;
@@ -140,7 +151,7 @@ onMounted(() => {
         <h2>错题本</h2>
         <p>共 {{ total }} 道错题</p>
       </div>
-      <button class="ghost-button" type="button" :disabled="loading" @click="fetchWrongBook">
+      <button class="ghost-button" type="button" aria-label="刷新错题本" :disabled="loading" @click="fetchWrongBook">
         <RefreshCw :size="16" :stroke-width="2.5" style="margin-right:4px" />
         刷新
       </button>
@@ -155,21 +166,22 @@ onMounted(() => {
           class="text-input has-left-icon"
           type="search"
           placeholder="搜索题目关键词..."
-          @input="onFilterChange"
+          aria-label="搜索错题关键词"
+          @input="onKeywordInput"
         />
       </div>
-      <select v-model="typeFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="typeFilter" class="filter-select" aria-label="按题型筛选错题" @change="onFilterChange">
         <option value="">全部题型</option>
         <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
       </select>
-      <select v-model="subjectFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="subjectFilter" class="filter-select" aria-label="按科目筛选错题" @change="onFilterChange">
         <option value="">全部科目</option>
         <option v-if="metaLoading" disabled>加载中...</option>
         <option v-for="s in subjects" :key="s" :value="s">{{ s }}</option>
       </select>
-      <select v-model="chapterFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="chapterFilter" class="filter-select" aria-label="按章节筛选错题" @change="onFilterChange">
         <option value="">全部章节</option>
         <option v-if="metaLoading" disabled>加载中...</option>
         <option v-for="c in chapters" :key="c" :value="c">{{ c }}</option>
@@ -296,7 +308,7 @@ onMounted(() => {
   border: 1px solid var(--amber-border);
   border-radius: var(--radius-md);
   background: var(--amber-soft);
-  color: #92400e;
+  color: var(--amber-strong);
   font-size: var(--text-xs);
   font-weight: 700;
 }
@@ -305,7 +317,7 @@ onMounted(() => {
   flex-shrink: 0;
   border: none;
   background: transparent;
-  color: #92400e;
+  color: var(--amber-strong);
   font: inherit;
   cursor: pointer;
   text-decoration: underline;

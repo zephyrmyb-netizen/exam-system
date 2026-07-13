@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -37,6 +37,18 @@ vi.mock("../../stores/theme", () => ({
   useThemeStore: () => ({ mode: "light", toggle: vi.fn() }),
 }));
 
+const offlineIsOnline = ref(true);
+const offlinePendingCount = ref(0);
+vi.mock("../../composables/useOfflineSync", () => ({
+  useOfflineSync: () => ({
+    isOnline: computed(() => offlineIsOnline.value),
+    pendingCount: offlinePendingCount,
+    refreshPendingCount: vi.fn(),
+  }),
+}));
+
+vi.mock("../../api/practice", () => ({ flushPendingPracticeSubmissions: vi.fn() }));
+
 describe("AppLayout immersive routes", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -46,6 +58,8 @@ describe("AppLayout immersive routes", () => {
     route.params = {};
     route.query = {};
     route.meta = { navKey: "home" };
+    offlineIsOnline.value = true;
+    offlinePendingCount.value = 0;
     vi.clearAllMocks();
   });
 
@@ -193,5 +207,22 @@ describe("AppLayout immersive routes", () => {
 
     expect(wrapper.find(".bottom-nav").exists()).toBe(false);
     wrapper.unmount();
+  });
+
+  it("shows an offline sync status when practice records are waiting", () => {
+    offlineIsOnline.value = true;
+    offlinePendingCount.value = 2;
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.find(".offline-sync-banner").text()).toContain("2 条练习记录待同步");
   });
 });

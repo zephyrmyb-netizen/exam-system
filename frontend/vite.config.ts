@@ -38,6 +38,22 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  build: {
+    target: "es2018",
+    assetsInlineLimit: 4096,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/](vue|vue-router|pinia|vue-i18n)[\\/]/.test(id)) return "vendor-vue";
+          if (/[\\/]node_modules[\\/]@lucide[\\/]/.test(id)) return "vendor-icons";
+          if (/[\\/]node_modules[\\/]xstate[\\/]/.test(id)) return "vendor-state";
+          if (/[\\/]node_modules[\\/](axios|clsx|tailwind-merge|class-variance-authority)[\\/]/.test(id)) return "vendor-utils";
+          return "vendor";
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 5174,

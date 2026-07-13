@@ -12,6 +12,7 @@ import {
 } from "@lucide/vue";
 import QuestionEditor from "../components/question/QuestionEditor.vue";
 import { useConfirmDialog } from "../stores/confirmDialog";
+import { useDebouncedCallback } from "../composables/useDebouncedCallback";
 
 const props = defineProps({
   courseId: { type: String, default: "" },
@@ -44,7 +45,17 @@ const editingQuestion = ref(null);
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const hasMore = computed(() => page.value < totalPages.value);
 
-function onFilterChange() { page.value = 1; fetchQuestions(); }
+const { cancel: cancelKeywordSearch, schedule: scheduleKeywordSearch } = useDebouncedCallback(() => {
+  page.value = 1;
+  void fetchQuestions();
+});
+
+function onKeywordInput() { scheduleKeywordSearch(); }
+function onFilterChange() {
+  cancelKeywordSearch();
+  page.value = 1;
+  void fetchQuestions();
+}
 
 function isExpanded(id) { return expandedIds.value.has(id); }
 
@@ -162,7 +173,7 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
         <p v-if="total">共 {{ total }} 道题</p>
       </div>
       <div class="heading-actions">
-        <button class="ghost-button" type="button" :disabled="loading" @click="fetchQuestions">
+        <button class="ghost-button" type="button" aria-label="刷新题目列表" :disabled="loading" @click="fetchQuestions">
           <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:3px" />刷新
         </button>
         <button v-if="props.courseId" class="primary-button" type="button" @click="openCreateEditor">
@@ -175,18 +186,18 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
     <div class="filter-bar">
       <div class="input-with-icon filter-input-wrapper">
         <Search class="input-icon" :size="17" />
-        <input v-model="keyword" class="text-input has-left-icon" type="search" placeholder="搜索关键词..." @input="onFilterChange" />
+        <input v-model="keyword" class="text-input has-left-icon" type="search" placeholder="搜索关键词..." aria-label="搜索题目关键词" @input="onKeywordInput" />
       </div>
-      <select v-model="typeFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="typeFilter" class="filter-select" aria-label="按题型筛选题目" @change="onFilterChange">
         <option value="">全部题型</option>
         <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
-      <select v-model="subjectFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="subjectFilter" class="filter-select" aria-label="按科目筛选题目" @change="onFilterChange">
         <option value="">全部科目</option>
         <option v-if="metaLoading" disabled>加载中...</option>
         <option v-for="s in subjects" :key="s" :value="s">{{ s }}</option>
       </select>
-      <select v-model="chapterFilter" class="filter-select" @change="onFilterChange">
+      <select v-model="chapterFilter" class="filter-select" aria-label="按章节筛选题目" @change="onFilterChange">
         <option value="">全部章节</option>
         <option v-if="metaLoading" disabled>加载中...</option>
         <option v-for="c in chapters" :key="c" :value="c">{{ c }}</option>
@@ -293,7 +304,7 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
   border: 1px solid var(--amber-border);
   border-radius: var(--radius-md);
   background: var(--amber-soft);
-  color: #92400e;
+  color: var(--amber-strong);
   font-size: var(--text-xs);
   font-weight: 700;
 }
@@ -301,7 +312,7 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
   flex-shrink: 0;
   border: none;
   background: transparent;
-  color: #92400e;
+  color: var(--amber-strong);
   font: inherit;
   cursor: pointer;
   text-decoration: underline;

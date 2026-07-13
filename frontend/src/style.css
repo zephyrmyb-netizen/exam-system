@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    Design System — 学习宝
    Mobile-first, clean hierarchy, breathing room.
    ═══════════════════════════════════════════════════════════════ */
@@ -10,9 +10,9 @@
   --surface-soft: #f1f5f9;
   --surface-strong: #eff6ff;
   --text-main: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #64748b;
-  --text-placeholder: #94a3b8;
+  --text-secondary: #475569;
+  --text-muted: #475569;
+  --text-placeholder: #64748b;
   --line-soft: #e2e8f0;
   --line-strong: #cbd5e1;
   --line-accent: #bfdbfe;
@@ -27,6 +27,7 @@
   --primary-strong: #1d4ed8;
   --primary-soft: #eff6ff;
   --primary-border: #bfdbfe;
+  --primary-glow: rgba(37, 99, 235, 0.2);
 
   --teal: #0d9488;
   --teal-strong: #0f766e;
@@ -40,7 +41,9 @@
   --rose-border: #fecdd3;
 
   --amber: #d97706;
+  --amber-strong: #92400e;
   --amber-soft: #fffbeb;
+  --amber-border: #fde68a;
 
   --emerald: #059669;
   --emerald-soft: #ecfdf5;
@@ -69,40 +72,33 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* ── Radii ── */
+  /* ── Radii · 层次圆角 ── */
   --radius-sm: 8px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
-  --radius-2xl: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
   --radius-full: 9999px;
 
   /* ── Shadows · 带靛蓝色调 ── */
   --shadow-xs: 0 1px 2px rgba(30, 27, 23, 0.04);
   --shadow-sm: 0 2px 8px rgba(30, 27, 23, 0.05);
-  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.05);
-  --shadow-elevated: 0 4px 12px rgba(15, 23, 42, 0.07);
-  --shadow-modal: 0 8px 24px rgba(15, 23, 42, 0.12);
-  --shadow-primary: 0 2px 6px rgba(37, 99, 235, 0.18);
+  --shadow-card: 0 4px 16px rgba(67, 56, 202, 0.08);
+  --shadow-elevated: 0 12px 28px -6px rgba(67, 56, 202, 0.12);
+  --shadow-modal: 0 20px 48px -12px rgba(67, 56, 202, 0.2);
+  --shadow-primary: 0 6px 18px rgba(67, 56, 202, 0.28);
+  --shadow-gold: 0 6px 18px rgba(245, 158, 11, 0.28);
   --shadow-teal: 0 6px 18px rgba(13, 148, 136, 0.22);
 
-  /* ── Motion foundation ── */
-  /* 按压：只给触摸和键盘反馈，短而明确。 */
-  --motion-press: 130ms;
-  /* 答题反馈：状态、边框和轻微位移的可感知反馈。 */
-  --motion-feedback: 170ms;
-  /* 页面内容切换：给新内容一个短暂的进入秩序。 */
-  --motion-content: 210ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-press: var(--motion-press) var(--ease-standard);
-  --ease-feedback: var(--motion-feedback) var(--ease-standard);
-  --ease-content: var(--motion-content) var(--ease-emphasized);
-  /* Legacy aliases: retained for callers, with no overshoot. */
-  --ease-out: var(--ease-feedback);
-  --ease-spring: var(--ease-press);
-  --ease-smooth: var(--ease-content);
-  --ease-bounce: var(--ease-feedback);
+  /* ── Transitions · 墨韵缓动（保留回弹手感）── */
+  /* ease-out: 通用快速反馈（hover / 选中态），柔和的减速曲线 */
+  --ease-out: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-spring: 微弹性，适合按钮按压回弹 */
+  --ease-spring: 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ease-smooth: 内容切换（题目切换/卡片进入），更慢更柔和 */
+  --ease-smooth: 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  /* ease-bounce: 强弹性反馈，适合选项点击 */
+  --ease-bounce: 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Shell ── */
   --shell-max: 720px;
@@ -2686,7 +2682,7 @@ html.dark {
   --text-primary: var(--text-main);
   --text-secondary: #dbeafe;
   --text-muted: #93a4ba;
-  --text-placeholder: #64748b;
+  --text-placeholder: #94a3b8;
   --line-soft: rgba(148, 163, 184, 0.22);
   --line-strong: rgba(148, 163, 184, 0.34);
   --line-accent: rgba(96, 165, 250, 0.55);
@@ -2699,6 +2695,8 @@ html.dark {
   --rose-soft: rgba(225, 29, 72, 0.16);
   --rose-border: rgba(251, 113, 133, 0.28);
   --amber-soft: rgba(217, 119, 6, 0.16);
+  --amber-border: rgba(251, 191, 36, 0.34);
+  --amber-strong: #fcd34d;
   --emerald-soft: rgba(5, 150, 105, 0.16);
   --emerald-border: rgba(52, 211, 153, 0.28);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);

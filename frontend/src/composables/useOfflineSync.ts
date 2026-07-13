@@ -180,6 +180,7 @@ export function useOfflineSync() {
     enqueue,
     flush,
     listPending,
+    refreshPendingCount,
     pendingCount,
     isOnline: computed(() => online.value),
   };

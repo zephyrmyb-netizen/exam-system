@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { ExamQuestion } from "@/types";
 
 const props = defineProps<{
@@ -12,7 +13,7 @@ const emit = defineEmits<{
   answer: [value: string];
 }>();
 
-const optionEntries = () => Object.entries(props.question.options || {});
+const optionEntries = computed(() => Object.entries(props.question.options || {}));
 
 function onTextInput(event: Event) {
   emit("answer", (event.target as HTMLTextAreaElement).value);
@@ -29,9 +30,9 @@ function onTextInput(event: Event) {
 
     <h2>{{ question.question }}</h2>
 
-    <div v-if="optionEntries().length" class="option-grid">
+    <div v-if="optionEntries.length" class="option-grid">
       <button
-        v-for="[key, value] in optionEntries()"
+        v-for="[key, value] in optionEntries"
         :key="key"
         type="button"
         class="option-button"

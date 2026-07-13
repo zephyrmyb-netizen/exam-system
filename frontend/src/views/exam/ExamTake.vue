@@ -6,11 +6,13 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Send } from "@lucide/vue";
 import ExamQuestionCard from "@/components/exam/ExamQuestionCard.vue";
 import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
 import { useSwipe } from "@/composables/useSwipe";
+import { useConfirmDialog } from "@/stores/confirmDialog";
 import { useExamStore } from "@/stores/exam";
 
 const route = useRoute();
 const router = useRouter();
 const store = useExamStore();
+const confirmDialog = useConfirmDialog();
 const pageRef = ref<HTMLElement | null>(null);
 const examId = computed(() => Number(route.params.examId));
 const currentAnswer = computed(() => {
@@ -30,6 +32,19 @@ async function submit() {
   } catch {
     // store.error 已由 store 设置，留在当前页让用户重试
   }
+}
+
+async function exitExam() {
+  const confirmed = await confirmDialog.confirm({
+    title: "退出考试",
+    message: "退出后本次未交卷的答案不会保存。",
+    confirmText: "退出",
+    tone: "warning",
+  });
+  if (!confirmed) return;
+
+  store.reset();
+  router.replace({ name: "exam-detail", params: { examId: examId.value } });
 }
 
 function selectOption(index: number) {
@@ -74,9 +89,15 @@ onUnmounted(() => {
 
     <template v-else-if="store.currentExam && store.currentQuestion">
       <div class="exam-topbar">
-        <div>
-          <span>{{ store.currentExam.title }}</span>
-          <strong>{{ store.answeredCount }} / {{ store.totalQuestions }}</strong>
+        <div class="exam-topbar-row">
+          <button class="exam-exit" type="button" aria-label="退出考试" @click="exitExam">
+            <ArrowLeft :size="17" :stroke-width="2.5" />
+            <span>退出</span>
+          </button>
+          <div class="exam-progress-copy">
+            <span>{{ store.currentExam.title }}</span>
+            <strong>{{ store.answeredCount }} / {{ store.totalQuestions }}</strong>
+          </div>
         </div>
         <div class="progress-track"><i :style="{ width: `${store.progress}%` }"></i></div>
       </div>
@@ -155,7 +176,11 @@ onUnmounted(() => {
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(16px);
 }
-.exam-topbar div:first-child { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--text-muted); font-size: var(--text-sm); font-weight: 850; }
+.exam-topbar-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.exam-progress-copy { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: var(--space-2); color: var(--text-muted); font-size: var(--text-sm); font-weight: 850; }
+.exam-progress-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exam-exit { display: inline-flex; align-items: center; gap: 4px; min-width: 44px; min-height: 40px; padding: 0 8px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-main); font: inherit; font-size: var(--text-sm); font-weight: 800; }
+.exam-exit:active { background: var(--surface-soft); }
 .exam-topbar strong { color: var(--primary); }
 .progress-track { height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--surface-soft); }
 .progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--teal)); transition: width .2s ease; }
@@ -184,7 +209,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 .answer-map button {
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid var(--line-soft);
   border-radius: 14px;
   background: var(--surface);

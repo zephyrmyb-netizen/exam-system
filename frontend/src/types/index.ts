@@ -297,7 +297,7 @@ export interface FileExtractResponse {
 export interface User {
   id: number;
   username: string;
-  role: string;
+  role: RoleName;
   permissions?: string[];
 }
 
@@ -313,7 +313,7 @@ export interface Exam {
   total_score: number;
   is_shuffle: boolean;
   is_blind: boolean;
-  status: "draft" | "published" | string;
+  status: "draft" | "published";
   question_count: number;
   created_at: string | null;
 }

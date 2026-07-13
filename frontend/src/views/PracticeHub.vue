@@ -17,13 +17,13 @@ import { useAppNavigation } from "../composables/useAppNavigation";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
 import PracticeModeCard from "../components/practice/PracticeModeCard.vue";
 import PracticeOverviewCard from "../components/practice/PracticeOverviewCard.vue";
-import type { Course } from "../types";
+import type { Course, WeakType } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 
 const { replaceTo, replaceWithSource } = useAppNavigation();
 
 const stats = ref({ todayCount: null as number | null, totalCount: null as number | null, wrongCount: null as number | null });
-const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as any[] });
+const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as WeakType[] });
 const reviewError = ref("");
 const statsLoading = ref(false);
 
