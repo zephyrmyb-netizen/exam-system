@@ -305,6 +305,12 @@ onMounted(() => {
       <p>文件选择支持 Word / PDF / PPT / 图片 / TXT；AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP</p>
     </div>
 
+    <div class="import-flow" aria-label="AI 瀵煎叆杩涘害">
+      <span class="import-flow-step is-done">1 选择文件</span>
+      <span class="import-flow-step" :class="{ 'is-active': isParsing, 'is-done': hasPreview || hasImportSuccess }">2 识别</span>
+      <span class="import-flow-step" :class="{ 'is-active': hasPreview, 'is-done': hasImportSuccess }">3 预览</span>
+      <span class="import-flow-step" :class="{ 'is-active': hasImportSuccess }">4 确认导入</span>
+    </div>
     <ImportCapabilityStrip />
 
     <template v-if="phase === 'select'">
@@ -592,7 +598,7 @@ onMounted(() => {
   padding: var(--space-3) var(--space-4);
   border: none;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   color: #fff;
   box-shadow: var(--shadow-primary);
   font-size: var(--text-base);
@@ -811,5 +817,25 @@ onMounted(() => {
 
 .small {
   min-height: 38px;
+}
+/* A layout overrides: keep the workflow calm and usable at 375px. */
+.import-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.import-flow-step { min-width: 0; padding: 7px 6px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; font-weight: 700; text-align: center; }
+.import-flow-step.is-active { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary-strong); }
+.import-flow-step.is-done { color: var(--text-secondary); }
+.hero-drop-zone { border-radius: 8px; padding: var(--space-8) var(--space-4); }
+.hero-drop-zone:hover { background: var(--surface); }
+.hero-drop-selected { display: flex; max-width: 100%; min-width: 0; overflow: hidden; }
+.hero-drop-selected svg { flex-shrink: 0; }
+.hero-drop-selected { white-space: nowrap; text-overflow: ellipsis; }
+.hero-cta { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
+.hero-cta:hover:not(:disabled) { background: var(--primary-strong); }
+.opt-panel, .adv-card { border-radius: 6px; box-shadow: var(--shadow-xs); }
+.ai-done { border-radius: 8px; background: var(--surface); border-color: var(--line-soft); }
+@media (max-width: 420px) {
+  .import-flow { gap: 4px; }
+  .import-flow-step { padding-inline: 3px; font-size: 10px; }
+  .hero-drop-zone { padding-block: var(--space-6); }
+  .target-hint { text-align: left; }
 }
 </style>

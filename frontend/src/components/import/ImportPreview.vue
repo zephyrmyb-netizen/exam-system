@@ -502,7 +502,7 @@ function handleRetry() {
 .primary-button {
   flex: 1;
   padding: 0 18px; border: none; color: #fff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   box-shadow: var(--shadow-primary); cursor: pointer;
 }
 .primary-button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
@@ -514,5 +514,22 @@ function handleRetry() {
   .q-item { align-items: flex-start; }
   .q-item-head { flex-wrap: wrap; }
   .q-preview { width: 100%; white-space: normal; word-break: break-word; }
+}
+/* A layout: keep preview actions readable and stable on narrow screens. */
+.preview-root { gap: var(--space-3); }
+.preview-head { min-width: 0; }
+.preview-head-text { overflow: hidden; }
+.preview-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.warnings-box, .q-item, .empty-preview, .timing-strip { border-radius: 6px; }
+.primary-button { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
+.primary-button:hover:not(:disabled) { background: var(--primary-strong); }
+.ghost-button { border-radius: 6px; }
+@media (max-width: 420px) {
+  .summary-bar { align-items: flex-start; flex-direction: column; }
+  .add-btn { align-self: stretch; }
+  .action-row { flex-direction: column; }
+  .action-row > button { width: 100%; }
+  .course-row { grid-template-columns: 1fr; }
+  .course-or { text-align: center; }
 }
 </style>
