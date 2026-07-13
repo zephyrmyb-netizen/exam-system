@@ -12,6 +12,7 @@
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
+| 2026-07-13 | AI 长文档与多模态导入可靠性修复 | [2026-07-13-ai-import-reliability.md](./archive/2026-07-13-ai-import-reliability.md) |
 | 2026-07-13 | AI 导入重启恢复、原子写入与前端测试工具链安全修复 | [2026-07-13-import-recovery-and-tooling-security.md](./archive/2026-07-13-import-recovery-and-tooling-security.md) |
 | 2026-07-13 | 前端可靠性、离线与可访问性修复 | [2026-07-13-frontend-reliability-accessibility.md](./archive/2026-07-13-frontend-reliability-accessibility.md) |
 | 2026-07-13 | 首页 AI 入口与四项导航 | [2026-07-13-home-ai-entry-navigation.md](./archive/2026-07-13-home-ai-entry-navigation.md) |
