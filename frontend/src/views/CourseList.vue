@@ -206,53 +206,68 @@ function goToPractice(course: Course) {
   replaceWithSource(`/courses/${course.id}/practice`, "courses");
 }
 
+function formatLastPracticed(course: Course) {
+  if (!course.last_practiced_at) return "尚未练习";
+  return `最近练习 ${new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+  }).format(new Date(course.last_practiced_at))}`;
+}
+
 onMounted(fetchCourses);
 </script>
 
 <template>
   <section class="library-page">
-    <header class="page-head fade-up">
-      <p class="ph-sub">Library · 学海无涯</p>
-      <h2 class="ph-title">题库</h2>
-      <span class="ph-date">{{ courses.length }} 个题库</span>
+    <header class="library-head fade-up">
+      <div>
+        <p class="eyebrow">学习工具 · 题库管理</p>
+        <h2 class="library-title">题库</h2>
+        <p class="library-count">{{ courses.length }} 个题库</p>
+      </div>
+      <button class="primary-action" type="button" @click="openCreate">
+        <Plus :size="17" :stroke-width="2.4" />
+        创建题库
+      </button>
     </header>
 
     <p v-if="loading" class="status-banner status-banner--info">题库加载中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
     <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
-    <div v-if="courses.length > 0" class="search-bar ink-card fade-up d1">
-      <Search :size="18" :stroke-width="2.4" class="search-icon" />
-      <input
-        v-model="searchText"
-        type="search"
-        class="search-input"
-        placeholder="搜索题库、科目或描述"
-      />
-      <button
-        v-if="searchText"
-        class="search-clear"
-        type="button"
-        aria-label="清空搜索"
-        @click="clearSearch"
-      >
-        <X :size="14" :stroke-width="2.6" />
-      </button>
-    </div>
-
-    <div v-if="courses.length > 0" class="seg fade-up d1">
-      <button
-        v-for="filter in visibilityFilters"
-        :key="filter.key"
-        class="seg-item"
-        :class="{ active: visibilityFilter === filter.key }"
-        type="button"
-        :aria-label="`${filter.label}题库筛选`"
-        :aria-pressed="visibilityFilter === filter.key"
-        @click="visibilityFilter = filter.key"
-      >
-        {{ filter.label }}
-      </button>
+    <div v-if="courses.length > 0" class="library-tools fade-up d1">
+      <div class="search-bar">
+        <Search :size="18" :stroke-width="2.4" class="search-icon" />
+        <input
+          v-model="searchText"
+          type="search"
+          class="search-input"
+          placeholder="搜索题库、科目或描述"
+        />
+        <button
+          v-if="searchText"
+          class="search-clear"
+          type="button"
+          aria-label="清空搜索"
+          @click="clearSearch"
+        >
+          <X :size="14" :stroke-width="2.6" />
+        </button>
+      </div>
+      <div class="seg">
+        <button
+          v-for="filter in visibilityFilters"
+          :key="filter.key"
+          class="seg-item"
+          :class="{ active: visibilityFilter === filter.key }"
+          type="button"
+          :aria-label="`${filter.label}题库筛选`"
+          :aria-pressed="visibilityFilter === filter.key"
+          @click="visibilityFilter = filter.key"
+        >
+          {{ filter.label }}
+        </button>
+      </div>
     </div>
 
     <p v-if="courses.length > 0" class="lib-summary fade-up d1">{{ courseSummary }}</p>
@@ -287,7 +302,6 @@ onMounted(fetchCourses);
     </div>
 
     <div v-if="filteredCourses.length > 0" class="section-head fade-up d2">
-      <span class="num">I</span>
       <h3 class="section-title">我的题库</h3>
       <button
         class="section-more"
@@ -317,14 +331,24 @@ onMounted(fetchCourses);
           <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
           <div class="course-info">
             <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</strong>
-            <span>{{ course.subject ? course.subject + ' · ' : '' }}{{ course.question_count ?? 0 }} 题</span>
+            <span class="course-subline">
+              {{ course.subject || '未分类' }} · {{ course.visibility === 'public' ? '公开' : '私有' }} · {{ formatLastPracticed(course) }}
+            </span>
           </div>
-          <span
-            class="badge"
-            :class="course.visibility === 'public' ? 'badge-public' : 'badge-private'"
-          >
-            {{ course.visibility === 'public' ? '已公开' : '私有' }}
+          <span class="course-stat"><strong>{{ course.question_count ?? 0 }}</strong><small>题</small></span>
+          <span class="visibility-label" :class="course.visibility === 'public' ? 'is-public' : 'is-private'">
+            {{ course.visibility === 'public' ? '公开' : '私有' }}
           </span>
+          <span class="course-recent">{{ formatLastPracticed(course) }}</span>
+          <button
+            class="practice-action"
+            type="button"
+            :disabled="!isPracticeReadyCourse(course)"
+            @click.stop="goToPractice(course)"
+          >
+            <Play :size="15" :stroke-width="2.5" />
+            练习
+          </button>
           <button
             class="more-btn"
             type="button"
@@ -398,10 +422,6 @@ onMounted(fetchCourses);
     >
       <Globe :size="17" :stroke-width="2.5" />
       浏览公共题库
-    </button>
-
-    <button class="fab" type="button" aria-label="创建题库" @click="openCreate">
-      <Plus :size="22" :stroke-width="2.5" />
     </button>
 
     <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
@@ -517,7 +537,7 @@ onMounted(fetchCourses);
   color: var(--text-placeholder);
 }
 .empty-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 800;
   color: var(--text-main);
@@ -587,7 +607,7 @@ onMounted(fetchCourses);
 
 /* Course icon text character */
 .course-icon {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   font-weight: 900;
 }
@@ -596,8 +616,8 @@ onMounted(fetchCourses);
 .more-btn {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border: none;
   border-radius: var(--radius-sm);
@@ -673,7 +693,7 @@ onMounted(fetchCourses);
   padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   color: #ffffff;
   font-size: var(--text-sm);
   font-weight: 800;
@@ -732,8 +752,8 @@ onMounted(fetchCourses);
   place-items: center;
   padding: var(--space-4);
   background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .modal-card {
   width: 100%;
@@ -752,7 +772,7 @@ onMounted(fetchCourses);
 }
 .modal-title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-xl);
   font-weight: 900;
   color: var(--text-main);
@@ -811,5 +831,138 @@ onMounted(fetchCourses);
   .empty-actions button {
     width: 100%;
   }
+}
+
+/* A-plan overrides: restrained surfaces, clear hierarchy, and 44px touch targets. */
+.library-page {
+  gap: 16px;
+  padding-bottom: calc(var(--nav-bottom-clearance) + 24px);
+  font-family: var(--font-sans);
+}
+.library-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.library-head > div { min-width: 0; }
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.library-title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.library-count {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.primary-action,
+.practice-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.primary-action { padding: 0 14px; flex-shrink: 0; }
+.primary-action:hover,
+.practice-action:hover:not(:disabled) { background: var(--primary-strong); }
+.library-tools { display: flex; align-items: center; gap: 10px; }
+.library-tools .search-bar {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: none;
+}
+.search-input { min-height: 28px; font-size: 14px; }
+.search-clear { width: 36px; height: 36px; border-radius: 6px; }
+.library-tools .seg { flex-shrink: 0; border-radius: 6px; }
+.library-tools .seg-item { min-height: 40px; padding: 0 12px; border-radius: 4px; }
+.lib-summary { padding: 0; }
+.section-head { margin-top: 4px; }
+.section-title { font-family: var(--font-sans); font-size: 16px; font-weight: 800; }
+.course-list { gap: 8px; }
+.course-row {
+  border-radius: 6px;
+  box-shadow: none;
+}
+.course-row:hover { box-shadow: var(--shadow-xs); }
+.course-row .course-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto minmax(104px, auto) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.course-icon { width: 36px; height: 36px; border-radius: 4px; font-family: var(--font-sans); font-size: 15px; }
+.course-info { min-width: 0; }
+.course-info strong { font-size: 14px; }
+.course-subline { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.course-stat { display: inline-flex; align-items: baseline; gap: 3px; color: var(--text-main); white-space: nowrap; }
+.course-stat strong { font-size: 16px; font-weight: 800; }
+.course-stat small { color: var(--text-muted); font-size: 11px; }
+.visibility-label { min-width: 40px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.visibility-label.is-public { color: var(--primary-strong); }
+.visibility-label.is-private { color: var(--text-muted); }
+.course-recent { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.practice-action { min-width: 76px; padding: 0 10px; }
+.practice-action:disabled { border-color: var(--line-soft); background: var(--surface-soft); color: var(--text-placeholder); cursor: not-allowed; }
+.more-btn { width: 44px; height: 44px; border-radius: 6px; }
+.course-menu {
+  top: auto;
+  right: 10px;
+  bottom: 10px;
+  min-width: 196px;
+  max-width: calc(100% - 20px);
+  padding: 6px;
+  border-radius: 6px;
+}
+.menu-option { min-height: 44px; border-radius: 4px; }
+.btn-solid { background: var(--primary); border-radius: 6px; box-shadow: none; }
+.btn-solid:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
+.modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.modal-card { border-radius: 6px; }
+.modal-title { font-family: var(--font-sans); }
+.modal-close { width: 44px; height: 44px; border-radius: 6px; }
+
+@media (max-width: 700px) {
+  .library-tools { align-items: stretch; flex-direction: column; }
+  .library-tools .seg { align-self: flex-start; }
+}
+@media (max-width: 400px) {
+  .library-head { align-items: flex-start; }
+  .library-title { font-size: 24px; }
+  .primary-action { padding: 0 10px; }
+  .course-row .course-item {
+    grid-template-columns: 36px minmax(0, 1fr) auto auto;
+    gap: 8px;
+    min-height: 72px;
+    padding: 10px 8px;
+  }
+  .course-stat { grid-column: 3; grid-row: 1; }
+  .practice-action { display: none; }
+  .visibility-label, .course-recent { display: none; }
+  .course-subline { font-size: 11px; }
+  .course-menu { right: 8px; bottom: 8px; min-width: 188px; }
 }
 </style>
