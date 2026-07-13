@@ -319,7 +319,7 @@ label.menu-item {
   color: var(--text-muted);
 }
 .mf-brand {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: 0.04em;
 }
