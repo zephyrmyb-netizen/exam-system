@@ -950,11 +950,6 @@ onMounted(fetchCourses);
 @media (max-width: 700px) {
   .library-tools { align-items: stretch; flex-direction: column; }
   .library-tools .seg { align-self: flex-start; }
-}
-@media (max-width: 400px) {
-  .library-head { align-items: flex-start; }
-  .library-title { font-size: 24px; }
-  .primary-action { padding: 0 10px; }
   .course-row .course-item {
     grid-template-columns: 36px minmax(0, 1fr) auto 44px 44px;
     gap: 8px;
@@ -974,5 +969,10 @@ onMounted(fetchCourses);
   .visibility-label, .course-recent { display: none; }
   .course-subline { font-size: 11px; }
   .course-menu { right: 8px; bottom: 8px; min-width: 188px; }
+}
+@media (max-width: 400px) {
+  .library-head { align-items: flex-start; }
+  .library-title { font-size: 24px; }
+  .primary-action { padding: 0 10px; }
 }
 </style>

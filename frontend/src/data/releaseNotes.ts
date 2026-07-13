@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.5-mobile-layout-import-progress",
+    version: "v2.7.5",
+    date: "2026-07-13",
+    type: "修复",
+    title: "手机端题库与导入布局修复",
+    items: [
+      "修复题库列表在部分手机宽度横向超出的问题。",
+      "导入解析时改为紧凑进度界面，避免页面内容被撑大。",
+      "长文件名和解析提示现在会自动截断或换行，不再挤出屏幕。",
+    ],
+  },
+  {
     id: "v2.7.4-home-ai-entry-navigation",
     version: "v2.7.4",
     date: "2026-07-13",
