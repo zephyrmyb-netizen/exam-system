@@ -83,6 +83,25 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".bottom-nav").exists()).toBe(true);
   });
 
+  it("lets the import page own its heading while keeping bottom navigation", () => {
+    route.name = "import";
+    route.path = "/import";
+    route.meta = { title: "AI 导入", navKey: "import" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.find(".app-header").exists()).toBe(false);
+    expect(wrapper.find(".bottom-nav").exists()).toBe(true);
+  });
+
   it("renders the four learning tabs in order and replaces the current route", async () => {
     route.name = "home";
     route.path = "/";
