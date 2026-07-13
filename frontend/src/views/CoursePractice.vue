@@ -160,11 +160,10 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 </template>
 
 <style scoped>
-/* ── Settings Header ── */
 .settings-header {
-  padding: var(--space-3) var(--space-4);
+  padding: 12px 14px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
+  border-radius: 8px;
   background: var(--surface);
 }
 .settings-header-top { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--space-3); }
@@ -174,15 +173,12 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 .settings-meta { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
 
 .settings-section-label {
-  margin: 0 0 2px 4px;
+  margin: 4px 0 2px;
   font-size: var(--text-xs);
   font-weight: 800;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
-/* ── Mode Cards ── */
 .mode-grid { display: grid; gap: 6px; }
 
 .mode-card {
@@ -191,9 +187,10 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3) var(--space-3);
-  border: 1.5px solid var(--line-soft);
-  border-radius: var(--radius-md);
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
   background: var(--surface);
   text-align: left;
   font: inherit;
@@ -213,7 +210,7 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 .mode-active {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 2px var(--primary-glow);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .mode-active .mode-card-title {
@@ -256,18 +253,18 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  padding: var(--space-3);
+  padding: 10px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  background: linear-gradient(180deg, var(--surface), var(--surface-soft));
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .settings-summary-item {
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding: 8px;
-  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+  border-radius: 4px;
   background: var(--surface-soft);
 }
 
@@ -285,7 +282,6 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   white-space: nowrap;
 }
 
-/* ── Start Button ── */
 .start-btn {
   display: inline-flex;
   align-items: center;
@@ -293,24 +289,24 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
   width: 100%;
   padding: 12px;
   border: none;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border-radius: 8px;
+  background: var(--primary);
   color: #fff;
   font-size: var(--text-base);
   font-weight: 800;
   cursor: pointer;
-  box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  box-shadow: var(--shadow-xs);
+  transition: background var(--ease-out), box-shadow var(--ease-out);
   min-height: 48px;
 }
 
 .start-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .start-btn:active {
-  transform: translateY(0);
+  box-shadow: var(--shadow-xs);
 }
 
 .start-btn:disabled {
@@ -325,8 +321,11 @@ watch(() => route.params.courseId, () => { showPractice.value = false; fetchCour
 
 @media (max-width: 420px) {
   .settings-summary {
-    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 8px;
   }
+
+  .settings-summary-item { padding: 6px; }
 
   .settings-info h2 { font-size: 16px; }
 }

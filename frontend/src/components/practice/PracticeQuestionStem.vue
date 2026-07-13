@@ -28,10 +28,9 @@ defineProps({
   max-width: 100%;
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(191, 219, 254, 0.8);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.96));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .practice-stem__meta {
@@ -45,7 +44,7 @@ defineProps({
 .practice-stem__tag,
 .practice-stem__hint {
   padding: 2px 8px;
-  border-radius: var(--radius-full);
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.3;
@@ -58,8 +57,8 @@ defineProps({
 }
 
 .practice-stem__hint {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .practice-stem__title {
@@ -68,7 +67,6 @@ defineProps({
   font-size: 1rem;
   line-height: 1.42;
   font-weight: 800;
-  letter-spacing: -0.01em;
   color: var(--text-main);
   word-break: break-word;
 }
@@ -76,7 +74,7 @@ defineProps({
 @media (max-width: 420px) {
   .practice-stem {
     padding: 9px;
-    border-radius: var(--radius-md);
+    border-radius: 8px;
   }
 
   .practice-stem__meta {
