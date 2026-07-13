@@ -424,7 +424,7 @@ onMounted(() => {
 }
 
 .empty-state strong {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-base);
   font-weight: 800;
   color: var(--text-main);
