@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock3, LayoutGrid, Send, X } from "@lucide/vue";
+import { ArrowLeft, ChevronLeft, ChevronRight, LayoutGrid, Send } from "@lucide/vue";
 
 import ExamQuestionCard from "@/components/exam/ExamQuestionCard.vue";
+import BottomSheet from "@/components/ui/BottomSheet.vue";
 import { useKeyboardShortcuts } from "@/composables/useKeyboardShortcuts";
 import { useSwipe } from "@/composables/useSwipe";
 import { useConfirmDialog } from "@/stores/confirmDialog";
@@ -21,6 +22,14 @@ const currentAnswer = computed(() => {
   const question = store.currentQuestion;
   return question ? store.answers[String(question.question_id)] || "" : "";
 });
+const timerCircumference = 113.1;
+const timerProgress = computed(() => {
+  const seconds = store.remainingSeconds;
+  const totalSeconds = store.currentExam?.time_limit ? store.currentExam.time_limit * 60 : null;
+  if (seconds === null || !totalSeconds) return 0;
+  return Math.min(1, Math.max(0, seconds / totalSeconds));
+});
+const timerDashOffset = computed(() => timerCircumference * (1 - timerProgress.value));
 
 function formatRemaining(seconds: number | null) {
   if (seconds === null) return "--:--";
@@ -34,13 +43,16 @@ function answer(value: string) {
   store.setAnswer(store.currentQuestion.question_id, value);
 }
 
-async function submit() {
-  if (store.submitting) return;
+async function submit(): Promise<boolean> {
+  if (store.submitting) return false;
   try {
     const result = await store.submitCurrentExam();
+    if (store.result !== result) return false;
     router.replace({ name: "exam-result", params: { examId: result.exam_id } });
+    return true;
   } catch {
-    // store.error 已由 store 设置，留在当前页让用户重试
+    // store.error 已由 store 设置，留在当前页让用户重试。
+    return false;
   }
 }
 
@@ -73,7 +85,8 @@ async function syncTimer() {
   store.syncRemainingSeconds();
   if (store.remainingSeconds === 0 && !timerExpiredSubmitting.value) {
     timerExpiredSubmitting.value = true;
-    await submit();
+    const submitted = await submit();
+    if (!submitted && !store.result) timerExpiredSubmitting.value = false;
   }
 }
 
@@ -92,7 +105,11 @@ let timerHandle: number | undefined;
 
 onMounted(async () => {
   shortcuts.bind();
-  await store.startAttempt(examId.value);
+  try {
+    await store.startAttempt(examId.value);
+  } catch {
+    return;
+  }
   await syncTimer();
   timerHandle = window.setInterval(syncTimer, 1000);
 });
@@ -105,7 +122,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section ref="pageRef" class="exam-take-page">
+  <section ref="pageRef" class="exam-take-page" data-reference-page="exam-take">
     <p v-if="store.loading" class="info-message">正在进入考试...</p>
 
     <div v-else-if="store.error" class="empty-panel">
@@ -117,27 +134,36 @@ onUnmounted(() => {
 
     <template v-else-if="store.currentExam && store.currentQuestion">
       <header class="exam-topbar">
-        <div class="exam-topbar__row">
-          <button class="exam-exit" type="button" aria-label="退出考试" @click="exitExam">
-            <ArrowLeft :size="18" :stroke-width="2.5" />
-            <span>返回</span>
-          </button>
-          <div class="exam-heading">
-            <strong>{{ store.currentExam.title }}</strong>
-            <span>第 {{ store.currentIndex + 1 }} / {{ store.totalQuestions }} 题</span>
-          </div>
-          <button class="exam-answer-card-trigger" type="button" aria-label="打开答题卡" @click="showAnswerSheet = true">
-            <LayoutGrid :size="18" :stroke-width="2.4" />
-            <span>答题卡</span>
-          </button>
+        <button class="exam-exit" type="button" aria-label="退出考试" @click="exitExam">
+          <ArrowLeft :size="20" :stroke-width="2.25" />
+        </button>
+        <div class="exam-heading">
+          <strong>{{ store.currentExam.title }}</strong>
+          <span>第 {{ store.currentIndex + 1 }} 题 / 共 {{ store.totalQuestions }} 题</span>
         </div>
-        <div class="exam-topbar__meta">
-          <span>{{ store.answeredCount }} / {{ store.totalQuestions }} 已答</span>
-          <span class="exam-timer" :class="{ urgent: store.remainingSeconds !== null && store.remainingSeconds <= 60 }" data-exam-countdown>
-            <Clock3 :size="15" /> {{ formatRemaining(store.remainingSeconds) }}
-          </span>
+        <button class="exam-answer-card-trigger" type="button" aria-label="打开答题卡" @click="showAnswerSheet = true">
+          <LayoutGrid :size="20" :stroke-width="2.25" />
+          <span>{{ store.answeredCount }}/{{ store.totalQuestions }}</span>
+        </button>
+        <div
+          class="exam-timer-ring"
+          :class="{ urgent: store.remainingSeconds !== null && store.remainingSeconds <= 60 }"
+          data-exam-countdown
+          :aria-label="`剩余时间 ${formatRemaining(store.remainingSeconds)}`"
+        >
+          <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="exam-timer-ring__track" cx="22" cy="22" r="18" />
+            <circle
+              class="exam-timer-ring__progress"
+              cx="22"
+              cy="22"
+              r="18"
+              :stroke-dasharray="timerCircumference"
+              :stroke-dashoffset="timerDashOffset"
+            />
+          </svg>
+          <span>{{ formatRemaining(store.remainingSeconds) }}</span>
         </div>
-        <div class="progress-track" aria-label="答题进度"><i :style="{ width: `${store.progress}%` }"></i></div>
       </header>
 
       <ExamQuestionCard
@@ -163,75 +189,381 @@ onUnmounted(() => {
         </button>
       </footer>
 
-      <Transition name="answer-sheet">
-        <div v-if="showAnswerSheet" class="answer-sheet" data-exam-answer-sheet>
-          <button class="answer-sheet__backdrop" type="button" aria-label="关闭答题卡" @click="showAnswerSheet = false"></button>
-          <section class="answer-sheet__panel" role="dialog" aria-modal="true" aria-label="答题卡">
-            <div class="answer-sheet__handle" aria-hidden="true"></div>
-            <header class="answer-sheet__head">
-              <div><strong>答题卡</strong><span>已答 {{ store.answeredCount }} / {{ store.totalQuestions }} 题</span></div>
-              <button type="button" aria-label="关闭答题卡" @click="showAnswerSheet = false"><X :size="18" /></button>
-            </header>
-            <div class="answer-map">
-              <button
-                v-for="(question, index) in store.currentExam.questions"
-                :key="question.question_id"
-                type="button"
-                :class="{ active: index === store.currentIndex, answered: Boolean(store.answers[String(question.question_id)]?.trim()) }"
-                @click="jumpFromAnswerSheet(index)"
-              >
-                {{ index + 1 }}
-              </button>
-            </div>
-          </section>
+      <BottomSheet v-model="showAnswerSheet" title="答题卡">
+        <div data-exam-answer-sheet>
+          <div class="answer-sheet__summary">
+            <span>共 {{ store.totalQuestions }} 题</span>
+            <strong>完成 {{ store.progress }}%</strong>
+          </div>
+          <div class="answer-sheet__progress" aria-hidden="true"><i :style="{ width: `${store.progress}%` }"></i></div>
+          <div class="answer-map">
+            <button
+              v-for="(question, index) in store.currentExam.questions"
+              :key="question.question_id"
+              type="button"
+              :data-question-id="question.question_id"
+              :class="{ active: index === store.currentIndex, answered: Boolean(store.answers[String(question.question_id)]?.trim()) }"
+              @click="jumpFromAnswerSheet(index)"
+            >
+              {{ index + 1 }}
+            </button>
+          </div>
+          <div class="answer-sheet__legend">
+            <span><i class="answered"></i>已答 {{ store.answeredCount }}</span>
+            <span><i class="current"></i>当前</span>
+            <span><i></i>未答 {{ Math.max(store.totalQuestions - store.answeredCount, 0) }}</span>
+          </div>
         </div>
-      </Transition>
+      </BottomSheet>
     </template>
+
+    <article v-else-if="store.currentExam" class="empty-panel" data-exam-empty>
+      <LayoutGrid :size="36" />
+      <h1>暂无可作答题目</h1>
+      <p>这份试卷当前没有返回题目，请返回考试详情后重试。</p>
+      <button type="button" class="back-btn" @click="router.replace({ name: 'exam-detail', params: { examId } })">
+        <ArrowLeft :size="16" /> 返回考试详情
+      </button>
+    </article>
   </section>
 </template>
 
 <style scoped>
-.exam-take-page { display: grid; gap: 16px; min-height: 100%; padding: 8px 0 calc(24px + env(safe-area-inset-bottom)); }
-.empty-panel { display: grid; gap: 16px; place-items: center; padding: 48px 16px; text-align: center; }
-.back-btn, .exam-exit, .exam-answer-card-trigger, .question-nav button, .submit-button, .answer-sheet__head button, .answer-map button { cursor: pointer; }
-.back-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 20px; border: 1px solid var(--line-soft); border-radius: var(--radius-full); background: var(--surface); color: var(--text-main); font: inherit; font-weight: 700; }
-.exam-topbar { position: sticky; top: 0; z-index: 10; display: grid; gap: 12px; padding: 14px 16px; border: 1px solid var(--glass-border, var(--line-soft)); border-radius: 20px; background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: var(--shadow-sm); backdrop-filter: blur(20px) saturate(160%); }
-.exam-topbar__row, .exam-topbar__meta, .exam-heading, .exam-actions, .question-nav { display: flex; align-items: center; }
-.exam-topbar__row, .exam-topbar__meta { justify-content: space-between; gap: 12px; }
-.exam-heading { min-width: 0; flex: 1; flex-direction: column; align-items: flex-start; gap: 2px; }
-.exam-heading strong { max-width: 100%; overflow: hidden; color: var(--text-main); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.exam-heading span, .exam-topbar__meta { color: var(--text-muted); font-size: 12px; font-weight: 700; }
-.exam-exit { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 8px 0 0; border: 0; background: transparent; color: var(--text-main); font: inherit; font-weight: 800; }
-.exam-answer-card-trigger { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 10px; border: 1px solid var(--primary-border); border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary-strong); font: inherit; font-size: 12px; font-weight: 800; }
-.exam-timer { display: inline-flex; align-items: center; gap: 5px; color: var(--primary-strong); font-variant-numeric: tabular-nums; }
-.exam-timer.urgent { color: var(--state-error, var(--rose)); }
-.progress-track { height: 7px; overflow: hidden; border-radius: var(--radius-full); background: var(--surface-soft); }
-.progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--ease-out); }
-.exam-actions { position: sticky; bottom: 0; z-index: 5; display: grid; gap: 10px; padding: 12px 0 calc(4px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--page-bg) 22%); }
-.question-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.question-nav button, .submit-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; border-radius: var(--radius-full); font: inherit; font-weight: 800; }
-.question-nav button { border: 1px solid var(--line-soft); background: var(--surface); color: var(--text-main); }
-.question-nav button:disabled, .submit-button:disabled { cursor: not-allowed; opacity: .55; }
-.submit-button { min-height: 52px; border: 0; background: var(--primary); color: #fff; box-shadow: var(--shadow-primary); }
-.answer-sheet { position: fixed; inset: 0; z-index: 100; display: grid; align-items: end; }
-.answer-sheet__backdrop { position: absolute; inset: 0; border: 0; background: rgba(15, 23, 42, .4); backdrop-filter: blur(4px); }
-.answer-sheet__panel { position: relative; display: grid; gap: 16px; max-height: min(70dvh, 560px); padding: 10px 18px calc(22px + env(safe-area-inset-bottom)); overflow: auto; border: 1px solid var(--glass-border, var(--line-soft)); border-radius: 24px 24px 0 0; background: color-mix(in srgb, var(--surface) 86%, transparent); box-shadow: var(--shadow-modal); backdrop-filter: blur(24px) saturate(160%); }
-.answer-sheet__handle { width: 36px; height: 4px; margin: 0 auto; border-radius: 999px; background: var(--line-strong); }
-.answer-sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.answer-sheet__head div { display: grid; gap: 3px; }
-.answer-sheet__head strong { font-size: 18px; }
-.answer-sheet__head span { color: var(--text-muted); font-size: 12px; font-weight: 650; }
-.answer-sheet__head button { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line-soft); border-radius: 50%; background: var(--surface); color: var(--text-muted); }
-.answer-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; }
-.answer-map button { min-height: 44px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface); color: var(--text-muted); font: inherit; font-weight: 900; }
-.answer-map button.answered { border-color: var(--primary-border); color: var(--primary-strong); background: var(--primary-soft); }
-.answer-map button.active { border-color: var(--primary); color: #fff; background: var(--primary); }
-.answer-sheet-enter-active, .answer-sheet-leave-active { transition: opacity var(--ease-out); }
-.answer-sheet-enter-active .answer-sheet__panel, .answer-sheet-leave-active .answer-sheet__panel { transition: transform var(--ease-smooth); }
-.answer-sheet-enter-from, .answer-sheet-leave-to { opacity: 0; }
-.answer-sheet-enter-from .answer-sheet__panel, .answer-sheet-leave-to .answer-sheet__panel { transform: translateY(100%); }
-@media (min-width: 700px) {
-  .exam-take-page { gap: 20px; padding-top: 16px; }
-  .exam-actions { grid-template-columns: minmax(0, 1fr) 180px; align-items: center; }
+.exam-take-page {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 100%;
+  padding: 0 var(--space-4) calc(92px + var(--safe-area-bottom));
+}
+
+.empty-panel {
+  display: grid;
+  gap: var(--space-3);
+  place-items: center;
+  padding: 56px var(--space-4);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-panel h1,
+.empty-panel p {
+  margin: 0;
+}
+
+.empty-panel h1 {
+  color: var(--text-main);
+  font-size: var(--text-xl);
+}
+
+.back-btn,
+.exam-exit,
+.exam-answer-card-trigger,
+.question-nav button,
+.submit-button,
+.answer-map button {
+  cursor: pointer;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+}
+
+.exam-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 68px;
+  margin: 0 calc(-1 * var(--space-4));
+  padding: max(10px, var(--safe-area-top)) 12px 10px;
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--glass-header);
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+}
+
+.exam-heading {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.exam-heading strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: var(--text-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exam-heading span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.exam-exit,
+.exam-answer-card-trigger {
+  display: grid;
+  position: relative;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.exam-answer-card-trigger span {
+  position: absolute;
+  right: -3px;
+  bottom: -1px;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--surface);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.exam-exit:active,
+.exam-answer-card-trigger:active,
+.question-nav button:active,
+.submit-button:active,
+.answer-map button:active {
+  transform: scale(.94);
+}
+
+.exam-timer-ring {
+  display: grid;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--primary-strong);
+}
+
+.exam-timer-ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.exam-timer-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.exam-timer-ring__track {
+  stroke: var(--line-soft);
+}
+
+.exam-timer-ring__progress {
+  stroke: currentColor;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.exam-timer-ring span {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.exam-timer-ring.urgent {
+  color: var(--state-error);
+  animation: exam-tick 2.4s ease-in-out infinite;
+}
+
+.exam-actions {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 30;
+  display: grid;
+  width: min(100%, var(--shell-max));
+  grid-template-columns: minmax(0, 1fr) minmax(96px, .72fr);
+  gap: 10px;
+  padding: 12px max(12px, var(--space-4)) max(12px, var(--safe-area-bottom));
+  border-top: 1px solid var(--glass-border);
+  background: var(--glass-header);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, .06);
+  backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+  transform: translateX(-50%);
+}
+
+.question-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.question-nav button,
+.submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 48px;
+  border-radius: var(--radius-full);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  transition: transform var(--ease-spring), opacity var(--ease-out);
+}
+
+.question-nav button {
+  border: 1px solid var(--line-soft);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+
+.question-nav button:disabled,
+.submit-button:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.submit-button {
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+
+.answer-sheet__summary,
+.answer-sheet__legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.answer-sheet__summary strong {
+  color: var(--primary-strong);
+}
+
+.answer-sheet__progress {
+  height: 4px;
+  margin: var(--space-2) 0 var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+}
+
+.answer-sheet__progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.answer-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.answer-map button {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--ease-spring), background var(--ease-out), border-color var(--ease-out);
+}
+
+.answer-map button.answered {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.answer-map button.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  color: #fff;
+}
+
+.answer-sheet__legend {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+.answer-sheet__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.answer-sheet__legend i {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: var(--surface-soft);
+}
+
+.answer-sheet__legend i.answered,
+.answer-sheet__legend i.current {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.answer-sheet__legend i.current {
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+@keyframes exam-tick {
+  50% { transform: scale(1.08); opacity: .82; }
+}
+
+@media (max-width: 340px) {
+  .exam-topbar { gap: 4px; padding-inline: 8px; }
+  .exam-heading strong { font-size: var(--text-sm); }
+  .exam-actions { grid-template-columns: minmax(0, 1fr) 92px; padding-inline: 8px; }
+  .question-nav button { font-size: var(--text-xs); }
 }
 </style>

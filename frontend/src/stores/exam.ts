@@ -10,6 +10,15 @@ import {
 import { getErrorMessage } from "@/api/request";
 import type { Exam, ExamAttempt, ExamDetail, ExamLeaderboard, ExamQuestion, ExamResult } from "@/types";
 
+const pendingSubmissions = new WeakMap<object, Promise<ExamResult>>();
+const examSessionGenerations = new WeakMap<object, number>();
+
+function advanceExamSession(storeKey: object): number {
+  const nextGeneration = (examSessionGenerations.get(storeKey) || 0) + 1;
+  examSessionGenerations.set(storeKey, nextGeneration);
+  return nextGeneration;
+}
+
 export const useExamStore = defineStore("exam", {
   state: () => ({
     exams: [] as Exam[],
@@ -66,6 +75,10 @@ export const useExamStore = defineStore("exam", {
     },
 
     async loadExam(id: number): Promise<ExamDetail> {
+      const storeKey = this as object;
+      advanceExamSession(storeKey);
+      pendingSubmissions.delete(storeKey);
+      this.submitting = false;
       this.loading = true;
       this.error = "";
       try {
@@ -86,6 +99,10 @@ export const useExamStore = defineStore("exam", {
     },
 
     async startAttempt(id: number): Promise<void> {
+      const storeKey = this as object;
+      advanceExamSession(storeKey);
+      pendingSubmissions.delete(storeKey);
+      this.submitting = false;
       this.loading = true;
       this.error = "";
       try {
@@ -117,7 +134,13 @@ export const useExamStore = defineStore("exam", {
         return;
       }
 
-      const elapsedSeconds = Math.max(0, Math.floor((now - Date.parse(startedAt)) / 1000));
+      const startedAtMs = Date.parse(startedAt);
+      if (!Number.isFinite(startedAtMs)) {
+        this.remainingSeconds = null;
+        return;
+      }
+
+      const elapsedSeconds = Math.max(0, Math.floor((now - startedAtMs) / 1000));
       this.remainingSeconds = Math.max(0, timeLimit * 60 - elapsedSeconds);
     },
 
@@ -135,20 +158,37 @@ export const useExamStore = defineStore("exam", {
       this.currentIndex = Math.min(Math.max(index, 0), Math.max(this.currentExam.questions.length - 1, 0));
     },
 
-    async submitCurrentExam(): Promise<ExamResult> {
-      if (!this.currentExam) throw new Error("No exam loaded");
+    submitCurrentExam(): Promise<ExamResult> {
+      const storeKey = this as object;
+      const pending = pendingSubmissions.get(storeKey);
+      if (pending) return pending;
+      if (!this.currentExam) return Promise.reject(new Error("No exam loaded"));
+
+      const examId = this.currentExam.id;
+      const sessionGeneration = examSessionGenerations.get(storeKey) || 0;
+      const answers = { ...this.answers };
       this.submitting = true;
       this.error = "";
-      try {
-        const result = await submitExam(this.currentExam.id, { answers: this.answers });
-        this.result = result;
-        return result;
-      } catch (error) {
-        this.error = getErrorMessage(error, "交卷失败");
-        throw error;
-      } finally {
-        this.submitting = false;
-      }
+      const submission = submitExam(examId, { answers })
+        .then((result) => {
+          if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration) this.result = result;
+          return result;
+        })
+        .catch((error: unknown) => {
+          if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration) {
+            this.error = getErrorMessage(error, "交卷失败");
+          }
+          throw error;
+        })
+        .finally(() => {
+          if (pendingSubmissions.get(storeKey) === submission) {
+            pendingSubmissions.delete(storeKey);
+            this.submitting = false;
+          }
+        });
+
+      pendingSubmissions.set(storeKey, submission);
+      return submission;
     },
 
     async fetchLeaderboard(id: number): Promise<ExamLeaderboard> {
@@ -167,6 +207,9 @@ export const useExamStore = defineStore("exam", {
     },
 
     reset(): void {
+      const storeKey = this as object;
+      advanceExamSession(storeKey);
+      pendingSubmissions.delete(storeKey);
       this.currentExam = null;
       this.currentAttempt = null;
       this.result = null;
