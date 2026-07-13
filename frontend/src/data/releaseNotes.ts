@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.6.0-calm-learning-visual-refresh",
+    version: "v2.6.0",
+    date: "2026-07-13",
+    type: "优化",
+    title: "界面体验升级",
+    items: [
+      "统一首页、题库、练习、AI、我的的轻量界面。",
+      "移动端练习与题库操作更清晰。",
+      "导入流程和 AI 对话反馈更易理解。",
+      "深浅色模式延续可用。",
+    ],
+  },
+  {
     id: "v2.5.0-ink-study-visual-refresh",
     version: "v2.5.0",
     date: "2026-07-13",
