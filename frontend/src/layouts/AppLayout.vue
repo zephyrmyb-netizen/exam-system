@@ -74,7 +74,7 @@ const activeNavKey = computed(() => {
   return nav || "";
 });
 
-const showHeader = computed(() => !isImmersiveRoute.value && !["home", "courses", "mine", "chat"].includes(route.name as string));
+const showHeader = computed(() => !isImmersiveRoute.value && !["home", "courses", "import", "mine", "chat"].includes(route.name as string));
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
@@ -259,18 +259,18 @@ onUnmounted(() => {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + var(--safe-area-bottom));
   margin: 0 auto;
   background: var(--page-bg);
 }
 
 .app-shell--keyboard,
 .app-shell--immersive {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--safe-area-bottom);
 }
 
 .app-shell--immersive {
-  --practice-sticky-bottom: calc(12px + env(safe-area-inset-bottom));
+  --practice-sticky-bottom: calc(12px + var(--safe-area-bottom));
   overflow-x: hidden;
 }
 
@@ -384,7 +384,7 @@ onUnmounted(() => {
 .ai-task-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(104px + env(safe-area-inset-bottom));
+  bottom: calc(104px + var(--safe-area-bottom));
   z-index: 80;
   display: inline-flex;
   align-items: center;
@@ -427,7 +427,7 @@ onUnmounted(() => {
   position: fixed;
   left: 50%;
   right: auto;
-  bottom: calc(var(--reference-nav-offset) + env(safe-area-inset-bottom));
+  bottom: calc(var(--reference-nav-offset) + var(--safe-area-bottom));
   z-index: 70;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -479,6 +479,6 @@ onUnmounted(() => {
 .nav-label { line-height: 1; }
 
 @media (min-width: 760px) {
-  .app-shell { box-shadow: 0 0 40px rgba(15, 23, 42, 0.1); }
+  .app-shell { box-shadow: var(--shell-shadow); }
 }
 </style>
