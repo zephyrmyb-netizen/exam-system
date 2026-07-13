@@ -317,103 +317,109 @@ onMounted(() => {
     <ImportCapabilityStrip />
 
     <template v-if="phase === 'select'">
-      <label class="hero-drop-zone" :class="{ 'hero-drop-zone--disabled': isParsing }">
-        <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" :disabled="isParsing" @change="onFileChange" />
-        <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-        <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPT / 图片 / TXT</span>
-        <span v-else class="hero-drop-text hero-drop-selected">
-          <CheckCircle :size="15" :stroke-width="2.5" />
-          {{ activeFileDisplay }}
-        </span>
-        <span class="hero-drop-hint">
-          {{ isParsing ? "AI 正在解析，请等待，不要重复上传。" : "支持 .doc、.docx、.pdf、.ppt、.pptx、.png、.jpg、.jpeg、.webp、.txt，最大 10MB" }}
-        </span>
-      </label>
-
-      <div v-if="hasActiveFile" class="opt-panel">
-        <label class="opt-row">
-          <span class="opt-label">推荐题库名称</span>
-          <input v-model="derivedCourseName" class="opt-input" type="text" placeholder="自动从文件名生成" :disabled="isParsing" />
-        </label>
-        <label class="opt-row">
-          <span class="opt-label">或导入到已有题库</span>
-          <select v-model="selectedCourseId" class="opt-input" :disabled="isParsing">
-            <option :value="0">新建题库</option>
-            <option v-if="coursesLoading" disabled>加载中...</option>
-            <option v-for="course in courses" :key="course.id" :value="course.id">
-              {{ course.name }}（{{ course.question_count ?? 0 }} 题）
-            </option>
-          </select>
-        </label>
-        <div v-if="coursesError" class="inline-warning">
-          <span>{{ coursesError }}</span>
-          <button type="button" :disabled="coursesLoading" @click="fetchCourses">
-            {{ coursesLoading ? "重试中..." : "重试加载" }}
-          </button>
+      <section v-if="isParsing" class="import-running-state" aria-live="polite">
+        <div class="import-running-file">
+          <span class="import-running-file__icon" aria-hidden="true"><FileUp :size="18" :stroke-width="2.3" /></span>
+          <span>{{ activeFileDisplay || "正在准备导入文件" }}</span>
         </div>
-      </div>
+        <ImportTaskMonitor
+          :title="aiTask.progressTitle.value"
+          :detail="aiTask.progressDetail.value"
+        />
+        <p class="msg msg-info">{{ PARSING_RECOVERY_HINT }}</p>
+      </section>
 
-      <button class="hero-cta" type="button" :disabled="!hasActiveFile || isParsing" @click="handlePreview">
-        <Sparkles v-if="!isParsing" :size="20" :stroke-width="2.5" />
-        {{ isParsing ? "AI 正在解析..." : aiTask.error.value ? "重新解析" : "AI 解析文件" }}
-      </button>
+      <template v-else>
+        <label class="hero-drop-zone">
+          <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" @change="onFileChange" />
+          <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
+          <span v-if="!hasActiveFile" class="hero-drop-text">选择 Word / PDF / PPT / 图片 / TXT</span>
+          <span v-else class="hero-drop-text hero-drop-selected">
+            <CheckCircle :size="15" :stroke-width="2.5" />
+            {{ activeFileDisplay }}
+          </span>
+          <span class="hero-drop-hint">
+            支持 .doc、.docx、.pdf、.ppt、.pptx、.png、.jpg、.jpeg、.webp、.txt，最大 10MB
+          </span>
+        </label>
 
-      <p v-if="isParsing" class="msg msg-info">{{ PARSING_RECOVERY_HINT }}</p>
-
-      <ImportTaskMonitor
-        v-if="isParsing"
-        :title="aiTask.progressTitle.value"
-        :detail="aiTask.progressDetail.value"
-      />
-
-      <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
-      <p v-if="aiTask.error.value" class="msg msg-err">{{ aiTask.error.value }}</p>
-
-      <p v-if="hasActiveFile && !aiTask.error.value" class="target-hint">
-        <span v-if="activeCourseId > 0">
-          将导入到已有题库：<strong>{{ currentTargetName }}</strong>
-        </span>
-        <span v-else>
-          将解析文件并预览，确认后创建题库：<strong>{{ currentTargetName || "未命名" }}</strong>
-        </span>
-      </p>
-
-      <details class="adv-section" :open="advancedOpen" @toggle="advancedOpen = $event.target.open">
-        <summary class="adv-summary">
-          <Layers :size="15" :stroke-width="2.2" />
-          <span>其他导入方式</span>
-          <ChevronDown :size="15" :stroke-width="2.5" class="adv-chevron" />
-        </summary>
-
-        <div class="adv-body">
-          <div class="adv-card">
-            <div class="adv-title">JSON 导入</div>
-            <textarea v-model="jsonText" class="adv-textarea" spellcheck="false" />
-            <button class="primary-button small" type="button" :disabled="importLoading" @click="importQuestions">
-              {{ importLoading ? "导入中..." : "导入 JSON" }}
+        <div v-if="hasActiveFile" class="opt-panel">
+          <label class="opt-row">
+            <span class="opt-label">推荐题库名称</span>
+            <input v-model="derivedCourseName" class="opt-input" type="text" placeholder="自动从文件名生成" />
+          </label>
+          <label class="opt-row">
+            <span class="opt-label">或导入到已有题库</span>
+            <select v-model="selectedCourseId" class="opt-input">
+              <option :value="0">新建题库</option>
+              <option v-if="coursesLoading" disabled>加载中...</option>
+              <option v-for="course in courses" :key="course.id" :value="course.id">
+                {{ course.name }}（{{ course.question_count ?? 0 }} 题）
+              </option>
+            </select>
+          </label>
+          <div v-if="coursesError" class="inline-warning">
+            <span>{{ coursesError }}</span>
+            <button type="button" :disabled="coursesLoading" @click="fetchCourses">
+              {{ coursesLoading ? "重试中..." : "重试加载" }}
             </button>
-            <p v-if="importMessage" class="msg msg-ok">{{ importMessage }}</p>
-            <pre v-if="importError" class="msg msg-err-pre">{{ importError }}</pre>
-            <button v-if="importMessage" class="ghost-button" type="button" @click="goToCourse(jsonResultCourseId)">查看</button>
           </div>
+        </div>
 
-          <div class="adv-card">
-            <div class="adv-title">只提取文本</div>
-            <p class="adv-desc">
-              {{ selectedFileIsImage ? "图片文件没有可直接提取的文本，请使用 AI 解析。" : "提取文件文字，给其他 AI 工具整理。" }}
-            </p>
-            <button class="ghost-button" type="button" :disabled="fileLoading || !canExtractText" @click="uploadFile">
-              {{ selectedFileIsImage ? "图片需使用 AI 解析" : fileLoading ? "提取中..." : "提取文本" }}
-            </button>
-            <p v-if="fileMessage" class="msg msg-ok">{{ fileMessage }}</p>
-            <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
-            <div v-if="extractedText" class="adv-extracted">
-              <pre>{{ extractedText }}</pre>
-              <button class="ghost-button" type="button" @click="copyPromptAndText">复制文本</button>
+        <button class="hero-cta" type="button" :disabled="!hasActiveFile" @click="handlePreview">
+          <Sparkles :size="20" :stroke-width="2.5" />
+          {{ aiTask.error.value ? "重新解析" : "AI 解析文件" }}
+        </button>
+
+        <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
+        <p v-if="aiTask.error.value" class="msg msg-err">{{ aiTask.error.value }}</p>
+
+        <p v-if="hasActiveFile && !aiTask.error.value" class="target-hint">
+          <span v-if="activeCourseId > 0">
+            将导入到已有题库：<strong>{{ currentTargetName }}</strong>
+          </span>
+          <span v-else>
+            将解析文件并预览，确认后创建题库：<strong>{{ currentTargetName || "未命名" }}</strong>
+          </span>
+        </p>
+
+        <details class="adv-section" :open="advancedOpen" @toggle="advancedOpen = $event.target.open">
+          <summary class="adv-summary">
+            <Layers :size="15" :stroke-width="2.2" />
+            <span>其他导入方式</span>
+            <ChevronDown :size="15" :stroke-width="2.5" class="adv-chevron" />
+          </summary>
+
+          <div class="adv-body">
+            <div class="adv-card">
+              <div class="adv-title">JSON 导入</div>
+              <textarea v-model="jsonText" class="adv-textarea" spellcheck="false" />
+              <button class="primary-button small" type="button" :disabled="importLoading" @click="importQuestions">
+                {{ importLoading ? "导入中..." : "导入 JSON" }}
+              </button>
+              <p v-if="importMessage" class="msg msg-ok">{{ importMessage }}</p>
+              <pre v-if="importError" class="msg msg-err-pre">{{ importError }}</pre>
+              <button v-if="importMessage" class="ghost-button" type="button" @click="goToCourse(jsonResultCourseId)">查看</button>
+            </div>
+
+            <div class="adv-card">
+              <div class="adv-title">只提取文本</div>
+              <p class="adv-desc">
+                {{ selectedFileIsImage ? "图片文件没有可直接提取的文本，请使用 AI 解析。" : "提取文件文字，给其他 AI 工具整理。" }}
+              </p>
+              <button class="ghost-button" type="button" :disabled="fileLoading || !canExtractText" @click="uploadFile">
+                {{ selectedFileIsImage ? "图片需使用 AI 解析" : fileLoading ? "提取中..." : "提取文本" }}
+              </button>
+              <p v-if="fileMessage" class="msg msg-ok">{{ fileMessage }}</p>
+              <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
+              <div v-if="extractedText" class="adv-extracted">
+                <pre>{{ extractedText }}</pre>
+                <button class="ghost-button" type="button" @click="copyPromptAndText">复制文本</button>
+              </div>
             </div>
           </div>
-        </div>
-      </details>
+        </details>
+      </template>
     </template>
 
     <template v-else-if="phase === 'preview'">
@@ -477,6 +483,45 @@ onMounted(() => {
   background: var(--surface);
   text-align: center;
   cursor: pointer;
+}
+
+.import-running-state {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.import-running-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.import-running-file > span:last-child {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-running-file__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .hero-drop-zone:hover {

@@ -94,6 +94,7 @@ describe("ImportQuestions file import behavior", () => {
   it("accepts Word, PDF, PPT, image, and TXT upload formats", () => {
     const wrapper = mountPage();
 
+    expect(wrapper.findAll("input[type='file']")).toHaveLength(1);
     expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
     expect(wrapper.text()).toContain("文件选择支持 Word / PDF / PPT / 图片 / TXT");
     expect(wrapper.text()).toContain("AI 可直接解析 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP");
@@ -143,7 +144,7 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.text()).toContain("图片文件没有可直接提取的文本，请使用 AI 解析。");
   });
 
-  it("restores the running parsing status and disables replacement actions after returning", async () => {
+  it("restores parsing as a compact progress state after returning", async () => {
     const store = useAiImportTaskStore();
     store.status = "running";
     store.fileName = "slides.pptx";
@@ -152,7 +153,9 @@ describe("ImportQuestions file import behavior", () => {
     const wrapper = mountPage();
 
     expect(wrapper.find(".task-monitor").exists()).toBe(true);
-    expect(wrapper.find("input[type='file']").attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".import-running-state").exists()).toBe(true);
+    expect(wrapper.find(".hero-drop-zone").exists()).toBe(false);
+    expect(wrapper.find(".opt-panel").exists()).toBe(false);
     expect(wrapper.text()).toContain("AI 正在解析，请稍候，通常需要 30 秒左右");
   });
 
