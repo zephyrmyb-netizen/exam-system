@@ -60,6 +60,7 @@ export function useManualQuestionImport(selectedCourseId: Ref<number>): UseManua
   const jsonResultCourseId = ref<number | null>(null);
 
   async function importQuestions(): Promise<void> {
+    if (importLoading.value) return;
     importLoading.value = true;
     importMessage.value = "";
     importError.value = "";

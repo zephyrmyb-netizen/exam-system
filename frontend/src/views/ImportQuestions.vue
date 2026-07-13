@@ -6,6 +6,7 @@ import {
   BookOpen,
   CheckCircle,
   ChevronDown,
+  CloudUpload,
   FileUp,
   Layers,
   Sparkles,
@@ -51,6 +52,7 @@ const fileLoading = ref(false);
 const fileMessage = ref("");
 const fileError = ref("");
 const extractedText = ref("");
+const isDragging = ref(false);
 
 const { courses, coursesLoading, coursesError, fetchCourses } = useImportCourses();
 const {
@@ -142,13 +144,12 @@ function syncTargetCourseFromRoute() {
   }
 }
 
-function onFileChange(event) {
+function selectFile(file, input = null) {
   if (isParsing.value) {
-    event.target.value = "";
+    if (input) input.value = "";
     return;
   }
 
-  const file = event.target.files?.[0] || null;
   confirmError.value = "";
   fileError.value = "";
   fileMessage.value = "";
@@ -165,19 +166,36 @@ function onFileChange(event) {
   if (isLegacyPpt(file) || !isAllowedImportFile(file)) {
     fileError.value = getUnsupportedImportMessage(file.name);
     selectedFile.value = null;
-    event.target.value = "";
+    if (input) input.value = "";
     return;
   }
 
   if (file.size > MAX_FILE_SIZE) {
     fileError.value = `文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），最大 10MB`;
     selectedFile.value = null;
-    event.target.value = "";
+    if (input) input.value = "";
     return;
   }
 
   selectedFile.value = file;
   derivedCourseName.value = deriveNameFromFile(file);
+}
+
+function onFileChange(event) {
+  selectFile(event.target.files?.[0] || null, event.target);
+}
+
+function onDragEnter() {
+  if (!isParsing.value) isDragging.value = true;
+}
+
+function onDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) isDragging.value = false;
+}
+
+function onFileDrop(event) {
+  isDragging.value = false;
+  selectFile(event.dataTransfer?.files?.[0] || null);
 }
 
 async function handlePreview() {
@@ -206,6 +224,7 @@ async function handlePreview() {
 }
 
 async function handleConfirm(payload) {
+  if (confirmLoading.value) return;
   confirmError.value = "";
   confirmLoading.value = true;
   try {
@@ -314,25 +333,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="stack import-page">
+  <section class="stack import-page" data-reference-page="import">
     <div class="section-heading import-page__head">
       <h2>AI 导入</h2>
-      <p>智能解析资料，一次生成可预览的题目；支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，最大 10MB</p>
-    </div>
-
-    <div class="import-flow" aria-label="AI 导入进度">
-      <span class="import-flow-step is-done">1 选择文件</span>
-      <span class="import-flow-step" :class="{ 'is-active': isParsing, 'is-done': hasPreview || hasImportSuccess }">2 识别</span>
-      <span class="import-flow-step" :class="{ 'is-active': hasPreview || hasImportSuccess, 'is-done': hasImportSuccess }">3 预览并导入</span>
-    </div>
-    <ImportCapabilityStrip />
-
-    <div class="import-format-tags" aria-label="支持的导入格式">
-      <span class="format-tag format-tag--word">Word</span>
-      <span class="format-tag format-tag--ppt">PPT</span>
-      <span class="format-tag format-tag--pdf">PDF</span>
-      <span class="format-tag format-tag--image">图片</span>
-      <span class="format-tag format-tag--text">文本</span>
+      <p>智能解析 · 一键导入题目</p>
     </div>
 
     <template v-if="phase === 'select'">
@@ -349,18 +353,46 @@ onMounted(() => {
       </section>
 
       <template v-else>
-        <label class="hero-drop-zone">
-          <input class="file-input-native" type="file" :accept="ACCEPTED_FILE_TYPES" @change="onFileChange" />
-          <span class="hero-drop-icon"><FileUp :size="26" :stroke-width="1.8" /></span>
-          <span v-if="!hasActiveFile" class="hero-drop-text">选择 DOCX / PDF / PPTX / 图片</span>
-          <span v-else class="hero-drop-text hero-drop-selected">
+        <label
+          class="hero-drop-zone"
+          :class="{ 'is-dragging': isDragging }"
+          for="import-file-input"
+          @dragenter.prevent="onDragEnter"
+          @dragover.prevent="onDragEnter"
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onFileDrop"
+        >
+          <input
+            id="import-file-input"
+            class="file-input-native"
+            type="file"
+            :accept="ACCEPTED_FILE_TYPES"
+            :aria-describedby="fileError ? 'import-file-hint import-file-limits import-file-error' : 'import-file-hint import-file-limits'"
+            @change="onFileChange"
+          />
+          <span class="hero-drop-icon" aria-hidden="true"><CloudUpload :size="30" :stroke-width="1.8" /></span>
+          <span v-if="!hasActiveFile" class="hero-drop-text">点击或拖拽上传文件</span>
+          <span
+            v-else
+            class="hero-drop-text hero-drop-selected truncate-file-name"
+            :title="activeFileName"
+          >
             <CheckCircle :size="15" :stroke-width="2.5" />
             {{ activeFileDisplay }}
           </span>
-          <span class="hero-drop-hint">
-            支持 .docx、.pdf、.pptx、.png、.jpg、.jpeg、.webp，最大 10MB
-          </span>
+          <span id="import-file-hint" class="hero-drop-hint">AI 自动解析题干、选项和答案</span>
         </label>
+
+        <div class="import-format-tags" aria-label="支持的导入格式">
+          <span class="format-tag format-tag--word">Word</span>
+          <span class="format-tag format-tag--ppt">PPT</span>
+          <span class="format-tag format-tag--pdf">PDF</span>
+          <span class="format-tag format-tag--image">图片</span>
+          <span class="format-tag format-tag--text">文本</span>
+        </div>
+        <p id="import-file-limits" class="import-file-limits">
+          支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，单个文件最大 10MB
+        </p>
 
         <div v-if="hasActiveFile" class="opt-panel">
           <label class="opt-row">
@@ -390,8 +422,8 @@ onMounted(() => {
           {{ aiTask.error.value ? "重新解析" : "AI 解析文件" }}
         </button>
 
-        <p v-if="fileError" class="msg msg-err">{{ fileError }}</p>
-        <p v-if="aiTask.error.value" class="msg msg-err">{{ aiTask.error.value }}</p>
+        <p v-if="fileError" id="import-file-error" class="msg msg-err" role="alert">{{ fileError }}</p>
+        <p v-if="aiTask.error.value" class="msg msg-err" role="alert">{{ aiTask.error.value }}</p>
 
         <p v-if="hasActiveFile && !aiTask.error.value" class="target-hint">
           <span v-if="activeCourseId > 0">
@@ -405,11 +437,12 @@ onMounted(() => {
         <details class="adv-section" :open="advancedOpen" @toggle="advancedOpen = $event.target.open">
           <summary class="adv-summary">
             <Layers :size="15" :stroke-width="2.2" />
-            <span>其他导入方式</span>
+            <span>JSON / 其他导入方式</span>
             <ChevronDown :size="15" :stroke-width="2.5" class="adv-chevron" />
           </summary>
 
           <div class="adv-body">
+            <ImportCapabilityStrip />
             <div class="adv-card">
               <div class="adv-title">JSON 导入</div>
               <textarea v-model="jsonText" class="adv-textarea" spellcheck="false" />
@@ -497,26 +530,65 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.import-page {
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 18px;
+  overflow-x: clip;
+}
+
+.import-page__head {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+}
+
+.import-page__head h2,
+.import-page__head p {
+  margin: 0;
+}
+
+.import-page__head h2 {
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.import-page__head p {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
 .hero-drop-zone {
   position: relative;
   display: grid;
   place-items: center;
-  gap: var(--space-2);
-  padding: var(--space-10) var(--space-4);
+  gap: 6px;
+  min-height: 140px;
+  padding: 20px var(--space-4);
   border: 2px dashed var(--line-strong);
-  border-radius: var(--radius-xl);
-  background: var(--surface);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
   text-align: center;
   cursor: pointer;
+  transition: border-color var(--ease-out), background var(--ease-out), transform var(--ease-spring);
 }
 
 .import-format-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.import-format-tags::-webkit-scrollbar {
+  display: none;
 }
 .format-tag {
   display: inline-flex;
+  flex: 0 0 auto;
   min-height: 28px;
   align-items: center;
   padding: 0 10px;
@@ -530,11 +602,18 @@ onMounted(() => {
 .format-tag--image { background: #f5f3ff; color: #7c3aed; }
 .format-tag--text { background: var(--primary-soft); color: var(--primary-strong); }
 
+.import-file-limits {
+  margin: -4px 0 0;
+  color: var(--text-placeholder);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .import-guide {
   display: grid;
   gap: 9px;
   margin: 4px 0 0;
-  padding: 14px;
+  padding: 12px 14px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   background: var(--glass-card);
@@ -591,6 +670,17 @@ onMounted(() => {
   background: var(--primary-soft);
 }
 
+.hero-drop-zone.is-dragging {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  transform: translateY(-2px);
+}
+
+.hero-drop-zone:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .hero-drop-zone--disabled,
 .hero-drop-zone--disabled:hover {
   border-color: var(--line-soft);
@@ -614,8 +704,8 @@ onMounted(() => {
 .hero-drop-icon {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--surface-strong);
   color: var(--primary);
@@ -633,6 +723,15 @@ onMounted(() => {
   gap: 6px;
   color: var(--primary-strong);
   word-break: break-all;
+}
+
+.truncate-file-name {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .hero-drop-hint {
@@ -848,8 +947,11 @@ onMounted(() => {
 }
 
 .adv-extracted pre {
+  min-width: 0;
+  max-width: 100%;
   max-height: 180px;
   overflow: auto;
+  overflow-wrap: anywhere;
   margin: 0;
   padding: var(--space-2);
   border-radius: var(--radius-sm);
@@ -928,24 +1030,26 @@ onMounted(() => {
 .small {
   min-height: 38px;
 }
-/* A layout overrides: keep the workflow calm and usable at 375px. */
-.import-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.import-flow-step { min-width: 0; padding: 7px 6px; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; font-weight: 700; text-align: center; }
-.import-flow-step.is-active { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary-strong); }
-.import-flow-step.is-done { color: var(--text-secondary); }
-.hero-drop-zone { border-radius: 8px; padding: var(--space-8) var(--space-4); }
-.hero-drop-zone:hover { background: var(--surface); }
-.hero-drop-selected { display: flex; max-width: 100%; min-width: 0; overflow: hidden; }
+/* Reference layout overrides: compact at 390px without hiding real workflows. */
+.hero-drop-selected { display: flex; }
 .hero-drop-selected svg { flex-shrink: 0; }
-.hero-drop-selected { white-space: nowrap; text-overflow: ellipsis; }
 .hero-cta { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
 .hero-cta:hover:not(:disabled) { background: var(--primary-strong); }
 .opt-panel, .adv-card { border-radius: 6px; box-shadow: var(--shadow-xs); }
 .ai-done { border-radius: 8px; background: var(--surface); border-color: var(--line-soft); }
 @media (max-width: 420px) {
-  .import-flow { gap: 4px; }
-  .import-flow-step { padding-inline: 3px; font-size: 10px; }
-  .hero-drop-zone { padding-block: var(--space-6); }
+  .hero-drop-zone { min-height: 136px; padding-block: 18px; }
   .target-hint { text-align: left; }
+}
+
+@media (max-width: 340px) {
+  .import-page { padding-inline: 12px; }
+  .hero-drop-zone { min-height: 128px; padding-inline: 12px; }
+  .import-guide { padding-inline: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-drop-zone { transition: none; }
+  .hero-drop-zone.is-dragging { transform: none; }
 }
 </style>
