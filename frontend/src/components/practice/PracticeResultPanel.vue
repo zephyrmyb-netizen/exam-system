@@ -9,13 +9,8 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 });
 
-// 「下一题」按钮已移除，全部题型统一改为右滑手势跳下一题。
-// 答对时由 usePracticeSession 内的 650ms 定时器自动跳；
-// 答错时用户右滑即可进入下一题。
-defineEmits([]);
-
 const swipeHint = computed(() =>
-  props.loading ? "加载中..." : "向左滑动查看下一题",
+  props.loading ? "加载中" : "向左滑动进入下一题",
 );
 </script>
 
@@ -53,7 +48,7 @@ const swipeHint = computed(() =>
       <span>{{ result.wrongbook_recorded ? "已记录到错题本" : "已加入错题本" }}</span>
     </div>
 
-    <div v-if="!result.is_correct" class="practice-swipe-hint">
+    <div class="practice-swipe-hint">
       <ChevronLeft :size="15" :stroke-width="2.5" class="practice-swipe-hint__icon" />
       <span>{{ swipeHint }}</span>
     </div>
@@ -64,19 +59,19 @@ const swipeHint = computed(() =>
 .practice-result {
   display: grid;
   gap: 8px;
-  padding: 10px;
+  padding: 9px 10px;
   border-radius: 8px;
   border: 1px solid var(--line-soft);
 }
 
 .practice-result--correct {
-  background: var(--surface);
-  border-left: 3px solid var(--emerald);
+  background: var(--emerald-soft);
+  border-color: var(--emerald);
 }
 
 .practice-result--wrong {
-  background: var(--surface);
-  border-left: 3px solid var(--rose);
+  background: var(--rose-soft);
+  border-color: var(--rose);
 }
 
 .practice-result__head {
@@ -117,7 +112,7 @@ const swipeHint = computed(() =>
   gap: 4px;
   padding: 7px 9px;
   border-radius: 6px;
-  background: var(--surface-soft);
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .practice-result__label {
@@ -148,7 +143,7 @@ const swipeHint = computed(() =>
   justify-self: start;
   padding: 6px 10px;
   border-radius: var(--radius-md);
-  background: var(--surface-soft);
+  background: transparent;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
@@ -170,7 +165,7 @@ const swipeHint = computed(() =>
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 650;
-  opacity: 0.78;
+  opacity: 0.72;
 }
 
 .practice-swipe-hint__icon {

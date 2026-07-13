@@ -11,7 +11,7 @@ import PracticeSummaryModal from "../components/practice/PracticeSummaryModal.vu
 import PracticeTextAnswer from "../components/practice/PracticeTextAnswer.vue";
 import PracticeTopBar from "../components/practice/PracticeTopBar.vue";
 import { usePracticeSession } from "../composables/usePracticeSession";
-import { createSwipeProgress, useSwipeNext } from "../composables/useSwipeNext";
+import { useSwipeNext } from "../composables/useSwipeNext";
 import { typeLabel } from "../utils/question";
 
 const props = defineProps({
@@ -62,7 +62,6 @@ const canSwipeNext = computed(() => !!result.value && !loading.value && !submitt
 const requiresManualSubmit = computed(() =>
   isTextQuestion.value || question.value?.type === "multiple_choice",
 );
-const swipeProgress = createSwipeProgress();
 useSwipeNext({
   onSwipe: () => {
     if (canSwipeNext.value) {
@@ -70,12 +69,7 @@ useSwipeNext({
     }
   },
   enabled: canSwipeNext,
-  progress: swipeProgress,
 });
-
-// 跟手位移：左滑时卡片轻微左移，给用户「我在拖动」的实感
-const swipeOffsetX = computed(() => `${swipeProgress.value * -18}px`);
-const swipeOpacity = computed(() => 1 - swipeProgress.value * 0.18);
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
@@ -237,10 +231,6 @@ watch(sessionComplete, (complete) => {
         <div
           :key="question.id"
           class="practice-card-shell"
-          :style="{
-            transform: `translateX(${swipeOffsetX})`,
-            opacity: swipeOpacity,
-          }"
         >
           <PracticeQuestionStem :question="question" />
 
@@ -271,7 +261,7 @@ watch(sessionComplete, (complete) => {
             <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
           </div>
 
-          <Transition name="result-pop">
+          <Transition name="result-fade">
             <PracticeResultPanel
               v-if="result"
               :result="result"
@@ -341,12 +331,9 @@ watch(sessionComplete, (complete) => {
   border-radius: 8px;
   background: var(--surface);
   border: 1px solid var(--line-soft);
-  /* 跟手位移用 transform，加 will-change 提示浏览器优化合成层 */
-  will-change: transform, opacity;
-  transition: transform 0.06s linear, opacity 0.06s linear;
 }
 
-/* ── 题目切换过渡：从右侧淡入并轻微上移 ── */
+/* ── 题目切换过渡：稳定题面，只做短暂的淡入轻移 ── */
 .question-fade-enter-active {
   transition: opacity var(--ease-smooth), transform var(--ease-smooth);
 }
@@ -365,23 +352,16 @@ watch(sessionComplete, (complete) => {
   transform: translateX(-16px);
 }
 
-/* ── 结果面板出现：弹性缩放淡入 ── */
-.result-pop-enter-active {
-  transition: opacity var(--ease-bounce), transform var(--ease-bounce);
+/* ── 结果面板出现：短暂淡入轻移 ── */
+.result-fade-enter-active,
+.result-fade-leave-active {
+  transition: opacity 0.17s ease-out, transform 0.17s ease-out;
 }
 
-.result-pop-leave-active {
-  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.result-pop-enter-from {
+.result-fade-enter-from,
+.result-fade-leave-to {
   opacity: 0;
-  transform: translateY(5px);
-}
-
-.result-pop-leave-to {
-  opacity: 0;
-  transform: translateY(-3px);
+  transform: translateY(4px);
 }
 
 .practice-answer-section,

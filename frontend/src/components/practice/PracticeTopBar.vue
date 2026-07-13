@@ -17,7 +17,6 @@ defineEmits(["back", "end"]);
 
     <div class="practice-topbar__center">
       <span class="practice-topbar__title">{{ courseName || modeLabel || "练习" }}</span>
-      <span v-if="modeLabel" class="practice-topbar__mode">{{ modeLabel }}</span>
     </div>
 
     <button class="practice-end-button" type="button" aria-label="结束练习" @click="$emit('end')">
@@ -56,17 +55,6 @@ defineEmits(["back", "end"]);
   font-size: var(--text-sm);
   font-weight: 800;
   color: var(--text-secondary);
-}
-
-.practice-topbar__mode {
-  flex-shrink: 0;
-  padding: 3px 7px;
-  border: 1px solid var(--line-soft);
-  border-radius: 4px;
-  background: var(--surface-soft);
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 800;
 }
 
 .practice-icon-button,
@@ -115,9 +103,4 @@ defineEmits(["back", "end"]);
   }
 }
 
-@media (max-width: 419px) {
-  .practice-topbar__mode {
-    display: none;
-  }
-}
 </style>

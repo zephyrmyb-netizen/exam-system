@@ -98,7 +98,8 @@ function pickOption(key) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 9px 10px;
+  min-height: 48px;
+  padding: 8px 10px;
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -115,7 +116,6 @@ function pickOption(key) {
   box-shadow: var(--shadow-xs);
 }
 
-/* 点击反馈：从 0.99 加强到 0.97，加弹性曲线让按压更真实 */
 .practice-option-card:active:not(:disabled) {
   background: var(--primary-soft);
 }
@@ -271,7 +271,8 @@ function pickOption(key) {
 @media (max-width: 420px) {
   .practice-option-card {
     grid-template-columns: auto minmax(0, 1fr);
-    padding: 8px 9px;
+    min-height: 48px;
+    padding: 7px 9px;
     gap: 7px;
     border-radius: 8px;
   }
