@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.9-reference-flow-parity",
+    version: "v2.7.9",
+    date: "2026-07-14",
+    type: "优化",
+    title: "核心学习流程界面统一",
+    items: [
+      "首页、题库、导入、练习、考试和个人中心统一为移动端玻璃学习界面。",
+      "练习完成页补齐真实用时、正确率、错题入口和返回题库操作。",
+      "考试倒计时、答题卡和结果页统一使用真实作答数据，未知数据保留为空值提示。",
+    ],
+  },
+  {
     id: "v2.7.8-reference-parity-and-import-recovery",
     version: "v2.7.8",
     date: "2026-07-14",

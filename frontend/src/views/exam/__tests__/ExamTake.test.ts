@@ -19,6 +19,7 @@ const store = {
   totalQuestions: 1,
   answeredCount: 0,
   progress: 0,
+  remainingSeconds: null as number | null,
   answers: {},
   submitting: false,
   startAttempt: vi.fn(),
@@ -27,6 +28,7 @@ const store = {
   next: vi.fn(),
   prev: vi.fn(),
   jumpTo: vi.fn(),
+  syncRemainingSeconds: vi.fn(),
   reset: vi.fn(),
 };
 
@@ -72,5 +74,35 @@ describe("ExamTake", () => {
     expect(wrapper.find("[data-exam-answer-sheet]").exists()).toBe(true);
     await wrapper.get("[data-exam-answer-sheet] .answer-map button").trigger("click");
     expect(store.jumpTo).toHaveBeenCalledWith(0);
+  });
+
+  it("shows a real countdown when the attempt has a server start time", async () => {
+    store.remainingSeconds = 2730;
+    const wrapper = mount(ExamTake, {
+      global: {
+        stubs: { ExamQuestionCard: true },
+      },
+    });
+
+    expect(wrapper.find("[data-exam-countdown]").text()).toBe("45:30");
+  });
+
+  it("builds the answer sheet from every exam question", async () => {
+    store.currentExam.questions = [
+      store.currentQuestion,
+      { question_id: 2, question: "第二题", question_type: "single_choice", score: 1, options: { A: "答案" } },
+    ];
+    store.totalQuestions = 2;
+    store.answers = { "1": "A" };
+    const wrapper = mount(ExamTake, {
+      global: {
+        stubs: { ExamQuestionCard: true },
+      },
+    });
+
+    await wrapper.get('[aria-label="打开答题卡"]').trigger("click");
+
+    expect(wrapper.findAll("[data-exam-answer-sheet] .answer-map button")).toHaveLength(2);
+    expect(wrapper.findAll("[data-exam-answer-sheet] .answer-map button")[0].classes()).toContain("answered");
   });
 });

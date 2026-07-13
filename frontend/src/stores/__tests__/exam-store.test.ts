@@ -88,6 +88,23 @@ describe("exam store", () => {
     expect(store.result?.accuracy_rate).toBe(100);
   });
 
+  it("derives remaining time from the attempt start time", async () => {
+    const store = useExamStore();
+    await store.startAttempt(1);
+
+    store.currentAttempt!.started_at = "2026-07-14T02:00:00.000Z";
+    store.syncRemainingSeconds(Date.parse("2026-07-14T02:12:34.000Z"));
+
+    expect(store.remainingSeconds).toBe(47 * 60 + 26);
+  });
+
+  it("does not invent a countdown when the server did not provide a start time", async () => {
+    const store = useExamStore();
+    await store.startAttempt(1);
+
+    expect(store.remainingSeconds).toBeNull();
+  });
+
   it("loads exam leaderboard", async () => {
     const store = useExamStore();
     const leaderboard = await store.fetchLeaderboard(1);

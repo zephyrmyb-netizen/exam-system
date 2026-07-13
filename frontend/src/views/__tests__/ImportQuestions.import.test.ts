@@ -96,6 +96,8 @@ describe("ImportQuestions file import behavior", () => {
 
     expect(wrapper.findAll("input[type='file']")).toHaveLength(1);
     expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
+    expect(wrapper.get(".import-page__head h2").text()).toBe("AI 导入");
+    expect(wrapper.findAll(".import-flow-step")).toHaveLength(3);
     expect(wrapper.text()).toContain("支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP");
     expect(wrapper.text()).not.toContain("图片 / TXT");
   });

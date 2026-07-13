@@ -46,7 +46,7 @@ function displayNumber(value, emptyValue = "--") {
         <span class="overview-stat-label">累计</span>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(wrongCount, 0) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(wrongCount) }}</span>
         <span class="overview-stat-label">错题</span>
       </div>
       <div class="overview-stat">

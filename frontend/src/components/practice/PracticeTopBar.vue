@@ -21,7 +21,7 @@ defineEmits(["back", "end"]);
     <div class="practice-topbar__center">
       <span class="practice-topbar__title">{{ courseName || modeLabel || "练习" }}</span>
       <span class="practice-topbar__meta">
-        {{ answeredCount }}{{ totalQuestions ? `/${totalQuestions}` : " 题" }} · {{ accuracy !== null ? `${accuracy}%` : "--" }}
+        {{ totalQuestions ? `已答 ${answeredCount} / ${totalQuestions}` : `已答 ${answeredCount}` }} · {{ accuracy !== null ? `${accuracy}%` : "--" }}
       </span>
       <span v-if="totalQuestions" class="practice-topbar__track" aria-label="练习进度">
         <i :style="{ width: `${Math.min(100, Math.round(answeredCount / totalQuestions * 100))}%` }"></i>

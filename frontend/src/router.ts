@@ -31,6 +31,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: "courses/:courseId/practice",
+        alias: "/practice/:courseId",
         name: "course-practice",
         component: () => import("./views/CoursePractice.vue"),
         meta: { title: "题库练习", navKey: "list", parent: "course-detail" },
@@ -97,6 +98,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: "exams/:examId/take",
+        alias: "/exam/:examId",
         name: "exam-take",
         component: () => import("./views/exam/ExamTake.vue"),
         meta: { title: "考试答题", navKey: "home", parent: "exam-detail" },
@@ -121,6 +123,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: "mine",
+        alias: "/profile",
         name: "mine",
         component: () => import("./views/Mine.vue"),
         meta: { title: "我的", description: "查看账号信息和常用入口。", navKey: "mine" },

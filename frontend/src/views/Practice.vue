@@ -129,6 +129,9 @@ function goBack() {
 
 function endPractice() {
   cancelPendingAdvance?.();
+  if (sessionStats.value.startedAt && sessionStats.value.durationSeconds === null) {
+    sessionStats.value.durationSeconds = Math.max(0, Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000));
+  }
   showSummary.value = true;
 }
 
@@ -144,6 +147,12 @@ function handleEndPractice() {
 
 function continuePractice() {
   showSummary.value = false;
+}
+
+function reviewWrongAnswers() {
+  cancelPendingAdvance?.();
+  showSummary.value = false;
+  router.replace({ name: "wrongbook", query: { from: "practice" } });
 }
 
 onMounted(() => {
@@ -308,10 +317,14 @@ watch(sessionComplete, (complete) => {
       :correct-count="sessionStats.correctCount"
       :wrong-count="sessionStats.wrongCount"
       :accuracy="accuracy"
+      :duration-seconds="sessionStats.durationSeconds"
+      :course-name="props.courseName"
+      :mode-label="modeLabel"
       :completed="sessionComplete"
       :can-continue="!sessionComplete"
       @end="handleEndPractice"
       @continue="continuePractice"
+      @review="reviewWrongAnswers"
     />
   </section>
 </template>
