@@ -31,6 +31,7 @@
 | 2026-07-13 | 墨韵书房视觉重构验收与收口 | [2026-07-13-ink-study-visual-refresh-acceptance.md](./archive/2026-07-13-ink-study-visual-refresh-acceptance.md) |
 | 2026-07-14 | Liquid Glass 前端视觉迁移 | [2026-07-14-liquid-glass-frontend-migration.md](./archive/2026-07-14-liquid-glass-frontend-migration.md) |
 | 2026-07-14 | 参考稿一致性迁移与导入恢复 | [2026-07-14-reference-parity-migration.md](./archive/2026-07-14-reference-parity-migration.md) |
+| 2026-07-14 | 全量参考页面一致性落地 | [2026-07-14-full-reference-page-parity.md](./archive/2026-07-14-full-reference-page-parity.md) |
 | 2026-07-10 | 收口 AI 导入、练习、首页题库前端改动 | [2026-07-10-pending-frontend-integration.md](./archive/2026-07-10-pending-frontend-integration.md) |
 | 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
 
