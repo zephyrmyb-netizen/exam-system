@@ -17,7 +17,7 @@
   - `npm.cmd run test -- --run`
   - `npm.cmd run build`
   - `git diff --check`
-- Commit：`312ed20 feat: align learning UI with reference flows`；本留档将在后续 docs commit 中归档。
-- Push：待本留档提交后与代码提交一并推送。
+- Commit：`312ed20 feat: align learning UI with reference flows`；`ed6060d docs: archive reference parity migration`。
+- Push：已推送至 `origin/codex/phase4-differentiation`。
 - 遗留风险：参考稿包含静态示例数据。实现不伪造后端未返回的连续天数、徽章、完整随机练习题序或练习答题卡。
 - 下一步：完成验证后提交并推送；真机复验首页、题库、导入、练习和考试的安全区与长文本截断。
