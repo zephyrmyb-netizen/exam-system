@@ -17,6 +17,7 @@ import { typeLabel } from "../utils/question";
 const props = defineProps({
   courseId: { type: String, default: "" },
   courseName: { type: String, default: "" },
+  totalQuestions: { type: Number, default: 0 },
   mode: { type: String, default: "normal" },
   modeParam: { type: String, default: "" },
 });
@@ -168,6 +169,9 @@ watch(sessionComplete, (complete) => {
     <PracticeTopBar
       :course-name="props.courseName"
       :mode-label="modeLabel"
+      :answered-count="sessionStats.answeredCount"
+      :accuracy="accuracy"
+      :total-questions="props.totalQuestions"
       @back="goBack"
       @end="endPractice"
     />

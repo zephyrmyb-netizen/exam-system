@@ -4,6 +4,9 @@ import { ChevronLeft, LogOut } from "@lucide/vue";
 defineProps({
   courseName: { type: String, default: "" },
   modeLabel: { type: String, default: "" },
+  answeredCount: { type: Number, default: 0 },
+  accuracy: { type: Number, default: null },
+  totalQuestions: { type: Number, default: 0 },
 });
 
 defineEmits(["back", "end"]);
@@ -17,6 +20,12 @@ defineEmits(["back", "end"]);
 
     <div class="practice-topbar__center">
       <span class="practice-topbar__title">{{ courseName || modeLabel || "练习" }}</span>
+      <span class="practice-topbar__meta">
+        {{ answeredCount }}{{ totalQuestions ? `/${totalQuestions}` : " 题" }} · {{ accuracy !== null ? `${accuracy}%` : "--" }}
+      </span>
+      <span v-if="totalQuestions" class="practice-topbar__track" aria-label="练习进度">
+        <i :style="{ width: `${Math.min(100, Math.round(answeredCount / totalQuestions * 100))}%` }"></i>
+      </span>
     </div>
 
     <button class="practice-end-button" type="button" aria-label="结束练习" @click="$emit('end')">
@@ -34,14 +43,16 @@ defineEmits(["back", "end"]);
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 40px;
+  min-height: 52px;
   overflow: hidden;
 }
 
 .practice-topbar__center {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  column-gap: 7px;
+  row-gap: 4px;
   min-width: 0;
   max-width: 100%;
   flex: 1;
@@ -55,6 +66,30 @@ defineEmits(["back", "end"]);
   font-size: var(--text-sm);
   font-weight: 800;
   color: var(--text-secondary);
+}
+
+.practice-topbar__meta {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.practice-topbar__track {
+  display: block;
+  flex-basis: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+}
+
+.practice-topbar__track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width var(--ease-spring);
 }
 
 .practice-icon-button,
@@ -101,6 +136,10 @@ defineEmits(["back", "end"]);
     font-size: 12px;
     font-weight: 800;
   }
+}
+
+@media (max-width: 360px) {
+  .practice-topbar__meta { display: none; }
 }
 
 </style>

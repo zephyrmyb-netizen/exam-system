@@ -1,7 +1,8 @@
 <script setup>
+import { computed } from "vue";
 import { ArrowRight, CheckCircle, Play, RefreshCw } from "@lucide/vue";
 
-defineProps({
+const props = defineProps({
   show: { type: Boolean, default: false },
   answeredCount: { type: Number, default: 0 },
   correctCount: { type: Number, default: 0 },
@@ -10,6 +11,8 @@ defineProps({
   completed: { type: Boolean, default: false },
   canContinue: { type: Boolean, default: true },
 });
+
+const accuracyValue = computed(() => Math.max(0, Math.min(100, Number(props.accuracy) || 0)));
 
 defineEmits(["end", "continue"]);
 </script>
@@ -43,6 +46,14 @@ defineEmits(["end", "continue"]);
                 : "还没有完成题目，确定要退出本次练习吗？"
           }}
         </p>
+
+        <div v-if="answeredCount > 0" class="practice-summary__score">
+          <div class="practice-summary__ring" :style="{ '--summary-score': `${accuracyValue}%` }">
+            <span>{{ accuracy !== null ? `${accuracy}%` : "--" }}</span>
+            <small>正确率</small>
+          </div>
+          <p>本次已完成 {{ answeredCount }} 道题，学习记录已同步。</p>
+        </div>
 
         <div class="practice-summary__stats">
           <div class="practice-summary__stat">
@@ -154,6 +165,31 @@ defineEmits(["end", "continue"]);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
+
+.practice-summary__score {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  text-align: left;
+}
+.practice-summary__score p { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.55; font-weight: 650; }
+.practice-summary__ring {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  align-content: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) var(--summary-score), var(--line-soft) 0);
+  color: var(--text-main);
+  box-shadow: inset 0 0 0 7px var(--surface);
+}
+.practice-summary__ring span { font-size: 15px; font-weight: 900; line-height: 1; }
+.practice-summary__ring small { margin-top: 3px; color: var(--text-muted); font-size: 9px; font-weight: 750; }
 
 .practice-summary__stat {
   display: grid;

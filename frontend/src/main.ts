@@ -7,6 +7,7 @@ import "./styles/base.css";
 import "./styles/transitions.css";
 import "./styles/utilities.css";
 import "./style.css";
+import "./styles/liquid-glass.css";
 
 const app = createApp(App);
 app.use(createPinia());

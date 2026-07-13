@@ -258,7 +258,7 @@ onUnmounted(() => {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 
 .app-shell--keyboard,
@@ -422,20 +422,21 @@ onUnmounted(() => {
 
 .bottom-nav {
   position: fixed;
-  left: max(14px, env(safe-area-inset-left));
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(8px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 70;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: end;
-  min-height: 74px;
-  padding: 8px 10px 10px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
-  backdrop-filter: blur(18px);
+  align-items: center;
+  min-height: 64px;
+  padding: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-nav);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), var(--glass-inner-highlight);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   transform: none;
   width: auto;
 }
@@ -443,35 +444,43 @@ onUnmounted(() => {
 .nav-button {
   display: grid;
   place-items: center;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  min-height: 56px;
+  min-height: 52px;
   border: 0;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 12px;
-  font-weight: 850;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
-.nav-button.active { color: var(--primary-strong); }
-.nav-icon { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 14px; }
+.nav-button.active {
+  color: var(--primary-strong);
+  background: rgba(16, 185, 129, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.15), var(--glass-inner-highlight);
+}
+.nav-icon { position: relative; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
 .nav-icon--ai {
-  width: 30px;
-  height: 30px;
-  margin-top: 0;
-  border-radius: var(--radius-sm);
-  color: inherit;
-  background: transparent;
-  box-shadow: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), var(--glass-inner-highlight);
 }
 .nav-label { line-height: 1; }
 
 @media (min-width: 760px) {
-  .app-shell { max-width: 640px; margin: 0 auto; }
-  .bottom-nav { left: 50%; right: auto; width: min(612px, calc(100% - 28px)); transform: translateX(-50%); }
+  .app-shell {
+    max-width: 430px;
+    margin: 0 auto;
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.1);
+  }
+  .bottom-nav { left: 50%; right: auto; width: min(398px, calc(100% - 32px)); transform: translateX(-50%); }
 }
 </style>

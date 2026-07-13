@@ -98,6 +98,7 @@ onUnmounted(() => {
             <span>{{ store.currentExam.title }}</span>
             <strong>{{ store.answeredCount }} / {{ store.totalQuestions }}</strong>
           </div>
+          <span v-if="store.currentExam.time_limit" class="exam-timer">限时 {{ store.currentExam.time_limit }} 分钟</span>
         </div>
         <div class="progress-track"><i :style="{ width: `${store.progress}%` }"></i></div>
       </div>
@@ -182,6 +183,7 @@ onUnmounted(() => {
 .exam-exit { display: inline-flex; align-items: center; gap: 4px; min-width: 44px; min-height: 40px; padding: 0 8px; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-main); font: inherit; font-size: var(--text-sm); font-weight: 800; }
 .exam-exit:active { background: var(--surface-soft); }
 .exam-topbar strong { color: var(--primary); }
+.exam-timer { display: inline-flex; flex: 0 0 auto; padding: 5px 8px; border-radius: var(--radius-full); background: var(--amber-soft); color: var(--amber-strong); font-size: 11px; font-weight: 850; }
 .progress-track { height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--surface-soft); }
 .progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--teal)); transition: width .2s ease; }
 .question-nav {

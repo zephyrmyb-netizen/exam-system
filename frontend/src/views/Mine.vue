@@ -4,10 +4,13 @@ import type { RouteLocationRaw } from "vue-router";
 import {
   Bookmark,
   BookMarked,
+  CircleHelp,
   ChevronRight,
   Clock,
   LogOut,
+  MessageCircle,
   Megaphone,
+  Palette,
   Settings2,
   ShieldCheck,
 } from "@lucide/vue";
@@ -47,31 +50,20 @@ const overviewSummary = computed(() => ({
   recent: stats.value.recentCount7d,
 }));
 
-const learningItems = computed(() => [
+const learningLevel = computed(() => Math.max(1, Math.floor((stats.value.totalCount || 0) / 100) + 1));
+const levelProgress = computed(() => ((stats.value.totalCount || 0) % 100));
+
+const quickItems = computed(() => [
   {
     label: "错题本",
-    desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道待复盘` : "集中复盘",
+    desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 题待复习` : "集中复盘",
     icon: BookMarked,
     to: { name: "wrongbook", query: { from: "mine" } },
+    tone: "rose",
   },
-  {
-    label: "练习记录",
-    desc: "查看答题历史",
-    icon: Clock,
-    to: { name: "practice-history", query: { from: "mine" } },
-  },
-  {
-    label: "更新公告",
-    desc: "最近修复内容",
-    icon: Megaphone,
-    to: { name: "announcements", query: { from: "mine" } },
-  },
-  {
-    label: "收藏题目",
-    desc: "查看已收藏内容",
-    icon: Bookmark,
-    to: { name: "bookmarks", query: { from: "mine" } },
-  },
+  { label: "收藏题目", desc: "重点题目", icon: Bookmark, to: { name: "bookmarks", query: { from: "mine" } }, tone: "amber" },
+  { label: "练习记录", desc: "查看学习轨迹", icon: Clock, to: { name: "practice-history", query: { from: "mine" } }, tone: "blue" },
+  { label: "AI 对话", desc: "智能复习助手", icon: MessageCircle, to: { name: "chat", query: { from: "mine" } }, tone: "emerald" },
 ]);
 
 function updateTheme(event: Event) {
@@ -93,11 +85,6 @@ onMounted(() => fetchAll());
 
 <template>
   <section class="mine-page">
-    <header class="page-head fade-up">
-      <h2 class="ph-title">我的</h2>
-      <span class="ph-date">个人设置</span>
-    </header>
-
     <div class="profile-card fade-up d1">
       <div class="profile-head">
         <div class="avatar-wrap">
@@ -112,6 +99,11 @@ onMounted(() => fetchAll());
           </span>
         </div>
       </div>
+      <div class="profile-level">
+        <span>学习等级 · Lv.{{ learningLevel }}</span>
+        <span>距离下一等级 {{ 100 - levelProgress }} 题</span>
+      </div>
+      <div class="profile-level__track"><i :style="{ width: `${levelProgress}%` }"></i></div>
     </div>
 
     <button
@@ -120,16 +112,16 @@ onMounted(() => fetchAll());
       @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
     >
       <div class="stat-cell">
-        <strong>{{ overviewSummary.today ?? "--" }}</strong>
-        <span>今日题数</span>
-      </div>
-      <div class="stat-cell">
         <strong>{{ overviewSummary.total ?? "--" }}</strong>
-        <span>累计学习</span>
+        <span>累计题数</span>
       </div>
       <div class="stat-cell">
         <strong>{{ overviewSummary.accuracy }}</strong>
         <span>正确率</span>
+      </div>
+      <div class="stat-cell">
+        <strong>{{ overviewSummary.recent ?? "--" }}</strong>
+        <span>近 7 日</span>
       </div>
     </button>
 
@@ -137,32 +129,31 @@ onMounted(() => fetchAll());
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <div class="section-head fade-up d3">
-      <h3 class="section-title">学习</h3>
+      <h3 class="section-title">快捷入口</h3>
     </div>
-    <nav class="menu-list fade-up d3">
+    <nav class="mine-quick-grid fade-up d3">
       <button
-        v-for="item in learningItems"
+        v-for="item in quickItems"
         :key="item.label"
-        class="menu-item"
+        class="mine-quick"
         type="button"
         @click="goTo(item.to)"
       >
-        <span
-          class="mi-ico mi-ico--primary"
-        >
-          <component :is="item.icon" :size="16" :stroke-width="2.2" />
-        </span>
-        <span class="mi-label">{{ item.label }}</span>
-        <span class="mi-arrow">
-          <ChevronRight :size="16" :stroke-width="2.2" />
-        </span>
+        <span class="mine-quick__icon" :class="`mine-quick__icon--${item.tone}`"><component :is="item.icon" :size="20" :stroke-width="2.2" /></span>
+        <strong>{{ item.label }}</strong>
+        <small>{{ item.desc }}</small>
       </button>
     </nav>
 
     <div class="section-head fade-up d4">
-      <h3 class="section-title">账户</h3>
+      <h3 class="section-title">设置与服务</h3>
     </div>
     <div class="menu-list fade-up d4">
+      <button class="menu-item" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
+        <span class="mi-ico mi-ico--primary"><Megaphone :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">更新公告</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
       <label class="menu-item">
         <span class="mi-ico mi-ico--neutral">
           <Settings2 :size="16" :stroke-width="2.2" />
@@ -178,6 +169,16 @@ onMounted(() => fetchAll());
           <option value="dark">深色</option>
         </select>
       </label>
+      <button class="menu-item" type="button" @click="goTo({ name: 'study-overview', query: { from: 'mine' } })">
+        <span class="mi-ico mi-ico--neutral"><Palette :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">学习概览</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
+      <button class="menu-item" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
+        <span class="mi-ico mi-ico--neutral"><CircleHelp :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">帮助与反馈</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
       <button class="menu-item" type="button" @click="handleLogout">
         <span class="mi-ico mi-ico--danger">
           <LogOut :size="16" :stroke-width="2.2" />
@@ -223,7 +224,19 @@ onMounted(() => fetchAll());
 }
 
 .profile-card { padding: var(--space-3); }
-.profile-card { border-radius: 8px; }
+.profile-card { border-radius: var(--radius-xl); }
+
+.profile-level {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  color: rgba(255,255,255,.9);
+  font-size: 11px;
+  font-weight: 700;
+}
+.profile-level__track { height: 5px; margin-top: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.28); }
+.profile-level__track i { display: block; height: 100%; border-radius: inherit; background: rgba(255,255,255,.94); }
 
 .profile-head { min-height: 44px; }
 
@@ -250,6 +263,35 @@ button.stat-link:active .stat-cell {
 }
 
 .stat-cell { border-radius: 8px; }
+
+.mine-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mine-quick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 9px;
+  align-items: center;
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  color: var(--text-main);
+  text-align: left;
+  box-shadow: var(--shadow-xs), var(--glass-inner-highlight);
+}
+.mine-quick:active { transform: scale(.98); }
+.mine-quick__icon { display: grid; width: 36px; height: 36px; grid-row: span 2; place-items: center; border-radius: 13px; }
+.mine-quick__icon--rose { background: var(--rose-soft); color: var(--rose); }
+.mine-quick__icon--amber { background: var(--amber-soft); color: var(--amber); }
+.mine-quick__icon--blue { background: #eff6ff; color: #2563eb; }
+.mine-quick__icon--emerald { background: var(--primary-soft); color: var(--primary-strong); }
+.mine-quick strong, .mine-quick small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mine-quick strong { font-size: 13px; }
+.mine-quick small { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
 
 /* Button / label menu-item resets */
 button.menu-item,

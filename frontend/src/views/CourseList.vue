@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import {
+  Bookmark,
   Eye,
   Globe,
   GraduationCap,
+  ListOrdered,
   Lock,
   MoreHorizontal,
   Pencil,
   Play,
   Plus,
   Search,
+  Shuffle,
   Sparkles,
   Trash2,
   X,
+  XCircle,
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
@@ -32,13 +36,22 @@ const successMessage = ref("");
 const deleteLoading = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const searchText = ref("");
-const visibilityFilter = ref<"all" | "private" | "public">("all");
+const visibilityFilter = ref<"all" | "private" | "public" | "recent">("all");
 const openCourseMenuId = ref<number | null>(null);
+const practiceSheetCourse = ref<Course | null>(null);
 
 const visibilityFilters = [
   { key: "all", label: "全部" },
   { key: "private", label: "私有" },
   { key: "public", label: "公开" },
+  { key: "recent", label: "最近练习" },
+] as const;
+
+const practiceModes = [
+  { key: "sequential", label: "顺序练习", desc: "按题目顺序逐题完成", icon: ListOrdered },
+  { key: "random", label: "随机练习", desc: "随机抽取题目进行练习", icon: Shuffle },
+  { key: "wrong", label: "错题强化", desc: "集中回顾易错题目", icon: XCircle },
+  { key: "bookmark", label: "收藏题目", desc: "查看你收藏的重点题目", icon: Bookmark },
 ] as const;
 
 function flashSuccess(msg: string) {
@@ -57,7 +70,8 @@ const form = reactive({ name: "", description: "", subject: "" });
 const filteredCourses = computed(() => {
   const keyword = searchText.value.trim().toLowerCase();
   return courses.value.filter((course) => {
-    if (visibilityFilter.value !== "all" && course.visibility !== visibilityFilter.value) return false;
+    if (visibilityFilter.value === "recent" && !course.last_practiced_at) return false;
+    if (visibilityFilter.value !== "all" && visibilityFilter.value !== "recent" && course.visibility !== visibilityFilter.value) return false;
     if (!keyword) return true;
     const fields = [course.name, course.subject, course.description, course.visibility];
     return fields.some((field) => String(field || "").toLowerCase().includes(keyword));
@@ -203,7 +217,32 @@ async function togglePublish(course: Course) {
 
 function goToPractice(course: Course) {
   if (!isPracticeReadyCourse(course)) return;
-  replaceWithSource(`/courses/${course.id}/practice`, "courses");
+  openCourseMenuId.value = null;
+  practiceSheetCourse.value = course;
+}
+
+function closePracticeSheet() {
+  practiceSheetCourse.value = null;
+}
+
+function startPractice(mode: string) {
+  const course = practiceSheetCourse.value;
+  if (!course) return;
+  practiceSheetCourse.value = null;
+  if (mode === "bookmark") {
+    replaceWithSource({ name: "bookmarks", query: { course_id: course.id } }, "courses");
+    return;
+  }
+  replaceWithSource({
+    name: "course-practice",
+    params: { courseId: course.id },
+    query: { mode, autostart: "1" },
+  }, "courses");
+}
+
+function courseCoverage(course: Course) {
+  if (!course.question_count) return 0;
+  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
 }
 
 function formatLastPracticed(course: Course) {
@@ -413,6 +452,9 @@ onMounted(fetchCourses);
             删除
           </button>
         </div>
+        <div class="course-row__progress" aria-label="练习覆盖进度">
+          <i :style="{ width: `${courseCoverage(course)}%` }"></i>
+        </div>
       </div>
     </div>
 
@@ -461,6 +503,31 @@ onMounted(fetchCourses);
           </Button>
         </div>
       </div>
+    </div>
+
+    <div v-if="practiceSheetCourse" class="practice-sheet-overlay" @click.self="closePracticeSheet">
+      <section class="practice-sheet" role="dialog" aria-modal="true" aria-labelledby="practice-sheet-title">
+        <div class="practice-sheet__handle" aria-hidden="true"></div>
+        <div class="practice-sheet__head">
+          <div>
+            <p>开始练习</p>
+            <h3 id="practice-sheet-title">{{ getCourseDisplayName(practiceSheetCourse) }}</h3>
+            <span>{{ practiceSheetCourse.question_count ?? 0 }} 道题目</span>
+          </div>
+          <button type="button" aria-label="关闭练习方式" @click="closePracticeSheet"><X :size="20" /></button>
+        </div>
+        <button
+          v-for="mode in practiceModes"
+          :key="mode.key"
+          class="practice-sheet__option"
+          type="button"
+          @click="startPractice(mode.key)"
+        >
+          <span class="practice-sheet__icon"><component :is="mode.icon" :size="19" :stroke-width="2.2" /></span>
+          <span><strong>{{ mode.label }}</strong><small>{{ mode.desc }}</small></span>
+          <Play :size="17" :stroke-width="2.4" aria-hidden="true" />
+        </button>
+      </section>
     </div>
   </section>
 </template>
@@ -583,6 +650,14 @@ onMounted(fetchCourses);
   overflow: visible;
   transition: box-shadow var(--ease-out);
 }
+.course-row__progress {
+  height: 4px;
+  margin: 0 12px 10px 60px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.course-row__progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 .course-row:hover {
   box-shadow: var(--shadow-card);
 }
@@ -812,6 +887,47 @@ onMounted(fetchCourses);
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
+
+.practice-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(15, 23, 42, .34);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.practice-sheet {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 430px);
+  max-height: min(680px, calc(100dvh - 32px));
+  padding: 8px 14px 16px;
+  overflow: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  background: var(--glass-card);
+  box-shadow: var(--shadow-modal), var(--glass-inner-highlight);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+}
+.practice-sheet__handle { width: 38px; height: 4px; margin: 0 auto 4px; border-radius: 999px; background: var(--line-strong); }
+.practice-sheet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 2px 2px 8px; }
+.practice-sheet__head p, .practice-sheet__head h3, .practice-sheet__head span { margin: 0; }
+.practice-sheet__head p { color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.practice-sheet__head h3 { margin-top: 3px; color: var(--text-main); font-size: 18px; }
+.practice-sheet__head span { display: block; margin-top: 4px; color: var(--text-muted); font-size: 12px; }
+.practice-sheet__head button { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--text-secondary); }
+.practice-sheet__option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-main); text-align: left; }
+.practice-sheet__option:active { transform: scale(.985); border-color: var(--primary-border); background: var(--primary-soft); }
+.practice-sheet__icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-strong); }
+.practice-sheet__option strong, .practice-sheet__option small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.practice-sheet__option strong { font-size: 14px; }
+.practice-sheet__option small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.practice-sheet__option :deep(svg:last-child) { color: var(--primary-strong); }
 
 /* ── Mobile compact (≤400px / 6.3 inch) ── */
 @media (max-width: 400px) {

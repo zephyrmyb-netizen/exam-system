@@ -2,9 +2,11 @@
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
+  ArrowRight,
   BookOpen,
   ClipboardList,
   FileUp,
+  Mic,
   MessageCircle,
   Search,
   Target,
@@ -31,6 +33,24 @@ const accuracyDisplay = computed(() => {
   return `${(rate * 100).toFixed(0)}%`;
 });
 
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  if (hour < 6) return "夜深了";
+  if (hour < 12) return "早上好";
+  if (hour < 18) return "下午好";
+  return "晚上好";
+});
+
+const greetingDate = computed(() => new Intl.DateTimeFormat("zh-CN", {
+  month: "long",
+  day: "numeric",
+  weekday: "short",
+}).format(new Date()));
+
+// The home banner stays usable before the account store has finished hydrating.
+const greetingName = computed(() => "同学");
+const avatarChar = computed(() => "学");
+
 const statCards = computed(() => [
   { label: "今日已刷", value: stats.value.todayCount, suffix: "题" },
   { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
@@ -53,6 +73,11 @@ const recentCourses = computed(() => {
     })
     .slice(0, 3);
 });
+
+function courseProgress(course: Course) {
+  if (!course.question_count) return 0;
+  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
+}
 
 const coreActions = [
   {
@@ -114,15 +139,26 @@ onMounted(() => {
 
 <template>
   <section class="home-page">
-    <button
-      class="home-search-entry fade-up"
-      data-home-search
-      type="button"
-      @click="replaceTo('/courses')"
-    >
-      <Search :size="15" :stroke-width="2.4" />
-      <span>搜索题库、课程、题目</span>
-    </button>
+    <header class="home-hero fade-up">
+      <div class="home-hero__top">
+        <div>
+          <p class="home-hero__eyebrow">{{ greetingDate }}</p>
+          <h1>{{ greeting }}，{{ greetingName }}</h1>
+          <p>从一小步开始，今天也会有收获。</p>
+        </div>
+        <span class="home-hero__avatar" :aria-label="`${greetingName}的头像`">{{ avatarChar }}</span>
+      </div>
+      <button
+        class="home-search-entry"
+        data-home-search
+        type="button"
+        @click="replaceTo('/courses')"
+      >
+        <Search :size="15" :stroke-width="2.4" />
+        <span>搜索题库、课程、题目</span>
+        <Mic class="home-search-entry__mic" :size="17" :stroke-width="2.2" aria-hidden="true" />
+      </button>
+    </header>
 
     <nav class="quick-grid fade-up d1" aria-label="核心入口">
       <button
@@ -209,7 +245,7 @@ onMounted(() => {
     </div>
 
     <!-- Course list -->
-    <div v-if="recentCourses.length > 0" class="course-list fade-up d3">
+    <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
       <div
         v-for="course in recentCourses"
         :key="course.id"
@@ -226,9 +262,10 @@ onMounted(() => {
           <div class="course-info">
             <strong>{{ getCourseDisplayName(course) }}</strong>
             <span>
-              {{ course.question_count ?? 0 }} 题 ·
-              {{ course.visibility === "public" ? "公开" : "私有" }} ·
-              {{ formatCourseDate(course) }}
+              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 · {{ formatCourseDate(course) }}
+            </span>
+            <span class="course-progress" aria-label="练习覆盖进度">
+              <i :style="{ width: `${courseProgress(course)}%` }"></i>
             </span>
           </div>
         </button>
@@ -242,6 +279,19 @@ onMounted(() => {
         </button>
       </div>
     </div>
+
+    <button
+      class="home-recommendation fade-up d4"
+      type="button"
+      @click="goTo(recentCourses[0] ? `/courses/${recentCourses[0].id}/practice` : '/courses')"
+    >
+      <span class="home-recommendation__spark">✦</span>
+      <span>
+        <strong>{{ recentCourses[0] ? getCourseDisplayName(recentCourses[0]) : "从题库开始" }}</strong>
+        <small>{{ recentCourses[0] ? "继续完成今天的练习" : "选择一门题库，开始建立学习节奏" }}</small>
+      </span>
+      <ArrowRight :size="19" :stroke-width="2.4" aria-hidden="true" />
+    </button>
   </section>
 </template>
 
@@ -252,16 +302,52 @@ onMounted(() => {
   min-width: 0;
 }
 
+.home-hero {
+  display: grid;
+  gap: 16px;
+  padding: 20px 18px 18px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #10b981, #0f9d7a 60%, #0d9488);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+
+.home-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-hero p,
+.home-hero h1 { margin: 0; }
+.home-hero__eyebrow { opacity: .82; font-size: 12px; font-weight: 700; }
+.home-hero h1 { margin-top: 3px; font-size: 24px; letter-spacing: -.03em; }
+.home-hero h1 + p { margin-top: 5px; opacity: .86; font-size: 12px; }
+.home-hero__avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-weight: 850;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.34);
+}
+
 .home-search-entry {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
   padding: 0 14px;
-  margin-top: var(--space-2);
+  margin-top: 0;
   border-radius: 8px;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(255,255,255,.68);
   color: var(--text-placeholder);
   font-size: 12px;
   font-weight: 600;
@@ -269,6 +355,8 @@ onMounted(() => {
   cursor: pointer;
   transition: border-color var(--ease-out);
 }
+
+.home-search-entry__mic { margin-left: auto; color: var(--primary-strong); }
 
 .home-search-entry:hover {
   border-color: var(--primary-border);
@@ -443,6 +531,38 @@ onMounted(() => {
 .course-action:hover {
   background: var(--primary-strong);
 }
+
+.course-progress {
+  display: block;
+  height: 5px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.course-progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+
+.home-recommendation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 15px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-soft), #eff6ff);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+.home-recommendation__spark { color: var(--primary); font-size: 24px; }
+.home-recommendation strong,
+.home-recommendation small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-recommendation strong { font-size: 14px; }
+.home-recommendation small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.home-recommendation :deep(svg) { color: var(--primary-strong); }
 
 /* ── Empty state ── */
 .empty-state {
