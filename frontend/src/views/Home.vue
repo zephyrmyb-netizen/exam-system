@@ -49,23 +49,6 @@ const statCards = computed(() => [
   { label: "近 7 日", value: stats.value.recentCount7d, suffix: "题" },
 ]);
 
-void statCards.value;
-
-const heatmapData = computed(() => {
-  const today = Number(stats.value.todayCount || 0);
-  const recent = Number(stats.value.recentCount7d || 0);
-  const base = Math.max(Math.floor(Math.max(recent - today, 0) / 6), 0);
-  const remainder = Math.max(recent - today - base * 5, 0);
-  return [base, base, base, base, base, remainder, today];
-});
-
-function heatmapClass(count: number): string {
-  if (count >= 10) return "bg-blue-600";
-  if (count >= 5) return "bg-blue-400";
-  if (count > 0) return "bg-blue-200";
-  return "bg-slate-200";
-}
-
 const recentCourses = computed(() => {
   const seen = new Set<number | string>();
   return [...courses.value]
@@ -82,29 +65,28 @@ const recentCourses = computed(() => {
     .slice(0, 3);
 });
 
-const heroActions = [
+const coreActions = [
   {
     label: "AI 导入",
     desc: "上传 Word/PPT，自动整理题库",
     icon: FileUp,
     to: "/import",
-    badge: "推荐",
   },
   {
     label: "开始练习",
-    desc: "先选题库，再进入专业练习",
+    desc: "选择题库后开始练习",
     icon: ClipboardList,
     to: "/practice",
   },
   {
     label: "正式考试",
-    desc: "选择考试并提交成绩",
+    desc: "进入已有考试安排",
     icon: Target,
     to: "/exams",
   },
   {
     label: "学习概览",
-    desc: "查看今日进度和正确率",
+    desc: "查看学习数据",
     icon: TrendingUp,
     to: { name: "study-overview", query: { from: "home" } },
   },
@@ -143,14 +125,14 @@ onMounted(() => {
 
 <template>
   <section class="home-page">
-    <!-- Page Head -->
     <header class="page-head fade-up">
-      <h2 class="ph-title">学习宝</h2>
-      <p class="ph-sub">Scholar's Atelier · 墨韵书房</p>
+      <h2 class="ph-title">今天学什么</h2>
+      <p class="home-welcome truncate" data-home-greeting :title="`${usernameText}，开始学习吧`">
+        {{ usernameText }}，开始学习吧
+      </p>
       <span class="ph-date">{{ dateText }}</span>
     </header>
 
-    <!-- Search entry (data-home-search required by UX tests) -->
     <button
       class="home-search-entry fade-up"
       data-home-search
@@ -161,48 +143,11 @@ onMounted(() => {
       <span>搜索题库、课程、题目</span>
     </button>
 
-    <!-- Hero Banner -->
-    <div class="hero-banner fade-up d1">
-      <div class="hero-top">
-        <p class="hero-greeting">
-          {{ new Date().getHours() < 12 ? "Good morning" : "Good evening" }}
-        </p>
-        <span class="hero-date">{{ dateText }}</span>
-      </div>
-      <h3
-        class="hero-title truncate"
-        data-home-greeting
-        :title="`${usernameText}，开始复习吧`"
-      >
-        {{ new Date().getHours() < 12 ? "早安" : "午安" }}，{{ usernameText }}
-      </h3>
-      <div class="hero-stats">
-        <div class="hero-num">
-          <strong>{{ stats.todayCount ?? "--" }}</strong>
-          <span>今日练习</span>
-        </div>
-        <div class="hero-num">
-          <strong>{{ stats.totalCount ?? "--" }}</strong>
-          <span>累计题数</span>
-        </div>
-        <div class="hero-num">
-          <strong>{{ accuracyDisplay }}</strong>
-          <span>正确率</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Status messages -->
-    <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
-    <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
-
-    <!-- Quick Grid (4 colored icon buttons) -->
-    <nav class="quick-grid fade-up d2">
+    <nav class="quick-grid fade-up d1" aria-label="核心入口">
       <button
-        v-for="(item, idx) in heroActions"
+        v-for="item in coreActions"
         :key="item.label"
         class="quick"
-        :class="['q-indigo', 'q-gold', 'q-rose', 'q-jade'][idx]"
         type="button"
         @click="goTo(item.to)"
       >
@@ -214,53 +159,35 @@ onMounted(() => {
       </button>
     </nav>
 
-    <!-- Section I: 学习连续 -->
-    <div class="section-head fade-up d3">
-      <span class="num">I</span>
-      <h3 class="section-title">学习连续</h3>
+    <div class="section-head fade-up d2">
+      <h3 class="section-title">学习概览</h3>
       <button
         class="section-more"
         type="button"
         @click="goTo({ name: 'study-overview', query: { from: 'home' } })"
       >
-        查看统计 ›
+        查看全部
       </button>
     </div>
-    <div class="streak-card fade-up d3">
-      <div class="streak-main">
-        <strong>{{ stats.recentCount7d ?? 0 }} 题</strong>
-        <span>近 7 日累计</span>
-      </div>
-      <div class="streak-side">
-        <strong>{{ stats.todayCount ?? 0 }}</strong>
-        <span>今日</span>
-      </div>
-    </div>
-
-    <!-- 7-day Heatmap -->
-    <div class="heatmap fade-up d3">
-      <span class="heatmap-label">7日</span>
-      <div class="heatmap-bars">
-        <span
-          v-for="(count, index) in heatmapData"
-          :key="index"
-          class="heatmap-bar"
-          :class="heatmapClass(count)"
-          :title="`${count} 题`"
-        />
+    <div class="overview-surface fade-up d2">
+      <p v-if="loading" class="overview-state">学习数据加载中...</p>
+      <p v-else-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
+      <div v-else class="overview-grid">
+        <div v-for="card in statCards" :key="card.label" class="overview-stat">
+          <strong>{{ card.value ?? "--" }}{{ card.suffix }}</strong>
+          <span>{{ card.label }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Section II: 最近题库 -->
-    <div class="section-head fade-up d4">
-      <span class="num">II</span>
+    <div class="section-head fade-up d3">
       <h3 class="section-title">最近题库</h3>
       <button
         class="section-more"
         type="button"
         @click="replaceTo('/courses')"
       >
-        查看全部 ›
+        查看全部
       </button>
     </div>
 
@@ -270,7 +197,7 @@ onMounted(() => {
     <!-- Empty state -->
     <div
       v-if="!coursesLoading && !coursesError && recentCourses.length === 0"
-      class="empty-state fade-up d4"
+      class="empty-state fade-up d3"
     >
       <BookOpen :size="36" :stroke-width="1.7" />
       <strong>还没有可练习题库</strong>
@@ -284,9 +211,9 @@ onMounted(() => {
     </div>
 
     <!-- Course list -->
-    <div v-if="recentCourses.length > 0" class="course-list fade-up d4">
+    <div v-if="recentCourses.length > 0" class="course-list fade-up d3">
       <div
-        v-for="(course, idx) in recentCourses"
+        v-for="course in recentCourses"
         :key="course.id"
         class="course-item"
       >
@@ -295,8 +222,8 @@ onMounted(() => {
           type="button"
           @click="goTo(`/courses/${course.id}`)"
         >
-          <span class="course-icon" :class="`ci-${idx + 1}`">
-            <BookOpen :size="22" :stroke-width="2.2" />
+          <span class="course-icon">
+            <BookOpen :size="18" :stroke-width="2.2" />
           </span>
           <div class="course-info">
             <strong>{{ getCourseDisplayName(course) }}</strong>
@@ -324,17 +251,24 @@ onMounted(() => {
 .home-page {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-/* ── Search entry (kept for data-home-search test hook) ── */
+.home-welcome {
+  margin: 4px 0 0;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .home-search-entry {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   margin-top: var(--space-2);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--surface);
   border: 1px solid var(--line-soft);
   color: var(--text-placeholder);
@@ -346,66 +280,86 @@ onMounted(() => {
 }
 
 .home-search-entry:hover {
-  border-color: var(--gold-border);
+  border-color: var(--primary-border);
 }
 
 .home-search-entry :deep(svg) {
   color: var(--text-placeholder);
 }
 
-/* ── Quick grid description (visually hidden, kept in DOM for tests/a11y) ── */
+.quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quick {
+  min-height: 116px;
+  padding: var(--space-3) 8px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+}
+
+.quick-ico {
+  background: var(--primary);
+  box-shadow: none;
+}
+
 .quick-label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 700;
   text-align: center;
 }
 
 .quick-desc {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ── Heatmap (page-specific, not in component library) ── */
-.heatmap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: var(--space-2);
-  padding: 8px 12px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-soft);
-}
-
-.heatmap-label {
-  font-size: 11px;
-  font-weight: 700;
   color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  text-align: center;
 }
 
-.heatmap-bars {
-  display: flex;
-  flex: 1;
-  gap: 4px;
+.overview-surface {
+  min-height: 92px;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
 }
 
-.heatmap-bar {
-  height: 16px;
-  flex: 1;
-  border-radius: 4px;
+.overview-state {
+  display: grid;
+  min-height: 68px;
+  margin: 0;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
-/* Heatmap bar colors — bridge Tailwind utility classes to design tokens */
-.heatmap-bar.bg-blue-600 { background: var(--primary-strong); }
-.heatmap-bar.bg-blue-400 { background: var(--primary); }
-.heatmap-bar.bg-blue-200 { background: var(--primary-border); }
-.heatmap-bar.bg-slate-200 { background: var(--line-soft); }
+.overview-state--error { color: var(--rose); }
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.overview-stat {
+  min-width: 0;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.overview-stat strong,
+.overview-stat span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-stat strong { color: var(--text-main); font-size: var(--text-lg); }
+.overview-stat span { margin-top: 4px; color: var(--text-muted); font-size: var(--text-xs); }
 
 /* ── Course list layout ── */
 .course-list {
@@ -414,12 +368,17 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
+.course-item {
+  border-radius: 8px;
+}
+
 .course-main {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex: 1;
   min-width: 0;
+  min-height: 44px;
   background: transparent;
   border: none;
   padding: 0;
@@ -430,22 +389,22 @@ onMounted(() => {
 
 .course-action {
   flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--primary);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   border: none;
-  box-shadow: var(--shadow-primary);
+  box-shadow: none;
   cursor: pointer;
   white-space: nowrap;
   transition: transform var(--ease-out), box-shadow var(--ease-out);
 }
 
 .course-action:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(67, 56, 202, 0.3);
+  background: var(--primary-strong);
 }
 
 /* ── Empty state ── */
@@ -484,8 +443,9 @@ onMounted(() => {
 }
 
 .empty-btn {
+  min-height: 44px;
   padding: 8px 16px;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 700;
   border: 1px solid var(--line-soft);
@@ -496,15 +456,21 @@ onMounted(() => {
 }
 
 .empty-btn--primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  background: var(--primary);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  box-shadow: none;
+  transition: background var(--ease-out);
 }
 
 .empty-btn--primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(67, 56, 202, 0.3);
+  background: var(--primary-strong);
+}
+
+@media (max-width: 420px) {
+  .overview-grid { gap: 0; }
+  .overview-stat strong { font-size: var(--text-base); }
+  .course-item { gap: 8px; }
+  .course-action { padding-inline: 10px; }
 }
 </style>
