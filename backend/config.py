@@ -144,6 +144,8 @@ IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "20"))
 IMPORT_MAX_TOKENS = int(os.getenv("IMPORT_MAX_TOKENS", "6000"))
 # Per-user limit for AI import calls (each call may cost several model requests).
 IMPORT_RATE_LIMIT_PER_HOUR = int(os.getenv("IMPORT_RATE_LIMIT_PER_HOUR", "10"))
+IMPORT_TASK_RECOVERY_ENABLED = os.getenv("IMPORT_TASK_RECOVERY_ENABLED", "1").lower() in {"1", "true", "yes"}
+IMPORT_TASK_RECOVERY_LIMIT = int(os.getenv("IMPORT_TASK_RECOVERY_LIMIT", "2"))
 
 # ── Rate limiting backend ───────────────────────────────────────────────────
 # When set, rate limits are enforced via Redis (accurate across workers and
