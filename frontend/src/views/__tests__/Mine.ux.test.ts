@@ -6,10 +6,11 @@ import Mine from "../Mine.vue";
 
 const replace = vi.fn();
 const logout = vi.fn();
+const setMode = vi.fn();
 
 vi.mock("vue-router", () => ({ useRouter: () => ({ replace }), useRoute: () => ({ query: {} }) }));
 vi.mock("../../stores/auth", () => ({ useAuth: () => ({ user: ref({ username: "Student", role: "user" }), logout }) }));
-vi.mock("../../stores/theme", () => ({ useThemeStore: () => ({ mode: "light", setMode: vi.fn() }) }));
+vi.mock("../../stores/theme", () => ({ useThemeStore: () => ({ mode: "light", setMode }) }));
 vi.mock("../../composables/useStudyOverview", () => ({
   useStudyOverview: () => ({
     stats: ref({ todayCount: null, totalCount: null, accuracyRate: null, recentCount7d: null, wrongCount: null }),
@@ -23,12 +24,24 @@ describe("Mine UX polish", () => {
   beforeEach(() => {
     replace.mockClear();
     logout.mockClear();
+    setMode.mockClear();
   });
 
   it("keeps the study overview and service menu available", () => {
     const wrapper = mount(Mine);
     expect(wrapper.find(".stat-link").exists()).toBe(true);
-    expect(wrapper.findAll(".menu-item").length).toBeGreaterThan(0);
+    expect(wrapper.text()).toContain("错题本");
+    expect(wrapper.text()).toContain("练习记录");
+    expect(wrapper.text()).toContain("收藏题目");
+    expect(wrapper.text()).toContain("更新公告");
+    expect(wrapper.text()).toContain("主题");
+    expect(wrapper.findAll(".stat-cell")).toHaveLength(3);
+  });
+
+  it("keeps the theme setting usable", async () => {
+    const wrapper = mount(Mine);
+    await wrapper.get(".theme-select").setValue("dark");
+    expect(setMode).toHaveBeenCalledWith("dark");
   });
 
   it("enters study overview with replace and an explicit mine source", async () => {

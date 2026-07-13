@@ -6,7 +6,6 @@ import {
   BookMarked,
   ChevronRight,
   Clock,
-  HelpCircle,
   LogOut,
   Megaphone,
   Settings2,
@@ -48,41 +47,30 @@ const overviewSummary = computed(() => ({
   recent: stats.value.recentCount7d,
 }));
 
-const serviceGrid = computed(() => [
+const learningItems = computed(() => [
   {
     label: "错题本",
     desc: stats.value.wrongCount !== null ? `${stats.value.wrongCount} 道待复盘` : "集中复盘",
     icon: BookMarked,
-    color: "var(--rose)",
     to: { name: "wrongbook", query: { from: "mine" } },
   },
   {
     label: "练习记录",
     desc: "查看答题历史",
     icon: Clock,
-    color: "var(--amber)",
     to: { name: "practice-history", query: { from: "mine" } },
   },
   {
     label: "更新公告",
     desc: "最近修复内容",
     icon: Megaphone,
-    color: "var(--primary)",
     to: { name: "announcements", query: { from: "mine" } },
   },
   {
     label: "收藏题目",
     desc: "查看已收藏内容",
     icon: Bookmark,
-    color: "var(--teal)",
     to: { name: "bookmarks", query: { from: "mine" } },
-  },
-  {
-    label: "使用提示",
-    desc: "导入失败时先看这里",
-    icon: HelpCircle,
-    color: "var(--teal)",
-    to: { name: "announcements", query: { from: "mine" } },
   },
 ]);
 
@@ -107,7 +95,7 @@ onMounted(() => fetchAll());
   <section class="mine-page">
     <header class="page-head fade-up">
       <h2 class="ph-title">我的</h2>
-      <p class="ph-sub">Profile · 个人中心</p>
+      <span class="ph-date">个人设置</span>
     </header>
 
     <div class="profile-card fade-up d1">
@@ -149,20 +137,18 @@ onMounted(() => fetchAll());
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <div class="section-head fade-up d3">
-      <span class="num">I</span>
-      <h3 class="section-title">学习服务</h3>
+      <h3 class="section-title">学习</h3>
     </div>
     <nav class="menu-list fade-up d3">
       <button
-        v-for="item in serviceGrid"
+        v-for="item in learningItems"
         :key="item.label"
         class="menu-item"
         type="button"
         @click="goTo(item.to)"
       >
         <span
-          class="mi-ico"
-          :style="{ color: item.color, background: 'color-mix(in srgb, ' + item.color + ' 14%, transparent)' }"
+          class="mi-ico mi-ico--primary"
         >
           <component :is="item.icon" :size="16" :stroke-width="2.2" />
         </span>
@@ -174,8 +160,7 @@ onMounted(() => fetchAll());
     </nav>
 
     <div class="section-head fade-up d4">
-      <span class="num">II</span>
-      <h3 class="section-title">设置</h3>
+      <h3 class="section-title">账户</h3>
     </div>
     <div class="menu-list fade-up d4">
       <label class="menu-item">
@@ -214,6 +199,7 @@ onMounted(() => fetchAll());
 <style scoped>
 .mine-page {
   padding-bottom: var(--space-5);
+  min-width: 0;
 }
 
 /* Profile card internal layout */
@@ -236,6 +222,14 @@ onMounted(() => fetchAll());
   max-width: 100%;
 }
 
+.profile-card { padding: var(--space-3); }
+.profile-card { border-radius: 8px; }
+
+.profile-head { min-height: 44px; }
+
+.avatar-wrap,
+.avatar { width: 56px; height: 56px; }
+
 /* Clickable stat grid (button element reset) */
 button.stat-link {
   border: none;
@@ -245,6 +239,7 @@ button.stat-link {
   text-align: left;
   cursor: pointer;
   width: 100%;
+  min-height: 44px;
   transition: transform var(--ease-out);
 }
 button.stat-link:active {
@@ -253,6 +248,8 @@ button.stat-link:active {
 button.stat-link:active .stat-cell {
   border-color: var(--primary-border);
 }
+
+.stat-cell { border-radius: 8px; }
 
 /* Button / label menu-item resets */
 button.menu-item,
@@ -266,6 +263,9 @@ label.menu-item {
   display: inline-flex;
   align-items: center;
 }
+
+.menu-item { min-height: 52px; }
+.menu-item { border-radius: 8px; }
 .menu-item:active {
   transform: translateX(2px);
 }
@@ -278,6 +278,10 @@ label.menu-item {
   background: var(--surface-soft);
   color: var(--text-secondary);
 }
+.menu-item .mi-ico.mi-ico--primary {
+  background: var(--surface-soft);
+  color: var(--primary);
+}
 .menu-item .mi-ico.mi-ico--danger {
   background: var(--rose-soft);
   color: var(--rose);
@@ -288,19 +292,15 @@ label.menu-item {
   font: inherit;
   font-size: var(--text-xs);
   font-weight: 700;
+  min-height: 44px;
   padding: 5px 26px 5px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   border: 1px solid var(--line-soft);
   background-color: var(--surface-soft);
   color: var(--text-main);
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position: calc(100% - 12px) center, calc(100% - 8px) center;
-  background-size: 4px 4px, 4px 4px;
-  background-repeat: no-repeat;
 }
 .theme-select:focus {
   outline: 2px solid var(--primary-border);
@@ -326,6 +326,11 @@ label.menu-item {
 .mf-ver {
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--gold-strong);
+  color: var(--text-muted);
+}
+
+@media (max-width: 420px) {
+  .stat-cell strong { font-size: var(--text-lg); }
+  .menu-item { min-height: 52px; }
 }
 </style>
