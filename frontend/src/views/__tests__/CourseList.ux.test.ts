@@ -75,6 +75,7 @@ describe("CourseList UX polish", () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
+    expect(wrapper.findAll(".seg-item")[1].text()).toContain("我的");
     await wrapper.findAll(".seg-item")[2].trigger("click");
     expect(wrapper.text()).toContain("Public course");
     expect(wrapper.text()).not.toContain("Private course");
@@ -104,6 +105,15 @@ describe("CourseList UX polish", () => {
       params: { courseId: 1 },
       query: { mode: "sequential", autostart: "1", from: "courses" },
     });
+  });
+
+  it("keeps the reference compact title bar with an icon-only create action", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const createButton = wrapper.get("[data-create-course]");
+    expect(createButton.classes()).toContain("library-create-button");
+    expect(createButton.attributes("aria-label")).toContain("创建题库");
   });
 
   it("enters course detail with replace and a courses source", async () => {

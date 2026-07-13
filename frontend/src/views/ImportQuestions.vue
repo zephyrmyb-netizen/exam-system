@@ -64,7 +64,14 @@ const {
 
 const isParsing = computed(() => aiTask.status.value === "running");
 const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.previewData.value);
-const hasImportSuccess = computed(() => !!importResult.value);
+const hasImportSuccess = computed(() => !!importResult.value || aiTask.imported.value);
+const resolvedImportResult = computed(() => importResult.value || (aiTask.imported.value
+  ? {
+    imported_count: aiTask.importedCount.value,
+    course_id: aiTask.resultCourseId.value,
+    course_name: aiTask.resultCourseName.value || aiTask.courseName.value,
+  }
+  : null));
 const activeFileName = computed(() => selectedFile.value?.name || aiTask.fileName.value || "");
 const hasActiveFile = computed(() => !!activeFileName.value);
 const activeFileKind = computed(() => getFileKindLabel(selectedFile.value || { name: aiTask.fileName.value }));
@@ -74,6 +81,11 @@ const selectedFileIsImage = computed(() => isImageFile(selectedFile.value));
 const canExtractText = computed(() => !!selectedFile.value && !selectedFileIsImage.value && !isParsing.value);
 const activeCourseId = computed(() => selectedCourseId.value || aiTask.courseId.value || 0);
 const activeCourseName = computed(() => derivedCourseName.value || aiTask.courseName.value || "");
+const taskProgressText = computed(() => {
+  const total = aiTask.progressTotal.value;
+  if (!total) return "";
+  return `已处理 ${Math.min(aiTask.progressCurrent.value, total)} / ${total} 个分块`;
+});
 
 const phase = computed(() => {
   if (hasImportSuccess.value) return "success";
@@ -332,7 +344,7 @@ onMounted(() => {
         </div>
         <ImportTaskMonitor
           :title="aiTask.progressTitle.value"
-          :detail="aiTask.progressDetail.value"
+          :detail="[aiTask.progressDetail.value, taskProgressText].filter(Boolean).join(' · ')"
         />
         <p class="msg msg-info">{{ PARSING_RECOVERY_HINT }}</p>
       </section>
@@ -456,23 +468,23 @@ onMounted(() => {
       <div class="ai-done">
         <div class="ai-done-icon"><CheckCircle :size="36" :stroke-width="2.5" color="var(--emerald)" /></div>
         <p class="ai-done-title">导入成功</p>
-        <p class="ai-done-target">已导入到题库：<strong>{{ importResult?.course_name || activeCourseName || "未命名题库" }}</strong></p>
+        <p class="ai-done-target">已导入到题库：<strong>{{ resolvedImportResult?.course_name || activeCourseName || "未命名题库" }}</strong></p>
         <div class="ai-done-stats">
           <div class="ai-done-stat">
-            <span class="ai-done-num">{{ importResult?.imported_count || 0 }}</span>
+            <span class="ai-done-num">{{ resolvedImportResult?.imported_count || 0 }}</span>
             <span class="ai-done-lbl">道题目</span>
           </div>
           <div class="ai-done-stat">
-            <span class="ai-done-num ai-done-course">{{ importResult?.course_name || "" }}</span>
+            <span class="ai-done-num ai-done-course">{{ resolvedImportResult?.course_name || "" }}</span>
             <span class="ai-done-lbl">题库</span>
           </div>
         </div>
         <div class="ai-done-actions">
           <button
-            v-if="importResult?.course_id"
+            v-if="resolvedImportResult?.course_id"
             class="primary-button"
             type="button"
-            @click="goToCourse(importResult.course_id)"
+            @click="goToCourse(resolvedImportResult.course_id)"
           >
             <BookOpen :size="16" :stroke-width="2.5" />
             进入题库

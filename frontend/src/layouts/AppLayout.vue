@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ArrowLeft, CheckCircle, Home, Library, Moon, Plus, Sun, User } from "@lucide/vue";
+import { ArrowLeft, CheckCircle, Home, Library, Moon, Sun, Upload, User } from "@lucide/vue";
 
 import { getAuthEventName, getToken } from "../api/request";
 import { flushPendingPracticeSubmissions } from "../api/practice";
@@ -58,7 +58,7 @@ watch(aiStatus, (val) => {
 const navItems = [
   { key: "home", label: "首页", icon: Home, to: "/" },
   { key: "list", label: "题库", icon: Library, to: "/courses" },
-  { key: "import", label: "导入", icon: Plus, to: "/import", emphasis: true },
+  { key: "import", label: "导入", icon: Upload, to: "/import", emphasis: true },
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
@@ -477,10 +477,10 @@ onUnmounted(() => {
 
 @media (min-width: 760px) {
   .app-shell {
-    max-width: 430px;
+    max-width: 420px;
     margin: 0 auto;
     box-shadow: 0 0 40px rgba(15, 23, 42, 0.1);
   }
-  .bottom-nav { left: 50%; right: auto; width: min(398px, calc(100% - 32px)); transform: translateX(-50%); }
+  .bottom-nav { left: 50%; right: auto; width: min(388px, calc(100% - 32px)); transform: translateX(-50%); }
 }
 </style>

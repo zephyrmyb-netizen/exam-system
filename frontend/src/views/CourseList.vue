@@ -42,7 +42,7 @@ const practiceSheetCourse = ref<Course | null>(null);
 
 const visibilityFilters = [
   { key: "all", label: "全部" },
-  { key: "private", label: "私有" },
+  { key: "private", label: "我的" },
   { key: "public", label: "公开" },
   { key: "recent", label: "最近练习" },
 ] as const;
@@ -260,13 +260,17 @@ onMounted(fetchCourses);
   <section class="library-page">
     <header class="library-head fade-up">
       <div>
-        <p class="eyebrow">学习工具 · 题库管理</p>
         <h2 class="library-title">题库</h2>
-        <p class="library-count">{{ courses.length }} 个题库</p>
+        <p class="library-count">我的题库 · {{ courses.length }} 个</p>
       </div>
-      <button class="primary-action" type="button" @click="openCreate">
+      <button
+        class="library-create-button"
+        data-create-course
+        type="button"
+        aria-label="创建题库"
+        @click="openCreate"
+      >
         <Plus :size="17" :stroke-width="2.4" />
-        创建题库
       </button>
     </header>
 
@@ -983,6 +987,7 @@ onMounted(fetchCourses);
   font-size: 12px;
 }
 .primary-action,
+.library-create-button,
 .practice-action {
   display: inline-flex;
   align-items: center;
@@ -998,7 +1003,14 @@ onMounted(fetchCourses);
   cursor: pointer;
 }
 .primary-action { padding: 0 14px; flex-shrink: 0; }
+.library-create-button {
+  width: 44px;
+  padding: 0;
+  flex: 0 0 44px;
+  border-radius: 50%;
+}
 .primary-action:hover,
+.library-create-button:hover,
 .practice-action:hover:not(:disabled) { background: var(--primary-strong); }
 .library-tools { display: flex; align-items: center; gap: 10px; }
 .library-tools .search-bar {
@@ -1089,6 +1101,6 @@ onMounted(fetchCourses);
 @media (max-width: 400px) {
   .library-head { align-items: flex-start; }
   .library-title { font-size: 24px; }
-  .primary-action { padding: 0 10px; }
+  .library-create-button { width: 42px; flex-basis: 42px; }
 }
 </style>

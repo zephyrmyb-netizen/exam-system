@@ -17,6 +17,18 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.8-reference-parity-and-import-recovery",
+    version: "v2.7.8",
+    date: "2026-07-14",
+    type: "优化",
+    title: "学习界面与导入恢复体验优化",
+    items: [
+      "首页、题库和个人中心按统一学习界面重新收口，未知数据不再伪造展示。",
+      "已完成的 AI 导入任务恢复后会直接显示结果，避免重复确认导入。",
+      "考试答题卡改为按需展开，题目切换更集中，答题页不再被外层布局挤压。",
+    ],
+  },
+  {
     id: "v2.7.7-ai-import-long-document-reliability",
     version: "v2.7.7",
     date: "2026-07-13",

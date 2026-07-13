@@ -59,7 +59,7 @@
   --ease-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   --ease-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --shell-max: 430px;
+  --shell-max: 420px;
   --nav-height: 64px;
   --nav-bottom-clearance: calc(96px + env(safe-area-inset-bottom));
   --practice-sticky-bottom: calc(16px + env(safe-area-inset-bottom));
@@ -107,7 +107,6 @@ button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 .glass-card,
 .ink-card,
 .overview-surface,
-.home-ai-chat,
 .course-row,
 .empty-state,
 .modal-card,
@@ -319,15 +318,6 @@ body .home-page .quick:nth-child(3) .quick-ico { color: #d97706; background: #ff
 body .home-page .quick:nth-child(4) .quick-ico { color: #7c3aed; background: #f5f3ff; }
 body .home-page .quick-desc { white-space: normal; }
 
-body .home-page .home-ai-chat {
-  min-height: 72px;
-  margin: 14px 0 18px;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(255, 255, 255, 0.78));
-}
-body .home-page .home-ai-chat__icon { border-radius: 14px; background: var(--primary); color: #fff; }
-body .home-page .home-ai-chat__action { color: var(--primary-strong); }
-
 .overview-surface { border-radius: var(--radius-lg); }
 .overview-stat strong { color: var(--text-main); font-size: 1.2rem; }
 
@@ -410,7 +400,7 @@ body .chat-page .chat-composer button { background: var(--primary) !important; b
 .exam-take-page,
 .exam-result-page {
   width: 100%;
-  max-width: 430px;
+  max-width: 420px;
   min-height: 100%;
   padding: max(14px, env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
   background: transparent;

@@ -7,7 +7,6 @@ import {
   ClipboardList,
   FileUp,
   Mic,
-  MessageCircle,
   Search,
   Target,
   TrendingUp,
@@ -55,7 +54,9 @@ const statCards = computed(() => [
   { label: "今日已刷", value: stats.value.todayCount, suffix: "题" },
   { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
   { label: "正确率", value: accuracyDisplay.value, suffix: "" },
-  { label: "近 7 日", value: stats.value.recentCount7d, suffix: "题" },
+  // The current stats API has no streak field. Keep this visibly unavailable
+  // instead of deriving a fictional streak from total practice records.
+  { label: "连续学习", value: null, suffix: "" },
 ]);
 
 const recentCourses = computed(() => {
@@ -176,23 +177,6 @@ onMounted(() => {
       </button>
     </nav>
 
-    <button
-      class="home-ai-chat fade-up d2"
-      data-home-ai-chat
-      type="button"
-      aria-label="打开 AI 学习助手"
-      @click="goTo('/chat')"
-    >
-      <span class="home-ai-chat__icon" aria-hidden="true">
-        <MessageCircle :size="19" :stroke-width="2.2" />
-      </span>
-      <span class="home-ai-chat__copy">
-        <strong>AI 学习助手</strong>
-        <span>问知识点、讲题目、做复习</span>
-      </span>
-      <span class="home-ai-chat__action" aria-hidden="true">去对话</span>
-    </button>
-
     <div class="section-head fade-up d3">
       <h3 class="section-title">学习概览</h3>
       <button
@@ -282,11 +266,13 @@ onMounted(() => {
 
     <button
       class="home-recommendation fade-up d4"
+      data-home-recommendation
       type="button"
       @click="goTo(recentCourses[0] ? `/courses/${recentCourses[0].id}/practice` : '/courses')"
     >
       <span class="home-recommendation__spark">✦</span>
-      <span>
+      <span class="home-recommendation__copy">
+        <small class="home-recommendation__tag">每日一练</small>
         <strong>{{ recentCourses[0] ? getCourseDisplayName(recentCourses[0]) : "从题库开始" }}</strong>
         <small>{{ recentCourses[0] ? "继续完成今天的练习" : "选择一门题库，开始建立学习节奏" }}</small>
       </span>
@@ -305,8 +291,9 @@ onMounted(() => {
 .home-hero {
   display: grid;
   gap: 16px;
+  margin: -16px -16px 0;
   padding: 20px 18px 18px;
-  border-radius: 24px;
+  border-radius: 0 0 28px 28px;
   background: linear-gradient(145deg, #10b981, #0f9d7a 60%, #0d9488);
   color: #fff;
   box-shadow: var(--shadow-primary);
@@ -398,48 +385,6 @@ onMounted(() => {
   text-align: center;
   white-space: nowrap;
 }
-
-.home-ai-chat {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 68px;
-  margin: var(--space-3) 0 var(--space-5);
-  padding: 10px 12px;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-main);
-  box-shadow: var(--shadow-xs);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color var(--ease-out), background var(--ease-out), transform var(--ease-out);
-}
-
-.home-ai-chat:hover { border-color: var(--primary); background: var(--primary-soft); }
-.home-ai-chat:active { transform: scale(0.99); }
-
-.home-ai-chat__icon {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--primary-soft);
-  color: var(--primary);
-}
-
-.home-ai-chat__copy {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.home-ai-chat__copy strong { font-size: var(--text-sm); font-weight: 800; }
-.home-ai-chat__copy span { overflow: hidden; color: var(--text-muted); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
-.home-ai-chat__action { margin-left: auto; color: var(--primary); font-size: var(--text-xs); font-weight: 800; white-space: nowrap; }
 
 .overview-surface {
   min-height: 92px;
@@ -558,10 +503,22 @@ onMounted(() => {
   cursor: pointer;
 }
 .home-recommendation__spark { color: var(--primary); font-size: 24px; }
+.home-recommendation__copy { min-width: 0; }
 .home-recommendation strong,
 .home-recommendation small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .home-recommendation strong { font-size: 14px; }
 .home-recommendation small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.home-recommendation .home-recommendation__tag {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
 .home-recommendation :deep(svg) { color: var(--primary-strong); }
 
 /* ── Empty state ── */

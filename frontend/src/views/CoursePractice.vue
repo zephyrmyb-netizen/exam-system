@@ -67,77 +67,73 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
 </script>
 
 <template>
-  <section class="stack course-practice-page">
-    <template v-if="!showPractice">
-      <div v-if="course" class="settings-header">
-        <div class="settings-header-top">
-          <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
-          <div class="settings-info">
-            <h2 :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</h2>
-            <p class="settings-meta">
-              <Layers :size="13" :stroke-width="2" />
-              <span>{{ course.question_count ?? 0 }} 道题</span>
-            </p>
-          </div>
+  <section v-if="!showPractice" class="stack course-practice-page">
+    <div v-if="course" class="settings-header">
+      <div class="settings-header-top">
+        <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
+        <div class="settings-info">
+          <h2 :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</h2>
+          <p class="settings-meta">
+            <Layers :size="13" :stroke-width="2" />
+            <span>{{ course.question_count ?? 0 }} 道题</span>
+          </p>
         </div>
       </div>
+    </div>
 
-      <p v-if="loading" class="info-message">正在加载题库...</p>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-if="loading" class="info-message">正在加载题库...</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
-      <div class="mode-section">
-        <p class="settings-section-label">练习模式</p>
-        <div class="mode-grid">
-          <button
-            v-for="m in modes"
-            :key="m.key"
-            class="mode-card"
-            :class="{ 'mode-active': selectedMode === m.key }"
-            :aria-pressed="selectedMode === m.key"
-            type="button"
-            @click="selectedMode = m.key"
-          >
-            <span class="mode-card-icon" :style="{ color: m.color }">
-              <component :is="m.icon" :size="20" :stroke-width="2" />
-            </span>
-            <span class="mode-card-text">
-              <span class="mode-card-title">{{ m.label }}</span>
-              <span class="mode-card-desc">{{ m.desc }}</span>
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <div class="settings-actions">
-        <p v-if="course && !canStartPractice" class="empty-state">
-          当前题库还没有题目。先导入题目后再开始练习。
-        </p>
-        <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
-          <Play :size="18" :stroke-width="2.5" style="margin-right: 6px" />
-          {{ startButtonText }}
-        </button>
+    <div class="mode-section">
+      <p class="settings-section-label">练习模式</p>
+      <div class="mode-grid">
         <button
-          v-if="course && !canStartPractice"
-          class="ghost-button full-button"
+          v-for="m in modes"
+          :key="m.key"
+          class="mode-card"
+          :class="{ 'mode-active': selectedMode === m.key }"
+          :aria-pressed="selectedMode === m.key"
           type="button"
-          @click="router.replace({ name: 'import', query: { course_id: courseId } })"
+          @click="selectedMode = m.key"
         >
-          去导入题目
+          <span class="mode-card-icon" :style="{ color: m.color }">
+            <component :is="m.icon" :size="20" :stroke-width="2" />
+          </span>
+          <span class="mode-card-text">
+            <span class="mode-card-title">{{ m.label }}</span>
+            <span class="mode-card-desc">{{ m.desc }}</span>
+          </span>
         </button>
       </div>
-    </template>
+    </div>
 
-    <template v-else>
-      <Practice
-        :course-id="courseId"
-        :course-name="course?.name || ''"
-        :total-questions="course?.question_count ?? 0"
-        :mode="selectedMode"
-        mode-param=""
-        @end-practice="endPractice"
-      />
-    </template>
+    <div class="settings-actions">
+      <p v-if="course && !canStartPractice" class="empty-state">
+        当前题库还没有题目。先导入题目后再开始练习。
+      </p>
+      <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
+        <Play :size="18" :stroke-width="2.5" style="margin-right: 6px" />
+        {{ startButtonText }}
+      </button>
+      <button
+        v-if="course && !canStartPractice"
+        class="ghost-button full-button"
+        type="button"
+        @click="router.replace({ name: 'import', query: { course_id: courseId } })"
+      >
+        去导入题目
+      </button>
+    </div>
   </section>
+  <Practice
+    v-else
+    :course-id="courseId"
+    :course-name="course?.name || ''"
+    :total-questions="course?.question_count ?? 0"
+    :mode="selectedMode"
+    mode-param=""
+    @end-practice="endPractice"
+  />
 </template>
 
 <style scoped>

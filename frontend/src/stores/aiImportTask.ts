@@ -29,6 +29,9 @@ export interface AiImportTaskReturn {
   previewData: Ref<ImportPreviewResponse | null>;
   timing: Ref<ImportTiming | null>;
   importedCount: Ref<number>;
+  imported: Ref<boolean>;
+  progressCurrent: Ref<number>;
+  progressTotal: Ref<number>;
   message: Ref<string>;
   error: Ref<string>;
   resultCourseId: Ref<number | null>;
@@ -102,6 +105,9 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
     previewData: null as ImportPreviewResponse | null,
     timing: null as ImportTiming | null,
     importedCount: 0,
+    imported: false,
+    progressCurrent: 0,
+    progressTotal: 0,
     message: "",
     error: "",
     resultCourseId: null as number | null,
@@ -145,6 +151,8 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
       this.courseId = task.course_id || 0;
       this.courseName = task.course_name || task.suggested_course_name || "";
       this.timing = task.timing;
+      this.progressCurrent = task.progress_current || 0;
+      this.progressTotal = task.progress_total || 0;
 
       if (task.status === "ready" || task.status === "imported") {
         this.previewData = {
@@ -158,6 +166,10 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         };
         this.status = "success";
         this.stage = "complete";
+        this.imported = task.status === "imported";
+        this.importedCount = task.status === "imported" ? task.total_valid : 0;
+        this.resultCourseId = task.status === "imported" ? task.course_id : null;
+        this.resultCourseName = task.status === "imported" ? task.course_name : "";
         this.message = task.status === "imported"
           ? `导入成功，已导入 ${task.total_valid} 道题。`
           : `AI 已解析出 ${task.total_valid} 道题，请确认后导入。`;
@@ -221,6 +233,9 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
       this.previewData = null;
       this.timing = null;
       this.importedCount = 0;
+      this.imported = false;
+      this.progressCurrent = 0;
+      this.progressTotal = 0;
       this.message = "";
       this.error = "";
       this.resultCourseId = null;
@@ -264,6 +279,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
     markImported(result: { imported_count?: number; course_id?: number | null; course_name?: string }): void {
       clearPollTimer();
       this.importedCount = result.imported_count || 0;
+      this.imported = true;
       this.resultCourseId = result.course_id ?? null;
       this.resultCourseName = result.course_name || "";
       this.courseName = result.course_name || this.courseName;
@@ -291,6 +307,9 @@ export function useAiImportTask(): AiImportTaskReturn {
     previewData: refs.previewData,
     timing: refs.timing,
     importedCount: refs.importedCount,
+    imported: refs.imported,
+    progressCurrent: refs.progressCurrent,
+    progressTotal: refs.progressTotal,
     message: refs.message,
     error: refs.error,
     resultCourseId: refs.resultCourseId,

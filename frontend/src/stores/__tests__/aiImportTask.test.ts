@@ -47,4 +47,34 @@ describe("ai import task persistence", () => {
     expect(store.fileName).toBe("复习题.docx");
     expect(store.previewData?.questions).toHaveLength(1);
   });
+
+  it("restores an imported task as a completed import instead of reopening the preview", async () => {
+    window.localStorage.setItem("xuexibao:active-import-task", "task-imported");
+    getImportTask.mockResolvedValue({
+      id: "task-imported",
+      status: "imported",
+      source_filename: "复习题.docx",
+      course_id: 9,
+      course_name: "复习题",
+      progress_current: 2,
+      progress_total: 2,
+      questions: [],
+      suggested_course_name: "复习题",
+      warnings: [],
+      total_valid: 12,
+      total_invalid: 0,
+      timing: null,
+      error_message: "",
+      created_at: null,
+      started_at: null,
+      finished_at: null,
+    });
+
+    const store = useAiImportTaskStore();
+    await store.resume();
+
+    expect(store.imported).toBe(true);
+    expect(store.importedCount).toBe(12);
+    expect(store.resultCourseId).toBe(9);
+  });
 });
