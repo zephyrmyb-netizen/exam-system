@@ -257,7 +257,7 @@ onMounted(fetchCourses);
 </script>
 
 <template>
-  <section class="library-page">
+  <section class="library-page" data-reference-page="courses">
     <header class="library-head fade-up">
       <div>
         <h2 class="library-title">题库</h2>
@@ -1103,4 +1103,15 @@ onMounted(fetchCourses);
   .library-title { font-size: 24px; }
   .library-create-button { width: 42px; flex-basis: 42px; }
 }
+
+/* Keep the reference treatment after the compact desktop/mobile overrides. */
+.library-page { padding-top: 20px; }
+.library-title { letter-spacing: 0; }
+.library-tools { gap: 12px; }
+.library-tools .search-bar { min-height: 48px; border-radius: 999px; }
+.library-tools .seg { width: 100%; overflow-x: auto; }
+.library-tools .seg-item { flex: 1 0 auto; min-width: 0; }
+.course-row { border-color: var(--glass-border); border-radius: 12px; background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
+.course-row .course-item { border-radius: 12px; }
+.practice-sheet { border-radius: 24px 24px 0 0; box-shadow: var(--shadow-modal), var(--glass-inner-highlight); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); }
 </style>

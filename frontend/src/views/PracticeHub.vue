@@ -31,8 +31,8 @@ const recentCourses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
 
-const wrongCount = computed(() => review.value.wrongCount ?? stats.value.wrongCount ?? 0);
-const hasWrongQuestions = computed(() => wrongCount.value > 0);
+const wrongCount = computed(() => review.value.wrongCount ?? stats.value.wrongCount ?? null);
+const hasWrongQuestions = computed(() => (wrongCount.value ?? 0) > 0);
 const hasDueQuestions = computed(() => (review.value.dueCount ?? 0) > 0);
 const hasRecentCourses = computed(() => recentCourses.value.length > 0);
 const primaryCourse = computed(() => recentCourses.value[0] || null);
@@ -167,7 +167,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="hub">
+  <section class="hub" aria-labelledby="practice-hub-title" :aria-busy="statsLoading || coursesLoading">
+    <h1 id="practice-hub-title" class="sr-only">练习中心</h1>
     <PracticeOverviewCard
       :title="heroTitle"
       :description="heroDesc"
@@ -253,6 +254,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .hub { display: grid; gap: var(--space-3); }
 .hub-warning { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--amber-border); border-radius: var(--radius-sm); background: var(--amber-soft); color: var(--amber); font-size: var(--text-xs); font-weight: 700; }
 .hub-warning button { border: none; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }

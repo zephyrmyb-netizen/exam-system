@@ -99,6 +99,8 @@ describe("AppLayout immersive routes", () => {
     });
 
     expect(wrapper.findAll(".nav-label").map((item) => item.text())).toEqual(["首页", "题库", "导入", "我的"]);
+    expect(wrapper.findAll(".nav-button").map((item) => item.attributes("data-nav-key"))).toEqual(["home", "list", "import", "mine"]);
+    expect(wrapper.find(".nav-button--ai .nav-icon--ai").exists()).toBe(true);
     await wrapper.findAll(".nav-button")[1].trigger("click");
 
     expect(router.replace).toHaveBeenCalledWith({ path: "/courses" });

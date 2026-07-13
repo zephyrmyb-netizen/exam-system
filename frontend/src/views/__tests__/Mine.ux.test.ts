@@ -29,6 +29,7 @@ describe("Mine UX polish", () => {
 
   it("keeps the study overview and service menu available", () => {
     const wrapper = mount(Mine);
+    expect(wrapper.find("[data-reference-page='mine']").exists()).toBe(true);
     expect(wrapper.find(".stat-link").exists()).toBe(true);
     expect(wrapper.text()).toContain("错题本");
     expect(wrapper.text()).toContain("练习记录");
@@ -39,6 +40,7 @@ describe("Mine UX polish", () => {
     expect(wrapper.get("[data-stat-streak]").text()).toContain("连续打卡");
     expect(wrapper.get("[data-stat-badges]").text()).toContain("徽章");
     expect(wrapper.find(".profile-card--centered").exists()).toBe(true);
+    expect(wrapper.get("[data-stat-streak]").text()).toContain("--");
   });
 
   it("keeps the theme setting usable", async () => {

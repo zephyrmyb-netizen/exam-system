@@ -20,6 +20,7 @@ export const useExamStore = defineStore("exam", {
     leaderboard: null as ExamLeaderboard | null,
     currentIndex: 0,
     answers: {} as Record<string, string>,
+    remainingSeconds: null as number | null,
     loading: false,
     submitting: false,
     error: "",
@@ -72,6 +73,7 @@ export const useExamStore = defineStore("exam", {
         this.currentExam = detail;
         this.currentIndex = 0;
         this.answers = {};
+        this.remainingSeconds = null;
         this.result = null;
         this.leaderboard = null;
         return detail;
@@ -92,6 +94,7 @@ export const useExamStore = defineStore("exam", {
         this.currentAttempt = attempt;
         this.currentIndex = 0;
         this.answers = {};
+        this.syncRemainingSeconds();
         this.result = null;
         this.leaderboard = null;
       } catch (error) {
@@ -104,6 +107,18 @@ export const useExamStore = defineStore("exam", {
 
     setAnswer(questionId: number, answer: string): void {
       this.answers[String(questionId)] = answer;
+    },
+
+    syncRemainingSeconds(now = Date.now()): void {
+      const startedAt = this.currentAttempt?.started_at;
+      const timeLimit = this.currentExam?.time_limit;
+      if (!startedAt || !timeLimit) {
+        this.remainingSeconds = null;
+        return;
+      }
+
+      const elapsedSeconds = Math.max(0, Math.floor((now - Date.parse(startedAt)) / 1000));
+      this.remainingSeconds = Math.max(0, timeLimit * 60 - elapsedSeconds);
     },
 
     next(): void {
@@ -158,6 +173,7 @@ export const useExamStore = defineStore("exam", {
       this.leaderboard = null;
       this.currentIndex = 0;
       this.answers = {};
+      this.remainingSeconds = null;
       this.error = "";
       this.submitting = false;
     },

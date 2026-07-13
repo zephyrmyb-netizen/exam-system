@@ -63,6 +63,7 @@ describe("Home UX polish", () => {
     const searchEntry = wrapper.get("[data-home-search]");
 
     expect(wrapper.find(".home-hero").exists()).toBe(true);
+    expect(wrapper.find("[data-reference-page='home']").exists()).toBe(true);
     expect(wrapper.text()).toContain("同学");
     expect(wrapper.text()).toContain("从一小步开始");
     expect(searchEntry.classes()).toContain("home-search-entry");
@@ -76,6 +77,7 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).toContain("正式考试");
     expect(wrapper.text()).toContain("学习概览");
     expect(wrapper.findAll(".quick")).toHaveLength(4);
+    expect(wrapper.find(".quick-grid").attributes("aria-label")).toBe("快捷操作");
     expect(wrapper.find(".home-hero").exists()).toBe(true);
   });
 
@@ -87,6 +89,7 @@ describe("Home UX polish", () => {
     expect(wrapper.find(".home-recommendation__tag").text()).toContain("每日一练");
     expect(wrapper.findAll(".overview-stat")).toHaveLength(4);
     expect(wrapper.text()).toContain("连续学习");
+    expect(wrapper.get("[data-stat-streak]").text()).toContain("--");
   });
 
   it("enters study overview with replace and an explicit home source", async () => {

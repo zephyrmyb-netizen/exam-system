@@ -316,15 +316,14 @@ onMounted(() => {
 <template>
   <section class="stack import-page">
     <div class="section-heading import-page__head">
-      <h2>导入题目</h2>
-      <p>支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，最大 10MB</p>
+      <h2>AI 导入</h2>
+      <p>智能解析资料，一次生成可预览的题目；支持 DOCX / PDF / PPTX / PNG / JPG / JPEG / WEBP，最大 10MB</p>
     </div>
 
     <div class="import-flow" aria-label="AI 导入进度">
       <span class="import-flow-step is-done">1 选择文件</span>
       <span class="import-flow-step" :class="{ 'is-active': isParsing, 'is-done': hasPreview || hasImportSuccess }">2 识别</span>
-      <span class="import-flow-step" :class="{ 'is-active': hasPreview, 'is-done': hasImportSuccess }">3 预览</span>
-      <span class="import-flow-step" :class="{ 'is-active': hasImportSuccess }">4 确认导入</span>
+      <span class="import-flow-step" :class="{ 'is-active': hasPreview || hasImportSuccess, 'is-done': hasImportSuccess }">3 预览并导入</span>
     </div>
     <ImportCapabilityStrip />
 

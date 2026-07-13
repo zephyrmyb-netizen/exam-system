@@ -15,6 +15,17 @@ const emit = defineEmits<{
 
 const optionEntries = computed(() => Object.entries(props.question.options || {}));
 
+const questionTypeLabel = computed(() => {
+  const labels: Record<string, string> = {
+    single_choice: "单选题",
+    multiple_choice: "多选题",
+    true_false: "判断题",
+    fill_blank: "填空题",
+    short_answer: "简答题",
+  };
+  return labels[props.question.question_type] || props.question.question_type || "题目";
+});
+
 function onTextInput(event: Event) {
   emit("answer", (event.target as HTMLTextAreaElement).value);
 }
@@ -23,9 +34,9 @@ function onTextInput(event: Event) {
 <template>
   <article class="exam-question-card">
     <div class="question-meta">
-      <span>第 {{ index + 1 }} / {{ total }} 题</span>
-      <span>{{ question.question_type }}</span>
-      <span>{{ question.score }} 分</span>
+      <span class="question-number">第 {{ index + 1 }} / {{ total }} 题</span>
+      <span>{{ questionTypeLabel }}</span>
+      <span>{{ question.score || "--" }} 分</span>
     </div>
 
     <h2>{{ question.question }}</h2>
@@ -62,8 +73,8 @@ function onTextInput(event: Event) {
   gap: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--line-soft);
-  border-radius: 24px;
-  background: var(--surface);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: var(--shadow-card);
 }
 
@@ -82,10 +93,12 @@ function onTextInput(event: Event) {
   background: var(--surface-soft);
 }
 
+.question-number { color: var(--primary-strong); background: var(--primary-soft) !important; }
+
 h2 {
   margin: 0;
   color: var(--text-main);
-  font-size: clamp(22px, 5vw, 30px);
+  font-size: min(30px, 7vw);
   line-height: 1.35;
 }
 
@@ -102,7 +115,7 @@ h2 {
   min-height: 58px;
   padding: 12px;
   border: 1px solid var(--line-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text-main);
   text-align: left;
@@ -123,7 +136,7 @@ h2 {
 .option-button.active {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.14);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
 }
 
 .option-button.active strong {
@@ -143,11 +156,15 @@ h2 {
   width: 100%;
   resize: vertical;
   border: 1px solid var(--line-soft);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   padding: 14px;
   background: var(--surface-soft);
   color: var(--text-main);
   font: inherit;
   line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .exam-question-card { background: color-mix(in srgb, var(--surface) 96%, transparent); }
 }
 </style>

@@ -235,6 +235,7 @@ onUnmounted(() => {
         class="nav-button"
         :class="{ active: activeNavKey === item.key, 'nav-button--ai': item.emphasis }"
         type="button"
+        :data-nav-key="item.key"
         :aria-label="item.label"
         @click.stop.prevent="handleTabClick(item)"
       >
@@ -253,12 +254,14 @@ onUnmounted(() => {
 <style scoped>
 .app-shell {
   width: 100%;
-  max-width: 100%;
+  max-width: var(--shell-max);
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  background: var(--page-bg);
 }
 
 .app-shell--keyboard,
@@ -422,14 +425,15 @@ onUnmounted(() => {
 
 .bottom-nav {
   position: fixed;
-  left: max(16px, env(safe-area-inset-left));
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  right: auto;
+  bottom: calc(var(--reference-nav-offset) + env(safe-area-inset-bottom));
   z-index: 70;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  min-height: 64px;
+  width: min(var(--reference-nav-max), calc(100% - 32px));
+  height: 64px;
   padding: 6px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
@@ -437,8 +441,7 @@ onUnmounted(() => {
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), var(--glass-inner-highlight);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  transform: none;
-  width: auto;
+  transform: translateX(-50%);
 }
 
 .nav-button {
@@ -476,11 +479,6 @@ onUnmounted(() => {
 .nav-label { line-height: 1; }
 
 @media (min-width: 760px) {
-  .app-shell {
-    max-width: 420px;
-    margin: 0 auto;
-    box-shadow: 0 0 40px rgba(15, 23, 42, 0.1);
-  }
-  .bottom-nav { left: 50%; right: auto; width: min(388px, calc(100% - 32px)); transform: translateX(-50%); }
+  .app-shell { box-shadow: 0 0 40px rgba(15, 23, 42, 0.1); }
 }
 </style>

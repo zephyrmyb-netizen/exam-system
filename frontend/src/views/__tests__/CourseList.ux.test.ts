@@ -46,6 +46,8 @@ describe("CourseList UX polish", () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
+    expect(wrapper.find("[data-reference-page='courses']").exists()).toBe(true);
+    expect(wrapper.findAll(".seg-item")).toHaveLength(4);
     const primaryPracticeActions = wrapper.findAll(".practice-action");
     expect(primaryPracticeActions).toHaveLength(2);
     expect(primaryPracticeActions[0].attributes("aria-label")).toBe("开始练习");

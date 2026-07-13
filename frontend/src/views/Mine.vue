@@ -82,7 +82,7 @@ onMounted(() => fetchAll());
 </script>
 
 <template>
-  <section class="mine-page">
+  <section class="mine-page" data-reference-page="mine">
     <div class="profile-card profile-card--centered fade-up d1">
       <div class="profile-head">
         <div class="avatar-wrap">
@@ -367,4 +367,15 @@ button.menu-item {
   .stat-cell strong { font-size: var(--text-lg); }
   .menu-item { min-height: 52px; }
 }
+
+.mine-page { padding-top: 0; }
+.profile-card--centered { margin-inline: -16px; padding: 28px 20px 22px; border-radius: 0 0 24px 24px; }
+.profile-card--centered .avatar-wrap, .profile-card--centered .avatar { width: 64px; height: 64px; }
+.profile-card--centered .profile-name { font-size: 20px; }
+.stat-grid-4 { position: relative; z-index: 2; margin-top: -12px; }
+.stat-cell { min-height: 72px; padding: 14px 4px; }
+.mine-quick { min-height: 112px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
+.mine-quick__icon { grid-row: auto; width: 48px; height: 48px; border-radius: 50%; }
+.mine-quick strong, .mine-quick small { max-width: 100%; }
+.menu-list { margin-top: 4px; }
 </style>

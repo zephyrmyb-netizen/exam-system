@@ -27,6 +27,7 @@ interface SessionStats {
   wrongCount: number;
   streak: number;
   startedAt: Date | null;
+  durationSeconds: number | null;
 }
 
 const CORRECT_AUTO_NEXT_DELAY_MS = 650;
@@ -77,6 +78,7 @@ function createSessionStats(): SessionStats {
     wrongCount: 0,
     streak: 0,
     startedAt: null,
+    durationSeconds: null,
   };
 }
 
@@ -211,7 +213,13 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     question.value = null;
     resetAnswerState();
     sessionComplete.value = true;
+    sessionStats.value.durationSeconds = getElapsedSeconds();
     if (phase.value !== "completed") actor.send({ type: "NO_MORE_QUESTIONS" });
+  }
+
+  function getElapsedSeconds(): number | null {
+    if (!sessionStats.value.startedAt) return null;
+    return Math.max(0, Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000));
   }
 
   async function fetchRandomQuestion(allowSessionRestart = false): Promise<void> {

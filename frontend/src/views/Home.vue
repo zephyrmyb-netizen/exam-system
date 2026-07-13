@@ -51,8 +51,8 @@ const greetingName = computed(() => "同学");
 const avatarChar = computed(() => "学");
 
 const statCards = computed(() => [
-  { label: "今日已刷", value: stats.value.todayCount, suffix: "题" },
-  { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
+  { label: "今日练习", value: stats.value.todayCount, suffix: "" },
+  { label: "总题数", value: stats.value.totalCount, suffix: "" },
   { label: "正确率", value: accuracyDisplay.value, suffix: "" },
   // The current stats API has no streak field. Keep this visibly unavailable
   // instead of deriving a fictional streak from total practice records.
@@ -139,7 +139,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="home-page">
+  <section class="home-page" data-reference-page="home">
     <header class="home-hero fade-up">
       <div class="home-hero__top">
         <div>
@@ -161,7 +161,7 @@ onMounted(() => {
       </button>
     </header>
 
-    <nav class="quick-grid fade-up d1" aria-label="核心入口">
+    <nav class="quick-grid fade-up d1" aria-label="快捷操作">
       <button
         v-for="item in coreActions"
         :key="item.label"
@@ -191,7 +191,7 @@ onMounted(() => {
       <p v-if="loading" class="overview-state">学习数据加载中...</p>
       <p v-else-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
       <div v-else class="overview-grid">
-        <div v-for="card in statCards" :key="card.label" class="overview-stat">
+        <div v-for="card in statCards" :key="card.label" class="overview-stat" :data-stat-streak="card.label === '连续学习' ? true : undefined">
           <strong>{{ card.value ?? "--" }}</strong>
           <span>{{ card.label }}{{ card.suffix }}</span>
         </div>
@@ -309,7 +309,7 @@ onMounted(() => {
 .home-hero p,
 .home-hero h1 { margin: 0; }
 .home-hero__eyebrow { opacity: .82; font-size: 12px; font-weight: 700; }
-.home-hero h1 { margin-top: 3px; font-size: 24px; letter-spacing: -.03em; }
+.home-hero h1 { margin-top: 3px; font-size: 24px; letter-spacing: 0; }
 .home-hero h1 + p { margin-top: 5px; opacity: .86; font-size: 12px; }
 .home-hero__avatar {
   display: grid;
@@ -587,4 +587,15 @@ onMounted(() => {
   .course-item { gap: 8px; }
   .course-action { padding-inline: 10px; }
 }
+
+.home-hero { padding-inline: 20px; border-radius: 0 0 24px 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.home-hero__avatar { border: 2px solid rgba(255,255,255,.72); }
+.home-search-entry { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.18); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+.home-search-entry span { color: rgba(255,255,255,.9); }
+.quick { border-color: var(--glass-border); background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); }
+.quick:nth-child(2) .quick-ico { color: #2563eb; background: #eff6ff; }
+.quick:nth-child(3) .quick-ico { color: #d97706; background: #fffbeb; }
+.quick:nth-child(4) .quick-ico { color: #dc2626; background: #fef2f2; }
+.overview-surface, .home-course-list .course-item, .home-recommendation { border-color: var(--glass-border); background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
+.home-recommendation { border-radius: 12px; }
 </style>
