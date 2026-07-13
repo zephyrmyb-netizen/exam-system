@@ -17,6 +17,19 @@ export interface ReleaseNote {
  */
 export const releaseNotes: ReleaseNote[] = [
   {
+    id: "v2.7.3-frontend-reliability-accessibility",
+    version: "v2.7.3",
+    date: "2026-07-13",
+    type: "修复",
+    title: "考试、离线与搜索体验修复",
+    items: [
+      "考试答题页增加退出确认，不再只能交卷离开。",
+      "离线练习记录会显示待同步状态，网络恢复后自动继续同步。",
+      "修复 PWA 缓存旧学习数据，并减少搜索输入的重复请求。",
+      "提升暗色模式、文字对比度和小屏触达区域。",
+    ],
+  },
+  {
     id: "v2.7.2-import-recovery-and-tooling-security",
     version: "v2.7.2",
     date: "2026-07-13",
