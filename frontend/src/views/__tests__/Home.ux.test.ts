@@ -80,6 +80,15 @@ describe("Home UX polish", () => {
     expect(wrapper.find(".hero-banner").exists()).toBe(false);
   });
 
+  it("keeps AI conversation on the home page and opens it with replace", async () => {
+    const wrapper = mount(Home);
+
+    expect(wrapper.get("[data-home-ai-chat]").text()).toContain("AI 学习助手");
+    await wrapper.get("[data-home-ai-chat]").trigger("click");
+
+    expect(replace).toHaveBeenCalledWith("/chat");
+  });
+
   it("enters study overview with replace and an explicit home source", async () => {
     const wrapper = mount(Home);
     const overviewButton = wrapper.findAll("button").find((button) => button.text().includes("学习概览"));

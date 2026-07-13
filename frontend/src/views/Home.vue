@@ -5,6 +5,7 @@ import {
   BookOpen,
   ClipboardList,
   FileUp,
+  MessageCircle,
   Search,
   Target,
   TrendingUp,
@@ -139,7 +140,24 @@ onMounted(() => {
       </button>
     </nav>
 
-    <div class="section-head fade-up d2">
+    <button
+      class="home-ai-chat fade-up d2"
+      data-home-ai-chat
+      type="button"
+      aria-label="打开 AI 学习助手"
+      @click="goTo('/chat')"
+    >
+      <span class="home-ai-chat__icon" aria-hidden="true">
+        <MessageCircle :size="19" :stroke-width="2.2" />
+      </span>
+      <span class="home-ai-chat__copy">
+        <strong>AI 学习助手</strong>
+        <span>问知识点、讲题目、做复习</span>
+      </span>
+      <span class="home-ai-chat__action" aria-hidden="true">去对话</span>
+    </button>
+
+    <div class="section-head fade-up d3">
       <h3 class="section-title">学习概览</h3>
       <button
         class="section-more"
@@ -149,7 +167,7 @@ onMounted(() => {
         查看全部
       </button>
     </div>
-    <div class="overview-surface fade-up d2">
+    <div class="overview-surface fade-up d3">
       <p v-if="loading" class="overview-state">学习数据加载中...</p>
       <p v-else-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
       <div v-else class="overview-grid">
@@ -292,6 +310,48 @@ onMounted(() => {
   text-align: center;
   white-space: nowrap;
 }
+
+.home-ai-chat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 68px;
+  margin: var(--space-3) 0 var(--space-5);
+  padding: 10px 12px;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--ease-out), background var(--ease-out), transform var(--ease-out);
+}
+
+.home-ai-chat:hover { border-color: var(--primary); background: var(--primary-soft); }
+.home-ai-chat:active { transform: scale(0.99); }
+
+.home-ai-chat__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.home-ai-chat__copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.home-ai-chat__copy strong { font-size: var(--text-sm); font-weight: 800; }
+.home-ai-chat__copy span { overflow: hidden; color: var(--text-muted); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.home-ai-chat__action { margin-left: auto; color: var(--primary); font-size: var(--text-xs); font-weight: 800; white-space: nowrap; }
 
 .overview-surface {
   min-height: 92px;

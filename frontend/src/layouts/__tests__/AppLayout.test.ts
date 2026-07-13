@@ -83,7 +83,7 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".bottom-nav").exists()).toBe(true);
   });
 
-  it("renders the five tabs in order and replaces the current route", async () => {
+  it("renders the four learning tabs in order and replaces the current route", async () => {
     route.name = "home";
     route.path = "/";
     route.meta = { navKey: "home" };
@@ -98,7 +98,7 @@ describe("AppLayout immersive routes", () => {
       },
     });
 
-    expect(wrapper.findAll(".nav-label").map((item) => item.text())).toEqual(["首页", "题库", "导入", "AI", "我的"]);
+    expect(wrapper.findAll(".nav-label").map((item) => item.text())).toEqual(["首页", "题库", "导入", "我的"]);
     await wrapper.findAll(".nav-button")[1].trigger("click");
 
     expect(router.replace).toHaveBeenCalledWith({ path: "/courses" });
