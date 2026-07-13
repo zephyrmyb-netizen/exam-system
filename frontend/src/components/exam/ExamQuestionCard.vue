@@ -32,11 +32,10 @@ function onTextInput(event: Event) {
 </script>
 
 <template>
-  <article class="exam-question-card">
+  <article class="exam-question-card" :aria-label="`第 ${index + 1} 题，共 ${total} 题`">
     <div class="question-meta">
-      <span class="question-number">第 {{ index + 1 }} / {{ total }} 题</span>
-      <span>{{ questionTypeLabel }}</span>
-      <span>{{ question.score || "--" }} 分</span>
+      <span class="question-type">{{ questionTypeLabel }}</span>
+      <span class="question-score">{{ question.score ?? "--" }} 分</span>
     </div>
 
     <h2>{{ question.question }}</h2>
@@ -70,12 +69,14 @@ function onTextInput(event: Event) {
 <style scoped>
 .exam-question-card {
   display: grid;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-xl);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  box-shadow: var(--shadow-card);
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
 }
 
 .question-meta {
@@ -93,50 +94,65 @@ function onTextInput(event: Event) {
   background: var(--surface-soft);
 }
 
-.question-number { color: var(--primary-strong); background: var(--primary-soft) !important; }
+.question-type {
+  color: var(--primary-strong);
+  background: var(--primary-soft) !important;
+}
+
+.question-score {
+  color: var(--text-muted);
+}
 
 h2 {
   margin: 0;
+  overflow-wrap: anywhere;
   color: var(--text-main);
-  font-size: min(30px, 7vw);
-  line-height: 1.35;
+  font-size: var(--text-base);
+  font-weight: 650;
+  line-height: 1.65;
 }
 
 .option-grid {
   display: grid;
-  gap: var(--space-2);
+  gap: 10px;
 }
 
 .option-button {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 36px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
-  min-height: 58px;
+  min-height: 60px;
   padding: 12px;
-  border: 1px solid var(--line-soft);
+  border: 2px solid var(--line-soft);
   border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text-main);
   text-align: left;
   font: inherit;
-  font-weight: 760;
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1.5;
+  transition: transform var(--ease-spring), border-color var(--ease-out), background var(--ease-out), box-shadow var(--ease-out);
 }
 
 .option-button strong {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--surface-soft);
-  color: var(--primary);
+  color: var(--text-secondary);
 }
+
+.option-button span { min-width: 0; overflow-wrap: anywhere; }
+.option-button:active { transform: scale(.99); }
 
 .option-button.active {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 0 0 3px var(--primary-glow), var(--glass-inner-highlight);
 }
 
 .option-button.active strong {
@@ -154,6 +170,7 @@ h2 {
 
 .text-answer textarea {
   width: 100%;
+  min-height: 144px;
   resize: vertical;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
@@ -164,7 +181,7 @@ h2 {
   line-height: 1.6;
 }
 
-@media (prefers-color-scheme: dark) {
-  .exam-question-card { background: color-mix(in srgb, var(--surface) 96%, transparent); }
+@media (max-width: 340px) {
+  .exam-question-card { padding: var(--space-4); }
 }
 </style>
