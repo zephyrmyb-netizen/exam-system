@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ImportQuestions from "../ImportQuestions.vue";
-import { previewFile } from "../../api/imports";
+import { createImportTask } from "../../api/imports";
 import { useAiImportTaskStore } from "../../stores/aiImportTask";
 import { ACCEPTED_IMPORT_FILE_TYPES } from "../../utils/importFiles";
 
@@ -38,18 +38,30 @@ vi.mock("../../composables/useManualQuestionImport", () => ({
 vi.mock("../../api/imports", () => ({
   AI_IMPORT_FORMAT_ERROR_MESSAGE: "AI 返回格式异常，已跳过异常片段，请尝试重新解析。",
   confirmImport: vi.fn(),
+  confirmImportTask: vi.fn(),
   extractFileText: vi.fn(),
-  previewFile: vi.fn(() =>
+  createImportTask: vi.fn(() =>
     Promise.resolve({
+      id: "task-1",
+      status: "ready",
+      source_filename: "test.docx",
+      course_id: null,
+      course_name: "默认题库",
+      progress_current: 1,
+      progress_total: 1,
       questions: [],
       suggested_course_name: "默认题库",
       warnings: [],
-      total_parsed: 0,
       total_valid: 0,
       total_invalid: 0,
       timing: null,
+      error_message: "",
+      created_at: null,
+      started_at: null,
+      finished_at: null,
     }),
   ),
+  getImportTask: vi.fn(),
 }));
 
 function mountPage() {
@@ -145,7 +157,7 @@ describe("ImportQuestions file import behavior", () => {
   });
 
   it("shows the AI-specific timeout guidance", async () => {
-    vi.mocked(previewFile).mockRejectedValueOnce({ code: "ECONNABORTED" });
+    vi.mocked(createImportTask).mockRejectedValueOnce({ code: "ECONNABORTED" });
     const wrapper = mountPage();
 
     await chooseFile(wrapper, new File(["x"], "slow.docx"));
@@ -157,7 +169,7 @@ describe("ImportQuestions file import behavior", () => {
   });
 
   it("normalizes the backend non-JSON parsing failure message", async () => {
-    vi.mocked(previewFile).mockRejectedValueOnce({
+    vi.mocked(createImportTask).mockRejectedValueOnce({
       response: { status: 400, data: { detail: "AI 未能解析出题目，请换一个文件或稍后重试。" } },
     });
     const wrapper = mountPage();

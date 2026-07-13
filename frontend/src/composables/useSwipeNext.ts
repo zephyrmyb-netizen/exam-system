@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref, type Ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue";
 
 interface UseSwipeNextOptions {
   /** 触发回调（一般传入下一题函数） */
@@ -9,6 +9,8 @@ interface UseSwipeNextOptions {
   enabled?: Ref<boolean>;
   /** 跟手进度 ref（可选），0~1，用于UI反馈 */
   progress?: Ref<number>;
+  /** Bind the gesture to the practice surface instead of the entire window. */
+  target?: Ref<HTMLElement | null>;
 }
 
 /**
@@ -21,7 +23,7 @@ interface UseSwipeNextOptions {
  * 同时通过 progress ref 实时输出滑动进度（0~1），用于跟手视觉反馈。
  */
 export function useSwipeNext(options: UseSwipeNextOptions): void {
-  const { onSwipe, threshold = 64, enabled, progress } = options;
+  const { onSwipe, threshold = 64, enabled, progress, target } = options;
 
   let startX = 0;
   let startY = 0;
@@ -35,6 +37,9 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
     return !enabled || enabled.value;
   }
 
+  let pointerId: number | null = null;
+  let attachedTarget: HTMLElement | null = null;
+
   function onPointerDown(event: PointerEvent): void {
     if (!isEnabled()) return;
     // 仅主键 / 触摸
@@ -47,11 +52,12 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
     lastTime = startTime;
     velocity = 0;
     tracking = true;
+    pointerId = event.pointerId;
     if (progress) progress.value = 0;
   }
 
   function onPointerMove(event: PointerEvent): void {
-    if (!tracking || !isEnabled()) return;
+    if (!tracking || event.pointerId !== pointerId || !isEnabled()) return;
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
     // 实时计算速度
@@ -74,8 +80,9 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
   }
 
   function onPointerUp(event: PointerEvent): void {
-    if (!tracking) return;
+    if (!tracking || event.pointerId !== pointerId) return;
     tracking = false;
+    pointerId = null;
     if (!isEnabled()) {
       if (progress) progress.value = 0;
       return;
@@ -110,21 +117,38 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
 
   function onPointerCancel(): void {
     tracking = false;
+    pointerId = null;
     if (progress) progress.value = 0;
   }
 
-  onMounted(() => {
-    window.addEventListener("pointerdown", onPointerDown, { passive: true });
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("pointerup", onPointerUp, { passive: true });
-    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
-  });
+  function detach(): void {
+    if (!attachedTarget) return;
+    attachedTarget.removeEventListener("pointerdown", onPointerDown);
+    attachedTarget.removeEventListener("pointermove", onPointerMove);
+    attachedTarget.removeEventListener("pointerup", onPointerUp);
+    attachedTarget.removeEventListener("pointercancel", onPointerCancel);
+    attachedTarget = null;
+  }
+
+  function attach(element: HTMLElement | null): void {
+    if (attachedTarget === element) return;
+    detach();
+    if (!element) return;
+    element.addEventListener("pointerdown", onPointerDown, { passive: true });
+    element.addEventListener("pointermove", onPointerMove, { passive: true });
+    element.addEventListener("pointerup", onPointerUp, { passive: true });
+    element.addEventListener("pointercancel", onPointerCancel, { passive: true });
+    attachedTarget = element;
+  }
+
+  onMounted(() => attach(target ? target.value : document.documentElement));
+
+  if (target) {
+    watch(target, (element) => attach(element));
+  }
 
   onBeforeUnmount(() => {
-    window.removeEventListener("pointerdown", onPointerDown);
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerCancel);
+    detach();
   });
 }
 

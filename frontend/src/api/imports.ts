@@ -1,4 +1,10 @@
-import type { FileExtractResponse, ImportPreviewResponse, ConfirmImportRequest, ConfirmImportResponse } from "@/types";
+import type {
+  FileExtractResponse,
+  ImportPreviewResponse,
+  ConfirmImportRequest,
+  ConfirmImportResponse,
+  ImportTaskResponse,
+} from "@/types";
 import request from "./request.ts";
 
 export const AI_IMPORT_FORMAT_ERROR_MESSAGE = "AI 返回格式异常，已跳过异常片段，请尝试重新解析。";
@@ -68,4 +74,24 @@ export function confirmImport(
   payload: ConfirmImportRequest,
 ): Promise<ConfirmImportResponse> {
   return request.post("/imports/confirm", payload).then(({ data }) => data as ConfirmImportResponse);
+}
+
+export function createImportTask(
+  file: File,
+  params?: Record<string, string | number>,
+): Promise<ImportTaskResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request.post("/imports/tasks", formData, { params, timeout: 30000 }).then(({ data }) => data as ImportTaskResponse);
+}
+
+export function getImportTask(taskId: string): Promise<ImportTaskResponse> {
+  return request.get(`/imports/tasks/${taskId}`).then(({ data }) => data as ImportTaskResponse);
+}
+
+export function confirmImportTask(
+  taskId: string,
+  payload: ConfirmImportRequest,
+): Promise<ConfirmImportResponse> {
+  return request.post(`/imports/tasks/${taskId}/confirm`, payload).then(({ data }) => data as ConfirmImportResponse);
 }

@@ -21,6 +21,7 @@ const {
   fileName: aiFileName,
   progressTitle: aiProgressTitle,
   progressDetail: aiProgressDetail,
+  resume: resumeAiImportTask,
 } = useAiImportTask();
 
 const showSuccessToast = ref(false);
@@ -129,7 +130,10 @@ function handleFocusOut() {
 }
 
 onMounted(() => {
-  if (getToken()) fetchProfile();
+  if (getToken()) {
+    fetchProfile();
+    void resumeAiImportTask();
+  }
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
   window.addEventListener("keydown", handleGlobalKeydown);

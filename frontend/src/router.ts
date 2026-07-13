@@ -181,7 +181,9 @@ const router = createRouter({
   routes,
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) return savedPosition;
-    return { top: 0, behavior: "smooth" };
+    // Page transitions already provide low-frequency feedback. Smooth scrolling
+    // here competes with them and makes mobile navigation feel delayed.
+    return { top: 0 };
   },
 });
 
