@@ -24,7 +24,9 @@ import { useAppNavigation } from "../composables/useAppNavigation";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
+import BottomSheet from "../components/ui/BottomSheet.vue";
 import Button from "../components/ui/button/Button.vue";
+import FilterTabs from "../components/ui/FilterTabs.vue";
 
 const { replaceWithSource } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
@@ -41,11 +43,11 @@ const openCourseMenuId = ref<number | null>(null);
 const practiceSheetCourse = ref<Course | null>(null);
 
 const visibilityFilters = [
-  { key: "all", label: "全部" },
-  { key: "private", label: "我的" },
-  { key: "public", label: "公开" },
-  { key: "recent", label: "最近练习" },
-] as const;
+  { value: "all", label: "全部" },
+  { value: "private", label: "我的" },
+  { value: "public", label: "公开" },
+  { value: "recent", label: "最近练习" },
+];
 
 const practiceModes = [
   { key: "sequential", label: "顺序练习", desc: "按题目顺序逐题完成", icon: ListOrdered },
@@ -225,6 +227,16 @@ function closePracticeSheet() {
   practiceSheetCourse.value = null;
 }
 
+function updatePracticeSheet(isOpen: boolean) {
+  if (!isOpen) closePracticeSheet();
+}
+
+function setVisibilityFilter(value: string) {
+  if (value === "all" || value === "private" || value === "public" || value === "recent") {
+    visibilityFilter.value = value;
+  }
+}
+
 function startPractice(mode: string) {
   const course = practiceSheetCourse.value;
   if (!course) return;
@@ -298,20 +310,12 @@ onMounted(fetchCourses);
           <X :size="14" :stroke-width="2.6" />
         </button>
       </div>
-      <div class="seg">
-        <button
-          v-for="filter in visibilityFilters"
-          :key="filter.key"
-          class="seg-item"
-          :class="{ active: visibilityFilter === filter.key }"
-          type="button"
-          :aria-label="`${filter.label}题库筛选`"
-          :aria-pressed="visibilityFilter === filter.key"
-          @click="visibilityFilter = filter.key"
-        >
-          {{ filter.label }}
-        </button>
-      </div>
+      <FilterTabs
+        :model-value="visibilityFilter"
+        :items="visibilityFilters"
+        label="题库筛选"
+        @update:model-value="setVisibilityFilter"
+      />
     </div>
 
     <p v-if="courses.length > 0" class="lib-summary fade-up d1">{{ courseSummary }}</p>
@@ -509,17 +513,14 @@ onMounted(fetchCourses);
       </div>
     </div>
 
-    <div v-if="practiceSheetCourse" class="practice-sheet-overlay" @click.self="closePracticeSheet">
-      <section class="practice-sheet" role="dialog" aria-modal="true" aria-labelledby="practice-sheet-title">
-        <div class="practice-sheet__handle" aria-hidden="true"></div>
-        <div class="practice-sheet__head">
-          <div>
-            <p>开始练习</p>
-            <h3 id="practice-sheet-title">{{ getCourseDisplayName(practiceSheetCourse) }}</h3>
-            <span>{{ practiceSheetCourse.question_count ?? 0 }} 道题目</span>
-          </div>
-          <button type="button" aria-label="关闭练习方式" @click="closePracticeSheet"><X :size="20" /></button>
-        </div>
+    <BottomSheet
+      :model-value="!!practiceSheetCourse"
+      :title="practiceSheetCourse ? getCourseDisplayName(practiceSheetCourse) : '选择练习方式'"
+      @update:model-value="updatePracticeSheet"
+      @close="closePracticeSheet"
+    >
+      <section v-if="practiceSheetCourse" class="practice-sheet">
+        <p class="practice-sheet__summary">开始练习 · {{ practiceSheetCourse.question_count ?? 0 }} 道题目</p>
         <button
           v-for="mode in practiceModes"
           :key="mode.key"
@@ -532,7 +533,7 @@ onMounted(fetchCourses);
           <Play :size="17" :stroke-width="2.4" aria-hidden="true" />
         </button>
       </section>
-    </div>
+    </BottomSheet>
   </section>
 </template>
 
@@ -892,39 +893,12 @@ onMounted(fetchCourses);
   margin-top: var(--space-2);
 }
 
-.practice-sheet-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
-  background: rgba(15, 23, 42, .34);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
 .practice-sheet {
   display: grid;
   gap: 8px;
-  width: min(100%, 430px);
-  max-height: min(680px, calc(100dvh - 32px));
-  padding: 8px 14px 16px;
-  overflow: auto;
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  background: var(--glass-card);
-  box-shadow: var(--shadow-modal), var(--glass-inner-highlight);
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  min-width: 0;
 }
-.practice-sheet__handle { width: 38px; height: 4px; margin: 0 auto 4px; border-radius: 999px; background: var(--line-strong); }
-.practice-sheet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 2px 2px 8px; }
-.practice-sheet__head p, .practice-sheet__head h3, .practice-sheet__head span { margin: 0; }
-.practice-sheet__head p { color: var(--text-muted); font-size: 12px; font-weight: 700; }
-.practice-sheet__head h3 { margin-top: 3px; color: var(--text-main); font-size: 18px; }
-.practice-sheet__head span { display: block; margin-top: 4px; color: var(--text-muted); font-size: 12px; }
-.practice-sheet__head button { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--text-secondary); }
+.practice-sheet__summary { margin: 0 2px 4px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
 .practice-sheet__option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-main); text-align: left; }
 .practice-sheet__option:active { transform: scale(.985); border-color: var(--primary-border); background: var(--primary-soft); }
 .practice-sheet__icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-strong); }
@@ -1024,8 +998,7 @@ onMounted(fetchCourses);
 }
 .search-input { min-height: 28px; font-size: 14px; }
 .search-clear { width: 36px; height: 36px; border-radius: 6px; }
-.library-tools .seg { flex-shrink: 0; border-radius: 6px; }
-.library-tools .seg-item { min-height: 40px; padding: 0 12px; border-radius: 4px; }
+.library-tools .filter-tabs { flex-shrink: 0; }
 .lib-summary { padding: 0; }
 .section-head { margin-top: 4px; }
 .section-title { font-family: var(--font-sans); font-size: 16px; font-weight: 800; }
@@ -1077,7 +1050,7 @@ onMounted(fetchCourses);
 
 @media (max-width: 700px) {
   .library-tools { align-items: stretch; flex-direction: column; }
-  .library-tools .seg { align-self: flex-start; }
+  .library-tools .filter-tabs { align-self: flex-start; }
   .course-row .course-item {
     grid-template-columns: 36px minmax(0, 1fr) auto 44px 44px;
     gap: 8px;
@@ -1109,9 +1082,7 @@ onMounted(fetchCourses);
 .library-title { letter-spacing: 0; }
 .library-tools { gap: 12px; }
 .library-tools .search-bar { min-height: 48px; border-radius: 999px; }
-.library-tools .seg { width: 100%; overflow-x: auto; }
-.library-tools .seg-item { flex: 1 0 auto; min-width: 0; }
+.library-tools .filter-tabs { width: 100%; }
 .course-row { border-color: var(--glass-border); border-radius: 12px; background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
 .course-row .course-item { border-radius: 12px; }
-.practice-sheet { border-radius: 24px 24px 0 0; box-shadow: var(--shadow-modal), var(--glass-inner-highlight); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); }
 </style>

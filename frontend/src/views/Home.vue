@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
-import {
-  ArrowRight,
-  BookOpen,
-  ClipboardList,
-  FileUp,
-  Mic,
-  Search,
-  Target,
-  TrendingUp,
-} from "@lucide/vue";
+import { ArrowRight, BookOpen, ClipboardList, FileUp, Mic, Search, Target, TrendingUp } from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
+import StatGrid from "../components/ui/StatGrid.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
+import { typeLabel } from "../utils/question";
 
 const { replaceTo } = useAppNavigation();
-const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
+const { user } = useAuth();
+const { stats, streak, recommendation, streakAvailable, recommendationAvailable, loading, errorMessage, fetchAll } =
+  useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
@@ -40,24 +36,82 @@ const greeting = computed(() => {
   return "晚上好";
 });
 
-const greetingDate = computed(() => new Intl.DateTimeFormat("zh-CN", {
-  month: "long",
-  day: "numeric",
-  weekday: "short",
-}).format(new Date()));
+const greetingDate = computed(() =>
+  new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date()),
+);
 
-// The home banner stays usable before the account store has finished hydrating.
-const greetingName = computed(() => "同学");
-const avatarChar = computed(() => "学");
+const greetingName = computed(() => user.value?.username?.trim() || "未登录");
+const avatarChar = computed(() => Array.from(greetingName.value)[0]?.toUpperCase() || "?");
 
 const statCards = computed(() => [
-  { label: "今日练习", value: stats.value.todayCount, suffix: "" },
-  { label: "总题数", value: stats.value.totalCount, suffix: "" },
-  { label: "正确率", value: accuracyDisplay.value, suffix: "" },
-  // The current stats API has no streak field. Keep this visibly unavailable
-  // instead of deriving a fictional streak from total practice records.
-  { label: "连续学习", value: null, suffix: "" },
+  { label: "今日练习", value: stats.value.todayCount, tone: "primary" as const },
+  { label: "总题数", value: stats.value.totalCount },
+  { label: "正确率", value: accuracyDisplay.value },
+  {
+    label: "连续学习",
+    value: streakAvailable.value === true ? `${streak.value.current_streak}天` : null,
+    dataKey: "streak",
+  },
 ]);
+
+const recommendationMode = computed(() =>
+  recommendationAvailable.value === true ? recommendation.value?.recommended_modes?.[0] || "" : "",
+);
+
+const recommendationNeedsCourseSelection = computed(() =>
+  ["weak_tag_practice", "weak_type_practice", "type_practice"].includes(recommendationMode.value),
+);
+
+const recommendationModeLabel = computed(
+  () =>
+    ({
+      spaced_repeat: "到期复习",
+      wrong_review: "错题强化",
+      weak_tag_practice: "薄弱标签练习",
+      weak_type_practice: "薄弱题型练习",
+      type_practice: "题型专项",
+      random_practice: "随机练习",
+    })[recommendationMode.value] || "继续练习",
+);
+
+const recommendationTitle = computed(() => {
+  if (recommendationAvailable.value !== true) return "推荐暂不可用";
+  const item = recommendation.value;
+  if (!item) return "暂无个性化推荐";
+  const tagName = item.weak_tags?.[0]?.tag_name?.trim();
+  if (tagName) return `重点巩固：${tagName}`;
+  const questionType = item.weak_types?.[0]?.question_type;
+  if (questionType) return `重点巩固：${typeLabel(questionType)}`;
+  if (item.due_count > 0) return "今日到期复习";
+  return recommendationModeLabel.value;
+});
+
+const recommendationDescription = computed(() => {
+  if (recommendationAvailable.value !== true) return "学习建议加载失败或尚未完成";
+  const item = recommendation.value;
+  if (!item) return "完成一些练习后，这里会根据真实学习数据生成建议";
+  const details: string[] = [];
+  if (item.due_count > 0) details.push(`${item.due_count} 题待复习`);
+  if (item.weak_types?.[0]?.question_type) details.push(typeLabel(item.weak_types[0].question_type));
+  if (recommendationNeedsCourseSelection.value) {
+    details.push(`${recommendationModeLabel.value} · 去题库选择相关内容`);
+  } else {
+    details.push(recommendationModeLabel.value);
+  }
+  return details.join(" · ");
+});
+
+const recommendationTarget = computed<RouteLocationRaw>(() => {
+  if (recommendationAvailable.value !== true) return "/courses";
+  if (recommendationMode.value === "spaced_repeat") return { name: "practice-due" };
+  if (recommendationMode.value === "wrong_review") return { name: "practice-wrong" };
+  if (recommendationMode.value === "random_practice") return { name: "practice" };
+  return "/courses";
+});
 
 const recentCourses = computed(() => {
   const seen = new Set<number | string>();
@@ -149,12 +203,7 @@ onMounted(() => {
         </div>
         <span class="home-hero__avatar" :aria-label="`${greetingName}的头像`">{{ avatarChar }}</span>
       </div>
-      <button
-        class="home-search-entry"
-        data-home-search
-        type="button"
-        @click="replaceTo('/courses')"
-      >
+      <button class="home-search-entry" data-home-search type="button" @click="replaceTo('/courses')">
         <Search :size="15" :stroke-width="2.4" />
         <span>搜索题库、课程、题目</span>
         <Mic class="home-search-entry__mic" :size="17" :stroke-width="2.2" aria-hidden="true" />
@@ -162,13 +211,7 @@ onMounted(() => {
     </header>
 
     <nav class="quick-grid fade-up d1" aria-label="快捷操作">
-      <button
-        v-for="item in coreActions"
-        :key="item.label"
-        class="quick"
-        type="button"
-        @click="goTo(item.to)"
-      >
+      <button v-for="item in coreActions" :key="item.label" class="quick" type="button" @click="goTo(item.to)">
         <span class="quick-ico">
           <component :is="item.icon" :size="18" :stroke-width="2.3" />
         </span>
@@ -179,74 +222,47 @@ onMounted(() => {
 
     <div class="section-head fade-up d3">
       <h3 class="section-title">学习概览</h3>
-      <button
-        class="section-more"
-        type="button"
-        @click="goTo({ name: 'study-overview', query: { from: 'home' } })"
-      >
+      <button class="section-more" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
         查看全部
       </button>
     </div>
     <div class="overview-surface fade-up d3">
       <p v-if="loading" class="overview-state">学习数据加载中...</p>
-      <p v-else-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
-      <div v-else class="overview-grid">
-        <div v-for="card in statCards" :key="card.label" class="overview-stat" :data-stat-streak="card.label === '连续学习' ? true : undefined">
-          <strong>{{ card.value ?? "--" }}</strong>
-          <span>{{ card.label }}{{ card.suffix }}</span>
-        </div>
-      </div>
+      <p v-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
+      <StatGrid v-if="!loading" class="overview-grid" label="首页学习统计" :items="statCards" />
     </div>
 
     <div class="section-head fade-up d3">
       <h3 class="section-title">最近题库</h3>
-      <button
-        class="section-more"
-        type="button"
-        @click="replaceTo('/courses')"
-      >
-        查看全部
-      </button>
+      <button class="section-more" type="button" @click="replaceTo('/courses')">查看全部</button>
     </div>
 
     <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
     <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
 
     <!-- Empty state -->
-    <div
-      v-if="!coursesLoading && !coursesError && recentCourses.length === 0"
-      class="empty-state fade-up d3"
-    >
+    <div v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="empty-state fade-up d3">
       <BookOpen :size="36" :stroke-width="1.7" />
       <strong>还没有可练习题库</strong>
       <p>导入资料后，这里会显示最近学习的题库。</p>
       <div class="empty-actions">
-        <button class="empty-btn empty-btn--primary" type="button" @click="goTo('/import')">
-          去导入
-        </button>
+        <button class="empty-btn empty-btn--primary" type="button" @click="goTo('/import')">去导入</button>
         <button class="empty-btn" type="button" @click="goTo('/courses')">浏览题库</button>
       </div>
     </div>
 
     <!-- Course list -->
     <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
-      <div
-        v-for="course in recentCourses"
-        :key="course.id"
-        class="course-item"
-      >
-        <button
-          class="course-main"
-          type="button"
-          @click="goTo(`/courses/${course.id}`)"
-        >
+      <div v-for="course in recentCourses" :key="course.id" class="course-item">
+        <button class="course-main" type="button" @click="goTo(`/courses/${course.id}`)">
           <span class="course-icon">
             <BookOpen :size="18" :stroke-width="2.2" />
           </span>
           <div class="course-info">
             <strong>{{ getCourseDisplayName(course) }}</strong>
             <span>
-              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 · {{ formatCourseDate(course) }}
+              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 ·
+              {{ formatCourseDate(course) }}
             </span>
             <span class="course-progress" aria-label="练习覆盖进度">
               <i :style="{ width: `${courseProgress(course)}%` }"></i>
@@ -268,13 +284,13 @@ onMounted(() => {
       class="home-recommendation fade-up d4"
       data-home-recommendation
       type="button"
-      @click="goTo(recentCourses[0] ? `/courses/${recentCourses[0].id}/practice` : '/courses')"
+      @click="goTo(recommendationTarget)"
     >
       <span class="home-recommendation__spark">✦</span>
       <span class="home-recommendation__copy">
         <small class="home-recommendation__tag">每日一练</small>
-        <strong>{{ recentCourses[0] ? getCourseDisplayName(recentCourses[0]) : "从题库开始" }}</strong>
-        <small>{{ recentCourses[0] ? "继续完成今天的练习" : "选择一门题库，开始建立学习节奏" }}</small>
+        <strong>{{ recommendationTitle }}</strong>
+        <small>{{ recommendationDescription }}</small>
       </span>
       <ArrowRight :size="19" :stroke-width="2.4" aria-hidden="true" />
     </button>
@@ -307,22 +323,36 @@ onMounted(() => {
 }
 
 .home-hero p,
-.home-hero h1 { margin: 0; }
-.home-hero__eyebrow { opacity: .82; font-size: 12px; font-weight: 700; }
-.home-hero h1 { margin-top: 3px; font-size: 24px; letter-spacing: 0; }
-.home-hero h1 + p { margin-top: 5px; opacity: .86; font-size: 12px; }
+.home-hero h1 {
+  margin: 0;
+}
+.home-hero__eyebrow {
+  opacity: 0.82;
+  font-size: 12px;
+  font-weight: 700;
+}
+.home-hero h1 {
+  margin-top: 3px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+.home-hero h1 + p {
+  margin-top: 5px;
+  opacity: 0.86;
+  font-size: 12px;
+}
 .home-hero__avatar {
   display: grid;
   flex: 0 0 auto;
   width: 42px;
   height: 42px;
   place-items: center;
-  border: 1px solid rgba(255,255,255,.42);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 50%;
-  background: rgba(255,255,255,.18);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
   font-weight: 850;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
 .home-search-entry {
@@ -333,8 +363,8 @@ onMounted(() => {
   padding: 0 14px;
   margin-top: 0;
   border-radius: 8px;
-  background: rgba(255,255,255,.96);
-  border: 1px solid rgba(255,255,255,.68);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.68);
   color: var(--text-placeholder);
   font-size: 12px;
   font-weight: 600;
@@ -343,7 +373,10 @@ onMounted(() => {
   transition: border-color var(--ease-out);
 }
 
-.home-search-entry__mic { margin-left: auto; color: var(--primary-strong); }
+.home-search-entry__mic {
+  margin-left: auto;
+  color: var(--primary-strong);
+}
 
 .home-search-entry:hover {
   border-color: var(--primary-border);
@@ -406,7 +439,9 @@ onMounted(() => {
   text-align: center;
 }
 
-.overview-state--error { color: var(--rose); }
+.overview-state--error {
+  color: var(--rose);
+}
 
 .overview-grid {
   display: grid;
@@ -414,22 +449,18 @@ onMounted(() => {
   gap: var(--space-2);
 }
 
-.overview-stat {
-  min-width: 0;
+.overview-grid :deep(.stat-grid__item) {
+  min-height: 64px;
   padding: 6px 4px;
-  text-align: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: none;
 }
 
-.overview-stat strong,
-.overview-stat span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.overview-grid :deep(.stat-grid__value) {
+  font-size: var(--text-lg);
 }
-
-.overview-stat strong { color: var(--text-main); font-size: var(--text-lg); }
-.overview-stat span { margin-top: 4px; color: var(--text-muted); font-size: var(--text-xs); }
 
 /* ── Course list layout ── */
 .course-list {
@@ -470,7 +501,9 @@ onMounted(() => {
   box-shadow: none;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    transform var(--ease-out),
+    box-shadow var(--ease-out);
 }
 
 .course-action:hover {
@@ -485,7 +518,12 @@ onMounted(() => {
   border-radius: 999px;
   background: var(--surface-soft);
 }
-.course-progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.course-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
 
 .home-recommendation {
   display: grid;
@@ -502,12 +540,28 @@ onMounted(() => {
   text-align: left;
   cursor: pointer;
 }
-.home-recommendation__spark { color: var(--primary); font-size: 24px; }
-.home-recommendation__copy { min-width: 0; }
+.home-recommendation__spark {
+  color: var(--primary);
+  font-size: 24px;
+}
+.home-recommendation__copy {
+  min-width: 0;
+}
 .home-recommendation strong,
-.home-recommendation small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.home-recommendation strong { font-size: 14px; }
-.home-recommendation small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.home-recommendation small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-recommendation strong {
+  font-size: 14px;
+}
+.home-recommendation small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
 .home-recommendation .home-recommendation__tag {
   display: inline-flex;
   width: fit-content;
@@ -519,7 +573,9 @@ onMounted(() => {
   font-size: 10px;
   font-weight: 800;
 }
-.home-recommendation :deep(svg) { color: var(--primary-strong); }
+.home-recommendation :deep(svg) {
+  color: var(--primary-strong);
+}
 
 /* ── Empty state ── */
 .empty-state {
@@ -566,7 +622,9 @@ onMounted(() => {
   background: var(--surface);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background var(--ease-out), border-color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out);
 }
 
 .empty-btn--primary {
@@ -582,20 +640,64 @@ onMounted(() => {
 }
 
 @media (max-width: 420px) {
-  .overview-grid { gap: 0; }
-  .overview-stat strong { font-size: var(--text-base); }
-  .course-item { gap: 8px; }
-  .course-action { padding-inline: 10px; }
+  .overview-grid {
+    gap: 0;
+  }
+  .overview-grid :deep(.stat-grid__value) {
+    font-size: var(--text-base);
+  }
+  .course-item {
+    gap: 8px;
+  }
+  .course-action {
+    padding-inline: 10px;
+  }
 }
 
-.home-hero { padding-inline: 20px; border-radius: 0 0 24px 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.home-hero__avatar { border: 2px solid rgba(255,255,255,.72); }
-.home-search-entry { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.18); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
-.home-search-entry span { color: rgba(255,255,255,.9); }
-.quick { border-color: var(--glass-border); background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); }
-.quick:nth-child(2) .quick-ico { color: #2563eb; background: #eff6ff; }
-.quick:nth-child(3) .quick-ico { color: #d97706; background: #fffbeb; }
-.quick:nth-child(4) .quick-ico { color: #dc2626; background: #fef2f2; }
-.overview-surface, .home-course-list .course-item, .home-recommendation { border-color: var(--glass-border); background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
-.home-recommendation { border-radius: 12px; }
+.home-hero {
+  padding-inline: 20px;
+  border-radius: 0 0 24px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.home-hero__avatar {
+  border: 2px solid rgba(255, 255, 255, 0.72);
+}
+.home-search-entry {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.home-search-entry span {
+  color: rgba(255, 255, 255, 0.9);
+}
+.quick {
+  border-color: var(--glass-border);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+}
+.quick:nth-child(2) .quick-ico {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.quick:nth-child(3) .quick-ico {
+  color: #d97706;
+  background: #fffbeb;
+}
+.quick:nth-child(4) .quick-ico {
+  color: #dc2626;
+  background: #fef2f2;
+}
+.overview-surface,
+.home-course-list .course-item,
+.home-recommendation {
+  border-color: var(--glass-border);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+.home-recommendation {
+  border-radius: 12px;
+}
 </style>

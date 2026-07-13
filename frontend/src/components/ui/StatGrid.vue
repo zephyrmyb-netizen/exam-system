@@ -6,6 +6,7 @@ type StatGridItem = {
   value: string | number | null | undefined;
   detail?: string;
   tone?: "default" | "primary" | "danger";
+  dataKey?: string;
 };
 
 withDefaults(defineProps<{
@@ -14,6 +15,10 @@ withDefaults(defineProps<{
 }>(), {
   label: "统计数据",
 });
+
+function statDataAttributes(item: StatGridItem): Record<string, string> {
+  return item.dataKey ? { [`data-stat-${item.dataKey}`]: "" } : {};
+}
 </script>
 
 <template>
@@ -24,6 +29,7 @@ withDefaults(defineProps<{
       class="stat-grid__item"
       :class="`stat-grid__item--${item.tone || 'default'}`"
       role="listitem"
+      v-bind="statDataAttributes(item)"
     >
       <strong class="stat-grid__value">{{ item.value ?? "--" }}</strong>
       <span v-if="item.detail" class="stat-grid__detail">{{ item.detail }}</span>
