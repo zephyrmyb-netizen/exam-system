@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import {
   Bookmark,
   Eye,
+  FileText,
   Globe,
   GraduationCap,
   ListOrdered,
@@ -350,7 +351,9 @@ onMounted(fetchCourses);
           @click="replaceWithSource(`/courses/${course.id}`, 'courses')"
           @keydown.enter="replaceWithSource(`/courses/${course.id}`, 'courses')"
         >
-          <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
+          <span class="course-icon" data-course-icon aria-hidden="true">
+            <FileText :size="22" :stroke-width="2.25" />
+          </span>
           <div class="course-info">
             <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{
               getCourseDisplayName(course)
@@ -662,11 +665,9 @@ onMounted(fetchCourses);
   outline-offset: -2px;
 }
 
-/* Course icon text character */
+/* One familiar document mark keeps every course row visually consistent. */
 .course-icon {
-  font-family: var(--font-sans);
-  font-size: var(--text-lg);
-  font-weight: 900;
+  background: var(--primary);
 }
 
 /* ── More button ── */
