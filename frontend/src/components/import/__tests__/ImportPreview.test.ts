@@ -89,6 +89,10 @@ describe("ImportPreview warnings and empty state", () => {
         failed_chunks: 1,
         batches: 1,
         is_complete: false,
+        parse_method: "rule",
+        ai_calls: 0,
+        missing_question_numbers: [3],
+        image_bindings: {},
       },
     });
 

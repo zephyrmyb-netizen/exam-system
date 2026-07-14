@@ -56,6 +56,8 @@ _OPTION_LINE = re.compile(r"^\s*(?P<key>[A-Ha-h])\s*[.．、:：]\s*(?P<value>.*
 _ANSWER_LINE = re.compile(r"^\s*(?:参考)?答案\s*[:：]\s*(?P<value>.*)\s*$", re.IGNORECASE)
 _ANALYSIS_LINE = re.compile(r"^\s*(?:答案)?解析\s*[:：]\s*(?P<value>.*)\s*$", re.IGNORECASE)
 _SOLUTION_LINE = re.compile(r"^\s*解\s*[:：]\s*(?P<value>.*)\s*$")
+_IMAGE_MARKER_LINE = re.compile(r"^\s*\[\[IMAGE:(?P<index>\d+)\]\]\s*$")
+_FIGURE_REFERENCE = re.compile(r"(?:\u5982\u4e0b\u56fe|\u4e0b\u56fe|\u89c1\u56fe|\u5982\u56fe)")
 _NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
 ParseProgressCallback = Callable[[list[dict[str, Any]], list[str], dict[str, Any]], None]
 
@@ -89,6 +91,10 @@ def build_timing(
         failed_chunks=int(parse_timing.get("failed_chunks") or 0),
         batches=int(parse_timing.get("batches") or 0),
         is_complete=bool(parse_timing.get("is_complete", True)),
+        parse_method=str(parse_timing.get("parse_method") or ""),
+        ai_calls=int(parse_timing.get("ai_calls") or 0),
+        missing_question_numbers=list(parse_timing.get("missing_question_numbers") or []),
+        image_bindings={str(key): int(value) for key, value in (parse_timing.get("image_bindings") or {}).items()},
     )
 
 
@@ -239,6 +245,18 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
 
     doc = Document(path)
     parts: list[str] = []
+    image_index = 0
+
+    def image_markers(element: Any) -> list[str]:
+        """Return body-image markers in XML order, excluding header/footer media."""
+        nonlocal image_index
+        markers: list[str] = []
+        for blip in element.xpath(".//a:blip"):
+            rel_id = blip.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+            if rel_id and rel_id in doc.part.related_parts:
+                image_index += 1
+                markers.append(f"[[IMAGE:{image_index}]]")
+        return markers
 
     def table_rows(table: Table) -> list[str]:
         rows: list[str] = []
@@ -262,8 +280,10 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
             text = Paragraph(child, doc).text.strip()
             if text:
                 parts.append(text)
+            parts.extend(image_markers(child))
         elif child.tag.endswith("}tbl"):
             parts.extend(table_rows(Table(child, doc)))
+            parts.extend(image_markers(child))
 
     return "\n".join(parts), warnings
 
@@ -310,6 +330,7 @@ def _rule_question_from_block(
     stem_lines: list[str] = []
     answer_lines: list[str] = []
     analysis_lines: list[str] = []
+    image_indexes: list[int] = []
     options: dict[str, str] = {}
     target = stem_lines
 
@@ -326,9 +347,22 @@ def _rule_question_from_block(
             line = raw_piece.strip()
             if not line:
                 continue
+            image_match = _IMAGE_MARKER_LINE.match(line)
+            if image_match:
+                image_indexes.append(int(image_match.group("index")))
+                continue
             answer_match = _ANSWER_LINE.match(line)
-            analysis_match = _ANALYSIS_LINE.match(line) or _SOLUTION_LINE.match(line)
+            solution_match = _SOLUTION_LINE.match(line)
+            analysis_match = _ANALYSIS_LINE.match(line)
             option_match = _OPTION_LINE.match(line)
+            if solution_match:
+                # Calculation/essay answers often use "解：" and then put
+                # every answer step on following lines. Keep that whole
+                # block in answer so validation never treats it as blank.
+                target = answer_lines
+                if solution_match.group("value").strip():
+                    target.append(solution_match.group("value").strip())
+                continue
             if analysis_match:
                 target = analysis_lines
                 if analysis_match.group("value").strip():
@@ -347,6 +381,10 @@ def _rule_question_from_block(
     question = "\n".join(stem_lines).strip()
     answer = "\n".join(answer_lines).strip()
     question_type = _infer_rule_question_type(section_type, options, answer)
+    if not answer and question_type in {"short_answer", "fill_blank"} and analysis_lines:
+        # For written questions an explicit explanation is answer content even
+        # when the source uses only "解析：" rather than "答案：".
+        answer = "\n".join(analysis_lines).strip()
     item: dict[str, Any] = {
         "type": question_type,
         "question": question,
@@ -362,6 +400,8 @@ def _rule_question_from_block(
     if validated is None:
         return None, error
     validated["line_number"] = number
+    if image_indexes:
+        validated["_image_indexes"] = image_indexes
     return validated, None
 
 
@@ -385,6 +425,7 @@ def parse_rule_based_question_document(
     expected_number = 1
     saw_top_level = False
     sequence_error = False
+    top_level_numbers: list[int] = []
 
     for raw_line in (text or "").splitlines():
         line = raw_line.strip()
@@ -402,13 +443,22 @@ def parse_rule_based_question_document(
             if not saw_top_level and number != 1:
                 return None
             saw_top_level = True
+            top_level_numbers.append(number)
             if number != expected_number:
                 sequence_error = True
                 warnings.append(
                     f"检测到题号 {number}，但当前应为 {expected_number}；已保留预览但禁止确认导入。"
                 )
                 if current_lines is not None:
-                    current_lines.append(line)
+                    blocks.append((current_number, current_lines, current_section_at_start, current_section_type_at_start))
+                current_number = number
+                current_lines = []
+                current_section_at_start = current_section
+                current_section_type_at_start = current_section_type
+                body = (question_match.group("body") or "").strip()
+                if body:
+                    current_lines.append(body)
+                expected_number = number + 1
                 continue
             if current_lines is not None and current_number is not None:
                 blocks.append((current_number, current_lines, current_section_at_start, current_section_type_at_start))
@@ -451,7 +501,14 @@ def parse_rule_based_question_document(
     if not valid:
         return None
 
-    is_complete = not sequence_error and len(valid) == len(blocks)
+    parsed_numbers = {int(item["line_number"]) for item in valid}
+    highest_number = max(top_level_numbers, default=0)
+    missing_question_numbers = sorted(set(range(1, highest_number + 1)) - parsed_numbers)
+    is_complete = not sequence_error and not missing_question_numbers and len(valid) == len(blocks)
+    if missing_question_numbers:
+        warnings.append(
+            "缺失原始题号：" + "、".join(str(number) for number in missing_question_numbers)
+        )
     if not is_complete:
         warnings.append("规则解析结果不完整，当前预览不能确认导入。")
     return valid, warnings, {
@@ -460,12 +517,17 @@ def parse_rule_based_question_document(
         "total_ms": elapsed_ms(start),
         "chunks": 1,
         "ai_chunks": [],
-        "completed_chunks": 1 if is_complete else 0,
-        "failed_chunks": 0 if is_complete else 1,
+        # The document was processed even when validation found missing or
+        # invalid questions. Progress must not pretend that no work happened.
+        "completed_chunks": 1,
+        "failed_chunks": 0,
         "batches": 1,
         "is_complete": is_complete,
         "rule_based": True,
+        "parse_method": "rule",
+        "ai_calls": 0,
         "source_questions": len(blocks),
+        "missing_question_numbers": missing_question_numbers,
     }
 
 
@@ -1185,6 +1247,8 @@ def call_ai_parse(
         "failed_chunks": 0,
         "batches": 0,
         "is_complete": True,
+        "parse_method": "ai",
+        "ai_calls": 0,
     }
     if not OPENAI_API_KEY:
         raise HTTPException(
@@ -1214,6 +1278,7 @@ def call_ai_parse(
         for index, chunk in enumerate(chunks[batch_start : batch_start + AI_BATCH_SIZE], start=batch_start):
             ai_start = time.perf_counter()
             try:
+                timing["ai_calls"] += 1
                 items, warnings = parse_chunk_with_transient_retry(chunk, index)
                 all_items.extend(items)
                 all_warnings.extend(warnings)
@@ -1330,26 +1395,37 @@ def preview_import_from_file_content(
             failures.append(exc)
             all_warnings.append(f"文本解析失败：{exc.detail}")
 
-    if used_rule_parser and images:
-        # Re-parsing a regular text document through the image model creates
-        # detached duplicates. Instead, bind images in their original document
-        # order to the rule-parsed questions that explicitly reference a figure.
-        image_questions = [
-            question
-            for question in all_questions
-            if re.search(r"(?:如下图|下图|见图|如图)", str(question.get("question") or ""))
-        ]
-        if image_questions and len(image_questions) == len(images):
-            for question, image in zip(image_questions, images, strict=True):
-                question["image_urls"] = [image_bytes_to_data_url(image.data, image.mime_type)]
-        elif image_questions:
-            all_warnings.append("题目引用图片的数量与提取到的图片数量不一致；为避免错绑题图，已禁止确认导入。")
+    if used_rule_parser:
+        # The DOCX extractor writes [[IMAGE:n]] at the actual XML position of
+        # each body image. Bind only those explicit markers: comparing total
+        # image counts with "see figure" text is unsafe for combined figures,
+        # tables and decorative media.
+        image_bindings: dict[str, int] = {}
+        marker_errors: list[str] = []
+        for question in all_questions:
+            raw_indexes = question.pop("_image_indexes", [])
+            indexes = [index for index in raw_indexes if isinstance(index, int)]
+            bound: list[str] = []
+            for index in indexes:
+                if 1 <= index <= len(images):
+                    image = images[index - 1]
+                    bound.append(image_bytes_to_data_url(image.data, image.mime_type))
+                else:
+                    marker_errors.append(f"第 {question.get('line_number', '?')} 题图片标记 {index} 无法找到对应文件")
+            if bound:
+                question["image_urls"] = bound
+            line_number = question.get("line_number")
+            if isinstance(line_number, int):
+                image_bindings[str(line_number)] = len(bound)
+            if _FIGURE_REFERENCE.search(str(question.get("question") or "")) and not bound:
+                marker_errors.append(f"第 {question.get('line_number', '?')} 题引用图片但未绑定到文档图片")
+
+        if timings:
+            timings[0]["image_bindings"] = image_bindings
+        if marker_errors:
+            all_warnings.extend(marker_errors)
             if timings:
                 timings[0]["is_complete"] = False
-                timings[0]["failed_chunks"] = max(1, int(timings[0].get("failed_chunks") or 0))
-                timings[0]["completed_chunks"] = 0
-        else:
-            all_warnings.append("已跳过与题干无关的内嵌图片识别，避免与规则解析出的题目重复。")
 
     # Keep image recognition available, but bound each request. A document can
     # contain up to 12 images; one oversized multimodal request is both slower
@@ -1379,6 +1455,18 @@ def preview_import_from_file_content(
             "failed_chunks": sum(int(item.get("failed_chunks") or 0) for item in timings),
             "batches": sum(int(item.get("batches") or 0) for item in timings),
             "is_complete": all(bool(item.get("is_complete", True)) for item in timings),
+            "parse_method": "rule" if used_rule_parser else "ai",
+            "ai_calls": sum(int(item.get("ai_calls") or 0) for item in timings),
+            "missing_question_numbers": [
+                number
+                for item in timings
+                for number in item.get("missing_question_numbers") or []
+            ],
+            "image_bindings": {
+                key: value
+                for item in timings
+                for key, value in (item.get("image_bindings") or {}).items()
+            },
         }
 
     if failures:

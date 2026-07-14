@@ -241,6 +241,10 @@ export interface ImportTiming {
   failed_chunks: number;
   batches: number;
   is_complete: boolean;
+  parse_method: string;
+  ai_calls: number;
+  missing_question_numbers: number[];
+  image_bindings: Record<string, number>;
 }
 
 export interface ImportPreviewResponse {
