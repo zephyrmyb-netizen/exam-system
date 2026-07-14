@@ -10,7 +10,6 @@ const replace = vi.fn();
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
-const user = ref({ id: 7, username: "林海同学", role: "student" });
 const stats = ref({
   todayCount: 4,
   totalCount: 36,
@@ -49,10 +48,6 @@ vi.mock("../../composables/useStudyOverview", () => ({
   }),
 }));
 
-vi.mock("../../stores/auth", () => ({
-  useAuth: () => ({ user }),
-}));
-
 vi.mock("../../api/courses", () => ({
   getMyCourses: () => Promise.resolve(courses.value),
 }));
@@ -77,7 +72,6 @@ describe("Home UX polish", () => {
     courses.value = [];
     loading.value = false;
     errorMessage.value = "";
-    user.value = { id: 7, username: "林海同学", role: "student" };
     stats.value = {
       todayCount: 4,
       totalCount: 36,
@@ -99,15 +93,14 @@ describe("Home UX polish", () => {
     };
   });
 
-  it("starts with a compact greeting header and the search entry", () => {
+  it("keeps the header focused on search without greeting or avatar chrome", () => {
     const wrapper = mount(Home);
     const searchEntry = wrapper.get("[data-home-search]");
 
     expect(wrapper.find(".home-hero").exists()).toBe(true);
     expect(wrapper.find("[data-reference-page='home']").exists()).toBe(true);
-    expect(wrapper.text()).toContain("林海同学");
-    expect(wrapper.get(".home-hero__avatar").text()).toBe("林");
-    expect(wrapper.find(".home-hero__top > div > p:not(.home-hero__eyebrow)").exists()).toBe(false);
+    expect(wrapper.find(".home-hero__top").exists()).toBe(false);
+    expect(wrapper.find(".home-hero__avatar").exists()).toBe(false);
     expect(searchEntry.classes()).toContain("home-search-entry");
   });
 
