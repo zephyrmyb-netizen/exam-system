@@ -1,19 +1,19 @@
 /* iOS 26-inspired visual layer. It intentionally sits last in the stylesheet
    order so the existing product behavior can keep its current components. */
 :root {
-  --ios-canvas: #eff4f5;
+  --ios-canvas: #f5f7fa;
   --ios-ink: #17213a;
   --ios-subtle: #6d7890;
   --ios-tint: #00a884;
   --ios-blue: #3d7dff;
   --ios-violet: #8668ff;
   --ios-coral: #ff7865;
-  --ios-glass: color-mix(in srgb, #ffffff 72%, transparent);
-  --ios-glass-strong: color-mix(in srgb, #ffffff 86%, transparent);
-  --ios-line: color-mix(in srgb, #ffffff 72%, #b7c7cc);
+  --ios-glass: rgba(255,255,255,.92);
+  --ios-glass-strong: rgba(255,255,255,.98);
+  --ios-line: #e3e9f0;
   --ios-radius: 28px;
   --ios-radius-sm: 20px;
-  --ios-shadow: 0 18px 48px rgba(38, 62, 83, .12), inset 0 1px 0 rgba(255,255,255,.88);
+  --ios-shadow: 0 8px 24px rgba(38, 62, 83, .07), inset 0 1px 0 rgba(255,255,255,.88);
   --page-bg: var(--ios-canvas);
   --viewport-bg: #dfe9ea;
   --surface: var(--ios-glass-strong);
@@ -69,16 +69,12 @@ html.dark {
 }
 
 body {
-  background:
-    radial-gradient(70rem 38rem at -20% -14%, rgba(61,125,255,.25), transparent 52%),
-    radial-gradient(45rem 32rem at 110% 5%, rgba(0,168,132,.2), transparent 54%),
-    radial-gradient(36rem 30rem at 52% 110%, rgba(134,104,255,.12), transparent 54%),
-    var(--ios-canvas);
+  background: linear-gradient(180deg, #fafbfd 0%, var(--ios-canvas) 100%);
 }
 
 #app {
   isolation: isolate;
-  background: transparent;
+  background: var(--ios-canvas) !important;
 }
 
 #app::before,
@@ -90,7 +86,7 @@ body {
   border-radius: 50%;
   content: "";
   filter: blur(28px);
-  opacity: .32;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -106,7 +102,7 @@ button { transition: transform .22s cubic-bezier(.2,.9,.2,1), filter .22s ease, 
 button:active:not(:disabled) { transform: scale(.97); }
 
 .app-shell {
-  background: transparent !important;
+  background: var(--ios-canvas) !important;
 }
 
 .app-main { position: relative; }
@@ -311,10 +307,7 @@ button:active:not(:disabled) { transform: scale(.97); }
 .exam-result-page { background: transparent !important; }
 
 .exam-take-page {
-  background:
-    radial-gradient(30rem 22rem at -12% 12%, rgba(61, 125, 255, .16), transparent 62%),
-    radial-gradient(26rem 22rem at 110% 52%, rgba(134, 104, 255, .14), transparent 66%),
-    var(--ios-canvas) !important;
+  background: var(--ios-canvas) !important;
 }
 
 .exam-take-page .exam-question-card,
@@ -356,9 +349,14 @@ button:active:not(:disabled) { transform: scale(.97); }
 
 .practice-page .practice-topbar {
   margin: 0 !important;
-  padding: 10px 12px !important;
-  border: 1px solid var(--ios-line) !important;
-  border-radius: var(--ios-radius-sm) !important;
+  padding: 8px 4px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ios-line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .practice-page .practice-card-shell,
@@ -371,7 +369,7 @@ button:active:not(:disabled) { transform: scale(.97); }
 }
 
 .practice-page .practice-stem {
-  background: linear-gradient(145deg, color-mix(in srgb, var(--primary-soft) 72%, white), var(--ios-glass)) !important;
+  background: transparent !important;
 }
 
 .practice-page .practice-option-card.is-selected,
@@ -390,9 +388,9 @@ button:active:not(:disabled) { transform: scale(.97); }
   border: 1px solid var(--ios-line) !important;
   border-radius: var(--ios-radius-sm) !important;
   background: var(--ios-glass) !important;
-  box-shadow: var(--ios-shadow) !important;
-  backdrop-filter: blur(26px) saturate(155%) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .practice-page .practice-option-card,
@@ -427,7 +425,7 @@ button:active:not(:disabled) { transform: scale(.97); }
   border-color: var(--ios-line) !important;
   border-radius: var(--ios-radius-sm) !important;
   background: var(--ios-glass) !important;
-  box-shadow: var(--ios-shadow) !important;
+  box-shadow: none !important;
 }
 
 .course-practice-page .settings-header,
@@ -435,7 +433,7 @@ button:active:not(:disabled) { transform: scale(.97); }
   border: 1px solid var(--ios-line) !important;
   border-radius: var(--ios-radius-sm) !important;
   background: var(--ios-glass) !important;
-  box-shadow: var(--ios-shadow) !important;
+  box-shadow: none !important;
 }
 
 .course-practice-page .settings-header { padding: 18px !important; }
@@ -448,10 +446,8 @@ button:active:not(:disabled) { transform: scale(.97); }
   border-style: solid !important;
   border-color: color-mix(in srgb, var(--primary) 28%, var(--ios-line)) !important;
   border-radius: var(--ios-radius) !important;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(0,168,132,.12), transparent 54%),
-    var(--ios-glass) !important;
-  box-shadow: var(--ios-shadow) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: none !important;
 }
 
 .import-page .import-format-tags {
@@ -464,15 +460,15 @@ button:active:not(:disabled) { transform: scale(.97); }
   border-color: var(--ios-line) !important;
   border-radius: var(--ios-radius-sm) !important;
   background: var(--ios-glass) !important;
-  box-shadow: var(--ios-shadow) !important;
+  box-shadow: none !important;
 }
 
 .import-page .import-guide li { padding: 10px 0 !important; }
 .import-page .import-guide li + li { border-top: 1px solid var(--ios-line); }
-.import-page .opt-panel { box-shadow: var(--ios-shadow) !important; }
+.import-page .opt-panel { box-shadow: none !important; }
 
 /* Keep the answer screen calm: one question surface and one grouped choice list. */
-.exam-take-page .exam-question-card { border-radius: var(--ios-radius) !important; }
+.exam-take-page .exam-question-card { border-radius: var(--ios-radius) !important; box-shadow: none !important; }
 .exam-take-page .question-meta { gap: 6px !important; }
 .exam-take-page .question-meta span { padding: 4px 9px !important; }
 .exam-take-page .exam-actions { border-radius: 24px 24px 0 0 !important; }
