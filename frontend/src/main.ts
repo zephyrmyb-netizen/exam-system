@@ -3,12 +3,15 @@ import { createPinia } from "pinia";
 import App from "./App.vue";
 import router from "./router";
 import i18n from "./i18n";
+import { installMobileViewportRecovery } from "./utils/viewport";
 import "@fontsource-variable/noto-sans-sc/wght.css";
 import "./styles/base.css";
 import "./styles/transitions.css";
 import "./styles/utilities.css";
 import "./style.css";
 import "./styles/ios26.css";
+
+installMobileViewportRecovery();
 
 const app = createApp(App);
 app.use(createPinia());
