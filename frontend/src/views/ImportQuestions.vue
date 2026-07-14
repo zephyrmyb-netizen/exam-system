@@ -588,11 +588,18 @@ onMounted(() => {
 
 <style scoped>
 .import-page {
+  width: 100%;
   gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   max-width: 100%;
   padding-top: 18px;
   overflow-x: clip;
+}
+
+.import-page > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .import-page__head {
@@ -886,6 +893,10 @@ onMounted(() => {
 .opt-panel,
 .adv-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--line-soft);
@@ -895,6 +906,8 @@ onMounted(() => {
 
 .opt-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 4px;
 }
 
@@ -905,6 +918,9 @@ onMounted(() => {
 }
 
 .opt-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 10px 14px;
   border: 1.5px solid var(--line-strong);
@@ -912,6 +928,10 @@ onMounted(() => {
   background: var(--surface-soft);
   font-size: var(--text-base);
   outline: none;
+}
+
+select.opt-input {
+  text-overflow: ellipsis;
 }
 
 .opt-input:focus {
@@ -1327,9 +1347,13 @@ onMounted(() => {
 }
 .import-file-card.has-file .hero-drop-selected {
   display: block;
+  grid-area: auto;
   min-width: 0;
   color: var(--text-main);
   font-size: 14px;
+}
+.import-file-card.has-file .hero-drop-hint {
+  grid-area: auto;
 }
 .import-file-card__actions {
   display: inline-flex;
@@ -1377,14 +1401,19 @@ onMounted(() => {
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 .import-target-card__head strong {
   color: var(--text-main);
   font-size: 14px;
 }
 .import-target-card__head span {
+  min-width: 0;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .import-page .opt-input {
   min-height: 42px;
