@@ -161,7 +161,8 @@ describe("Home UX polish", () => {
     expect(wrapper.find("[data-home-recommendation]").exists()).toBe(true);
     expect(wrapper.find(".home-recommendation__tag").text()).toContain("每日一练");
     expect(wrapper.findComponent(StatGrid).exists()).toBe(true);
-    expect(wrapper.findAll(".stat-grid__item")).toHaveLength(4);
+    expect(wrapper.findAll(".stat-grid__item")).toHaveLength(3);
+    expect(wrapper.text()).not.toContain("今日练习");
     expect(wrapper.text()).toContain("连续学习");
     expect(wrapper.get("[data-stat-streak]").text()).toContain("7");
     expect(wrapper.get("[data-home-recommendation]").text()).toContain("函数");
