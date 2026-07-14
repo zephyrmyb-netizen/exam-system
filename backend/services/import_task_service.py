@@ -71,6 +71,7 @@ def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
         total_valid=task.total_valid,
         total_invalid=task.total_invalid,
         timing=schemas.ImportTiming.model_validate(timing_data) if timing_data else None,
+        debug_runtime=imports_service.runtime_debug(timing_data) if timing_data else None,
         error_message=task.error_message or "",
         created_at=task.created_at.isoformat() if task.created_at else None,
         started_at=task.started_at.isoformat() if task.started_at else None,

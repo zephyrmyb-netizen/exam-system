@@ -1,6 +1,8 @@
 import json as json_module
+import logging
 import os
 import re
+import subprocess
 import tempfile
 import time
 from collections.abc import Callable
@@ -27,6 +29,8 @@ from ..crud import derive_course_name_from_filename
 from ..models import Question as QuestionModel
 from ..utils import VALID_QUESTION_TYPES, normalize_answer
 from .image_extractor import IMAGE_EXTENSIONS, ImagePayload, extract_images_from_file, image_bytes_to_data_url
+
+logger = logging.getLogger("xuexibao.import")
 
 try:
     from openai import APITimeoutError
@@ -96,6 +100,48 @@ def build_timing(
         missing_question_numbers=list(parse_timing.get("missing_question_numbers") or []),
         image_bindings={str(key): int(value) for key, value in (parse_timing.get("image_bindings") or {}).items()},
     )
+
+
+def _read_runtime_git_commit() -> str:
+    """Return the revision loaded by this process without exposing user data."""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parents[2],
+            capture_output=True,
+            check=True,
+            text=True,
+            timeout=1,
+        )
+        return completed.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+def runtime_debug(parse_timing: dict | None = None) -> dict[str, Any]:
+    """Build a safe runtime fingerprint for diagnosing the live import path."""
+    parse_timing = parse_timing or {}
+    parse_method = str(parse_timing.get("parse_method") or "")
+    fingerprint = {
+        "git_commit": _read_runtime_git_commit(),
+        "parser_module": str(Path(__file__).resolve()),
+        "parser_function": "parse_rule_based_question_document" if parse_method == "rule" else "call_ai_parse",
+        "validator_module": str(Path(__file__).resolve()),
+        "parse_method": parse_method,
+        "processed_chunks": int(parse_timing.get("completed_chunks") or 0),
+        "total_chunks": int(parse_timing.get("chunks") or 0),
+    }
+    logger.info(
+        "import_runtime_fingerprint commit=%s parser=%s parser_function=%s validator=%s parse_method=%s processed_chunks=%s total_chunks=%s",
+        fingerprint["git_commit"],
+        fingerprint["parser_module"],
+        fingerprint["parser_function"],
+        fingerprint["validator_module"],
+        fingerprint["parse_method"],
+        fingerprint["processed_chunks"],
+        fingerprint["total_chunks"],
+    )
+    return fingerprint
 
 
 def _ai_override_active() -> bool:
@@ -1443,8 +1489,29 @@ def preview_import_from_file_content(
             failures.append(exc)
             all_warnings.append(f"第 {index // AI_IMAGE_BATCH_SIZE + 1} 组图片解析失败：{exc.detail}")
 
-    all_questions = deduplicate_questions(all_questions)
+    # Rule parsing already establishes one canonical item per source number.
+    # The generic AI fallback deduplicator only compares the first 100 chars of
+    # a stem, so it incorrectly collapses figure questions with the same lead-in.
+    if not used_rule_parser:
+        all_questions = deduplicate_questions(all_questions)
+
     if all_questions:
+        source_numbers = {
+            int(question["line_number"])
+            for question in all_questions
+            if isinstance(question.get("line_number"), int)
+        }
+        rule_source_count = max((int(item.get("source_questions") or 0) for item in timings), default=0)
+        expected_rule_numbers = set(range(1, rule_source_count + 1)) if used_rule_parser and rule_source_count else set()
+        missing_from_preview = sorted(expected_rule_numbers - source_numbers)
+        if missing_from_preview:
+            all_warnings.append(
+                "Rule parser output lost source questions: "
+                + ", ".join(str(number) for number in missing_from_preview)
+            )
+            for item in timings:
+                item["is_complete"] = False
+
         return all_questions, all_warnings, {
             "chunk_ms": sum(int(item.get("chunk_ms") or 0) for item in timings),
             "ai_ms": sum(int(item.get("ai_ms") or 0) for item in timings),
@@ -1457,11 +1524,14 @@ def preview_import_from_file_content(
             "is_complete": all(bool(item.get("is_complete", True)) for item in timings),
             "parse_method": "rule" if used_rule_parser else "ai",
             "ai_calls": sum(int(item.get("ai_calls") or 0) for item in timings),
-            "missing_question_numbers": [
-                number
-                for item in timings
-                for number in item.get("missing_question_numbers") or []
-            ],
+            "missing_question_numbers": sorted({
+                *[
+                    number
+                    for item in timings
+                    for number in item.get("missing_question_numbers") or []
+                ],
+                *missing_from_preview,
+            }),
             "image_bindings": {
                 key: value
                 for item in timings

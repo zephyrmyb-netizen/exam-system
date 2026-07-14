@@ -44,6 +44,7 @@ from .import_orchestrator import (
     preview_import_from_file_content,
     preview_import_from_text,
     resolve_target_course,
+    runtime_debug,
 )
 from .import_validator import (
     ensure_questions_found,
@@ -83,6 +84,7 @@ __all__ = [
     "preview_import_from_text",
     "question_items_from_parsed_json",
     "resolve_target_course",
+    "runtime_debug",
     "safe_ai_error_detail",
     "save_upload_to_temp",
     "validate_imported_questions",

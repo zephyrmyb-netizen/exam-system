@@ -87,6 +87,7 @@ const effectiveCourseName = computed(() => {
 });
 
 const timing = computed(() => props.previewData?.timing || null);
+const runtimeDebug = computed(() => props.previewData?.debug_runtime || null);
 const skippedInvalidQuestionCount = computed(() => Number(props.previewData?.total_invalid || 0));
 const warningCount = computed(() => warnings.value.length);
 const isComplete = computed(() => props.previewData?.is_complete !== false);
@@ -263,6 +264,10 @@ function handleRetry() {
     </div>
 
     <!-- ── Question list ── -->
+    <p v-if="runtimeDebug?.git_commit" class="runtime-fingerprint">
+      Runtime {{ runtimeDebug.git_commit.slice(0, 7) }} · {{ runtimeDebug.parse_method || "unknown" }}
+    </p>
+
     <div v-if="questions.length === 0" class="empty-preview">
       <AlertCircle :size="18" :stroke-width="2.5" />
       <div>
@@ -487,6 +492,13 @@ function handleRetry() {
 }
 
 /* ── Question list ── */
+.runtime-fingerprint {
+  margin: -4px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
 .q-list {
   display: grid;
   gap: 6px;

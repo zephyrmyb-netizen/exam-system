@@ -207,6 +207,35 @@ def test_rule_parser_accepts_solution_blocks_as_written_answers():
     assert questions[1]["answer"] == "The explanation is the response."
 
 
+def test_rule_parser_preserves_same_stem_figure_questions_by_source_number():
+    """Rule-mode items are distinct even when their opening text is identical."""
+    from backend.imports import import_orchestrator
+
+    text = """一、判断题
+1. As shown below, decide whether the conclusion is correct.
+[[IMAGE:1]]
+答案：正确
+2. As shown below, decide whether the conclusion is correct.
+[[IMAGE:2]]
+答案：正确
+3. As shown below, decide whether the conclusion is correct.
+[[IMAGE:3]]
+答案：正确"""
+    images = [
+        ImagePayload(data=b"one", mime_type="image/png", source="one"),
+        ImagePayload(data=b"two", mime_type="image/png", source="two"),
+        ImagePayload(data=b"three", mime_type="image/png", source="three"),
+    ]
+
+    questions, warnings, timing = import_orchestrator.preview_import_from_file_content(text, images)
+
+    assert warnings == []
+    assert [question["line_number"] for question in questions] == [1, 2, 3]
+    assert [len(question["image_urls"]) for question in questions] == [1, 1, 1]
+    assert timing["missing_question_numbers"] == []
+    assert timing["is_complete"] is True
+
+
 def test_docx_body_image_marker_is_bound_to_current_question(tmp_path):
     from io import BytesIO
 
