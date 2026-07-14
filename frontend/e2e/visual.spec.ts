@@ -47,6 +47,36 @@ test("course management buttons stay fixed to the trailing edge", async ({ mocke
   }
 });
 
+test("course menu remains fully visible above other course cards", async ({ mockedPage }) => {
+  await prepareSurface(mockedPage, "course-list");
+  await mockedPage.locator(".course-row .more-btn").first().click();
+
+  const options = mockedPage.locator(".course-row--menu-open .course-menu .menu-option");
+  await expect(options).toHaveCount(5);
+
+  const details = await options.evaluateAll((items) =>
+    items.map((item) => {
+      const rect = item.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        visible: hit === item || item.contains(hit),
+      };
+    }),
+  );
+
+  for (const item of details) {
+    expect(item.left).toBeGreaterThanOrEqual(0);
+    expect(item.right).toBeLessThanOrEqual(390);
+    expect(item.top).toBeGreaterThanOrEqual(0);
+    expect(item.bottom).toBeLessThanOrEqual(844);
+    expect(item.visible).toBe(true);
+  }
+});
+
 test.describe("responsive overflow and safe bottom content", () => {
   for (const viewport of [{ width: 320, height: 720 }, { width: 420, height: 900 }]) {
     for (const surface of surfaces) {

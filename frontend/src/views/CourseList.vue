@@ -350,7 +350,10 @@ onMounted(fetchCourses);
         v-for="(course, idx) in filteredCourses"
         :key="course.id"
         class="course-row fade-up"
-        :class="'d' + ((idx % 5) + 1)"
+        :class="[
+          'd' + ((idx % 5) + 1),
+          { 'course-row--menu-open': openCourseMenuId === course.id },
+        ]"
       >
         <div
           class="course-item"
@@ -1416,12 +1419,29 @@ onMounted(fetchCourses);
   margin: 0 10px 8px 58px;
 }
 
+/* The glass treatment creates a stacking context per card.  Lift the active
+   card with its popover so following cards cannot paint over menu actions. */
+.library-page .course-row--menu-open {
+  z-index: 90;
+}
+.library-page .course-row--menu-open .course-menu {
+  top: calc(100% + 6px);
+  right: 10px;
+  bottom: auto;
+  z-index: 100;
+  max-width: calc(100% - 20px);
+}
+
 @media (max-width: 700px) {
   .library-page .course-row .course-item {
     grid-template-columns: 40px minmax(0, 1fr) 32px;
     gap: 10px;
     min-height: 76px;
     padding: 8px 12px;
+  }
+  .library-page .course-row--menu-open .course-menu {
+    right: 8px;
+    max-width: calc(100% - 16px);
   }
 }
 </style>
