@@ -200,7 +200,7 @@ onMounted(() => {
           class="course-main"
           type="button"
           :aria-label="`开始练习：${getCourseDisplayName(course)}`"
-          @click="goTo(`/courses/${course.id}/practice`)"
+          @click="goTo({ name: 'course-practice', params: { courseId: course.id }, query: { from: 'home' } })"
         >
           <span class="course-icon" data-home-course-icon aria-hidden="true">
             <FileText :size="20" :stroke-width="2.25" />

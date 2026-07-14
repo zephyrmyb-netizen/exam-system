@@ -256,6 +256,10 @@ describe("Home UX polish", () => {
     expect(courseCard.text()).not.toContain("开始练习");
 
     await courseCard.trigger("click");
-    expect(replace).toHaveBeenCalledWith("/courses/1/practice");
+    expect(replace).toHaveBeenCalledWith({
+      name: "course-practice",
+      params: { courseId: 1 },
+      query: { from: "home" },
+    });
   });
 });
