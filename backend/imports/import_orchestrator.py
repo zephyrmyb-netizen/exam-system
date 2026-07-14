@@ -409,10 +409,18 @@ def build_ai_repair_prompt(raw_response: str) -> str:
     )
 
 
-def validate_question_item(item: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
-    q_type = (item.get("type") or "").strip()
-    question = (item.get("question") or "").strip()
-    answer = (item.get("answer") or "").strip()
+def _text_field(value: Any, default: str = "") -> str:
+    """Return a safe text field from untrusted AI JSON."""
+    return value.strip() if isinstance(value, str) else default
+
+
+def validate_question_item(item: Any) -> tuple[dict[str, Any] | None, str | None]:
+    if not isinstance(item, dict):
+        return None, "题目记录不是对象"
+
+    q_type = _text_field(item.get("type"))
+    question = _text_field(item.get("question"))
+    answer = _text_field(item.get("answer"))
 
     if q_type not in VALID_QUESTION_TYPES:
         return None, f"无效的题目类型 '{q_type}'"
@@ -424,6 +432,16 @@ def validate_question_item(item: dict[str, Any]) -> tuple[dict[str, Any] | None,
         options = item.get("options")
         if not options or not isinstance(options, dict) or len(options) < 2:
             return None, f"选择题（{q_type}）必须至少提供两个选项"
+
+    # Normalize optional fields before building the persisted record. Model
+    # output is untrusted JSON, so optional values can be arrays or objects.
+    item = {
+        **item,
+        "analysis": _text_field(item.get("analysis")),
+        "subject": _text_field(item.get("subject"), "默认科目"),
+        "chapter": _text_field(item.get("chapter"), "默认章节"),
+        "difficulty": _text_field(item.get("difficulty"), "normal"),
+    }
 
     return {
         "type": q_type,
@@ -734,7 +752,13 @@ def deduplicate_questions(questions: list[Any]) -> list[dict[str, Any]]:
         # record instead of letting AttributeError abort the entire task.
         if not isinstance(item, dict):
             continue
-        key = (item.get("question") or "").strip()[:100]
+        question = item.get("question")
+        # Keep malformed objects for validation below, so the user receives a
+        # useful incomplete-preview warning instead of silently losing data.
+        if not isinstance(question, str):
+            result.append(item)
+            continue
+        key = question.strip()[:100]
         if key and key not in seen:
             seen.add(key)
             result.append(item)
@@ -970,6 +994,11 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
             valid.append(validated)
         else:
             all_warnings.append(f"第 {index + 1} 题格式有误: {error}")
+
+    invalid_item_count = len(all_items) - len(valid)
+    if invalid_item_count:
+        timing["is_complete"] = False
+        all_warnings.append(f"AI 返回 {invalid_item_count} 条字段格式异常的题目，当前结果不能确认导入。")
 
     timing["total_ms"] = elapsed_ms(total_start)
 

@@ -139,6 +139,32 @@ def test_non_object_ai_items_are_skipped_without_crashing(monkeypatch):
     assert any("无效题目记录" in warning for warning in warnings)
 
 
+def test_invalid_ai_field_types_become_partial_preview(monkeypatch):
+    """Nested AI fields must be rejected without crashing task aggregation."""
+    from backend.imports import import_orchestrator
+
+    monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 1)
+    malformed = {
+        "type": "fill_blank",
+        "question": ["not text"],
+        "answer": "answer",
+        "analysis": {"nested": "value"},
+        "subject": ["nested"],
+    }
+    monkeypatch.setattr(
+        import_orchestrator,
+        "call_ai_parse_chunk",
+        lambda _chunk, _index, _expected_question_count=0: ([malformed, _question("valid question")], []),
+    )
+
+    questions, warnings, timing = import_orchestrator.call_ai_parse("1. Simulated question")
+
+    assert [item["question"] for item in questions] == ["valid question"]
+    assert timing["is_complete"] is False
+    assert any("字段格式异常" in warning for warning in warnings)
+
+
 def test_file_content_combines_chunked_text_and_image_questions(monkeypatch):
     """Embedded images must not make a long text document skip text parsing."""
     from backend.imports import import_orchestrator
