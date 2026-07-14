@@ -381,6 +381,109 @@ button:active:not(:disabled) { transform: scale(.97); }
   box-shadow: 0 0 0 3px rgba(0,168,132,.13), var(--ios-shadow) !important;
 }
 
+/* High-frequency choices read as one decision group, not a pile of cards. */
+.practice-page .practice-options-grid,
+.exam-question-card .option-grid,
+.course-practice-page .mode-grid {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.practice-page .practice-option-card,
+.exam-question-card .option-button,
+.course-practice-page .mode-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.practice-page .practice-option-card + .practice-option-card,
+.exam-question-card .option-button + .option-button,
+.course-practice-page .mode-card + .mode-card {
+  border-top: 1px solid var(--ios-line) !important;
+}
+
+.practice-page .practice-option-card.is-selected,
+.exam-question-card .option-button.active,
+.course-practice-page .mode-card.mode-active {
+  background: color-mix(in srgb, var(--primary-soft) 76%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--primary) !important;
+}
+
+.practice-page .practice-option-card.is-selected { box-shadow: inset 3px 0 0 var(--primary) !important; }
+
+.practice-page .practice-boolean-grid {
+  gap: 8px !important;
+}
+
+.practice-page .practice-boolean-button {
+  border-color: var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+}
+
+.course-practice-page .settings-header,
+.course-practice-page .settings-actions {
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+}
+
+.course-practice-page .settings-header { padding: 18px !important; }
+.course-practice-page .settings-actions { padding: 12px !important; }
+.course-practice-page .settings-section-label { margin: 4px 4px 0 !important; }
+
+/* The import journey has one primary action; secondary paths stay quiet. */
+.import-page .hero-drop-zone {
+  min-height: 164px !important;
+  border-style: solid !important;
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--ios-line)) !important;
+  border-radius: var(--ios-radius) !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(0,168,132,.12), transparent 54%),
+    var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+}
+
+.import-page .import-format-tags {
+  padding: 0 2px !important;
+}
+
+.import-page .import-guide {
+  gap: 0 !important;
+  padding: 6px 14px !important;
+  border-color: var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+}
+
+.import-page .import-guide li { padding: 10px 0 !important; }
+.import-page .import-guide li + li { border-top: 1px solid var(--ios-line); }
+.import-page .opt-panel { box-shadow: var(--ios-shadow) !important; }
+
+/* Keep the answer screen calm: one question surface and one grouped choice list. */
+.exam-take-page .exam-question-card { border-radius: var(--ios-radius) !important; }
+.exam-take-page .question-meta { gap: 6px !important; }
+.exam-take-page .question-meta span { padding: 4px 9px !important; }
+.exam-take-page .exam-actions { border-radius: 24px 24px 0 0 !important; }
+
+@media (max-width: 360px) {
+  .practice-page .practice-card-shell,
+  .exam-take-page .exam-question-card { padding: 14px !important; }
+
+  .course-practice-page .mode-card { min-height: 58px !important; }
+}
+
 .hero-cta,
 .primary-action,
 .practice-action,
