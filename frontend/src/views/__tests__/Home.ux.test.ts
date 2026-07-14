@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Home from "../Home.vue";
-import type { Course, TodayRecommendation } from "../../types";
+import type { Course } from "../../types";
 
 const replace = vi.fn();
 const searchMocks = vi.hoisted(() => ({
@@ -28,14 +28,6 @@ const stats = ref({
 });
 const streak = ref({ current_streak: 7, longest_streak: 12, last_practiced_date: "2026-07-14" });
 const streakAvailable = ref<boolean | null>(true);
-const recommendationAvailable = ref<boolean | null>(true);
-const recommendation = ref<TodayRecommendation | null>({
-  weak_tags: [{ tag_id: 1, tag_name: "函数", total_count: 10, correct_count: 4, accuracy_rate: 0.4 }],
-  weak_types: [{ question_type: "single_choice", total_attempts: 8, wrong_attempts: 5, error_rate: 0.625 }],
-  due_count: 8,
-  due_question_ids: [1, 2],
-  recommended_modes: ["weak_tag_practice", "weak_type_practice", "spaced_repeat"],
-});
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({ replace }),
@@ -46,9 +38,7 @@ vi.mock("../../composables/useStudyOverview", () => ({
   useStudyOverview: () => ({
     stats,
     streak,
-    recommendation,
     streakAvailable,
-    recommendationAvailable,
     loading,
     errorMessage,
     fetchAll: vi.fn(),
@@ -108,14 +98,6 @@ describe("Home UX polish", () => {
     };
     streak.value = { current_streak: 7, longest_streak: 12, last_practiced_date: "2026-07-14" };
     streakAvailable.value = true;
-    recommendationAvailable.value = true;
-    recommendation.value = {
-      weak_tags: [{ tag_id: 1, tag_name: "函数", total_count: 10, correct_count: 4, accuracy_rate: 0.4 }],
-      weak_types: [{ question_type: "single_choice", total_attempts: 8, wrong_attempts: 5, error_rate: 0.625 }],
-      due_count: 8,
-      due_question_ids: [1, 2],
-      recommended_modes: ["weak_tag_practice", "weak_type_practice", "spaced_repeat"],
-    };
   });
 
   it("keeps the header focused on search without greeting or avatar chrome", () => {
@@ -164,70 +146,7 @@ describe("Home UX polish", () => {
     expect(
       Array.from(children).some((child) => child.textContent?.includes("学习概览") && child.tagName === "DIV"),
     ).toBe(false);
-  });
-
-  it("uses the real recommendation fields in the reference page order", async () => {
-    const wrapper = mount(Home);
-
-    expect(wrapper.find("[data-home-ai-chat]").exists()).toBe(false);
-    expect(wrapper.find("[data-home-recommendation]").exists()).toBe(true);
-    expect(wrapper.find(".home-recommendation__tag").text()).toContain("每日一练");
-    expect(wrapper.find("[data-testid='home-stats']").exists()).toBe(false);
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("函数");
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("8 题待复习");
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("薄弱标签");
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("去题库选择相关内容");
-
-    await wrapper.get("[data-home-recommendation]").trigger("click");
-    expect(replace).toHaveBeenCalledWith("/courses");
-  });
-
-  it("routes a real spaced-repeat recommendation directly to due practice", async () => {
-    recommendation.value = {
-      weak_tags: [],
-      weak_types: [],
-      due_count: 8,
-      due_question_ids: [1, 2],
-      recommended_modes: ["spaced_repeat"],
-    };
-    const wrapper = mount(Home);
-
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("到期复习");
-    await wrapper.get("[data-home-recommendation]").trigger("click");
-    expect(replace).toHaveBeenCalledWith({ name: "practice-due" });
-  });
-
-  it("routes a weak-type recommendation to course selection without inventing a filtered practice", async () => {
-    recommendation.value = {
-      weak_tags: [],
-      weak_types: [{ question_type: "single_choice", total_attempts: 8, wrong_attempts: 5, error_rate: 0.625 }],
-      due_count: 0,
-      due_question_ids: [],
-      recommended_modes: ["weak_type_practice"],
-    };
-    const wrapper = mount(Home);
-
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("单选题");
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("薄弱题型");
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("去题库选择相关内容");
-    await wrapper.get("[data-home-recommendation]").trigger("click");
-    expect(replace).toHaveBeenCalledWith("/courses");
-  });
-
-  it("shows a truthful empty recommendation without copying a sample value", () => {
-    recommendation.value = null;
-    const wrapper = mount(Home);
-
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("暂无个性化推荐");
-    expect(wrapper.get("[data-home-recommendation]").text()).not.toContain("函数");
-  });
-
-  it("does not present stale recommendation values when its request fails", () => {
-    recommendationAvailable.value = false;
-    const wrapper = mount(Home);
-
-    expect(wrapper.get("[data-home-recommendation]").text()).toContain("推荐暂不可用");
-    expect(wrapper.get("[data-home-recommendation]").text()).not.toContain("函数");
+    expect(wrapper.find("[data-home-recommendation]").exists()).toBe(false);
   });
 
   it("enters study overview with replace and an explicit home source", async () => {

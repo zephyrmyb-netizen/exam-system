@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
-  ArrowRight,
   BookOpen,
   ClipboardList,
   Eye,
@@ -21,17 +20,14 @@ import {
 
 import { getMyCourses } from "../api/courses";
 import request, { getErrorMessage } from "../api/request";
-import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
-import { typeLabel } from "../utils/question";
 import { openGlobalSearch } from "../utils/globalSearch";
 
 const { replaceTo } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
-const { recommendation, recommendationAvailable, fetchAll } = useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
@@ -39,61 +35,6 @@ const coursesError = ref("");
 const openCourseMenuId = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const deleteLoading = ref<number | null>(null);
-
-const recommendationMode = computed(() =>
-  recommendationAvailable.value === true ? recommendation.value?.recommended_modes?.[0] || "" : "",
-);
-
-const recommendationNeedsCourseSelection = computed(() =>
-  ["weak_tag_practice", "weak_type_practice", "type_practice"].includes(recommendationMode.value),
-);
-
-const recommendationModeLabel = computed(
-  () =>
-    ({
-      spaced_repeat: "到期复习",
-      wrong_review: "错题强化",
-      weak_tag_practice: "薄弱标签练习",
-      weak_type_practice: "薄弱题型练习",
-      type_practice: "题型专项",
-      random_practice: "随机练习",
-    })[recommendationMode.value] || "继续练习",
-);
-
-const recommendationTitle = computed(() => {
-  if (recommendationAvailable.value !== true) return "推荐暂不可用";
-  const item = recommendation.value;
-  if (!item) return "暂无个性化推荐";
-  const tagName = item.weak_tags?.[0]?.tag_name?.trim();
-  if (tagName) return `重点巩固：${tagName}`;
-  const questionType = item.weak_types?.[0]?.question_type;
-  if (questionType) return `重点巩固：${typeLabel(questionType)}`;
-  if (item.due_count > 0) return "今日到期复习";
-  return recommendationModeLabel.value;
-});
-
-const recommendationDescription = computed(() => {
-  if (recommendationAvailable.value !== true) return "学习建议加载失败或尚未完成";
-  const item = recommendation.value;
-  if (!item) return "完成一些练习后，这里会根据真实学习数据生成建议";
-  const details: string[] = [];
-  if (item.due_count > 0) details.push(`${item.due_count} 题待复习`);
-  if (item.weak_types?.[0]?.question_type) details.push(typeLabel(item.weak_types[0].question_type));
-  if (recommendationNeedsCourseSelection.value) {
-    details.push(`${recommendationModeLabel.value} · 去题库选择相关内容`);
-  } else {
-    details.push(recommendationModeLabel.value);
-  }
-  return details.join(" · ");
-});
-
-const recommendationTarget = computed<RouteLocationRaw>(() => {
-  if (recommendationAvailable.value !== true) return "/courses";
-  if (recommendationMode.value === "spaced_repeat") return { name: "practice-due" };
-  if (recommendationMode.value === "wrong_review") return { name: "practice-wrong" };
-  if (recommendationMode.value === "random_practice") return { name: "practice" };
-  return "/courses";
-});
 
 const recentCourses = computed(() => {
   const seen = new Set<number | string>();
@@ -230,7 +171,6 @@ async function fetchRecentCourses() {
 }
 
 onMounted(() => {
-  fetchAll();
   fetchRecentCourses();
 });
 </script>
@@ -354,21 +294,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <button
-      class="home-recommendation fade-up d4"
-      data-home-recommendation
-      type="button"
-      @click="goTo(recommendationTarget)"
-    >
-      <span class="home-recommendation__spark">✦</span>
-      <span class="home-recommendation__copy">
-        <small class="home-recommendation__tag">每日一练</small>
-        <strong>{{ recommendationTitle }}</strong>
-        <small>{{ recommendationDescription }}</small>
-      </span>
-      <ArrowRight :size="19" :stroke-width="2.4" aria-hidden="true" />
-    </button>
   </section>
 </template>
 
@@ -621,58 +546,6 @@ onMounted(() => {
   height: 100%;
   border-radius: inherit;
   background: var(--primary);
-}
-
-.home-recommendation {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin-top: 4px;
-  padding: 15px;
-  border: 0;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--primary-soft), #eff6ff);
-  color: var(--text-main);
-  text-align: left;
-  cursor: pointer;
-}
-.home-recommendation__spark {
-  color: var(--primary);
-  font-size: 24px;
-}
-.home-recommendation__copy {
-  min-width: 0;
-}
-.home-recommendation strong,
-.home-recommendation small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-recommendation strong {
-  font-size: 14px;
-}
-.home-recommendation small {
-  margin-top: 3px;
-  color: var(--text-muted);
-  font-size: 11px;
-}
-.home-recommendation .home-recommendation__tag {
-  display: inline-flex;
-  width: fit-content;
-  margin: 0 0 4px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-}
-.home-recommendation :deep(svg) {
-  color: var(--primary-strong);
 }
 
 /* ── Empty state ── */
