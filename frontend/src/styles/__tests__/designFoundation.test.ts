@@ -43,6 +43,16 @@ describe("design foundation", () => {
     expect(existsSync(`${frontendRoot}/src/styles/liquid-glass.css`)).toBe(false);
   });
 
+  it("locks the mobile app viewport to device width after native picker returns", () => {
+    const indexHtml = readFrontendFile("index.html");
+    const baseCss = readFrontendFile("src/styles/base.css");
+
+    expect(indexHtml).toMatch(
+      /<meta\s+name="viewport"\s+content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"\s*\/>/,
+    );
+    expect(baseCss).toMatch(/html\s*\{[^}]*-webkit-text-size-adjust:\s*100%[^}]*text-size-adjust:\s*100%/s);
+  });
+
   it("self-hosts Noto Sans SC Variable and carries its license", () => {
     const packageJson = JSON.parse(readFrontendFile("package.json"));
     const mainSource = readFrontendFile("src/main.ts");
