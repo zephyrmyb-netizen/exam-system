@@ -288,10 +288,7 @@ describe("practice interaction surfaces", () => {
   });
 
   it("keeps the summary scrollable within safe areas down to 320px", () => {
-    const source = readFileSync(
-      resolve(process.cwd(), "src/components/practice/PracticeSummaryModal.vue"),
-      "utf8",
-    );
+    const source = readFileSync(resolve(process.cwd(), "src/components/practice/PracticeSummaryModal.vue"), "utf8");
 
     expect(source).toMatch(/max-height:\s*calc\(/);
     expect(source).toMatch(/overflow-y:\s*auto/);

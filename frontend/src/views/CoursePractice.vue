@@ -22,7 +22,7 @@ const modes = [
 const selectedMode = ref("normal");
 const canStartPractice = computed(() => !!course.value && isPracticeReadyCourse(course.value));
 const practiceTotalQuestions = computed(() =>
-  selectedMode.value === "normal" ? course.value?.question_count ?? 0 : 0,
+  selectedMode.value === "normal" ? (course.value?.question_count ?? 0) : 0,
 );
 const startButtonText = computed(() => {
   if (loading.value) return "加载中...";
@@ -66,7 +66,13 @@ async function fetchCourse() {
 }
 
 onMounted(fetchCourse);
-watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); });
+watch(
+  () => route.fullPath,
+  () => {
+    showPractice.value = false;
+    fetchCourse();
+  },
+);
 </script>
 
 <template>
@@ -111,9 +117,7 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
     </div>
 
     <div class="settings-actions">
-      <p v-if="course && !canStartPractice" class="empty-state">
-        当前题库还没有题目。先导入题目后再开始练习。
-      </p>
+      <p v-if="course && !canStartPractice" class="empty-state">当前题库还没有题目。先导入题目后再开始练习。</p>
       <button class="start-btn" type="button" :disabled="loading || !canStartPractice" @click="startPractice">
         <Play :size="18" :stroke-width="2.5" style="margin-right: 6px" />
         {{ startButtonText }}
@@ -146,14 +150,57 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
   border-radius: 8px;
   background: var(--surface);
 }
-.settings-header-top { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--space-3); }
-.settings-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--primary-strong); flex-shrink: 0; }
-.settings-info { min-width: 0; }
-.settings-info h2 { margin: 0; overflow: hidden; font-size: var(--text-lg); font-weight: 800; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.settings-meta { display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
-.mode-section { display: grid; gap: 6px; }
-.settings-section-label { margin: 4px 0 0; font-size: var(--text-xs); font-weight: 800; color: var(--text-muted); }
-.mode-grid { display: grid; gap: 6px; }
+.settings-header-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+}
+.settings-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  flex-shrink: 0;
+}
+.settings-info {
+  min-width: 0;
+}
+.settings-info h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.mode-section {
+  display: grid;
+  gap: 6px;
+}
+.settings-section-label {
+  margin: 4px 0 0;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  color: var(--text-muted);
+}
+.mode-grid {
+  display: grid;
+  gap: 6px;
+}
 .mode-card {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -168,18 +215,59 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
   text-align: left;
   font: inherit;
   cursor: pointer;
-  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out),
+    color var(--ease-out);
 }
-.mode-card:hover { border-color: var(--line-accent); }
-.mode-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 3px 0 0 var(--primary); }
-.mode-active .mode-card-title { color: var(--primary-strong); }
-.mode-card-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--surface-soft); flex-shrink: 0; }
-.mode-active .mode-card-icon { background: var(--surface); }
-.mode-card-text { display: grid; gap: 1px; min-width: 0; }
-.mode-card-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-main); }
-.mode-card-desc { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-.settings-actions { display: grid; gap: 8px; }
-.empty-state { margin: 0; color: var(--text-muted); font-size: var(--text-sm); line-height: 1.5; }
+.mode-card:hover {
+  border-color: var(--line-accent);
+}
+.mode-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.mode-active .mode-card-title {
+  color: var(--primary-strong);
+}
+.mode-card-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  flex-shrink: 0;
+}
+.mode-active .mode-card-icon {
+  background: var(--surface);
+}
+.mode-card-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.mode-card-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-main);
+}
+.mode-card-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.settings-actions {
+  display: grid;
+  gap: 8px;
+}
+.empty-state {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
 .start-btn {
   display: inline-flex;
   align-items: center;
@@ -195,12 +283,25 @@ watch(() => route.fullPath, () => { showPractice.value = false; fetchCourse(); }
   font-weight: 800;
   cursor: pointer;
   box-shadow: var(--shadow-xs);
-  transition: background var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    background var(--ease-out),
+    box-shadow var(--ease-out);
 }
-.start-btn:hover:not(:disabled) { background: var(--primary-strong); box-shadow: var(--shadow-sm); }
-.start-btn:active:not(:disabled) { box-shadow: var(--shadow-xs); }
-.start-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.start-btn:hover:not(:disabled) {
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-sm);
+}
+.start-btn:active:not(:disabled) {
+  box-shadow: var(--shadow-xs);
+}
+.start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 @media (max-width: 420px) {
-  .settings-info h2 { font-size: 16px; }
+  .settings-info h2 {
+    font-size: 16px;
+  }
 }
 </style>

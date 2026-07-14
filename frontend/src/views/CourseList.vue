@@ -73,10 +73,19 @@ const filteredCourses = computed(() => {
   const keyword = searchText.value.trim().toLowerCase();
   return courses.value.filter((course) => {
     if (visibilityFilter.value === "recent" && !course.last_practiced_at) return false;
-    if (visibilityFilter.value !== "all" && visibilityFilter.value !== "recent" && course.visibility !== visibilityFilter.value) return false;
+    if (
+      visibilityFilter.value !== "all" &&
+      visibilityFilter.value !== "recent" &&
+      course.visibility !== visibilityFilter.value
+    )
+      return false;
     if (!keyword) return true;
     const fields = [course.name, course.subject, course.description, course.visibility];
-    return fields.some((field) => String(field || "").toLowerCase().includes(keyword));
+    return fields.some((field) =>
+      String(field || "")
+        .toLowerCase()
+        .includes(keyword),
+    );
   });
 });
 
@@ -237,11 +246,14 @@ function startPractice(mode: string) {
     replaceWithSource({ name: "bookmarks", query: { course_id: course.id } }, "courses");
     return;
   }
-  replaceWithSource({
-    name: "course-practice",
-    params: { courseId: course.id },
-    query: { mode, autostart: "1" },
-  }, "courses");
+  replaceWithSource(
+    {
+      name: "course-practice",
+      params: { courseId: course.id },
+      query: { mode, autostart: "1" },
+    },
+    "courses",
+  );
 }
 
 function courseCoverage(course: Course) {
@@ -267,13 +279,7 @@ onMounted(fetchCourses);
         <h2 class="library-title">题库</h2>
         <p class="library-count">我的题库 · {{ courses.length }} 个</p>
       </div>
-      <button
-        class="library-create-button"
-        data-create-course
-        type="button"
-        aria-label="创建题库"
-        @click="openCreate"
-      >
+      <button class="library-create-button" data-create-course type="button" aria-label="创建题库" @click="openCreate">
         <Plus :size="17" :stroke-width="2.4" />
       </button>
     </header>
@@ -292,13 +298,7 @@ onMounted(fetchCourses);
           placeholder="搜索题库、科目或描述"
           aria-label="搜索题库、科目或描述"
         />
-        <button
-          v-if="searchText"
-          class="search-clear"
-          type="button"
-          aria-label="清空搜索"
-          @click="clearSearch"
-        >
+        <button v-if="searchText" class="search-clear" type="button" aria-label="清空搜索" @click="clearSearch">
           <X :size="14" :stroke-width="2.6" />
         </button>
       </div>
@@ -310,10 +310,7 @@ onMounted(fetchCourses);
       />
     </div>
 
-    <div
-      v-if="!loading && courses.length === 0 && !errorMessage"
-      class="empty-state ink-card fade-up d2"
-    >
+    <div v-if="!loading && courses.length === 0 && !errorMessage" class="empty-state ink-card fade-up d2">
       <GraduationCap :size="48" :stroke-width="1.5" class="empty-icon" />
       <strong class="empty-title">还没有题库</strong>
       <p class="empty-desc">创建一门课程，或先去导入题目。</p>
@@ -355,10 +352,15 @@ onMounted(fetchCourses);
         >
           <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
           <div class="course-info">
-            <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</strong>
-            <span class="course-subline">{{ course.subject || '未分类' }} · {{ formatLastPracticed(course) }}</span>
+            <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{
+              getCourseDisplayName(course)
+            }}</strong>
+            <span class="course-subline">{{ course.subject || "未分类" }} · {{ formatLastPracticed(course) }}</span>
           </div>
-          <span class="course-stat"><strong>{{ course.question_count ?? 0 }}</strong><small>题</small></span>
+          <span class="course-stat"
+            ><strong>{{ course.question_count ?? 0 }}</strong
+            ><small>题</small></span
+          >
           <button
             class="practice-action"
             type="button"
@@ -388,13 +390,9 @@ onMounted(fetchCourses);
             @click.stop="goToPractice(course)"
           >
             <Play :size="15" :stroke-width="2.5" />
-            {{ isPracticeReadyCourse(course) ? '开始练习' : '暂无题目' }}
+            {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
           </button>
-          <button
-            class="menu-option"
-            type="button"
-            @click.stop="replaceWithSource(`/courses/${course.id}`, 'courses')"
-          >
+          <button class="menu-option" type="button" @click.stop="replaceWithSource(`/courses/${course.id}`, 'courses')">
             <Eye :size="15" :stroke-width="2.5" />
             查看题目
           </button>
@@ -417,7 +415,7 @@ onMounted(fetchCourses);
           >
             <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
             <Lock v-else :size="15" :stroke-width="2.5" />
-            {{ course.visibility === 'public' ? '撤回公开' : '发布到公共题库' }}
+            {{ course.visibility === "public" ? "撤回公开" : "发布到公共题库" }}
           </button>
           <div class="menu-divider"></div>
           <button
@@ -450,7 +448,7 @@ onMounted(fetchCourses);
     <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
       <div class="ink-card modal-card">
         <div class="modal-head">
-          <h3 class="modal-title">{{ isEdit ? '编辑题库' : '创建题库' }}</h3>
+          <h3 class="modal-title">{{ isEdit ? "编辑题库" : "创建题库" }}</h3>
           <button class="modal-close" type="button" aria-label="关闭" @click="closeForm">
             <X :size="18" :stroke-width="2.5" />
           </button>
@@ -468,17 +466,13 @@ onMounted(fetchCourses);
         </label>
         <label class="form-field">
           <span class="field-label">描述（可选）</span>
-          <textarea
-            v-model="form.description"
-            class="text-input form-textarea"
-            placeholder="简单描述题库内容"
-          />
+          <textarea v-model="form.description" class="text-input form-textarea" placeholder="简单描述题库内容" />
         </label>
 
         <div class="modal-actions">
           <Button variant="outline" @click="closeForm">取消</Button>
           <Button :disabled="formLoading" @click="handleSave">
-            {{ formLoading ? '保存中...' : isEdit ? '保存修改' : '创建' }}
+            {{ formLoading ? "保存中..." : isEdit ? "保存修改" : "创建" }}
           </Button>
         </div>
       </div>
@@ -500,7 +494,10 @@ onMounted(fetchCourses);
           @click="startPractice(mode.key)"
         >
           <span class="practice-sheet__icon"><component :is="mode.icon" :size="19" :stroke-width="2.2" /></span>
-          <span><strong>{{ mode.label }}</strong><small>{{ mode.desc }}</small></span>
+          <span
+            ><strong>{{ mode.label }}</strong
+            ><small>{{ mode.desc }}</small></span
+          >
           <Play :size="17" :stroke-width="2.4" aria-hidden="true" />
         </button>
       </section>
@@ -553,7 +550,9 @@ onMounted(fetchCourses);
   background: var(--surface-soft);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    color var(--ease-out);
 }
 .search-clear:hover {
   background: var(--surface-strong);
@@ -633,7 +632,12 @@ onMounted(fetchCourses);
   border-radius: 999px;
   background: var(--surface-soft);
 }
-.course-row__progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.course-row__progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
 .course-row:hover {
   box-shadow: var(--shadow-card);
 }
@@ -677,7 +681,9 @@ onMounted(fetchCourses);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    color var(--ease-out);
 }
 .more-btn:hover {
   background: var(--surface-strong);
@@ -713,7 +719,9 @@ onMounted(fetchCourses);
   font-weight: 700;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    color var(--ease-out);
 }
 .menu-option:hover:not(:disabled) {
   background: var(--surface-soft);
@@ -751,7 +759,9 @@ onMounted(fetchCourses);
   font-size: var(--text-sm);
   font-weight: 800;
   cursor: pointer;
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    transform var(--ease-out),
+    box-shadow var(--ease-out);
   box-shadow: var(--shadow-primary);
 }
 .btn-solid:hover:not(:disabled) {
@@ -776,7 +786,10 @@ onMounted(fetchCourses);
   font-size: var(--text-sm);
   font-weight: 800;
   cursor: pointer;
-  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out),
+    color var(--ease-out);
 }
 .btn-outline:hover:not(:disabled) {
   background: var(--primary-soft);
@@ -840,7 +853,9 @@ onMounted(fetchCourses);
   background: var(--surface-soft);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--ease-out), color var(--ease-out);
+  transition:
+    background var(--ease-out),
+    color var(--ease-out);
 }
 .modal-close:hover {
   background: var(--surface-strong);
@@ -869,14 +884,57 @@ onMounted(fetchCourses);
   gap: 8px;
   min-width: 0;
 }
-.practice-sheet__summary { margin: 0 2px 4px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
-.practice-sheet__option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-main); text-align: left; }
-.practice-sheet__option:active { transform: scale(.985); border-color: var(--primary-border); background: var(--primary-soft); }
-.practice-sheet__icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-strong); }
-.practice-sheet__option strong, .practice-sheet__option small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.practice-sheet__option strong { font-size: 14px; }
-.practice-sheet__option small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
-.practice-sheet__option :deep(svg:last-child) { color: var(--primary-strong); }
+.practice-sheet__summary {
+  margin: 0 2px 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.practice-sheet__option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-main);
+  text-align: left;
+}
+.practice-sheet__option:active {
+  transform: scale(0.985);
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+}
+.practice-sheet__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.practice-sheet__option strong,
+.practice-sheet__option small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.practice-sheet__option strong {
+  font-size: 14px;
+}
+.practice-sheet__option small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.practice-sheet__option :deep(svg:last-child) {
+  color: var(--primary-strong);
+}
 
 /* ── Mobile compact (≤400px / 6.3 inch) ── */
 @media (max-width: 400px) {
@@ -912,7 +970,9 @@ onMounted(fetchCourses);
   justify-content: space-between;
   gap: 16px;
 }
-.library-head > div { min-width: 0; }
+.library-head > div {
+  min-width: 0;
+}
 .eyebrow {
   margin: 0 0 4px;
   color: var(--text-muted);
@@ -947,7 +1007,10 @@ onMounted(fetchCourses);
   font-weight: 800;
   cursor: pointer;
 }
-.primary-action { padding: 0 14px; flex-shrink: 0; }
+.primary-action {
+  padding: 0 14px;
+  flex-shrink: 0;
+}
 .library-create-button {
   width: 44px;
   padding: 0;
@@ -956,8 +1019,14 @@ onMounted(fetchCourses);
 }
 .primary-action:hover,
 .library-create-button:hover,
-.practice-action:hover:not(:disabled) { background: var(--primary-strong); }
-.library-tools { display: flex; align-items: center; gap: 10px; }
+.practice-action:hover:not(:disabled) {
+  background: var(--primary-strong);
+}
+.library-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .library-tools .search-bar {
   flex: 1;
   min-width: 0;
@@ -967,18 +1036,39 @@ onMounted(fetchCourses);
   background: var(--surface);
   box-shadow: none;
 }
-.search-input { min-height: 28px; font-size: 14px; }
-.search-clear { width: 36px; height: 36px; border-radius: 6px; }
-.library-tools .filter-tabs { flex-shrink: 0; }
-.lib-summary { padding: 0; }
-.section-head { margin-top: 4px; }
-.section-title { font-family: var(--font-sans); font-size: 16px; font-weight: 800; }
-.course-list { gap: 8px; }
+.search-input {
+  min-height: 28px;
+  font-size: 14px;
+}
+.search-clear {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+.library-tools .filter-tabs {
+  flex-shrink: 0;
+}
+.lib-summary {
+  padding: 0;
+}
+.section-head {
+  margin-top: 4px;
+}
+.section-title {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 800;
+}
+.course-list {
+  gap: 8px;
+}
 .course-row {
   border-radius: 6px;
   box-shadow: none;
 }
-.course-row:hover { box-shadow: var(--shadow-xs); }
+.course-row:hover {
+  box-shadow: var(--shadow-xs);
+}
 .course-row .course-item {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto minmax(104px, auto) auto;
@@ -988,20 +1078,71 @@ onMounted(fetchCourses);
   padding: 10px 12px;
   border-radius: 6px;
 }
-.course-icon { width: 36px; height: 36px; border-radius: 4px; font-family: var(--font-sans); font-size: 15px; }
-.course-info { min-width: 0; }
-.course-info strong { font-size: 14px; }
-.course-subline { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.course-stat { display: inline-flex; align-items: baseline; gap: 3px; color: var(--text-main); white-space: nowrap; }
-.course-stat strong { font-size: 16px; font-weight: 800; }
-.course-stat small { color: var(--text-muted); font-size: 11px; }
-.visibility-label { min-width: 40px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.visibility-label.is-public { color: var(--primary-strong); }
-.visibility-label.is-private { color: var(--text-muted); }
-.course-recent { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
-.practice-action { min-width: 76px; padding: 0 10px; }
-.practice-action:disabled { border-color: var(--line-soft); background: var(--surface-soft); color: var(--text-placeholder); cursor: not-allowed; }
-.more-btn { width: 44px; height: 44px; border-radius: 6px; }
+.course-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+}
+.course-info {
+  min-width: 0;
+}
+.course-info strong {
+  font-size: 14px;
+}
+.course-subline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.course-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+.course-stat strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+.course-stat small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.visibility-label {
+  min-width: 40px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.visibility-label.is-public {
+  color: var(--primary-strong);
+}
+.visibility-label.is-private {
+  color: var(--text-muted);
+}
+.course-recent {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.practice-action {
+  min-width: 76px;
+  padding: 0 10px;
+}
+.practice-action:disabled {
+  border-color: var(--line-soft);
+  background: var(--surface-soft);
+  color: var(--text-placeholder);
+  cursor: not-allowed;
+}
+.more-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+}
 .course-menu {
   top: auto;
   right: 10px;
@@ -1011,24 +1152,54 @@ onMounted(fetchCourses);
   padding: 6px;
   border-radius: 6px;
 }
-.menu-option { min-height: 44px; border-radius: 4px; }
-.btn-solid { background: var(--primary); border-radius: 6px; box-shadow: none; }
-.btn-solid:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
-.modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
-.modal-card { border-radius: 6px; }
-.modal-title { font-family: var(--font-sans); }
-.modal-close { width: 44px; height: 44px; border-radius: 6px; }
+.menu-option {
+  min-height: 44px;
+  border-radius: 4px;
+}
+.btn-solid {
+  background: var(--primary);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.btn-solid:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  background: var(--primary-strong);
+}
+.modal-overlay {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.modal-card {
+  border-radius: 6px;
+}
+.modal-title {
+  font-family: var(--font-sans);
+}
+.modal-close {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+}
 
 @media (max-width: 700px) {
-  .library-tools { align-items: stretch; flex-direction: column; }
-  .library-tools .filter-tabs { align-self: flex-start; }
+  .library-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .library-tools .filter-tabs {
+    align-self: flex-start;
+  }
   .course-row .course-item {
     grid-template-columns: 36px minmax(0, 1fr) auto 44px 44px;
     gap: 8px;
     min-height: 72px;
     padding: 10px 8px;
   }
-  .course-stat { grid-column: 3; grid-row: 1; }
+  .course-stat {
+    grid-column: 3;
+    grid-row: 1;
+  }
   .practice-action {
     grid-column: 4;
     grid-row: 1;
@@ -1037,23 +1208,62 @@ onMounted(fetchCourses);
     padding: 0;
     font-size: 0;
   }
-  .practice-action svg { width: 17px; height: 17px; }
-  .visibility-label, .course-recent { display: none; }
-  .course-subline { font-size: 11px; }
-  .course-menu { right: 8px; bottom: 8px; min-width: 188px; }
+  .practice-action svg {
+    width: 17px;
+    height: 17px;
+  }
+  .visibility-label,
+  .course-recent {
+    display: none;
+  }
+  .course-subline {
+    font-size: 11px;
+  }
+  .course-menu {
+    right: 8px;
+    bottom: 8px;
+    min-width: 188px;
+  }
 }
 @media (max-width: 400px) {
-  .library-head { align-items: flex-start; }
-  .library-title { font-size: 24px; }
-  .library-create-button { width: 42px; flex-basis: 42px; }
+  .library-head {
+    align-items: flex-start;
+  }
+  .library-title {
+    font-size: 24px;
+  }
+  .library-create-button {
+    width: 42px;
+    flex-basis: 42px;
+  }
 }
 
 /* Keep the reference treatment after the compact desktop/mobile overrides. */
-.library-page { padding-top: 0; }
-.library-title { letter-spacing: 0; }
-.library-tools { gap: 12px; }
-.library-tools .search-bar { min-height: 48px; border-radius: 999px; }
-.library-tools .filter-tabs { width: 100%; }
-.course-row { border-color: var(--glass-border); border-radius: 12px; background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
-.course-row .course-item { border-radius: 12px; }
+.library-page {
+  padding-top: 0;
+}
+.library-title {
+  letter-spacing: 0;
+}
+.library-tools {
+  gap: 12px;
+}
+.library-tools .search-bar {
+  min-height: 48px;
+  border-radius: 999px;
+}
+.library-tools .filter-tabs {
+  width: 100%;
+}
+.course-row {
+  border-color: var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+.course-row .course-item {
+  border-radius: 12px;
+}
 </style>

@@ -12,14 +12,10 @@ defineProps({
 });
 
 defineEmits(["submit"]);
-
 </script>
 
 <template>
-  <div
-    v-if="showSubmitButton && !result"
-    class="practice-action-bar"
-  >
+  <div v-if="showSubmitButton && !result" class="practice-action-bar">
     <p v-if="!hasAnswerSelected && !submitting && answerHint" class="practice-action-bar__hint">
       {{ answerHint }}
     </p>
@@ -79,7 +75,9 @@ defineEmits(["submit"]);
   color: #fff;
   font-weight: 800;
   box-shadow: var(--shadow-xs);
-  transition: box-shadow var(--ease-out), background var(--ease-out);
+  transition:
+    box-shadow var(--ease-out),
+    background var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 

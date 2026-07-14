@@ -28,7 +28,10 @@ const suggestions = ["出一道选择题", "解释这道错题", "总结本章�
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
 
 function normalizeAssistantText(text) {
-  return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function currentTime() {
@@ -169,7 +172,7 @@ function getAssistantHtml(text) {
       </button>
       <div class="chat-topbar-center">
         <p class="chat-kicker">
-          <Sparkles :size="12" :stroke-width="3" style="margin-right:4px;vertical-align:-1px" />
+          <Sparkles :size="12" :stroke-width="3" style="margin-right: 4px; vertical-align: -1px" />
           AI 复习助手
         </p>
         <h2>对话练习</h2>
@@ -202,9 +205,7 @@ function getAssistantHtml(text) {
           ></div>
           <!-- eslint-enable vue/no-v-html -->
           <p v-else-if="message.text">{{ message.text }}</p>
-          <div v-else class="typing-indicator">
-            <span></span><span></span><span></span>
-          </div>
+          <div v-else class="typing-indicator"><span></span><span></span><span></span></div>
           <time v-if="!message.streaming">{{ message.time }}</time>
           <button
             v-if="message.role === 'assistant' && message.error"
@@ -212,7 +213,7 @@ function getAssistantHtml(text) {
             type="button"
             @click="retry(idx)"
           >
-            <RefreshCw :size="12" :stroke-width="2.5" style="margin-right:3px;vertical-align:-1px" />
+            <RefreshCw :size="12" :stroke-width="2.5" style="margin-right: 3px; vertical-align: -1px" />
             重试
           </button>
         </div>
@@ -306,7 +307,9 @@ function getAssistantHtml(text) {
   color: #ffffff;
   background: var(--primary);
   box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-spring), box-shadow var(--ease-out);
+  transition:
+    transform var(--ease-spring),
+    box-shadow var(--ease-out);
 }
 
 .chat-composer button:hover:not(:disabled) {
@@ -387,7 +390,9 @@ function getAssistantHtml(text) {
   background: var(--primary-soft);
   font-family: var(--font-sans);
   font-weight: 800;
-  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 10px -2px rgba(67, 56, 202, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
   position: relative;
 }
 
@@ -409,7 +414,9 @@ function getAssistantHtml(text) {
   background: var(--surface-strong);
   font-family: var(--font-sans);
   font-weight: 800;
-  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 4px 10px -2px rgba(67, 56, 202, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* AI 气泡 — 白色卡片 + 金色左边竖条 */
@@ -423,27 +430,90 @@ function getAssistantHtml(text) {
   padding: 11px 18px;
 }
 /* A layout overrides: compact, neutral surfaces and one blue action. */
-.chat-topbar-center h2 { margin: 0; font-size: var(--text-base); line-height: 1.25; }
-.chat-kicker { display: none; }
-.chat-topbar-status { margin: 2px 0 0; color: var(--text-muted); font-size: var(--text-xs); }
-.chat-theme-btn, .chat-back-btn { border-radius: 6px; }
-.chat-theme-btn { display: none; }
-.chat-composer button { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
-.chat-composer button:hover:not(:disabled) { background: var(--primary-strong); box-shadow: var(--shadow-primary); }
-.suggestion-row { min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.suggestion-row::-webkit-scrollbar { display: none; }
-.suggestion-row button { flex: 0 0 auto; }
-.online-dot { color: var(--emerald); background: var(--emerald-soft); border-color: var(--emerald-border); }
-.chat-row .chat-avatar { width: 30px; height: 30px; border-radius: 6px; box-shadow: none; }
-.chat-row .chat-avatar { font-family: inherit; }
-.chat-row.assistant .chat-avatar::after { display: none; }
-.chat-row.assistant .chat-avatar { background: var(--primary-soft); border: 1px solid var(--primary-border); color: var(--primary-strong); }
-.chat-row.user .chat-avatar { background: var(--surface-strong); border: 1px solid var(--line-soft); color: var(--text-secondary); }
-.chat-row.assistant .chat-bubble { border-left: 2px solid var(--primary); }
-.chat-composer textarea { border-radius: 6px; padding: 11px 14px; }
+.chat-topbar-center h2 {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.25;
+}
+.chat-kicker {
+  display: none;
+}
+.chat-topbar-status {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.chat-theme-btn,
+.chat-back-btn {
+  border-radius: 6px;
+}
+.chat-theme-btn {
+  display: none;
+}
+.chat-composer button {
+  border-radius: 6px;
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+}
+.chat-composer button:hover:not(:disabled) {
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-primary);
+}
+.suggestion-row {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.suggestion-row::-webkit-scrollbar {
+  display: none;
+}
+.suggestion-row button {
+  flex: 0 0 auto;
+}
+.online-dot {
+  color: var(--emerald);
+  background: var(--emerald-soft);
+  border-color: var(--emerald-border);
+}
+.chat-row .chat-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.chat-row .chat-avatar {
+  font-family: inherit;
+}
+.chat-row.assistant .chat-avatar::after {
+  display: none;
+}
+.chat-row.assistant .chat-avatar {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  color: var(--primary-strong);
+}
+.chat-row.user .chat-avatar {
+  background: var(--surface-strong);
+  border: 1px solid var(--line-soft);
+  color: var(--text-secondary);
+}
+.chat-row.assistant .chat-bubble {
+  border-left: 2px solid var(--primary);
+}
+.chat-composer textarea {
+  border-radius: 6px;
+  padding: 11px 14px;
+}
 @media (max-width: 420px) {
-  .chat-row { gap: 8px; }
-  .chat-row .chat-avatar { width: 28px; height: 28px; }
-  .chat-bubble { max-width: calc(100vw - 72px); }
+  .chat-row {
+    gap: 8px;
+  }
+  .chat-row .chat-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .chat-bubble {
+    max-width: calc(100vw - 72px);
+  }
 }
 </style>

@@ -77,7 +77,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.exam-list-page { display: grid; gap: var(--space-4); }
+.exam-list-page {
+  display: grid;
+  gap: var(--space-4);
+}
 .exam-hero {
   display: grid;
   gap: var(--space-2);
@@ -87,26 +90,51 @@ onMounted(() => {
   background: linear-gradient(135deg, #1687ff, #2850df);
   box-shadow: 0 20px 44px rgba(37, 99, 235, 0.22);
 }
-.exam-hero p, .exam-hero h1, .exam-hero span { margin: 0; }
-.exam-hero p { font-size: var(--text-xs); font-weight: 900; opacity: 0.78; }
-.exam-hero h1 { font-size: clamp(28px, 7vw, 44px); line-height: 1.08; }
-.exam-hero span { max-width: 28em; font-size: var(--text-sm); opacity: 0.84; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
-.hero-actions button, .exam-card button, .mine-row button {
+.exam-hero p,
+.exam-hero h1,
+.exam-hero span {
+  margin: 0;
+}
+.exam-hero p {
+  font-size: var(--text-xs);
+  font-weight: 900;
+  opacity: 0.78;
+}
+.exam-hero h1 {
+  font-size: clamp(28px, 7vw, 44px);
+  line-height: 1.08;
+}
+.exam-hero span {
+  max-width: 28em;
+  font-size: var(--text-sm);
+  opacity: 0.84;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.hero-actions button,
+.exam-card button,
+.mine-row button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid rgba(255,255,255,.42);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: var(--radius-full);
-  background: rgba(255,255,255,.16);
+  background: rgba(255, 255, 255, 0.16);
   color: inherit;
   font: inherit;
   font-weight: 900;
 }
-.hero-actions .primary { background: #fff; color: var(--primary); }
+.hero-actions .primary {
+  background: #fff;
+  color: var(--primary);
+}
 .empty-panel {
   display: grid;
   place-items: center;
@@ -118,8 +146,14 @@ onMounted(() => {
   color: var(--text-muted);
   text-align: center;
 }
-.empty-panel strong { color: var(--text-main); font-size: var(--text-lg); }
-.exam-card-list { display: grid; gap: var(--space-3); }
+.empty-panel strong {
+  color: var(--text-main);
+  font-size: var(--text-lg);
+}
+.exam-card-list {
+  display: grid;
+  gap: var(--space-3);
+}
 .exam-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -132,18 +166,48 @@ onMounted(() => {
   box-shadow: var(--shadow-card);
   cursor: pointer;
 }
-.exam-card p, .exam-card h2, .exam-card span { margin: 0; }
-.exam-card p { color: var(--primary); font-size: var(--text-xs); font-weight: 900; }
-.exam-card h2 { color: var(--text-main); font-size: var(--text-xl); line-height: 1.25; }
-.exam-card span { color: var(--text-muted); font-size: var(--text-sm); }
-.exam-card button, .mine-row button {
+.exam-card p,
+.exam-card h2,
+.exam-card span {
+  margin: 0;
+}
+.exam-card p {
+  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 900;
+}
+.exam-card h2 {
+  color: var(--text-main);
+  font-size: var(--text-xl);
+  line-height: 1.25;
+}
+.exam-card span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.exam-card button,
+.mine-row button {
   border-color: var(--line-soft);
   background: var(--primary-soft);
   color: var(--primary);
 }
-.mine-exams { display: grid; gap: var(--space-2); }
-.section-title { display: flex; align-items: center; justify-content: space-between; color: var(--text-main); font-weight: 900; }
-.section-title button { border: 0; background: transparent; color: var(--primary); font-weight: 900; }
+.mine-exams {
+  display: grid;
+  gap: var(--space-2);
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-main);
+  font-weight: 900;
+}
+.section-title button {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 900;
+}
 .mine-row {
   display: flex;
   align-items: center;
@@ -154,7 +218,20 @@ onMounted(() => {
   border-radius: 18px;
   background: var(--surface);
 }
-.mine-row div { display: grid; gap: 2px; min-width: 0; }
-.mine-row strong { color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mine-row span { color: var(--text-muted); font-size: var(--text-xs); font-weight: 700; }
+.mine-row div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.mine-row strong {
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mine-row span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
 </style>

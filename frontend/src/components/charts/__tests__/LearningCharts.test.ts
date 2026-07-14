@@ -40,9 +40,7 @@ describe("phase4 learning charts", () => {
   it("renders tag mastery rows", () => {
     const wrapper = mount(TagMasteryChart, {
       props: {
-        items: [
-          { tag_id: 1, tag_name: "JVM", total_count: 4, correct_count: 3, accuracy_rate: 0.75 },
-        ],
+        items: [{ tag_id: 1, tag_name: "JVM", total_count: 4, correct_count: 3, accuracy_rate: 0.75 }],
       },
     });
 
@@ -69,9 +67,7 @@ describe("phase4 learning charts", () => {
   it("renders course analytics rows", () => {
     const wrapper = mount(CourseAnalyticsChart, {
       props: {
-        items: [
-          { course_id: 1, course_name: "Java", question_count: 20, practice_count: 8, accuracy_rate: 0.625 },
-        ],
+        items: [{ course_id: 1, course_name: "Java", question_count: 20, practice_count: 8, accuracy_rate: 0.625 }],
       },
     });
 

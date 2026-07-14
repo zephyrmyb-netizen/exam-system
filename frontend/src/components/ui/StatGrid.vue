@@ -9,12 +9,15 @@ type StatGridItem = {
   dataKey?: string;
 };
 
-withDefaults(defineProps<{
-  items: StatGridItem[];
-  label?: string;
-}>(), {
-  label: "统计数据",
-});
+withDefaults(
+  defineProps<{
+    items: StatGridItem[];
+    label?: string;
+  }>(),
+  {
+    label: "统计数据",
+  },
+);
 
 function statDataAttributes(item: StatGridItem): Record<string, string> {
   return item.dataKey ? { [`data-stat-${item.dataKey}`]: "" } : {};

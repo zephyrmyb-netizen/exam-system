@@ -1,10 +1,7 @@
 import { getCurrentScope, onScopeDispose } from "vue";
 
 /** Schedule a local-only update without issuing one request per keystroke. */
-export function useDebouncedCallback<Args extends unknown[]>(
-  callback: (...args: Args) => void,
-  delay = 260,
-) {
+export function useDebouncedCallback<Args extends unknown[]>(callback: (...args: Args) => void, delay = 260) {
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   function cancel(): void {

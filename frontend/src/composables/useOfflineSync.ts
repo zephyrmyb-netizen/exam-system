@@ -142,7 +142,9 @@ async function removeAction(id: string) {
   writeFallback(readFallback().filter((action) => action.id !== id));
 }
 
-async function flush(handler: (action: Required<PendingOfflineAction>) => Promise<boolean>): Promise<OfflineFlushResult> {
+async function flush(
+  handler: (action: Required<PendingOfflineAction>) => Promise<boolean>,
+): Promise<OfflineFlushResult> {
   if (!online.value) return { synced: 0, failed: 0 };
 
   const actions = await listPending();

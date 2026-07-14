@@ -743,7 +743,7 @@ def split_numbered_question_blocks(text: str) -> list[str]:
     prefix = text[: boundaries[0].start()].strip()
     blocks = [
         text[match.start() : next_match.start()].strip()
-        for match, next_match in zip(boundaries, boundaries[1:])
+        for match, next_match in zip(boundaries, boundaries[1:], strict=False)
     ]
     blocks.append(text[boundaries[-1].start() :].strip())
     if prefix and blocks:

@@ -15,10 +15,7 @@ import {
   isTextQuestionType,
   TRUE_FALSE_OPTIONS,
 } from "../utils/question";
-import {
-  practiceSessionMachine,
-  type PracticeSessionPhase,
-} from "../features/practice/practiceSessionMachine";
+import { practiceSessionMachine, type PracticeSessionPhase } from "../features/practice/practiceSessionMachine";
 import type { OptionItem, Question, SubmitResponse } from "../types";
 
 interface SessionStats {
@@ -116,6 +113,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   });
   let correctAutoNextTimer: ReturnType<typeof setTimeout> | null = null;
   let requestVersion = 0;
+  let activeSubmissionId = "";
 
   actor.start();
 
@@ -185,6 +183,14 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     textAnswer.value = "";
     result.value = null;
     validationMessage.value = "";
+    activeSubmissionId = "";
+  }
+
+  function createSubmissionId(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
   function enterLoading(allowSessionRestart = false): boolean {
@@ -313,7 +319,12 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     validationMessage.value = "";
 
     try {
-      const data = await submitPracticeAnswer({ question_id: questionId, user_answer: currentAnswer.value });
+      activeSubmissionId ||= createSubmissionId();
+      const data = await submitPracticeAnswer({
+        question_id: questionId,
+        user_answer: currentAnswer.value,
+        client_submission_id: activeSubmissionId,
+      });
       if (question.value?.id !== questionId) return;
 
       result.value = data;

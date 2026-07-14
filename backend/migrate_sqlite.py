@@ -43,7 +43,9 @@ def _add_unique_constraint_if_missing(cur, table, constraint_name, columns):
     if len(col_list) == 2:
         c1, c2 = col_list
         dedup_sql = f"""
-            DELETE FROM {table} WHERE id NOT IN (
+            DELETE FROM {table}
+            WHERE {c1} IS NOT NULL AND {c2} IS NOT NULL
+              AND id NOT IN (
                 SELECT MIN(id) FROM {table}
                 WHERE {c1} IS NOT NULL AND {c2} IS NOT NULL
                 GROUP BY {c1}, {c2}
@@ -149,6 +151,7 @@ def main():
                     is_correct INTEGER NOT NULL DEFAULT 0,
                     user_answer VARCHAR(500) DEFAULT '',
                     correct_answer VARCHAR(500) DEFAULT '',
+                    client_submission_id VARCHAR(64),
                     answered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -162,6 +165,20 @@ def main():
             print("[INFO] Created practice_records table (was missing).")
         else:
             print("[INFO] practice_records table already exists.")
+
+        cur.execute("PRAGMA table_info(practice_records)")
+        practice_columns = {row[1] for row in cur.fetchall()}
+        if "client_submission_id" not in practice_columns:
+            cur.execute("ALTER TABLE practice_records ADD COLUMN client_submission_id VARCHAR(64)")
+            conn.commit()
+            print("[INFO] Added practice_records.client_submission_id.")
+        _add_unique_constraint_if_missing(
+            cur,
+            "practice_records",
+            "uq_practice_records_user_submission",
+            "user_id, client_submission_id",
+        )
+        conn.commit()
 
         # ── 5. Create user_question_reviews table if missing ─────────────
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_question_reviews'")

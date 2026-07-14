@@ -77,13 +77,7 @@ async function handleRegister() {
 
       <div class="auth-field">
         <label for="register-invite">邀请码</label>
-        <input
-          id="register-invite"
-          v-model="form.inviteCode"
-          type="text"
-          autocomplete="off"
-          placeholder="输入邀请码"
-        />
+        <input id="register-invite" v-model="form.inviteCode" type="text" autocomplete="off" placeholder="输入邀请码" />
       </div>
 
       <p class="invite-hint">邀请码由管理员配置在 backend/.env 的 INVITE_CODE。</p>
@@ -115,18 +109,68 @@ button.auth-tab {
   font-size: 13px;
   line-height: 1.5;
 }
-.auth-card { max-width: 400px; padding: 24px; border-radius: 6px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
-.auth-brand { margin: 0 0 22px; color: var(--text-main); font-size: 15px; font-weight: 800; }
-.auth-brand span { margin-left: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
-.auth-tabs { margin-bottom: 22px; padding: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
-.auth-tab { min-height: 44px; padding: 0 12px; border-radius: 0; }
-.auth-tab.active { border-bottom: 2px solid var(--primary); box-shadow: none; }
-.auth-heading { margin-bottom: 20px; }
-.auth-heading h1 { margin: 0; color: var(--text-main); font-family: var(--font-sans); font-size: 22px; font-weight: 800; }
-.auth-heading p { margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
-.auth-field { gap: 7px; margin-bottom: 16px; }
-.auth-field label { font-size: 13px; letter-spacing: 0; text-transform: none; }
-.auth-field input { height: 48px; border-radius: 5px; }
+.auth-card {
+  max-width: 400px;
+  padding: 24px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.auth-brand {
+  margin: 0 0 22px;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 800;
+}
+.auth-brand span {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.auth-tabs {
+  margin-bottom: 22px;
+  padding: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+  background: transparent;
+}
+.auth-tab {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 0;
+}
+.auth-tab.active {
+  border-bottom: 2px solid var(--primary);
+  box-shadow: none;
+}
+.auth-heading {
+  margin-bottom: 20px;
+}
+.auth-heading h1 {
+  margin: 0;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 800;
+}
+.auth-heading p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.auth-field {
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.auth-field label {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.auth-field input {
+  height: 48px;
+  border-radius: 5px;
+}
 
 .auth-field-control {
   position: relative;
@@ -170,6 +214,16 @@ button.auth-tab {
 .auth-field input {
   font-size: 16px;
 }
-.auth-btn { height: 48px; margin-top: 8px; border-radius: 5px; background: var(--primary); box-shadow: none; }
-.auth-btn:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
+.auth-btn {
+  height: 48px;
+  margin-top: 8px;
+  border-radius: 5px;
+  background: var(--primary);
+  box-shadow: none;
+}
+.auth-btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  background: var(--primary-strong);
+}
 </style>

@@ -92,10 +92,18 @@ function dayLabel(date: string): string {
   font-size: 11px;
   font-weight: 850;
 }
-.level-1 { background: #dbeafe; }
-.level-2 { background: #bfdbfe; }
-.level-3 { background: #93c5fd; }
-.level-4 { background: linear-gradient(135deg, var(--primary), var(--teal)); }
+.level-1 {
+  background: #dbeafe;
+}
+.level-2 {
+  background: #bfdbfe;
+}
+.level-3 {
+  background: #93c5fd;
+}
+.level-4 {
+  background: linear-gradient(135deg, var(--primary), var(--teal));
+}
 .level-4 span,
 .level-4 strong {
   color: white;

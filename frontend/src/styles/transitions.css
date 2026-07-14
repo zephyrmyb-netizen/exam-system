@@ -6,7 +6,9 @@
 
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
 .page-enter-from {

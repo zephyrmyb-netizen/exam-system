@@ -271,6 +271,7 @@ class BatchImportResponse(BaseModel):
 class SubmitRequest(BaseModel):
     question_id: int
     user_answer: str
+    client_submission_id: str | None = None
 
 
 class SubmitResponse(BaseModel):

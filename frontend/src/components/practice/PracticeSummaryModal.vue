@@ -2,29 +2,32 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { Award, ArrowRight, CheckCircle, Clock3, Play, RefreshCw, Target, XCircle } from "@lucide/vue";
 
-const props = withDefaults(defineProps<{
-  show?: boolean;
-  answeredCount?: number;
-  correctCount?: number;
-  wrongCount?: number;
-  accuracy?: number | null;
-  durationSeconds?: number | null;
-  courseName?: string;
-  modeLabel?: string;
-  completed?: boolean;
-  canContinue?: boolean;
-}>(), {
-  show: false,
-  answeredCount: 0,
-  correctCount: 0,
-  wrongCount: 0,
-  accuracy: null,
-  durationSeconds: null,
-  courseName: "",
-  modeLabel: "",
-  completed: false,
-  canContinue: true,
-});
+const props = withDefaults(
+  defineProps<{
+    show?: boolean;
+    answeredCount?: number;
+    correctCount?: number;
+    wrongCount?: number;
+    accuracy?: number | null;
+    durationSeconds?: number | null;
+    courseName?: string;
+    modeLabel?: string;
+    completed?: boolean;
+    canContinue?: boolean;
+  }>(),
+  {
+    show: false,
+    answeredCount: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    accuracy: null,
+    durationSeconds: null,
+    courseName: "",
+    modeLabel: "",
+    completed: false,
+    canContinue: true,
+  },
+);
 
 const accuracyValue = computed(() => Math.max(0, Math.min(100, Number(props.accuracy) || 0)));
 
@@ -145,9 +148,7 @@ watch(
   () => props.show,
   (show) => {
     if (show) {
-      previouslyFocused = document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+      previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       attachDocumentListeners();
       void focusDialog();
     } else {
@@ -180,18 +181,30 @@ onBeforeUnmount(() => {
       >
         <div
           class="practice-summary__icon"
-          :class="answeredCount > 0 && accuracy !== null && accuracy >= 60
-            ? 'practice-summary__icon--good'
-            : 'practice-summary__icon--keep'"
+          :class="
+            answeredCount > 0 && accuracy !== null && accuracy >= 60
+              ? 'practice-summary__icon--good'
+              : 'practice-summary__icon--keep'
+          "
         >
           <CheckCircle v-if="answeredCount > 0 && accuracy !== null && accuracy >= 60" :size="36" />
           <RefreshCw v-else :size="36" />
         </div>
 
         <p id="practice-summary-title" class="practice-summary__title">{{ completed ? "练习完成！" : "结束练习" }}</p>
-        <p v-if="completed" class="practice-summary__subtitle">{{ courseName || "本题库" }} · {{ modeLabel || "练习" }}</p>
+        <p v-if="completed" class="practice-summary__subtitle">
+          {{ courseName || "本题库" }} · {{ modeLabel || "练习" }}
+        </p>
         <span v-if="completed" class="practice-summary__badge"><Award :size="14" />{{ performanceLabel }}</span>
-        <p id="practice-summary-description" class="practice-summary__desc">{{ completed ? encouragement : answeredCount > 0 ? `本次练习已完成 ${answeredCount} 题，你可以继续练习或结束本次会话。` : "还没有完成题目，你可以继续练习或结束本次会话。" }}</p>
+        <p id="practice-summary-description" class="practice-summary__desc">
+          {{
+            completed
+              ? encouragement
+              : answeredCount > 0
+                ? `本次练习已完成 ${answeredCount} 题，你可以继续练习或结束本次会话。`
+                : "还没有完成题目，你可以继续练习或结束本次会话。"
+          }}
+        </p>
 
         <div v-if="answeredCount > 0" class="practice-summary__score">
           <div class="practice-summary__ring" :style="{ '--summary-score': `${accuracyValue}%` }">
@@ -199,16 +212,30 @@ onBeforeUnmount(() => {
             <small>正确率</small>
           </div>
           <div class="practice-summary__score-copy">
-            <span><Clock3 :size="14" /> 用时 <strong>{{ durationText }}</strong></span>
-            <span><Target :size="14" /> 总题数 <strong>{{ answeredCount }}</strong></span>
+            <span
+              ><Clock3 :size="14" /> 用时 <strong>{{ durationText }}</strong></span
+            >
+            <span
+              ><Target :size="14" /> 总题数 <strong>{{ answeredCount }}</strong></span
+            >
           </div>
         </div>
 
         <div class="practice-summary__details">
-          <div class="practice-summary__detail"><span><CheckCircle :size="18" />答对</span><strong class="practice-summary__value--good">{{ correctCount }} 题</strong></div>
-          <div class="practice-summary__detail"><span><XCircle :size="18" />答错</span><strong class="practice-summary__value--bad">{{ wrongCount }} 题</strong></div>
-          <div class="practice-summary__detail"><span><Target :size="18" />正确率</span><strong>{{ accuracy !== null ? `${accuracy}%` : "--" }}</strong></div>
-          <div class="practice-summary__detail practice-summary__duration"><span><Clock3 :size="18" />用时</span><strong>{{ durationText }}</strong></div>
+          <div class="practice-summary__detail">
+            <span><CheckCircle :size="18" />答对</span
+            ><strong class="practice-summary__value--good">{{ correctCount }} 题</strong>
+          </div>
+          <div class="practice-summary__detail">
+            <span><XCircle :size="18" />答错</span
+            ><strong class="practice-summary__value--bad">{{ wrongCount }} 题</strong>
+          </div>
+          <div class="practice-summary__detail">
+            <span><Target :size="18" />正确率</span><strong>{{ accuracy !== null ? `${accuracy}%` : "--" }}</strong>
+          </div>
+          <div class="practice-summary__detail practice-summary__duration">
+            <span><Clock3 :size="18" />用时</span><strong>{{ durationText }}</strong>
+          </div>
         </div>
 
         <div class="practice-summary__actions">
@@ -244,7 +271,8 @@ onBeforeUnmount(() => {
   z-index: 100;
   display: grid;
   place-items: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .practice-summary__backdrop {
@@ -302,8 +330,25 @@ onBeforeUnmount(() => {
   color: var(--text-main);
 }
 
-.practice-summary__subtitle { margin: -4px 0 0; color: var(--text-muted); font-size: 13px; font-weight: 650; }
-.practice-summary__badge { display: inline-flex; align-items: center; gap: 5px; justify-self: center; padding: 5px 12px; border: 1px solid var(--primary-border); border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary-strong); font-size: 12px; font-weight: 800; }
+.practice-summary__subtitle {
+  margin: -4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.practice-summary__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-self: center;
+  padding: 5px 12px;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-full);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
 .practice-summary__desc {
   margin: 0;
   font-size: var(--text-sm);
@@ -323,10 +368,27 @@ onBeforeUnmount(() => {
   box-shadow: var(--glass-inner-highlight);
   text-align: left;
 }
-.practice-summary__score-copy { display: grid; gap: 10px; color: var(--text-secondary); font-size: 13px; }
-.practice-summary__score-copy span { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
-.practice-summary__score-copy span:last-child { padding-bottom: 0; border-bottom: 0; }
-.practice-summary__score-copy svg { color: var(--text-muted); }
+.practice-summary__score-copy {
+  display: grid;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.practice-summary__score-copy span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.practice-summary__score-copy span:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.practice-summary__score-copy svg {
+  color: var(--text-muted);
+}
 .practice-summary__ring {
   display: grid;
   width: 84px;
@@ -338,8 +400,17 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   box-shadow: inset 0 0 0 8px var(--surface);
 }
-.practice-summary__ring span { font-size: 15px; font-weight: 900; line-height: 1; }
-.practice-summary__ring small { margin-top: 3px; color: var(--text-muted); font-size: 9px; font-weight: 750; }
+.practice-summary__ring span {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+.practice-summary__ring small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+}
 
 .practice-summary__value--good {
   color: var(--emerald);
@@ -349,12 +420,38 @@ onBeforeUnmount(() => {
   color: var(--rose);
 }
 
-.practice-summary__details { overflow: hidden; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); }
-.practice-summary__detail { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border-bottom: 1px solid var(--line-soft); color: var(--text-secondary); font-size: 13px; font-weight: 700; }
-.practice-summary__detail:last-child { border-bottom: 0; }
-.practice-summary__detail span { display: inline-flex; align-items: center; gap: 7px; }
-.practice-summary__detail span svg { color: var(--text-muted); }
-.practice-summary__detail strong { color: var(--text-main); font-size: 14px; }
+.practice-summary__details {
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.practice-summary__detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+.practice-summary__detail:last-child {
+  border-bottom: 0;
+}
+.practice-summary__detail span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.practice-summary__detail span svg {
+  color: var(--text-muted);
+}
+.practice-summary__detail strong {
+  color: var(--text-main);
+  font-size: 14px;
+}
 
 .practice-summary__actions {
   display: grid;
@@ -373,7 +470,10 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-full);
   font-size: var(--text-base);
   font-weight: 800;
-  transition: box-shadow 0.17s ease-out, border-color 0.17s ease-out, background 0.17s ease-out;
+  transition:
+    box-shadow 0.17s ease-out,
+    border-color 0.17s ease-out,
+    background 0.17s ease-out;
 }
 
 .practice-primary-button {
@@ -401,7 +501,9 @@ onBeforeUnmount(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.17s ease-out, transform 0.17s ease-out;
+  transition:
+    opacity 0.17s ease-out,
+    transform 0.17s ease-out;
 }
 
 .fade-enter-from,
@@ -415,12 +517,16 @@ onBeforeUnmount(() => {
     padding: var(--space-5) var(--space-4);
   }
 
-  .practice-summary__score { gap: 12px; padding: 10px; }
+  .practice-summary__score {
+    gap: 12px;
+    padding: 10px;
+  }
 }
 
 @media (max-width: 360px) {
   .practice-summary {
-    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+      max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
 
   .practice-summary__panel {

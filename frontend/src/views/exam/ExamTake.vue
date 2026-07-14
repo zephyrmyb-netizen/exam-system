@@ -35,7 +35,9 @@ let componentActive = false;
 
 function formatRemaining(seconds: number | null) {
   if (seconds === null) return "--:--";
-  const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const minutes = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
   const remainder = (seconds % 60).toString().padStart(2, "0");
   return `${minutes}:${remainder}`;
 }
@@ -85,9 +87,11 @@ function selectOption(index: number) {
   if (!question?.options) return;
   const key = Object.keys(question.options)[index];
   if (!key) return;
-  answer(question.question_type === "multiple_choice"
-    ? toggleMultipleChoiceKey(store.answers[String(question.question_id)], key)
-    : key);
+  answer(
+    question.question_type === "multiple_choice"
+      ? toggleMultipleChoiceKey(store.answers[String(question.question_id)], key)
+      : key,
+  );
 }
 
 function jumpFromAnswerSheet(index: number) {
@@ -241,7 +245,10 @@ onUnmounted(() => {
               :key="question.question_id"
               type="button"
               :data-question-id="question.question_id"
-              :class="{ active: index === store.currentIndex, answered: Boolean(store.answers[String(question.question_id)]?.trim()) }"
+              :class="{
+                active: index === store.currentIndex,
+                answered: Boolean(store.answers[String(question.question_id)]?.trim()),
+              }"
               @click="jumpFromAnswerSheet(index)"
             >
               {{ index + 1 }}
@@ -354,7 +361,7 @@ onUnmounted(() => {
 
 .submit-error-banner button:disabled {
   cursor: not-allowed;
-  opacity: .55;
+  opacity: 0.55;
 }
 
 .exam-topbar {
@@ -436,12 +443,12 @@ onUnmounted(() => {
 .question-nav button:active,
 .submit-button:active,
 .answer-map button:active {
-  transform: scale(.94);
+  transform: scale(0.94);
 }
 
 .exam-exit:disabled {
   cursor: not-allowed;
-  opacity: .48;
+  opacity: 0.48;
 }
 
 .exam-timer-ring {
@@ -497,12 +504,12 @@ onUnmounted(() => {
   z-index: 30;
   display: grid;
   width: min(100%, var(--shell-max));
-  grid-template-columns: minmax(0, 1fr) minmax(96px, .72fr);
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 0.72fr);
   gap: 10px;
   padding: 12px max(12px, var(--space-4)) max(12px, var(--safe-area-bottom));
   border-top: 1px solid var(--glass-border);
   background: var(--glass-header);
-  box-shadow: 0 -2px 12px rgba(15, 23, 42, .06);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
   -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
   transform: translateX(-50%);
@@ -526,7 +533,9 @@ onUnmounted(() => {
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 800;
-  transition: transform var(--ease-spring), opacity var(--ease-out);
+  transition:
+    transform var(--ease-spring),
+    opacity var(--ease-out);
 }
 
 .question-nav button {
@@ -538,7 +547,7 @@ onUnmounted(() => {
 .question-nav button:disabled,
 .submit-button:disabled {
   cursor: not-allowed;
-  opacity: .48;
+  opacity: 0.48;
 }
 
 .submit-button {
@@ -594,7 +603,10 @@ onUnmounted(() => {
   font-size: var(--text-sm);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  transition: transform var(--ease-spring), background var(--ease-out), border-color var(--ease-out);
+  transition:
+    transform var(--ease-spring),
+    background var(--ease-out),
+    border-color var(--ease-out);
 }
 
 .answer-map button.answered {
@@ -641,13 +653,26 @@ onUnmounted(() => {
 }
 
 @keyframes exam-tick {
-  50% { transform: scale(1.08); opacity: .82; }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.82;
+  }
 }
 
 @media (max-width: 340px) {
-  .exam-topbar { gap: 4px; padding-inline: 8px; }
-  .exam-heading strong { font-size: var(--text-sm); }
-  .exam-actions { grid-template-columns: minmax(0, 1fr) 92px; padding-inline: 8px; }
-  .question-nav button { font-size: var(--text-xs); }
+  .exam-topbar {
+    gap: 4px;
+    padding-inline: 8px;
+  }
+  .exam-heading strong {
+    font-size: var(--text-sm);
+  }
+  .exam-actions {
+    grid-template-columns: minmax(0, 1fr) 92px;
+    padding-inline: 8px;
+  }
+  .question-nav button {
+    font-size: var(--text-xs);
+  }
 }
 </style>

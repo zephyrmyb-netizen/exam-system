@@ -5,7 +5,9 @@ export function getQuestionsMeta(): Promise<QuestionMeta> {
   return request.get("/questions/meta").then(({ data }) => data as QuestionMeta);
 }
 
-export function getQuestions(params?: Record<string, string | number>): Promise<Question[] | { total: number; items: Question[] }> {
+export function getQuestions(
+  params?: Record<string, string | number>,
+): Promise<Question[] | { total: number; items: Question[] }> {
   return request.get("/questions/", { params }).then(({ data }) => data);
 }
 

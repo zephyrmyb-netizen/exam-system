@@ -15,7 +15,7 @@ import { useThemeStore } from "../stores/theme";
 
 const route = useRoute();
 const { replaceTo, returnToSource } = useAppNavigation();
-const { fetchProfile } = useAuth();
+const { fetchProfile, user } = useAuth();
 const theme = useThemeStore();
 const { isOnline, pendingCount, refreshPendingCount } = useOfflineSync();
 
@@ -74,20 +74,18 @@ const activeNavKey = computed(() => {
   return nav || "";
 });
 
-const showHeader = computed(() => !isImmersiveRoute.value && !["home", "courses", "import", "mine", "chat"].includes(route.name as string));
+const showHeader = computed(
+  () => !isImmersiveRoute.value && !["home", "courses", "import", "mine", "chat"].includes(route.name as string),
+);
 const showBackButton = computed(() => !!route.meta?.parent);
 
 function goBack() {
   const parent = route.meta?.parent;
-  returnToSource(
-    typeof parent === "string"
-      ? { name: parent, params: { ...route.params } }
-      : { name: "home" },
-  );
+  returnToSource(typeof parent === "string" ? { name: parent, params: { ...route.params } } : { name: "home" });
 }
 
 function handleAuthChange() {
-  if (!getToken() && route.name !== "login" && route.name !== "register") {
+  if (!getToken() && !user.value && route.name !== "login" && route.name !== "register") {
     replaceTo({ name: "login", query: { redirect: route.fullPath } });
   }
 }
@@ -141,10 +139,9 @@ async function syncPendingPracticeActions() {
 }
 
 onMounted(() => {
-  if (getToken()) {
-    fetchProfile();
-    void resumeAiImportTask();
-  }
+  void fetchProfile().then(() => {
+    if (user.value) void resumeAiImportTask();
+  });
   void refreshPendingCount();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
@@ -364,8 +361,15 @@ onUnmounted(() => {
 }
 
 @keyframes ai-dot-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .ai-banner-text {
@@ -444,7 +448,9 @@ onUnmounted(() => {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
   background: var(--glass-nav);
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), var(--glass-inner-highlight);
+  box-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.12),
+    var(--glass-inner-highlight);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   transform: translateX(-50%);
@@ -471,20 +477,35 @@ onUnmounted(() => {
 .nav-button.active {
   color: var(--primary-strong);
   background: rgba(16, 185, 129, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.15), var(--glass-inner-highlight);
+  box-shadow:
+    inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+    var(--glass-inner-highlight);
 }
-.nav-icon { position: relative; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
+.nav-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
 .nav-icon--ai {
   width: 36px;
   height: 36px;
   border-radius: 50%;
   color: #ffffff;
   background: var(--primary);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), var(--glass-inner-highlight);
+  box-shadow:
+    0 4px 12px rgba(16, 185, 129, 0.3),
+    var(--glass-inner-highlight);
 }
-.nav-label { line-height: 1; }
+.nav-label {
+  line-height: 1;
+}
 
 @media (min-width: 760px) {
-  .app-shell { box-shadow: var(--shell-shadow); }
+  .app-shell {
+    box-shadow: var(--shell-shadow);
+  }
 }
 </style>

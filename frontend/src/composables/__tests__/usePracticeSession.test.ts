@@ -156,9 +156,7 @@ describe("usePracticeSession", () => {
     const { usePracticeSession } = await import("../usePracticeSession");
     const session = usePracticeSession({ courseId: 9 });
 
-    getRandomPracticeQuestion
-      .mockResolvedValueOnce(makeQuestion(1))
-      .mockResolvedValueOnce(makeQuestion(2));
+    getRandomPracticeQuestion.mockResolvedValueOnce(makeQuestion(1)).mockResolvedValueOnce(makeQuestion(2));
     submitPracticeAnswer.mockResolvedValueOnce(correctResult());
 
     session.startSession();
@@ -215,12 +213,8 @@ describe("usePracticeSession", () => {
     const textQuestion = { ...makeQuestion(2), type: "short_answer", options: null } as Question;
     const session = usePracticeSession({ courseId: 9 });
 
-    getRandomPracticeQuestion
-      .mockResolvedValueOnce(multipleQuestion)
-      .mockResolvedValueOnce(textQuestion);
-    submitPracticeAnswer
-      .mockResolvedValueOnce(wrongResult())
-      .mockResolvedValueOnce(correctResult());
+    getRandomPracticeQuestion.mockResolvedValueOnce(multipleQuestion).mockResolvedValueOnce(textQuestion);
+    submitPracticeAnswer.mockResolvedValueOnce(wrongResult()).mockResolvedValueOnce(correctResult());
 
     session.startSession();
     await flushPromises();
@@ -231,13 +225,25 @@ describe("usePracticeSession", () => {
     await Promise.all([firstSubmit, duplicateSubmit]);
 
     expect(submitPracticeAnswer).toHaveBeenCalledTimes(1);
-    expect(submitPracticeAnswer).toHaveBeenLastCalledWith({ question_id: 1, user_answer: "A,B" });
+    expect(submitPracticeAnswer).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        question_id: 1,
+        user_answer: "A,B",
+        client_submission_id: expect.any(String),
+      }),
+    );
 
     await session.fetchRandomQuestion();
     session.updateTextAnswer("  规范化答案  ");
     await session.submitAnswer();
 
     expect(submitPracticeAnswer).toHaveBeenCalledTimes(2);
-    expect(submitPracticeAnswer).toHaveBeenLastCalledWith({ question_id: 2, user_answer: "规范化答案" });
+    expect(submitPracticeAnswer).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        question_id: 2,
+        user_answer: "规范化答案",
+        client_submission_id: expect.any(String),
+      }),
+    );
   });
 });

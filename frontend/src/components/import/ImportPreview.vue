@@ -1,10 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { typeLabel } from "../../utils/question";
-import {
-  ArrowLeft, CheckCircle, AlertCircle, Trash2, Plus,
-  Edit3, Sparkles,
-} from "@lucide/vue";
+import { ArrowLeft, CheckCircle, AlertCircle, Trash2, Plus, Edit3, Sparkles } from "@lucide/vue";
 import QuestionEditor from "../question/QuestionEditor.vue";
 import { useConfirmDialog } from "../../stores/confirmDialog";
 
@@ -51,29 +48,39 @@ const selectedCourseId = ref(Number(props.initialCourseId || 0));
 const courseNameInput = ref("");
 
 // When previewData changes, set course name from suggestion
-watch(suggestedCourseName, (v) => {
-  if (props.initialCourseName && selectedCourseId.value === 0) {
-    courseNameInput.value = props.initialCourseName;
-  } else if (v && selectedCourseId.value === 0) {
-    courseNameInput.value = v;
-  }
-}, { immediate: true });
+watch(
+  suggestedCourseName,
+  (v) => {
+    if (props.initialCourseName && selectedCourseId.value === 0) {
+      courseNameInput.value = props.initialCourseName;
+    } else if (v && selectedCourseId.value === 0) {
+      courseNameInput.value = v;
+    }
+  },
+  { immediate: true },
+);
 
-watch(() => props.initialCourseId, (v) => {
-  if (Number(v || 0) > 0) {
-    selectedCourseId.value = Number(v);
-  }
-});
+watch(
+  () => props.initialCourseId,
+  (v) => {
+    if (Number(v || 0) > 0) {
+      selectedCourseId.value = Number(v);
+    }
+  },
+);
 
-watch(() => props.initialCourseName, (v) => {
-  if (v && selectedCourseId.value === 0) {
-    courseNameInput.value = v;
-  }
-});
+watch(
+  () => props.initialCourseName,
+  (v) => {
+    if (v && selectedCourseId.value === 0) {
+      courseNameInput.value = v;
+    }
+  },
+);
 
 const effectiveCourseName = computed(() => {
   if (selectedCourseId.value > 0) {
-    const found = props.courses.find(c => c.id === selectedCourseId.value);
+    const found = props.courses.find((c) => c.id === selectedCourseId.value);
     return found?.name || "";
   }
   return courseNameInput.value.trim();
@@ -144,7 +151,7 @@ function findFirstInvalid() {
   for (let i = 0; i < questions.value.length; i++) {
     const q = questions.value[i];
     if (!q.question?.trim()) return `第 ${i + 1} 题：缺少题干`;
-    const validTypes = ["single_choice","multiple_choice","true_false","fill_blank","short_answer"];
+    const validTypes = ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer"];
     if (!q.type || !validTypes.includes(q.type)) return `第 ${i + 1} 题：题型无效`;
     if (!q.answer?.trim()) return `第 ${i + 1} 题：缺少答案`;
   }
@@ -201,8 +208,12 @@ function handleRetry() {
       </button>
       <div class="preview-head-text">
         <p class="preview-title">预览解析结果</p>
-        <p v-if="fileName" class="preview-sub">文件：<strong>{{ fileName }}</strong></p>
-        <p class="preview-sub">目标题库：<strong>{{ effectiveCourseName || suggestedCourseName || "未命名" }}</strong></p>
+        <p v-if="fileName" class="preview-sub">
+          文件：<strong>{{ fileName }}</strong>
+        </p>
+        <p class="preview-sub">
+          目标题库：<strong>{{ effectiveCourseName || suggestedCourseName || "未命名" }}</strong>
+        </p>
         <p v-if="previewData.suggested_course_name" class="preview-sub">
           推荐题库：<strong>{{ previewData.suggested_course_name }}</strong>
         </p>
@@ -211,7 +222,7 @@ function handleRetry() {
 
     <!-- ── Warnings ── -->
     <div v-if="warnings.length > 0" class="warnings-box">
-      <AlertCircle :size="16" :stroke-width="2.5" color="var(--amber)" style="flex-shrink:0" />
+      <AlertCircle :size="16" :stroke-width="2.5" color="var(--amber)" style="flex-shrink: 0" />
       <div>
         <p v-for="(w, i) in warnings" :key="i" class="warn-line">{{ w }}</p>
       </div>
@@ -247,15 +258,11 @@ function handleRetry() {
     </div>
 
     <div v-else class="q-list">
-      <div
-        v-for="(q, idx) in questions"
-        :key="q._tempId"
-        class="q-item"
-      >
+      <div v-for="(q, idx) in questions" :key="q._tempId" class="q-item">
         <div class="q-item-head">
           <span class="q-index">{{ idx + 1 }}</span>
           <span class="q-type-tag">{{ typeLabel(q.type) }}</span>
-          <span class="q-preview">{{ q.question?.slice(0, 60) }}{{ (q.question?.length || 0) > 60 ? '...' : '' }}</span>
+          <span class="q-preview">{{ q.question?.slice(0, 60) }}{{ (q.question?.length || 0) > 60 ? "..." : "" }}</span>
         </div>
         <div class="q-item-actions">
           <button class="q-btn" type="button" @click="editQuestion(idx)" title="编辑">
@@ -294,11 +301,11 @@ function handleRetry() {
     <!-- ── Actions ── -->
     <div class="action-row">
       <button class="ghost-button" type="button" @click="handleRetry">
-        <Sparkles :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        <Sparkles :size="16" :stroke-width="2.5" style="margin-right: 4px" />
         重新解析
       </button>
       <button v-if="questions.length === 0" class="ghost-button" type="button" @click="handleBack">
-        <ArrowLeft :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        <ArrowLeft :size="16" :stroke-width="2.5" style="margin-right: 4px" />
         返回重新选择文件
       </button>
       <button
@@ -307,7 +314,7 @@ function handleRetry() {
         :disabled="confirming || questions.length === 0"
         @click="handleConfirm"
       >
-        <CheckCircle :size="16" :stroke-width="2.5" style="margin-right:6px" />
+        <CheckCircle :size="16" :stroke-width="2.5" style="margin-right: 6px" />
         {{ confirming ? "导入中..." : `确认导入（${questions.length} 题）` }}
       </button>
     </div>
@@ -319,11 +326,7 @@ function handleRetry() {
       @close="closeEditor"
       @saved="onQuestionSaved"
     />
-    <QuestionEditor
-      v-if="showNewQuestionEditor"
-      @close="closeEditor"
-      @saved="onQuestionSaved"
-    />
+    <QuestionEditor v-if="showNewQuestionEditor" @close="closeEditor" @saved="onQuestionSaved" />
   </div>
 </template>
 
@@ -340,22 +343,45 @@ function handleRetry() {
   gap: var(--space-3);
 }
 .back-btn {
-  display: grid; place-items: center;
-  width: 34px; height: 34px;
-  border: 1px solid var(--line-soft); border-radius: 50%;
-  background: var(--surface); color: var(--text-secondary);
-  cursor: pointer; flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
 }
-.preview-head-text { min-width: 0; }
-.preview-title { margin: 0; font-size: var(--text-base); font-weight: 800; color: var(--text-main); }
-.preview-sub { margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
-.preview-sub strong { color: var(--primary-strong); }
+.preview-head-text {
+  min-width: 0;
+}
+.preview-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--text-main);
+}
+.preview-sub {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.preview-sub strong {
+  color: var(--primary-strong);
+}
 
 /* ── Warnings ── */
 .warnings-box {
-  display: flex; gap: var(--space-2); align-items: flex-start;
-  padding: var(--space-3); border-radius: var(--radius-md);
-  background: var(--amber-soft); border: 1px solid #fde68a;
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--amber-soft);
+  border: 1px solid #fde68a;
 }
 .warn-line {
   margin: 0;
@@ -367,14 +393,25 @@ function handleRetry() {
   white-space: normal;
   word-break: break-word;
 }
-.warn-line + .warn-line { margin-top: 4px; }
+.warn-line + .warn-line {
+  margin-top: 4px;
+}
 
 /* ── Summary ── */
 .summary-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
-.sum-count { font-size: var(--text-sm); color: var(--text-muted); }
-.sum-count strong { color: var(--text-main); font-size: var(--text-lg); }
+.sum-count {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.sum-count strong {
+  color: var(--text-main);
+  font-size: var(--text-lg);
+}
 .sum-skipped {
   display: block;
   margin-top: 2px;
@@ -390,12 +427,25 @@ function handleRetry() {
   font-weight: 700;
 }
 .add-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 6px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--primary-strong); font-size: var(--text-xs); font-weight: 700;
-  cursor: pointer; transition: background var(--ease-out), border-color var(--ease-out);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--primary-strong);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out);
 }
-.add-btn:hover { background: var(--primary-soft); border-color: var(--primary-border); }
+.add-btn:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+}
 
 .timing-strip {
   display: flex;
@@ -417,7 +467,10 @@ function handleRetry() {
 }
 
 /* ── Question list ── */
-.q-list { display: grid; gap: 6px; }
+.q-list {
+  display: grid;
+  gap: 6px;
+}
 .empty-preview {
   display: flex;
   gap: var(--space-2);
@@ -441,95 +494,263 @@ function handleRetry() {
   line-height: 1.5;
 }
 .q-item {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line-soft); border-radius: var(--radius-md);
-  background: var(--surface); transition: box-shadow var(--ease-out);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: box-shadow var(--ease-out);
 }
-.q-item:hover { box-shadow: var(--shadow-xs); }
+.q-item:hover {
+  box-shadow: var(--shadow-xs);
+}
 
-.q-item-head { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.q-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
 .q-index {
-  display: grid; place-items: center;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--surface-soft); color: var(--text-muted);
-  font-size: 11px; font-weight: 800; flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 .q-type-tag {
-  padding: 2px 6px; border-radius: 4px;
-  background: var(--primary-soft); color: var(--primary-strong);
-  font-size: 11px; font-weight: 700; flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
-.q-preview { font-size: var(--text-xs); color: var(--text-secondary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-preview {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-.q-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.q-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
 .q-btn {
-  display: grid; place-items: center;
-  width: 28px; height: 28px; border: none; border-radius: var(--radius-sm);
-  background: transparent; color: var(--text-placeholder); cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-placeholder);
+  cursor: pointer;
   transition: all var(--ease-out);
 }
-.q-btn:hover { background: var(--primary-soft); color: var(--primary-strong); }
-.q-btn-danger:hover { background: var(--rose-soft); color: var(--rose); }
+.q-btn:hover {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.q-btn-danger:hover {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
 
 /* ── Course section ── */
-.course-section { display: grid; gap: 6px; }
-.section-label { margin: 0; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.course-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-2); align-items: center; }
-.course-input {
-  min-height: 42px; padding: 8px 12px;
-  border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm);
-  background: var(--surface-soft); font-size: var(--text-sm); outline: none;
-  transition: border-color var(--ease-out), box-shadow var(--ease-out);
+.course-section {
+  display: grid;
+  gap: 6px;
 }
-.course-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); background: var(--surface); }
-.course-input:disabled { opacity: 0.5; cursor: not-allowed; }
-.course-or { font-size: var(--text-xs); color: var(--text-placeholder); font-weight: 600; }
+.section-label {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.course-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+.course-input {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  font-size: var(--text-sm);
+  outline: none;
+  transition:
+    border-color var(--ease-out),
+    box-shadow var(--ease-out);
+}
+.course-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+  background: var(--surface);
+}
+.course-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.course-or {
+  font-size: var(--text-xs);
+  color: var(--text-placeholder);
+  font-weight: 600;
+}
 .course-select {
-  min-height: 42px; padding: 8px 10px;
-  border: 1.5px solid var(--line-strong); border-radius: var(--radius-sm);
-  background: var(--surface-soft); font-size: var(--text-sm); color: var(--text-main);
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  font-size: var(--text-sm);
+  color: var(--text-main);
 }
 
 /* ── Messages ── */
-.msg { margin: 0; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; text-align: center; }
-.msg-err { background: var(--rose-soft); color: var(--rose); }
+.msg {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.msg-err {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
 
 /* ── Actions ── */
-.action-row { display: flex; gap: var(--space-2); margin-top: var(--space-1); }
-.ghost-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font-size: var(--text-sm); font-weight: 700; border-radius: var(--radius-md); }
-.ghost-button { padding: 0 14px; color: var(--primary-strong); background: var(--primary-soft); border: 1px solid var(--primary-border); cursor: pointer; }
+.action-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.ghost-button,
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+}
+.ghost-button {
+  padding: 0 14px;
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  cursor: pointer;
+}
 .primary-button {
   flex: 1;
-  padding: 0 18px; border: none; color: #fff;
+  padding: 0 18px;
+  border: none;
+  color: #fff;
   background: var(--primary);
-  box-shadow: var(--shadow-primary); cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  cursor: pointer;
 }
-.primary-button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
 @media (max-width: 420px) {
-  .course-row { grid-template-columns: 1fr; }
-  .course-or { text-align: center; }
-  .action-row { flex-direction: column; }
-  .q-item { align-items: flex-start; }
-  .q-item-head { flex-wrap: wrap; }
-  .q-preview { width: 100%; white-space: normal; word-break: break-word; }
+  .course-row {
+    grid-template-columns: 1fr;
+  }
+  .course-or {
+    text-align: center;
+  }
+  .action-row {
+    flex-direction: column;
+  }
+  .q-item {
+    align-items: flex-start;
+  }
+  .q-item-head {
+    flex-wrap: wrap;
+  }
+  .q-preview {
+    width: 100%;
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 /* A layout: keep preview actions readable and stable on narrow screens. */
-.preview-root { gap: var(--space-3); }
-.preview-head { min-width: 0; }
-.preview-head-text { overflow: hidden; }
-.preview-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.warnings-box, .q-item, .empty-preview, .timing-strip { border-radius: 6px; }
-.primary-button { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
-.primary-button:hover:not(:disabled) { background: var(--primary-strong); }
-.ghost-button { border-radius: 6px; }
+.preview-root {
+  gap: var(--space-3);
+}
+.preview-head {
+  min-width: 0;
+}
+.preview-head-text {
+  overflow: hidden;
+}
+.preview-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.warnings-box,
+.q-item,
+.empty-preview,
+.timing-strip {
+  border-radius: 6px;
+}
+.primary-button {
+  border-radius: 6px;
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+}
+.primary-button:hover:not(:disabled) {
+  background: var(--primary-strong);
+}
+.ghost-button {
+  border-radius: 6px;
+}
 @media (max-width: 420px) {
-  .summary-bar { align-items: flex-start; flex-direction: column; }
-  .add-btn { align-self: stretch; }
-  .action-row { flex-direction: column; }
-  .action-row > button { width: 100%; }
-  .course-row { grid-template-columns: 1fr; }
-  .course-or { text-align: center; }
+  .summary-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .add-btn {
+    align-self: stretch;
+  }
+  .action-row {
+    flex-direction: column;
+  }
+  .action-row > button {
+    width: 100%;
+  }
+  .course-row {
+    grid-template-columns: 1fr;
+  }
+  .course-or {
+    text-align: center;
+  }
 }
 </style>

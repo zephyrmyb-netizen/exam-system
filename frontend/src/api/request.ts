@@ -3,6 +3,8 @@ import axios, { type AxiosError } from "axios";
 const TOKEN_KEY = "xuexibao_token";
 const AUTH_EVENT = "xuexibao-auth-change";
 let memoryToken = "";
+const persistToken = !import.meta.env.PROD;
+const useCookieCredentials = import.meta.env.PROD;
 
 type LocationLike = Pick<Location, "hostname" | "port" | "protocol">;
 
@@ -32,7 +34,7 @@ function emitAuthChange(detail: Record<string, string>): void {
 
 export function getToken(): string {
   try {
-    return window.localStorage.getItem(TOKEN_KEY) || memoryToken || "";
+    return (persistToken ? window.localStorage.getItem(TOKEN_KEY) : "") || memoryToken || "";
   } catch {
     return memoryToken || "";
   }
@@ -41,9 +43,9 @@ export function getToken(): string {
 export function setToken(token: string): void {
   memoryToken = token || "";
   try {
-    if (token) {
+    if (token && persistToken) {
       window.localStorage.setItem(TOKEN_KEY, token);
-    } else {
+    } else if (persistToken) {
       window.localStorage.removeItem(TOKEN_KEY);
     }
   } catch {
@@ -55,7 +57,7 @@ export function setToken(token: string): void {
 export function clearToken(): void {
   memoryToken = "";
   try {
-    window.localStorage.removeItem(TOKEN_KEY);
+    if (persistToken) window.localStorage.removeItem(TOKEN_KEY);
   } catch {
     // localStorage unavailable; memory token is already cleared.
   }
@@ -71,6 +73,7 @@ const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || getDefaultApiB
 const request = axios.create({
   baseURL: API_BASE_URL || undefined,
   timeout: 15000,
+  withCredentials: useCookieCredentials,
 });
 
 request.interceptors.request.use((config) => {

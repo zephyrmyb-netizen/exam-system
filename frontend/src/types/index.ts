@@ -1,11 +1,6 @@
 // ── Question ─────────────────────────────────────────────────────────────
 
-export type QuestionType =
-  | "single_choice"
-  | "multiple_choice"
-  | "true_false"
-  | "fill_blank"
-  | "short_answer";
+export type QuestionType = "single_choice" | "multiple_choice" | "true_false" | "fill_blank" | "short_answer";
 
 export type Difficulty = "easy" | "normal" | "hard";
 
@@ -88,6 +83,7 @@ export interface CourseUpdate {
 export interface SubmitRequest {
   question_id: number;
   user_answer: string;
+  client_submission_id?: string;
 }
 
 export interface SubmitResponse {

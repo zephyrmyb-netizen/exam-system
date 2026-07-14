@@ -49,7 +49,9 @@ defineProps({
   line-height: 1.2;
 }
 
-.practice-stat-chip + .practice-stat-chip { border-left: 1px solid var(--line-soft); }
+.practice-stat-chip + .practice-stat-chip {
+  border-left: 1px solid var(--line-soft);
+}
 
 .practice-stat-chip--good {
   color: var(--emerald);
@@ -62,5 +64,4 @@ defineProps({
 .practice-stat-chip--streak {
   color: var(--primary-strong);
 }
-
 </style>

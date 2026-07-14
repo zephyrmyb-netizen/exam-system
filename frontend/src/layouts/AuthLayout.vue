@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="auth-page">
@@ -20,6 +19,6 @@
   background: var(--page-bg);
   color: var(--text-main);
   padding: calc(var(--space-6) + env(safe-area-inset-top)) var(--space-4)
-           calc(var(--space-6) + env(safe-area-inset-bottom));
+    calc(var(--space-6) + env(safe-area-inset-bottom));
 }
 </style>

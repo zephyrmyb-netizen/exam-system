@@ -48,8 +48,13 @@ let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
 function getPreviewErrorMessage(error: unknown): string {
-  const requestError = error as { code?: string; response?: { status?: number; data?: { detail?: unknown } } } | undefined;
-  if (requestError?.code === "ECONNABORTED" || requestError?.code === "ETIMEDOUT" || requestError?.response?.status === 504) {
+  const requestError = error as
+    { code?: string; response?: { status?: number; data?: { detail?: unknown } } } | undefined;
+  if (
+    requestError?.code === "ECONNABORTED" ||
+    requestError?.code === "ETIMEDOUT" ||
+    requestError?.response?.status === 504
+  ) {
     return "文件上传或 AI 解析耗时较长，请在稳定网络下重试；大文件最多可等待 2 分钟。";
   }
   const detail = requestError?.response?.data?.detail;
@@ -170,9 +175,10 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         this.importedCount = task.status === "imported" ? task.total_valid : 0;
         this.resultCourseId = task.status === "imported" ? task.course_id : null;
         this.resultCourseName = task.status === "imported" ? task.course_name : "";
-        this.message = task.status === "imported"
-          ? `导入成功，已导入 ${task.total_valid} 道题。`
-          : `AI 已解析出 ${task.total_valid} 道题，请确认后导入。`;
+        this.message =
+          task.status === "imported"
+            ? `导入成功，已导入 ${task.total_valid} 道题。`
+            : `AI 已解析出 ${task.total_valid} 道题，请确认后导入。`;
         clearElapsedTimer();
         return;
       }

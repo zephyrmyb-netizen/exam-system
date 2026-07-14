@@ -1,7 +1,8 @@
 .u-page {
   width: 100%;
   min-width: 0;
-  padding: var(--space-4) max(var(--space-4), var(--safe-area-right)) var(--nav-bottom-clearance) max(var(--space-4), var(--safe-area-left));
+  padding: var(--space-4) max(var(--space-4), var(--safe-area-right)) var(--nav-bottom-clearance)
+    max(var(--space-4), var(--safe-area-left));
 }
 
 .u-stack {

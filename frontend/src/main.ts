@@ -8,7 +8,6 @@ import "./styles/base.css";
 import "./styles/transitions.css";
 import "./styles/utilities.css";
 import "./style.css";
-import "./styles/liquid-glass.css";
 import "./styles/ios26.css";
 
 const app = createApp(App);

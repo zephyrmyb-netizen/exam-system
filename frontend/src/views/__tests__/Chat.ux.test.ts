@@ -24,10 +24,12 @@ vi.mock("../../stores/theme", () => ({
 
 describe("Chat UX polish", () => {
   it("keeps markdown rendered and exposes retry after request failure", async () => {
-    mocks.streamChatMessage.mockImplementationOnce((_content: string, _history: unknown, callbacks: { onError: (message: string) => void }) => {
-      callbacks.onError("网络错误");
-      return { abort: vi.fn() };
-    });
+    mocks.streamChatMessage.mockImplementationOnce(
+      (_content: string, _history: unknown, callbacks: { onError: (message: string) => void }) => {
+        callbacks.onError("网络错误");
+        return { abort: vi.fn() };
+      },
+    );
     mocks.sendChatMessage.mockRejectedValueOnce(new Error("服务不可用"));
 
     const wrapper = mount(Chat);

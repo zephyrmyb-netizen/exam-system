@@ -9,13 +9,16 @@ type FilterTabItem = {
   disabled?: boolean;
 };
 
-const props = withDefaults(defineProps<{
-  modelValue: string;
-  items: FilterTabItem[];
-  label?: string;
-}>(), {
-  label: "筛选",
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    items: FilterTabItem[];
+    label?: string;
+  }>(),
+  {
+    label: "筛选",
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
@@ -40,9 +43,7 @@ function select(item: FilterTabItem) {
 
 function moveSelection(event: KeyboardEvent) {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-  const buttons = Array.from(
-    tabListRef.value?.querySelectorAll<HTMLElement>('[role="tab"]:not(:disabled)') || [],
-  );
+  const buttons = Array.from(tabListRef.value?.querySelectorAll<HTMLElement>('[role="tab"]:not(:disabled)') || []);
   if (!buttons.length) return;
 
   event.preventDefault();
@@ -112,7 +113,10 @@ function moveSelection(event: KeyboardEvent) {
   color: var(--text-muted);
   font-size: var(--text-sm);
   font-weight: 700;
-  transition: color var(--ease-out), background var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    color var(--ease-out),
+    background var(--ease-out),
+    box-shadow var(--ease-out);
 }
 
 .filter-tabs > .filter-tabs__tab--active {

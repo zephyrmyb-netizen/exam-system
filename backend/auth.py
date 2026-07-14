@@ -11,7 +11,8 @@ from .config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 from .database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+ACCESS_TOKEN_COOKIE = "xuexibao_access"
+security = HTTPBearer(auto_error=False)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -29,11 +30,18 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def _resolve_access_token(request: Request, credentials: HTTPAuthorizationCredentials | None) -> str:
+    if credentials and credentials.credentials:
+        return credentials.credentials
+    return request.cookies.get(ACCESS_TOKEN_COOKIE, "")
+
+
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> models.User:
-    token = credentials.credentials
+    token = _resolve_access_token(request, credentials)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="无效或过期的 token",
@@ -69,10 +77,9 @@ def get_current_user_optional(
     optionally identify the user without requiring login.
     """
     auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return None
-
-    token = auth_header.removeprefix("Bearer ").strip()
+    token = auth_header.removeprefix("Bearer ").strip() if auth_header.startswith("Bearer ") else ""
+    if not token:
+        token = request.cookies.get(ACCESS_TOKEN_COOKIE, "")
     if not token:
         return None
 

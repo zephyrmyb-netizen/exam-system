@@ -51,10 +51,12 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
 
 function normalizeToken(data: TokenResponse | Record<string, unknown> | undefined): string {
   if (!data) return "";
-  return (data as Record<string, unknown>)?.access_token as string
-    || (data as Record<string, unknown>)?.token as string
-    || (data as Record<string, unknown>)?.accessToken as string
-    || "";
+  return (
+    ((data as Record<string, unknown>)?.access_token as string) ||
+    ((data as Record<string, unknown>)?.token as string) ||
+    ((data as Record<string, unknown>)?.accessToken as string) ||
+    ""
+  );
 }
 
 export const useAuthStore = defineStore("auth", {
@@ -85,10 +87,6 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async fetchProfile(): Promise<void> {
-      if (!getToken()) {
-        this.user = null;
-        return;
-      }
       this.loading = true;
       this.resetFeedback();
       try {
@@ -155,8 +153,9 @@ export const useAuthStore = defineStore("auth", {
     },
 
     logout(): void {
-      clearToken();
+      void request.post("/auth/logout").catch(() => undefined);
       this.user = null;
+      clearToken();
       this.resetFeedback();
       this.authMessage = "已退出登录。";
     },

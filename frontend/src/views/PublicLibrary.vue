@@ -2,13 +2,7 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import request, { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
-import {
-  Globe,
-  ChevronRight,
-  Layers,
-  BookOpen,
-  Search,
-} from "@lucide/vue";
+import { Globe, ChevronRight, Layers, BookOpen, Search } from "@lucide/vue";
 
 const { replaceWithSource } = useAppNavigation();
 const libraries = ref([]);
@@ -34,11 +28,14 @@ async function fetchPublicCourses() {
 }
 
 function viewCourse(course) {
-  replaceWithSource({
-    name: "course-detail",
-    params: { courseId: course.id },
-    query: { from: "public-library" },
-  }, "public-library");
+  replaceWithSource(
+    {
+      name: "course-detail",
+      params: { courseId: course.id },
+      query: { from: "public-library" },
+    },
+    "public-library",
+  );
 }
 
 // Debounced search: 300ms after last keystroke
@@ -62,20 +59,13 @@ onUnmounted(() => {
         <h2>公共题库</h2>
         <p>公开分享的题目集，只读浏览 · 直接练习</p>
       </div>
-      <button class="ghost-button" type="button" :disabled="loading" @click="fetchPublicCourses">
-        刷新
-      </button>
+      <button class="ghost-button" type="button" :disabled="loading" @click="fetchPublicCourses">刷新</button>
     </div>
 
     <!-- Search -->
     <div class="search-bar">
       <Search :size="16" :stroke-width="2.5" color="var(--text-muted)" />
-      <input
-        v-model="searchKeyword"
-        class="search-input"
-        type="search"
-        placeholder="搜索题库名、描述或科目..."
-      />
+      <input v-model="searchKeyword" class="search-input" type="search" placeholder="搜索题库名、描述或科目..." />
     </div>
 
     <p v-if="loading" class="info-message">加载中...</p>
@@ -95,12 +85,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <article
-      v-for="lib in libraries"
-      :key="lib.id"
-      class="public-card"
-      @click="viewCourse(lib)"
-    >
+    <article v-for="lib in libraries" :key="lib.id" class="public-card" @click="viewCourse(lib)">
       <div class="public-card-body">
         <div class="public-icon">
           <BookOpen :size="22" :stroke-width="2" />
@@ -135,7 +120,9 @@ onUnmounted(() => {
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-lg);
   background: var(--surface-soft);
-  transition: border-color var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    border-color var(--ease-out),
+    box-shadow var(--ease-out);
 }
 
 .search-bar:focus-within {

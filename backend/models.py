@@ -121,7 +121,12 @@ class PracticeRecord(Base):
     is_correct = Column(Integer, nullable=False, default=0)  # 0=False, 1=True
     user_answer = Column(String(500), nullable=True, default="")
     correct_answer = Column(String(500), nullable=True, default="")
+    client_submission_id = Column(String(64), nullable=True)
     answered_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_submission_id", name="uq_practice_records_user_submission"),
+    )
 
     user = relationship("User", back_populates="practice_records")
     question = relationship("Question")

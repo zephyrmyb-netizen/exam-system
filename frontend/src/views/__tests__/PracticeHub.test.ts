@@ -21,8 +21,19 @@ function mountHub() {
     global: {
       stubs: {
         PracticeOverviewCard: {
-          props: ["title", "description", "hasPrimaryCourse", "todayCount", "totalCount", "wrongCount", "dueCount", "weakTypes", "loading"],
-          template: "<div class='overview-stub'><span>{{ title }}</span><span>{{ wrongCount ?? '--' }}</span><button class='primary' @click='$emit(\"primary\")'>primary</button></div>",
+          props: [
+            "title",
+            "description",
+            "hasPrimaryCourse",
+            "todayCount",
+            "totalCount",
+            "wrongCount",
+            "dueCount",
+            "weakTypes",
+            "loading",
+          ],
+          template:
+            "<div class='overview-stub'><span>{{ title }}</span><span>{{ wrongCount ?? '--' }}</span><button class='primary' @click='$emit(\"primary\")'>primary</button></div>",
         },
         PracticeModeCard: {
           props: ["title", "disabled"],

@@ -39,9 +39,7 @@ onMounted(() => {
       <p class="error-message">{{ store.error }}</p>
       <div class="empty-actions">
         <button type="button" class="action-btn" @click="retry">重试</button>
-        <button type="button" class="action-btn ghost" @click="goBack">
-          <ArrowLeft :size="16" /> 返回列表
-        </button>
+        <button type="button" class="action-btn ghost" @click="goBack"><ArrowLeft :size="16" /> 返回列表</button>
       </div>
     </div>
 
@@ -80,7 +78,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.exam-detail-page { display: grid; gap: var(--space-4); }
+.exam-detail-page {
+  display: grid;
+  gap: var(--space-4);
+}
 .empty-panel {
   display: grid;
   gap: var(--space-4);
@@ -88,7 +89,12 @@ onMounted(() => {
   padding: var(--space-8) var(--space-4);
   text-align: center;
 }
-.empty-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; }
+.empty-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -103,7 +109,11 @@ onMounted(() => {
   font-weight: 700;
   cursor: pointer;
 }
-.action-btn.ghost { background: var(--surface); color: var(--text-main); border: 1px solid var(--line-soft); }
+.action-btn.ghost {
+  background: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--line-soft);
+}
 .detail-card {
   display: grid;
   gap: var(--space-4);
@@ -113,10 +123,26 @@ onMounted(() => {
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
-.eyebrow, h1, .detail-card > span { margin: 0; }
-.eyebrow { color: var(--primary); font-size: var(--text-xs); font-weight: 900; }
-h1 { color: var(--text-main); font-size: clamp(30px, 8vw, 46px); line-height: 1.1; }
-.detail-card > span { color: var(--text-muted); font-size: var(--text-sm); line-height: 1.6; }
+.eyebrow,
+h1,
+.detail-card > span {
+  margin: 0;
+}
+.eyebrow {
+  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 900;
+}
+h1 {
+  color: var(--text-main);
+  font-size: clamp(30px, 8vw, 46px);
+  line-height: 1.1;
+}
+.detail-card > span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
 .detail-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -133,7 +159,11 @@ h1 { color: var(--text-main); font-size: clamp(30px, 8vw, 46px); line-height: 1.
   font-size: var(--text-xs);
   font-weight: 800;
 }
-.detail-stats strong { color: var(--text-main); font-size: 28px; line-height: 1; }
+.detail-stats strong {
+  color: var(--text-main);
+  font-size: 28px;
+  line-height: 1;
+}
 .start-button {
   display: inline-flex;
   align-items: center;

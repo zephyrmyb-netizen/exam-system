@@ -69,10 +69,7 @@ export function normalizeMultipleChoiceKeys(answer: unknown): string[] {
   const cleaned = answer.replace(multipleChoicePrefix, "").trim();
   if (!cleaned) return [];
 
-  const jsonCandidate = cleaned
-    .normalize("NFKC")
-    .replace(/[“”]/g, '"')
-    .replace(/、/g, ",");
+  const jsonCandidate = cleaned.normalize("NFKC").replace(/[“”]/g, '"').replace(/、/g, ",");
   if (jsonCandidate.startsWith("[")) {
     try {
       const parsed: unknown = JSON.parse(jsonCandidate);

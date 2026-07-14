@@ -9,9 +9,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 });
 
-const swipeHint = computed(() =>
-  props.loading ? "加载中" : "向左滑动进入下一题",
-);
+const swipeHint = computed(() => (props.loading ? "加载中" : "向左滑动进入下一题"));
 </script>
 
 <template>

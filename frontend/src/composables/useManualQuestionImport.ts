@@ -71,9 +71,7 @@ export function useManualQuestionImport(selectedCourseId: Ref<number>): UseManua
       if ((parsed as unknown[]).length === 0) throw new Error("JSON 数组为空");
 
       const allErrors: string[] = [];
-      (parsed as QuestionImportItem[]).forEach((item, i) =>
-        allErrors.push(...validateQuestionItem(item, i)),
-      );
+      (parsed as QuestionImportItem[]).forEach((item, i) => allErrors.push(...validateQuestionItem(item, i)));
       if (allErrors.length > 0) {
         importError.value = `校验未通过：\n${allErrors.join("\n")}`;
         return;

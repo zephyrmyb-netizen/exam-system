@@ -18,9 +18,7 @@ const confirmDialog = useConfirmDialog();
 
 const courseId = computed(() => route.params.courseId);
 const navigationSource = computed(() =>
-  route.query.from === "public-library" || route.query.from === "practice"
-    ? route.query.from
-    : "courses",
+  route.query.from === "public-library" || route.query.from === "practice" ? route.query.from : "courses",
 );
 const course = ref(null);
 const loading = ref(false);

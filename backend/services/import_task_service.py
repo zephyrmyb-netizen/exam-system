@@ -11,9 +11,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable
 from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile
@@ -24,7 +24,6 @@ from ..crud import derive_course_name_from_filename
 from ..database import SessionLocal
 from ..models import ImportTask
 from . import imports_service
-
 
 TASK_UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "import_tasks"
 RECOVERABLE_STATUSES = ("queued", "extracting", "parsing")

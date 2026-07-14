@@ -34,25 +34,25 @@ const sorted = computed(() =>
     if (v !== 0) return v;
     if (a.date === b.date) return 0;
     return a.date > b.date ? -1 : 1;
-  })
+  }),
 );
 
 function typeColor(type) {
   const map = {
-    "修复": "var(--rose)",
-    "新增": "var(--primary)",
-    "优化": "var(--teal)",
-    "重要": "var(--amber)",
+    修复: "var(--rose)",
+    新增: "var(--primary)",
+    优化: "var(--teal)",
+    重要: "var(--amber)",
   };
   return map[type] || "var(--text-muted)";
 }
 
 function typeBg(type) {
   const map = {
-    "修复": "var(--rose-soft)",
-    "新增": "var(--primary-soft)",
-    "优化": "var(--teal-soft)",
-    "重要": "var(--amber-soft)",
+    修复: "var(--rose-soft)",
+    新增: "var(--primary-soft)",
+    优化: "var(--teal-soft)",
+    重要: "var(--amber-soft)",
   };
   return map[type] || "var(--surface-soft)";
 }
@@ -80,9 +80,7 @@ function typeBg(type) {
       </ul>
     </article>
 
-    <div v-if="sorted.length === 0" class="empty-state">
-      暂无更新公告
-    </div>
+    <div v-if="sorted.length === 0" class="empty-state">暂无更新公告</div>
   </section>
 </template>
 

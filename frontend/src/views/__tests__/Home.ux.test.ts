@@ -128,11 +128,19 @@ describe("Home UX polish", () => {
     const page = wrapper.get("[data-reference-page='home']");
     const children = page.element.children;
 
-    expect(wrapper.get("[data-testid='home-shortcuts']").element.compareDocumentPosition(wrapper.get("[data-testid='home-stats']").element))
-      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(wrapper.get("[data-testid='home-stats']").element.compareDocumentPosition(wrapper.get("[data-testid='home-recent']").element))
-      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(Array.from(children).some((child) => child.textContent?.includes("学习概览") && child.tagName === "DIV")).toBe(false);
+    expect(
+      wrapper
+        .get("[data-testid='home-shortcuts']")
+        .element.compareDocumentPosition(wrapper.get("[data-testid='home-stats']").element),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      wrapper
+        .get("[data-testid='home-stats']")
+        .element.compareDocumentPosition(wrapper.get("[data-testid='home-recent']").element),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      Array.from(children).some((child) => child.textContent?.includes("学习概览") && child.tagName === "DIV"),
+    ).toBe(false);
   });
 
   it("uses real streak and recommendation fields in the reference page order", async () => {

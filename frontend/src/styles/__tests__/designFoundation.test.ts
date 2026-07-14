@@ -38,7 +38,7 @@ describe("design foundation", () => {
 
   it("has no competing root token blocks in legacy stylesheets", () => {
     expect(readFrontendFile("src/style.css")).not.toMatch(/^:root\s*\{/m);
-    expect(readFrontendFile("src/styles/liquid-glass.css")).not.toMatch(/^:root\s*\{/m);
+    expect(existsSync(`${frontendRoot}/src/styles/liquid-glass.css`)).toBe(false);
   });
 
   it("self-hosts Noto Sans SC Variable and carries its license", () => {
@@ -49,7 +49,7 @@ describe("design foundation", () => {
     const fontLicense = readFrontendFile("public/fonts/OFL-NotoSansSC.txt");
 
     expect(packageJson.dependencies["@fontsource-variable/noto-sans-sc"]).toBe("^5.2.10");
-    expect(mainSource).toContain('@fontsource-variable/noto-sans-sc/wght.css');
+    expect(mainSource).toContain("@fontsource-variable/noto-sans-sc/wght.css");
     expect(baseCss).toContain('"Noto Sans SC Variable"');
     expect(baseCss).toContain('"PingFang SC"');
     expect(baseCss).toContain('"Microsoft YaHei"');

@@ -8,9 +8,7 @@ import { useUiStore } from "../ui";
 vi.mock("@/api/request", () => ({
   default: {
     get: vi.fn(async () => ({
-      data: [
-        { id: 1, owner_id: 1, name: "Java", visibility: "private" },
-      ],
+      data: [{ id: 1, owner_id: 1, name: "Java", visibility: "private" }],
     })),
   },
 }));
@@ -41,10 +39,13 @@ describe("phase2 stores", () => {
 
   it("applies and listens to the system theme preference", () => {
     const listeners: Array<(event: MediaQueryListEvent) => void> = [];
-    vi.stubGlobal("matchMedia", vi.fn(() => ({
-      matches: true,
-      addEventListener: (_event: string, listener: (event: MediaQueryListEvent) => void) => listeners.push(listener),
-    })));
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: (_event: string, listener: (event: MediaQueryListEvent) => void) => listeners.push(listener),
+      })),
+    );
     window.localStorage.setItem("xuexibao-theme", "system");
 
     const theme = useThemeStore();

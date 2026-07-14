@@ -21,6 +21,7 @@ def create_practice_record(
     is_correct: bool,
     user_answer: str,
     correct_answer: str,
+    client_submission_id: str | None = None,
 ) -> models.PracticeRecord:
     record = models.PracticeRecord(
         user_id=user_id,
@@ -30,6 +31,7 @@ def create_practice_record(
         is_correct=1 if is_correct else 0,
         user_answer=user_answer,
         correct_answer=correct_answer,
+        client_submission_id=client_submission_id,
         answered_at=datetime.now(UTC),
     )
     db.add(record)

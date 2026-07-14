@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
-from ..config import INVITE_CODE
+from ..config import ACCESS_TOKEN_EXPIRE_MINUTES, INVITE_CODE, IS_PRODUCTION
 from ..database import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,18 +35,32 @@ def register(body: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
-def login(body: schemas.LoginRequest, db: Session = Depends(get_db)):
+def login(body: schemas.LoginRequest, response: Response, db: Session = Depends(get_db)):
     try:
         user = crud.get_user_by_username(db, body.username)
         if not user or not auth_module.verify_password(body.password, user.password_hash):
             raise HTTPException(status_code=401, detail="用户名或密码错误")
 
         token = auth_module.create_access_token(data={"sub": str(user.id)})
+        response.set_cookie(
+            key=auth_module.ACCESS_TOKEN_COOKIE,
+            value=token,
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            httponly=True,
+            secure=IS_PRODUCTION,
+            samesite="lax",
+            path="/",
+        )
         return schemas.TokenResponse(access_token=token, token=token)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail="登录失败，请稍后重试") from exc
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response):
+    response.delete_cookie(key=auth_module.ACCESS_TOKEN_COOKIE, path="/", secure=IS_PRODUCTION, samesite="lax")
 
 
 @router.get("/me", response_model=schemas.UserOut)

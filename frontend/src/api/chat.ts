@@ -1,15 +1,10 @@
 import type { ChatRequest, ChatResponse, ChatMessage } from "@/types";
 import request, { getToken, getErrorMessage } from "./request.ts";
 
-export function sendChatMessage(
-  message: string,
-  history: ChatMessage[] = [],
-): Promise<ChatResponse> {
-  return request.post(
-    "/chat/",
-    { message, history } satisfies ChatRequest,
-    { timeout: 90000 },
-  ).then(({ data }) => data as ChatResponse);
+export function sendChatMessage(message: string, history: ChatMessage[] = []): Promise<ChatResponse> {
+  return request
+    .post("/chat/", { message, history } satisfies ChatRequest, { timeout: 90000 })
+    .then(({ data }) => data as ChatResponse);
 }
 
 /**
@@ -38,6 +33,7 @@ export function streamChatMessage(
       const resp = await fetch("/chat/stream", {
         method: "POST",
         signal: controller.signal,
+        credentials: import.meta.env.PROD ? "include" : "same-origin",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
