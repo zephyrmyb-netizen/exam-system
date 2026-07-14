@@ -33,7 +33,7 @@ let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 const keyboardActive = ref(false);
 const inputFocusActive = ref(false);
-const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take"]);
+const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take", "exam-result"]);
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
 const showOfflineSyncBanner = computed(() => !isOnline.value || pendingCount.value > 0);

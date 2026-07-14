@@ -221,6 +221,26 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".bottom-nav").exists()).toBe(false);
   });
 
+  it("keeps the exam result in the immersive result shell", () => {
+    route.name = "exam-result";
+    route.path = "/exams/7/result";
+    route.meta = { title: "考试结果", navKey: "home" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.get("[data-testid='app-shell']").attributes("data-layout")).toBe("immersive");
+    expect(wrapper.find(".app-header").exists()).toBe(false);
+    expect(wrapper.find(".bottom-nav").exists()).toBe(false);
+  });
+
   it("hides the bottom navigation while an editable field is focused", async () => {
     route.name = "chat";
     route.path = "/chat";
