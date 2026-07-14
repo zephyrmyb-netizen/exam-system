@@ -14,7 +14,6 @@ import {
 
 import { confirmImport, confirmImportTask, extractFileText } from "../api/imports";
 import { getErrorMessage } from "../api/request";
-import ImportCapabilityStrip from "../components/import/ImportCapabilityStrip.vue";
 import ImportPreview from "../components/import/ImportPreview.vue";
 import ImportTaskMonitor from "../components/import/ImportTaskMonitor.vue";
 import { useImportCourses } from "../composables/useImportCourses";
@@ -44,7 +43,7 @@ const PARSING_RECOVERY_HINT = "AI 正在解析，请稍候，通常需要 30 秒
 const selectedFile = ref(null);
 const derivedCourseName = ref("");
 const selectedCourseId = ref(0);
-const advancedOpen = ref(false);
+const advancedOpen = ref(true);
 const confirmError = ref("");
 const confirmLoading = ref(false);
 const importResult = ref(null);
@@ -417,7 +416,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <button class="hero-cta" type="button" :disabled="!hasActiveFile" @click="handlePreview">
+        <button v-if="hasActiveFile || aiTask.error.value" class="hero-cta" type="button" :disabled="!hasActiveFile" @click="handlePreview">
           <Sparkles :size="20" :stroke-width="2.5" />
           {{ aiTask.error.value ? "重新解析" : "AI 解析文件" }}
         </button>
@@ -442,7 +441,6 @@ onMounted(() => {
           </summary>
 
           <div class="adv-body">
-            <ImportCapabilityStrip />
             <div class="adv-card">
               <div class="adv-title">JSON 导入</div>
               <textarea v-model="jsonText" class="adv-textarea" spellcheck="false" />
