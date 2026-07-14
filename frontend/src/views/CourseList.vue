@@ -1374,37 +1374,42 @@ onMounted(fetchCourses);
   gap: 8px;
 }
 .library-page .course-row {
-  overflow: hidden;
+  overflow: visible;
   border-radius: 16px;
 }
 .library-page .course-row .course-item {
-  min-height: 68px;
-  padding: 8px 10px;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) 32px;
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px 12px;
 }
 .library-page .course-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
 }
 .library-page .course-icon :deep(svg) {
   width: 19px;
   height: 19px;
 }
 .library-page .course-info strong {
-  font-size: 14px;
+  font-size: 15px;
 }
 .library-page .course-subline {
-  font-size: 10px;
+  font-size: 11px;
 }
 .library-page .course-stat strong {
   font-size: 15px;
 }
-.library-page .practice-action,
 .library-page .more-btn {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  grid-column: 3;
+  justify-self: end;
+  align-self: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 10px;
 }
 .library-page .course-row__progress {
   height: 4px;
@@ -1413,10 +1418,10 @@ onMounted(fetchCourses);
 
 @media (max-width: 700px) {
   .library-page .course-row .course-item {
-    grid-template-columns: 38px minmax(0, 1fr) auto 40px 40px;
-    gap: 7px;
-    min-height: 68px;
-    padding: 8px 10px;
+    grid-template-columns: 40px minmax(0, 1fr) 32px;
+    gap: 10px;
+    min-height: 76px;
+    padding: 8px 12px;
   }
 }
 </style>

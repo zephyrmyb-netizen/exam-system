@@ -24,6 +24,29 @@ test("home shell semantics remain available to visual review", async ({ mockedPa
   await expect(mockedPage.locator("[data-testid='bottom-tab-home']")).toBeVisible();
 });
 
+test("course management buttons stay fixed to the trailing edge", async ({ mockedPage }) => {
+  await prepareSurface(mockedPage, "course-list");
+
+  const offsets = await mockedPage.locator(".course-row").evaluateAll((rows) =>
+    rows.map((row) => {
+      const rowRect = row.getBoundingClientRect();
+      const buttonRect = row.querySelector<HTMLElement>(".more-btn")?.getBoundingClientRect();
+      return {
+        rightGap: buttonRect ? rowRect.right - buttonRect.right : Number.POSITIVE_INFINITY,
+        centerDelta: buttonRect
+          ? Math.abs(rowRect.top + rowRect.height / 2 - (buttonRect.top + buttonRect.height / 2))
+          : Number.POSITIVE_INFINITY,
+      };
+    }),
+  );
+
+  for (const offset of offsets) {
+    expect(offset.rightGap).toBeGreaterThanOrEqual(8);
+    expect(offset.rightGap).toBeLessThanOrEqual(16);
+    expect(offset.centerDelta).toBeLessThanOrEqual(1);
+  }
+});
+
 test.describe("responsive overflow and safe bottom content", () => {
   for (const viewport of [{ width: 320, height: 720 }, { width: 420, height: 900 }]) {
     for (const surface of surfaces) {
