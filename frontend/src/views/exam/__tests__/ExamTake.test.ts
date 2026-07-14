@@ -354,6 +354,19 @@ describe("ExamTake", () => {
     expect(router.replace).toHaveBeenCalledWith({ name: "exam-result", params: { examId: 7 } });
   });
 
+  it("hands a successful current-session result to the result route even before Pinia state reflects it", async () => {
+    const response = { exam_id: 7 };
+    store.result = null;
+    store.submitCurrentExam.mockResolvedValueOnce(response);
+    const mounted = mountExam();
+
+    await mounted.get(".submit-button").trigger("click");
+    await flushPromises();
+
+    expect(store.result).toEqual(response);
+    expect(router.replace).toHaveBeenCalledWith({ name: "exam-result", params: { examId: 7 } });
+  });
+
   it("shows an honest empty state when the real paper contains no questions", async () => {
     store.currentExam = { id: 7, title: "空试卷", time_limit: 60, questions: [] };
     store.currentQuestion = null;
