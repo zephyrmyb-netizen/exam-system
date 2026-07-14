@@ -245,14 +245,17 @@ describe("Home UX polish", () => {
     expect(icons[0].text()).toBe("");
   });
 
-  it("keeps the recent course title separate from its practice action", async () => {
+  it("starts practice when a recent course card is clicked", async () => {
     courses.value = [course(1, "很长的移动端复习题库名称")];
 
     const wrapper = mount(Home);
     await flushPromises();
 
-    const practiceButton = wrapper.find('button[aria-label="开始练习：很长的移动端复习题库名称"]');
-    expect(practiceButton.exists()).toBe(true);
-    expect(practiceButton.text()).toBe("开始练习");
+    const courseCard = wrapper.find('button[aria-label="开始练习：很长的移动端复习题库名称"]');
+    expect(courseCard.exists()).toBe(true);
+    expect(courseCard.text()).not.toContain("开始练习");
+
+    await courseCard.trigger("click");
+    expect(replace).toHaveBeenCalledWith("/courses/1/practice");
   });
 });
