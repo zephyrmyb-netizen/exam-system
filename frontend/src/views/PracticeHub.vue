@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import {
   BookMarked,
   BookOpen,
@@ -14,24 +13,26 @@ import {
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
 import PracticeModeCard from "../components/practice/PracticeModeCard.vue";
 import PracticeOverviewCard from "../components/practice/PracticeOverviewCard.vue";
-import type { Course } from "../types";
+import type { Course, WeakType } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 
-const router = useRouter();
+const { replaceTo, replaceWithSource } = useAppNavigation();
 
 const stats = ref({ todayCount: null as number | null, totalCount: null as number | null, wrongCount: null as number | null });
-const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as any[] });
+const review = ref({ dueCount: null as number | null, wrongCount: null as number | null, weakTypes: [] as WeakType[] });
 const reviewError = ref("");
+const statsLoading = ref(false);
 
 const recentCourses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
 
-const wrongCount = computed(() => review.value.wrongCount ?? stats.value.wrongCount ?? 0);
-const hasWrongQuestions = computed(() => wrongCount.value > 0);
+const wrongCount = computed(() => review.value.wrongCount ?? stats.value.wrongCount ?? null);
+const hasWrongQuestions = computed(() => (wrongCount.value ?? 0) > 0);
 const hasDueQuestions = computed(() => (review.value.dueCount ?? 0) > 0);
 const hasRecentCourses = computed(() => recentCourses.value.length > 0);
 const primaryCourse = computed(() => recentCourses.value[0] || null);
@@ -88,18 +89,19 @@ const modeCards = computed(() => [
 
 function openPrimaryPractice() {
   if (primaryCourse.value) {
-    router.push(`/courses/${primaryCourse.value.id}/practice`);
+    replaceWithSource(`/courses/${primaryCourse.value.id}/practice`, "practice");
     return;
   }
-  router.push("/courses");
+  replaceTo("/courses");
 }
 
 function goToMode(card: { disabled: boolean; to: string }) {
-  if (!card.disabled) router.push(card.to);
+  if (!card.disabled) replaceTo(card.to);
 }
 
 async function fetchStatsReview() {
   reviewError.value = "";
+  statsLoading.value = true;
   try {
     const [statsResult, reviewResult, weakResult] = await Promise.allSettled([
       getPracticeStats(),
@@ -130,6 +132,8 @@ async function fetchStatsReview() {
     }
   } catch (error) {
     reviewError.value = getErrorMessage(error, "学习数据暂时不可用");
+  } finally {
+    statsLoading.value = false;
   }
 }
 
@@ -163,7 +167,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="hub">
+  <section class="hub" aria-labelledby="practice-hub-title" :aria-busy="statsLoading || coursesLoading">
+    <h1 id="practice-hub-title" class="sr-only">练习中心</h1>
     <PracticeOverviewCard
       :title="heroTitle"
       :description="heroDesc"
@@ -173,6 +178,7 @@ onMounted(() => {
       :wrong-count="wrongCount"
       :due-count="review.dueCount"
       :weak-types="review.weakTypes"
+      :loading="statsLoading"
       @primary="openPrimaryPractice"
     />
 
@@ -199,12 +205,12 @@ onMounted(() => {
     <div v-if="hasRecentCourses" class="hub-section">
       <div class="hub-section-head">
         <span class="hub-section-label">最近可练习</span>
-        <button class="hub-section-link" type="button" @click="router.push('/courses')">查看全部</button>
+        <button class="hub-section-link" type="button" @click="replaceTo('/courses')">查看全部</button>
       </div>
 
       <div class="recent-list">
         <div v-for="course in recentCourses" :key="course.id" class="recent-row">
-          <div class="recent-body" @click="router.push(`/courses/${course.id}`)">
+          <div class="recent-body" @click="replaceWithSource(`/courses/${course.id}`, 'practice')">
             <div class="recent-icon" :class="course.visibility === 'public' ? 'icon-public' : 'icon-private'">
               <BookOpen :size="16" :stroke-width="2" />
             </div>
@@ -216,7 +222,7 @@ onMounted(() => {
               </span>
             </div>
           </div>
-          <button class="recent-button" type="button" @click="router.push(`/courses/${course.id}/practice`)">
+          <button class="recent-button" type="button" @click="replaceWithSource(`/courses/${course.id}/practice`, 'practice')">
             <Play :size="12" :stroke-width="2.5" />
             练习
           </button>
@@ -229,17 +235,17 @@ onMounted(() => {
       <p class="hub-guidance-title">选择一个题库开始练习</p>
       <p class="hub-guidance-hint">还没有题库？先去导入题目创建一个题库。</p>
       <div class="hub-guidance-actions">
-        <button class="primary-button" type="button" @click="router.push('/courses')">
+        <button class="primary-button" type="button" @click="replaceTo('/courses')">
           <Library :size="16" :stroke-width="2.5" />
           去题库选择
         </button>
-        <button class="ghost-button" type="button" @click="router.push('/import')">
+        <button class="ghost-button" type="button" @click="replaceWithSource('/import', 'practice')">
           <Upload :size="16" :stroke-width="2.5" />
           导入题目
         </button>
       </div>
       <div v-if="hasWrongQuestions || stats.totalCount" class="hub-guidance-alts">
-        <button v-if="hasWrongQuestions" class="ghost-button" type="button" @click="router.push('/practice/wrong')">
+        <button v-if="hasWrongQuestions" class="ghost-button" type="button" @click="replaceTo('/practice/wrong')">
           错题强化
         </button>
       </div>
@@ -248,6 +254,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .hub { display: grid; gap: var(--space-3); }
 .hub-warning { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--amber-border); border-radius: var(--radius-sm); background: var(--amber-soft); color: var(--amber); font-size: var(--text-xs); font-weight: 700; }
 .hub-warning button { border: none; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }

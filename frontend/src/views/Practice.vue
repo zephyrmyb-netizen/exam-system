@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowRight, AlertTriangle, CheckCircle, Library, RefreshCw, Sparkles } from "@lucide/vue";
 import PracticeActionBar from "../components/practice/PracticeActionBar.vue";
@@ -11,26 +11,28 @@ import PracticeSummaryModal from "../components/practice/PracticeSummaryModal.vu
 import PracticeTextAnswer from "../components/practice/PracticeTextAnswer.vue";
 import PracticeTopBar from "../components/practice/PracticeTopBar.vue";
 import { usePracticeSession } from "../composables/usePracticeSession";
+import { useSwipeNext } from "../composables/useSwipeNext";
 import { typeLabel } from "../utils/question";
-import { useConfirmDialog } from "../stores/confirmDialog";
 
 const props = defineProps({
   courseId: { type: String, default: "" },
   courseName: { type: String, default: "" },
+  totalQuestions: { type: Number, default: 0 },
   mode: { type: String, default: "normal" },
   modeParam: { type: String, default: "" },
 });
 
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
-const confirmDialog = useConfirmDialog();
 const showSummary = ref(false);
+const practiceSurface = ref<HTMLElement | null>(null);
 
 const {
   answerHint,
   answerOptions,
   accuracy,
   canSubmit,
+  cancelPendingAdvance,
   correctAnswerDisplay,
   currentAnswer,
   errorMessage,
@@ -39,10 +41,12 @@ const {
   hasAnswerSelected,
   isTextQuestion,
   loading,
+  phase,
   question,
   result,
   selectedAnswer,
   selectedAnswers,
+  sessionComplete,
   sessionStats,
   setSingleAnswer,
   startSession,
@@ -54,6 +58,28 @@ const {
   updateTextAnswer,
   validationMessage,
 } = usePracticeSession(props);
+
+// 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
+// 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
+// fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
+const canSwipeNext = computed(() =>
+  !!result.value
+  && !loading.value
+  && !submitting.value
+  && (phase.value === "correct" || phase.value === "wrong"),
+);
+const requiresManualSubmit = computed(() =>
+  isTextQuestion.value || question.value?.type === "multiple_choice",
+);
+useSwipeNext({
+  onSwipe: () => {
+    if (canSwipeNext.value) {
+      void fetchRandomQuestion();
+    }
+  },
+  enabled: canSwipeNext,
+  target: practiceSurface,
+});
 
 const canStartWithoutCourse = computed(() => props.mode === "wrong_review" || props.mode === "due_review");
 
@@ -83,45 +109,51 @@ const isDueReviewEmpty = computed(() =>
 
 const isCourseEmpty = computed(() =>
   props.mode === "normal"
-    && !props.courseId
+    && !!props.courseId
+    && sessionComplete.value
     && !loading.value
     && !errorMessage.value
     && question.value === null
     && sessionStats.value.answeredCount === 0,
 );
 
-async function confirmAndSkip() {
-  if (hasAnswerSelected.value) {
-    const confirmed = await confirmDialog.confirm({
-      title: "换下一题",
-      message: "当前答案还没提交，确定换一题吗？",
-      confirmText: "换题",
-    });
-    if (!confirmed) return;
-  }
-  fetchRandomQuestion();
-}
-
 function goBack() {
+  cancelPendingAdvance?.();
   if (props.courseId) {
-    router.push(`/courses/${props.courseId}`);
+    router.replace(`/courses/${props.courseId}`);
   } else if (props.mode === "wrong_review" || props.mode === "due_review") {
-    router.push({ name: "practice" });
+    router.replace({ name: "practice" });
   } else {
-    router.push("/courses");
+    router.replace("/courses");
   }
 }
 
 function endPractice() {
+  cancelPendingAdvance?.();
+  if (sessionStats.value.startedAt && sessionStats.value.durationSeconds === null) {
+    sessionStats.value.durationSeconds = Math.max(0, Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000));
+  }
   showSummary.value = true;
 }
 
 function handleEndPractice() {
-  emit("end-practice");
+  cancelPendingAdvance?.();
+  showSummary.value = false;
+  if (props.courseId) {
+    emit("end-practice");
+    return;
+  }
+  goBack();
 }
 
 function continuePractice() {
   showSummary.value = false;
+}
+
+function reviewWrongAnswers() {
+  cancelPendingAdvance?.();
+  showSummary.value = false;
+  router.replace({ name: "wrongbook", query: { from: "practice" } });
 }
 
 onMounted(() => {
@@ -129,13 +161,26 @@ onMounted(() => {
     startSession();
   }
 });
+
+onBeforeUnmount(() => cancelPendingAdvance?.());
+
+watch(sessionComplete, (complete) => {
+  showSummary.value = complete && sessionStats.value.answeredCount > 0;
+});
 </script>
 
 <template>
-  <section class="practice-page">
+  <section
+    class="practice-page"
+    data-reference-page="course-practice"
+    :class="{ 'practice-page--with-action': requiresManualSubmit && question && !result }"
+  >
     <PracticeTopBar
       :course-name="props.courseName"
       :mode-label="modeLabel"
+      :answered-count="sessionStats.answeredCount"
+      :accuracy="accuracy"
+      :total-questions="props.totalQuestions"
       @back="goBack"
       @end="endPractice"
     />
@@ -176,12 +221,18 @@ onMounted(() => {
 
     <div v-else-if="isCourseEmpty" class="state-block">
       <div class="state-icon"><AlertTriangle :size="44" :stroke-width="1.5" /></div>
-      <p class="state-title">该题库暂时无题目</p>
+      <p class="state-title">当前题库暂无题目</p>
       <p class="state-hint">先去导入或添加题目到当前题库。</p>
-      <button class="primary-button" type="button" @click="router.push('/import')">
-        <Sparkles :size="16" :stroke-width="2.5" />
-        <span>去导入题目</span>
-      </button>
+      <div class="state-actions">
+        <button class="ghost-button" type="button" @click="goBack">
+          <Library :size="16" :stroke-width="2.5" />
+          <span>返回题库</span>
+        </button>
+        <button class="primary-button" type="button" @click="router.replace({ name: 'import', query: { from: 'practice' } })">
+          <Sparkles :size="16" :stroke-width="2.5" />
+          <span>去导入题目</span>
+        </button>
+      </div>
     </div>
 
     <div v-else-if="errorMessage && !question" class="state-block">
@@ -202,46 +253,52 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-else-if="question" class="practice-content">
-      <div class="practice-card-shell">
-        <PracticeQuestionStem :question="question" />
+    <div v-else-if="question" ref="practiceSurface" class="practice-content">
+      <Transition name="question-fade">
+        <div
+          :key="question.id"
+          class="practice-card-shell"
+        >
+          <PracticeQuestionStem :question="question" />
 
-        <div class="practice-answer-section">
-          <PracticeChoiceOptions
-            v-if="!isTextQuestion"
-            :question-type="question.type"
-            :options="answerOptions"
-            :selected-answer="selectedAnswer"
-            :selected-answers="selectedAnswers"
-            :result="result"
-            :correct-answer-display="correctAnswerDisplay"
-            @pick-single="setSingleAnswer"
-            @toggle-multiple="toggleMultipleAnswer"
-          />
+          <div class="practice-answer-section">
+            <PracticeChoiceOptions
+              v-if="!isTextQuestion"
+              :question-type="question.type"
+              :options="answerOptions"
+              :selected-answer="selectedAnswer"
+              :selected-answers="selectedAnswers"
+              :result="result"
+              :correct-answer-display="correctAnswerDisplay"
+              @pick-single="setSingleAnswer"
+              @toggle-multiple="toggleMultipleAnswer"
+            />
 
-          <PracticeTextAnswer
-            v-else
-            :model-value="textAnswer"
-            :disabled="!!result"
-            @update:model-value="updateTextAnswer"
-            @keydown="handleTextKeydown"
-          />
+            <PracticeTextAnswer
+              v-else
+              :model-value="textAnswer"
+              :disabled="!!result"
+              @update:model-value="updateTextAnswer"
+              @keydown="handleTextKeydown"
+            />
+          </div>
+
+          <div v-if="validationMessage || errorMessage" class="practice-message-stack">
+            <p v-if="validationMessage" class="msg msg-warn">{{ validationMessage }}</p>
+            <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
+          </div>
+
+          <Transition name="result-fade">
+            <PracticeResultPanel
+              v-if="result"
+              :result="result"
+              :current-answer="currentAnswer"
+              :correct-answer-display="correctAnswerDisplay"
+              :loading="loading"
+            />
+          </Transition>
         </div>
-
-        <div v-if="validationMessage || errorMessage" class="practice-message-stack">
-          <p v-if="validationMessage" class="msg msg-warn">{{ validationMessage }}</p>
-          <p v-if="errorMessage" class="msg msg-err">{{ errorMessage }}</p>
-        </div>
-
-        <PracticeResultPanel
-          v-if="result"
-          :result="result"
-          :current-answer="currentAnswer"
-          :correct-answer-display="correctAnswerDisplay"
-          :loading="loading"
-          @next="fetchRandomQuestion"
-        />
-      </div>
+      </Transition>
 
       <PracticeActionBar
         :result="result"
@@ -249,8 +306,8 @@ onMounted(() => {
         :submitting="submitting"
         :has-answer-selected="hasAnswerSelected"
         :answer-hint="answerHint"
+        :show-submit-button="requiresManualSubmit"
         @submit="submitAnswer"
-        @skip="confirmAndSkip"
       />
     </div>
 
@@ -260,47 +317,117 @@ onMounted(() => {
       :correct-count="sessionStats.correctCount"
       :wrong-count="sessionStats.wrongCount"
       :accuracy="accuracy"
+      :duration-seconds="sessionStats.durationSeconds"
+      :course-name="props.courseName"
+      :mode-label="modeLabel"
+      :completed="sessionComplete"
+      :can-continue="!sessionComplete"
       @end="handleEndPractice"
       @continue="continuePractice"
+      @review="reviewWrongAnswers"
     />
   </section>
 </template>
 
 <style scoped>
 .practice-page {
+  position: relative;
   display: grid;
-  gap: var(--space-3);
+  align-content: start;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.09), transparent 34%),
+    var(--page-bg);
+}
+
+.practice-page--with-action {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .practice-content {
+  position: relative;
   display: grid;
-  gap: 14px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
 .practice-card-shell {
   display: grid;
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  padding: 16px;
-  border-radius: var(--radius-2xl);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 253, 0.96));
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(226, 232, 240, 0.88);
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(160%);
+}
+
+/* 高频答题只保留一次轻量交接，不再使用 out-in 留出空白帧。 */
+.question-fade-enter-active {
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.question-fade-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+}
+
+.question-fade-enter-from {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.question-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+/* ── 结果面板出现：短暂淡入轻移 ── */
+.result-fade-enter-active,
+.result-fade-leave-active {
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
+}
+
+.result-fade-enter-from,
+.result-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 
 .practice-answer-section,
 .practice-message-stack {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .state-block {
   display: grid;
   place-items: center;
   gap: var(--space-2);
-  padding: var(--space-10) var(--space-4);
+  margin: 0;
+  padding: var(--space-8) var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
   text-align: center;
 }
 
@@ -334,7 +461,15 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
 .retry-btn,
+.ghost-button,
 .primary-button {
   display: inline-flex;
   align-items: center;
@@ -344,16 +479,18 @@ onMounted(() => {
 
 .practice-skeleton {
   width: 100%;
+  margin: 0;
   padding: var(--space-4);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-card);
 }
 
 .practice-skeleton__line {
   height: 14px;
   margin-bottom: 12px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  background: var(--surface-soft);
 }
 
 .practice-skeleton__line--short {
@@ -377,10 +514,8 @@ onMounted(() => {
 
 .practice-skeleton__block {
   height: 52px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+  background: var(--surface-soft);
 }
 
 .msg {
@@ -393,8 +528,8 @@ onMounted(() => {
 }
 
 .msg-warn {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--primary-soft);
+  color: var(--text-secondary);
 }
 
 .msg-err {
@@ -402,20 +537,24 @@ onMounted(() => {
   color: var(--rose);
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
 @media (max-width: 420px) {
+  .practice-page {
+    gap: 10px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .practice-page--with-action {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
   .practice-card-shell {
-    padding: 14px;
-    border-radius: var(--radius-xl);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .practice-answer-section,
+  .practice-message-stack {
+    gap: 6px;
   }
 }
 </style>

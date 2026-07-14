@@ -1,0 +1,47 @@
+# 学习宝操作留档索引
+
+> 开始任何操作前，先阅读项目根目录的 [README-开始工作前必读.md](../../README-开始工作前必读.md)。
+
+## 正在执行
+
+| 任务 | 窗口 | 留档 | 状态 |
+| --- | --- | --- | --- |
+| 2026-07-11 | Pencil Desktop 安装与 MCP 隔离验证 | GPT-5.6 Luna | [2026-07-11-pencil-mcp-install.md](./active/2026-07-11-pencil-mcp-install.md) | active |
+
+## 已完成
+
+| 日期 | 任务 | 留档 |
+| --- | --- | --- |
+| 2026-07-14 | 学习宝参考 UI 高保真迁移与 Codex 交接包 | [2026-07-14-reference-ui-handoff-implementation.md](./archive/2026-07-14-reference-ui-handoff-implementation.md) |
+| 2026-07-13 | AI 长文档题目覆盖率与缺题重试修复 | [2026-07-13-ai-import-coverage-retry.md](./archive/2026-07-13-ai-import-coverage-retry.md) |
+| 2026-07-13 | AI 长文档与多模态导入可靠性修复 | [2026-07-13-ai-import-reliability.md](./archive/2026-07-13-ai-import-reliability.md) |
+| 2026-07-13 | AI 导入重启恢复、原子写入与前端测试工具链安全修复 | [2026-07-13-import-recovery-and-tooling-security.md](./archive/2026-07-13-import-recovery-and-tooling-security.md) |
+| 2026-07-13 | 前端可靠性、离线与可访问性修复 | [2026-07-13-frontend-reliability-accessibility.md](./archive/2026-07-13-frontend-reliability-accessibility.md) |
+| 2026-07-13 | 首页 AI 入口与四项导航 | [2026-07-13-home-ai-entry-navigation.md](./archive/2026-07-13-home-ai-entry-navigation.md) |
+| 2026-07-13 | 手机端题库与导入布局修复 | [2026-07-13-mobile-course-import-layout.md](./archive/2026-07-13-mobile-course-import-layout.md) |
+| 2026-07-13 | 紧凑专业答题台 | [2026-07-13-compact-practice-surface.md](./archive/2026-07-13-compact-practice-surface.md) |
+| 2026-07-13 | v2.6.1 练习流程与动效收口 | [2026-07-13-practice-flow-motion-polish.md](./archive/2026-07-13-practice-flow-motion-polish.md) |
+| 2026-07-13 | v2.7.1 学习核心模块化升级 | [2026-07-13-modular-learning-core-upgrade.md](./archive/2026-07-13-modular-learning-core-upgrade.md) |
+| 2026-07-13 | v2.6.0 界面体验升级合入与验收 | [2026-07-13-calm-learning-visual-refresh.md](./archive/2026-07-13-calm-learning-visual-refresh.md) |
+| 2026-07-12 | Pencil MCP CLI/无界面文件模式切换验证（blocked） | [2026-07-12-pencil-cli-mcp-switch-blocked.md](./archive/2026-07-12-pencil-cli-mcp-switch-blocked.md) |
+| 2026-07-10 | 建立开工必读规约与操作留档机制 | [2026-07-10-workflow-readme.md](./archive/2026-07-10-workflow-readme.md) |
+| 2026-07-12 | Pencil 1.1.69 安装与 Codex MCP 隔离验证（blocked） | [2026-07-12-pencil-install-and-mcp-validation-blocked.md](./archive/2026-07-12-pencil-install-and-mcp-validation-blocked.md) |
+| 2026-07-12 | Pencil MCP 安装后隔离验证 | [2026-07-12-pencil-mcp-validation.md](./archive/2026-07-12-pencil-mcp-validation.md) |
+| 2026-07-13 | 核心前端用户体验收口 | [2026-07-13-core-ux-polish.md](./archive/2026-07-13-core-ux-polish.md) |
+| 2026-07-13 | 内部导航历史栈收口 | [2026-07-13-internal-history-stack-fix.md](./archive/2026-07-13-internal-history-stack-fix.md) |
+| 2026-07-13 | 墨韵书房视觉重构验收与收口 | [2026-07-13-ink-study-visual-refresh-acceptance.md](./archive/2026-07-13-ink-study-visual-refresh-acceptance.md) |
+| 2026-07-14 | Liquid Glass 前端视觉迁移 | [2026-07-14-liquid-glass-frontend-migration.md](./archive/2026-07-14-liquid-glass-frontend-migration.md) |
+| 2026-07-14 | 参考稿一致性迁移与导入恢复 | [2026-07-14-reference-parity-migration.md](./archive/2026-07-14-reference-parity-migration.md) |
+| 2026-07-14 | 全量参考页面一致性落地 | [2026-07-14-full-reference-page-parity.md](./archive/2026-07-14-full-reference-page-parity.md) |
+| 2026-07-10 | 收口 AI 导入、练习、首页题库前端改动 | [2026-07-10-pending-frontend-integration.md](./archive/2026-07-10-pending-frontend-integration.md) |
+| 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
+
+## 使用方式
+
+已完成新增：
+
+2026-07-10 | Figma 视觉设计尝试，因套餐与 MCP 配额限制阻断 | [2026-07-10-figma-visual-system-blocked.md](./archive/2026-07-10-figma-visual-system-blocked.md)
+
+1. 开工时复制 [TEMPLATE.md](./TEMPLATE.md) 到 `active/`。
+2. 完成后补全验证、commit 和 push 结果。
+3. 将文件移入 `archive/`，并更新本索引。

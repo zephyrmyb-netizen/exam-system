@@ -1,4 +1,4 @@
-"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
+﻿"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
 
 
 class TestPracticeStats:
@@ -127,11 +127,11 @@ class TestPracticeStats:
             "/auth/register",
             json={
                 "username": "stats_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "stats_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "stats_iso", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_STATS, headers=b_headers)
         data = resp.json()
@@ -298,11 +298,11 @@ class TestPracticeHistory:
             "/auth/register",
             json={
                 "username": "hist_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "hist_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "hist_iso", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_HISTORY, headers=b_headers)
         assert resp.json()["items"] == []
@@ -431,11 +431,11 @@ class TestWrongReview:
             "/auth/register",
             json={
                 "username": "wr_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "wr_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "wr_iso", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_REVIEW_WRONG, headers=bh)
         assert resp.status_code == 404
@@ -568,11 +568,11 @@ class TestTodayReview:
             "/auth/register",
             json={
                 "username": "tr_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "tr_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "tr_iso", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_REVIEW_TODAY, headers=bh)
         data = resp.json()
@@ -638,11 +638,11 @@ class TestWeakTypes:
             "/auth/register",
             json={
                 "username": "wt_iso",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "wt_iso", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "wt_iso", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.get(self.PRACTICE_INSIGHTS_WEAK, headers=bh)
         assert resp.json() == []

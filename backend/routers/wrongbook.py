@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
-from .. import crud
+from .. import crud, schemas
 from ..database import get_db
 
 router = APIRouter(prefix="/wrongbook", tags=["wrongbook"])
@@ -29,17 +29,7 @@ def list_wrong_records(
         chapter=chapter,
         q_type=type,
     )
-    result = []
-    for r in records:
-        result.append(
-            {
-                "id": r.id,
-                "question_id": r.question_id,
-                "question": r.question.to_dict(),
-                "wrong_count": r.wrong_count,
-                "last_wrong_answer": r.last_wrong_answer or "",
-            }
-        )
+    result = [schemas.WrongRecordOut.model_validate(r).model_dump() for r in records]
 
     # Legacy mode: no pagination params → return flat array
     if page <= 0 or page_size <= 0:

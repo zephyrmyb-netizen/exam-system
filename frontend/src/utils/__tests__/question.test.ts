@@ -3,10 +3,41 @@ import {
   formatOptions,
   isTextQuestionType,
   getQuestionAnswerHint,
+  normalizeMultipleChoiceKeys,
+  toggleMultipleChoiceKey,
   typeLabel,
-  TRUE_FALSE_TRUE,
-  TRUE_FALSE_FALSE,
 } from "../question.ts";
+
+describe("normalizeMultipleChoiceKeys", () => {
+  it.each([
+    ["A,B", ["A", "B"]],
+    ["A，B", ["A", "B"]],
+    ["A、B", ["A", "B"]],
+    ["A/B", ["A", "B"]],
+    ["A B", ["A", "B"]],
+    ["AB", ["A", "B"]],
+    ['["A","B"]', ["A", "B"]],
+    ['［"A","B"］', ["A", "B"]],
+  ])("normalizes %s", (answer, expected) => {
+    expect(normalizeMultipleChoiceKeys(answer)).toEqual(expected);
+  });
+
+  it("accepts arrays and returns sorted unique uppercase keys", () => {
+    expect(normalizeMultipleChoiceKeys(["b", "A", "B"])).toEqual(["A", "B"]);
+  });
+
+  it("returns no keys for an unrecognized answer", () => {
+    expect(normalizeMultipleChoiceKeys("没有可识别选项")).toEqual([]);
+  });
+});
+
+describe("toggleMultipleChoiceKey", () => {
+  it("adds, removes, normalizes and sorts option keys", () => {
+    expect(toggleMultipleChoiceKey("B", "a")).toBe("A,B");
+    expect(toggleMultipleChoiceKey("B，A", "B")).toBe("A");
+    expect(toggleMultipleChoiceKey("A,A", "C")).toBe("A,C");
+  });
+});
 
 describe("formatOptions", () => {
   it("returns empty array for null/undefined", () => {

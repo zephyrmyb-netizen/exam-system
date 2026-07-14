@@ -1,26 +1,33 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 
 import request, { getErrorMessage } from "../api/request";
 import CourseEditModal from "../components/course/CourseEditModal.vue";
 import CourseHeader from "../components/course/CourseHeader.vue";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuth } from "../stores/auth";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import { isPracticeReadyCourse } from "../utils/course";
 import QuestionList from "./QuestionList.vue";
 
 const route = useRoute();
-const router = useRouter();
+const { replaceTo, replaceWithSource } = useAppNavigation();
 const { user } = useAuth();
 const confirmDialog = useConfirmDialog();
 
 const courseId = computed(() => route.params.courseId);
+const navigationSource = computed(() =>
+  route.query.from === "public-library" || route.query.from === "practice"
+    ? route.query.from
+    : "courses",
+);
 const course = ref(null);
 const loading = ref(false);
 const errorMessage = ref("");
 const publishLoading = ref(false);
 const deleteLoading = ref(false);
+const exportLoading = ref(false);
 
 const showForm = ref(false);
 const formLoading = ref(false);
@@ -134,7 +141,7 @@ async function deleteCourse() {
   errorMessage.value = "";
   try {
     await request.delete(`/courses/${courseId.value}`);
-    router.push({ name: "courses" });
+    replaceTo({ name: "courses" });
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "删除题库失败");
   } finally {
@@ -144,11 +151,32 @@ async function deleteCourse() {
 
 function goToPractice() {
   if (!canStartPractice.value) return;
-  router.push(`/courses/${courseId.value}/practice`);
+  replaceWithSource(`/courses/${courseId.value}/practice`, navigationSource.value);
 }
 
 function goToImport() {
-  router.push({ name: "import", query: { course_id: courseId.value } });
+  replaceWithSource({ name: "import", query: { course_id: courseId.value } }, "courses");
+}
+
+async function exportCourse() {
+  if (!course.value || exportLoading.value) return;
+  exportLoading.value = true;
+  errorMessage.value = "";
+  try {
+    const response = await request.get(`/exports/courses/${courseId.value}.json`, { responseType: "blob" });
+    const blobUrl = window.URL.createObjectURL(response.data);
+    const anchor = document.createElement("a");
+    anchor.href = blobUrl;
+    anchor.download = `${course.value.name || "course"}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "导出题库失败");
+  } finally {
+    exportLoading.value = false;
+  }
 }
 
 onMounted(fetchCourse);
@@ -172,10 +200,11 @@ watch(() => route.params.courseId, fetchCourse);
       @edit="openEdit"
       @publish="publishCourse"
       @unpublish="unpublishCourse"
+      @export="exportCourse"
       @delete="deleteCourse"
     />
 
-    <QuestionList :courseId="courseId" />
+    <QuestionList :course-id="courseId" />
 
     <CourseEditModal
       v-if="showForm && course"

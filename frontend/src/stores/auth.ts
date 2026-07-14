@@ -9,12 +9,45 @@ export interface AuthReturn {
   authMessage: Ref<string>;
   authError: Ref<string>;
   isAuthenticated: ComputedRef<boolean>;
+  can: (permission: string) => boolean;
   fetchProfile: () => Promise<void>;
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, password: string, inviteCode: string) => Promise<boolean>;
   logout: () => void;
   resetFeedback: () => void;
 }
+
+const ROLE_PERMISSIONS: Record<string, Set<string>> = {
+  student: new Set([
+    "course:read",
+    "course:create",
+    "exam:take",
+    "exam:view_result",
+    "exam:view_leaderboard",
+    "practice:random",
+    "practice:submit",
+    "wrongbook:read",
+    "chat:use",
+    "import:use",
+  ]),
+  teacher: new Set([
+    "course:read",
+    "course:create",
+    "course:edit",
+    "course:publish",
+    "exam:create",
+    "exam:publish",
+    "exam:take",
+    "exam:view_result",
+    "exam:view_leaderboard",
+    "practice:random",
+    "practice:submit",
+    "wrongbook:read",
+    "chat:use",
+    "import:use",
+  ]),
+  admin: new Set(["*"]),
+};
 
 function normalizeToken(data: TokenResponse | Record<string, unknown> | undefined): string {
   if (!data) return "";
@@ -33,6 +66,17 @@ export const useAuthStore = defineStore("auth", {
   }),
   getters: {
     isAuthenticated: () => !!getToken(),
+    role: (state) => state.user?.role || "student",
+    permissions: (state) => state.user?.permissions || [],
+    can: (state) => {
+      return (permission: string): boolean => {
+        const explicit = state.user?.permissions || [];
+        if (explicit.includes(permission) || explicit.includes("*")) return true;
+        const role = state.user?.role || "student";
+        const rolePerms = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.student;
+        return rolePerms.has("*") || rolePerms.has(permission);
+      };
+    },
   },
   actions: {
     resetFeedback(): void {
@@ -128,6 +172,7 @@ export function useAuth(): AuthReturn {
     authMessage: refs.authMessage,
     authError: refs.authError,
     isAuthenticated: refs.isAuthenticated as ComputedRef<boolean>,
+    can: store.can,
     fetchProfile: store.fetchProfile,
     login: store.login,
     register: store.register,

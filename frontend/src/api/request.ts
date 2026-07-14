@@ -1,16 +1,29 @@
 import axios, { type AxiosError } from "axios";
 
-const TOKEN_KEY = "exam_system_token";
-const AUTH_EVENT = "exam-system-auth-change";
+const TOKEN_KEY = "xuexibao_token";
+const AUTH_EVENT = "xuexibao-auth-change";
 let memoryToken = "";
 
-function getDefaultApiBaseUrl(): string {
-  const { hostname } = window.location;
-  if (hostname && hostname !== "localhost" && hostname !== "127.0.0.1") {
-    // Production: use relative path when nginx proxies backend on same origin.
+type LocationLike = Pick<Location, "hostname" | "port" | "protocol">;
+
+export function resolveDefaultApiBaseUrl(location: LocationLike): string {
+  const { hostname, port } = location;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const devFrontendPorts = new Set(["3000", "4173", "5173", "5174"]);
+
+  // Dev mode: use relative paths so the Vite dev-server proxy forwards
+  // API requests to the backend. This avoids cross-origin issues and lets
+  // mobile devices on the LAN reach the API through port 5174 only.
+  if (isLocalhost || (hostname && devFrontendPorts.has(port))) {
     return "";
   }
-  return "http://127.0.0.1:8000";
+
+  // Production: use relative paths when Nginx proxies backend on the same origin.
+  return "";
+}
+
+export function getDefaultApiBaseUrl(): string {
+  return resolveDefaultApiBaseUrl(window.location);
 }
 
 function emitAuthChange(detail: Record<string, string>): void {

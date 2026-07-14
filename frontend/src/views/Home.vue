@@ -1,47 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import {
-  BookOpen,
-  ChevronRight,
-  ClipboardList,
-  FileUp,
-  Megaphone,
-  Search,
-  Target,
-  TrendingUp,
-} from "@lucide/vue";
+import type { RouteLocationRaw } from "vue-router";
+import { ArrowRight, BookOpen, ClipboardList, FileUp, Mic, Search, Target, TrendingUp } from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
+import StatGrid from "../components/ui/StatGrid.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
-import { releaseNotes } from "../data/releaseNotes";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
-import Button from "../components/ui/button/Button.vue";
-import Card from "../components/ui/card/Card.vue";
-import CardContent from "../components/ui/card/CardContent.vue";
-import CardHeader from "../components/ui/card/CardHeader.vue";
-import CardTitle from "../components/ui/card/CardTitle.vue";
+import { typeLabel } from "../utils/question";
 
-const router = useRouter();
+const { replaceTo } = useAppNavigation();
 const { user } = useAuth();
-const { stats, loading, errorMessage, fetchAll } = useStudyOverview();
+const { stats, streak, recommendation, streakAvailable, recommendationAvailable, loading, errorMessage, fetchAll } =
+  useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
-
-const usernameText = computed(() => user.value?.username || "同学");
-
-const dateText = computed(() =>
-  new Intl.DateTimeFormat("zh-CN", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date()),
-);
 
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
@@ -49,14 +28,90 @@ const accuracyDisplay = computed(() => {
   return `${(rate * 100).toFixed(0)}%`;
 });
 
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  if (hour < 6) return "夜深了";
+  if (hour < 12) return "早上好";
+  if (hour < 18) return "下午好";
+  return "晚上好";
+});
+
+const greetingDate = computed(() =>
+  new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date()),
+);
+
+const greetingName = computed(() => user.value?.username?.trim() || "未登录");
+const avatarChar = computed(() => Array.from(greetingName.value)[0]?.toUpperCase() || "?");
+
 const statCards = computed(() => [
-  { label: "今日已刷", value: stats.value.todayCount, suffix: "题" },
-  { label: "总刷题", value: stats.value.totalCount, suffix: "题" },
-  { label: "正确率", value: accuracyDisplay.value, suffix: "" },
-  { label: "近 7 日", value: stats.value.recentCount7d, suffix: "题" },
+  { label: "今日练习", value: stats.value.todayCount, tone: "primary" as const },
+  { label: "总题数", value: stats.value.totalCount },
+  { label: "正确率", value: accuracyDisplay.value },
+  {
+    label: "连续学习",
+    value: streakAvailable.value === true ? `${streak.value.current_streak}天` : null,
+    dataKey: "streak",
+  },
 ]);
 
-const latestNote = computed(() => releaseNotes[0] || null);
+const recommendationMode = computed(() =>
+  recommendationAvailable.value === true ? recommendation.value?.recommended_modes?.[0] || "" : "",
+);
+
+const recommendationNeedsCourseSelection = computed(() =>
+  ["weak_tag_practice", "weak_type_practice", "type_practice"].includes(recommendationMode.value),
+);
+
+const recommendationModeLabel = computed(
+  () =>
+    ({
+      spaced_repeat: "到期复习",
+      wrong_review: "错题强化",
+      weak_tag_practice: "薄弱标签练习",
+      weak_type_practice: "薄弱题型练习",
+      type_practice: "题型专项",
+      random_practice: "随机练习",
+    })[recommendationMode.value] || "继续练习",
+);
+
+const recommendationTitle = computed(() => {
+  if (recommendationAvailable.value !== true) return "推荐暂不可用";
+  const item = recommendation.value;
+  if (!item) return "暂无个性化推荐";
+  const tagName = item.weak_tags?.[0]?.tag_name?.trim();
+  if (tagName) return `重点巩固：${tagName}`;
+  const questionType = item.weak_types?.[0]?.question_type;
+  if (questionType) return `重点巩固：${typeLabel(questionType)}`;
+  if (item.due_count > 0) return "今日到期复习";
+  return recommendationModeLabel.value;
+});
+
+const recommendationDescription = computed(() => {
+  if (recommendationAvailable.value !== true) return "学习建议加载失败或尚未完成";
+  const item = recommendation.value;
+  if (!item) return "完成一些练习后，这里会根据真实学习数据生成建议";
+  const details: string[] = [];
+  if (item.due_count > 0) details.push(`${item.due_count} 题待复习`);
+  if (item.weak_types?.[0]?.question_type) details.push(typeLabel(item.weak_types[0].question_type));
+  if (recommendationNeedsCourseSelection.value) {
+    details.push(`${recommendationModeLabel.value} · 去题库选择相关内容`);
+  } else {
+    details.push(recommendationModeLabel.value);
+  }
+  return details.join(" · ");
+});
+
+const recommendationTarget = computed<RouteLocationRaw>(() => {
+  if (recommendationAvailable.value !== true) return "/courses";
+  if (recommendationMode.value === "spaced_repeat") return { name: "practice-due" };
+  if (recommendationMode.value === "wrong_review") return { name: "practice-wrong" };
+  if (recommendationMode.value === "random_practice") return { name: "practice" };
+  return "/courses";
+});
 
 const recentCourses = computed(() => {
   const seen = new Set<number | string>();
@@ -74,36 +129,40 @@ const recentCourses = computed(() => {
     .slice(0, 3);
 });
 
-const heroActions = [
+function courseProgress(course: Course) {
+  if (!course.question_count) return 0;
+  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
+}
+
+const coreActions = [
   {
     label: "AI 导入",
     desc: "上传 Word/PPT，自动整理题库",
     icon: FileUp,
     to: "/import",
-    badge: "推荐",
   },
   {
     label: "开始练习",
-    desc: "先选题库，再进入专业练习",
+    desc: "选择题库后开始练习",
     icon: ClipboardList,
     to: "/practice",
   },
   {
-    label: "错题本",
-    desc: "集中复盘易错题",
+    label: "正式考试",
+    desc: "进入已有考试安排",
     icon: Target,
-    to: "/wrongbook",
+    to: "/exams",
   },
   {
     label: "学习概览",
-    desc: "查看今日进度和正确率",
+    desc: "查看学习数据",
     icon: TrendingUp,
     to: { name: "study-overview", query: { from: "home" } },
   },
 ];
 
-function goTo(target: string | Record<string, unknown>) {
-  router.push(target);
+function goTo(target: RouteLocationRaw) {
+  replaceTo(target);
 }
 
 function formatCourseDate(course: Course) {
@@ -134,137 +193,511 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-5 pb-24">
-    <section class="rounded-[28px] bg-gradient-to-br from-blue-500 via-blue-600 to-blue-800 p-5 text-white shadow-xl shadow-blue-500/20">
-      <div class="flex items-start justify-between gap-4">
+  <section class="home-page" data-reference-page="home">
+    <header class="home-hero fade-up">
+      <div class="home-hero__top">
         <div>
-          <p class="text-sm font-semibold text-white/75">{{ dateText }}</p>
-          <h1 class="mt-2 text-4xl font-black leading-tight tracking-normal">
-            {{ usernameText }}，开始复习吧
-          </h1>
+          <p class="home-hero__eyebrow">{{ greetingDate }}</p>
+          <h1>{{ greeting }}，{{ greetingName }}</h1>
+          <p>从一小步开始，今天也会有收获。</p>
         </div>
-        <button
-          class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur"
-          type="button"
-          aria-label="更新公告"
-          @click="router.push('/announcements?from=home')"
-        >
-          <Megaphone :size="20" :stroke-width="2.4" />
-        </button>
+        <span class="home-hero__avatar" :aria-label="`${greetingName}的头像`">{{ avatarChar }}</span>
       </div>
-
-      <button
-        class="mt-5 flex min-h-14 w-full items-center gap-3 rounded-full bg-white px-5 text-left text-base font-bold text-slate-500 shadow-sm"
-        type="button"
-        @click="router.push('/courses')"
-      >
-        <Search :size="21" :stroke-width="2.4" />
+      <button class="home-search-entry" data-home-search type="button" @click="replaceTo('/courses')">
+        <Search :size="15" :stroke-width="2.4" />
         <span>搜索题库、课程、题目</span>
+        <Mic class="home-search-entry__mic" :size="17" :stroke-width="2.2" aria-hidden="true" />
       </button>
+    </header>
 
-      <div class="mt-5 grid grid-cols-4 gap-3">
-        <button
-          v-for="item in heroActions"
-          :key="item.label"
-          class="relative grid min-h-24 place-items-center gap-1 rounded-2xl border border-white/20 bg-white/12 px-2 py-3 text-center backdrop-blur transition active:scale-[0.98]"
-          type="button"
-          @click="goTo(item.to)"
-        >
-          <span v-if="item.badge" class="absolute -top-2 right-2 rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-blue-900">
-            {{ item.badge }}
+    <nav class="quick-grid fade-up d1" aria-label="快捷操作">
+      <button v-for="item in coreActions" :key="item.label" class="quick" type="button" @click="goTo(item.to)">
+        <span class="quick-ico">
+          <component :is="item.icon" :size="18" :stroke-width="2.3" />
+        </span>
+        <span class="quick-label">{{ item.label }}</span>
+        <span class="quick-desc">{{ item.desc }}</span>
+      </button>
+    </nav>
+
+    <div class="section-head fade-up d3">
+      <h3 class="section-title">学习概览</h3>
+      <button class="section-more" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
+        查看全部
+      </button>
+    </div>
+    <div class="overview-surface fade-up d3">
+      <p v-if="loading" class="overview-state">学习数据加载中...</p>
+      <p v-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
+      <StatGrid v-if="!loading" class="overview-grid" label="首页学习统计" :items="statCards" />
+    </div>
+
+    <div class="section-head fade-up d3">
+      <h3 class="section-title">最近题库</h3>
+      <button class="section-more" type="button" @click="replaceTo('/courses')">查看全部</button>
+    </div>
+
+    <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
+    <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
+
+    <!-- Empty state -->
+    <div v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="empty-state fade-up d3">
+      <BookOpen :size="36" :stroke-width="1.7" />
+      <strong>还没有可练习题库</strong>
+      <p>导入资料后，这里会显示最近学习的题库。</p>
+      <div class="empty-actions">
+        <button class="empty-btn empty-btn--primary" type="button" @click="goTo('/import')">去导入</button>
+        <button class="empty-btn" type="button" @click="goTo('/courses')">浏览题库</button>
+      </div>
+    </div>
+
+    <!-- Course list -->
+    <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
+      <div v-for="course in recentCourses" :key="course.id" class="course-item">
+        <button class="course-main" type="button" @click="goTo(`/courses/${course.id}`)">
+          <span class="course-icon">
+            <BookOpen :size="18" :stroke-width="2.2" />
           </span>
-          <component :is="item.icon" :size="24" :stroke-width="2.25" />
-          <strong class="text-sm font-black leading-tight">{{ item.label }}</strong>
-          <small class="hidden text-[10px] leading-tight text-white/70 sm:block">{{ item.desc }}</small>
+          <div class="course-info">
+            <strong>{{ getCourseDisplayName(course) }}</strong>
+            <span>
+              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 ·
+              {{ formatCourseDate(course) }}
+            </span>
+            <span class="course-progress" aria-label="练习覆盖进度">
+              <i :style="{ width: `${courseProgress(course)}%` }"></i>
+            </span>
+          </div>
+        </button>
+        <button
+          class="course-action"
+          type="button"
+          :aria-label="`开始练习：${getCourseDisplayName(course)}`"
+          @click="goTo(`/courses/${course.id}/practice`)"
+        >
+          开始练习
         </button>
       </div>
-    </section>
+    </div>
 
-    <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
-    <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
-
-    <Card class="overflow-hidden border-slate-200 bg-white">
-      <button class="block w-full text-left" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
-        <CardHeader class="flex flex-row items-center justify-between gap-4">
-          <div>
-            <p class="text-sm font-bold text-slate-400">我的学习空间</p>
-            <CardTitle class="mt-1 text-3xl text-slate-950">学习概览</CardTitle>
-          </div>
-          <ChevronRight :size="22" :stroke-width="2.5" class="text-slate-400" />
-        </CardHeader>
-        <CardContent>
-          <div class="grid grid-cols-4 gap-2">
-            <div v-for="item in statCards" :key="item.label" class="rounded-2xl bg-slate-50 px-2 py-3 text-center">
-              <strong class="block text-lg font-black text-slate-950">
-                {{ item.value !== null && item.value !== undefined && item.value !== "" ? item.value : "--" }}
-                <small v-if="item.suffix" class="text-xs font-bold text-slate-500">{{ item.suffix }}</small>
-              </strong>
-              <span class="mt-1 block text-xs font-bold text-slate-500">{{ item.label }}</span>
-            </div>
-          </div>
-        </CardContent>
-      </button>
-    </Card>
-
-    <section class="space-y-3">
-      <div class="flex items-end justify-between gap-3">
-        <div>
-          <p class="text-sm font-bold text-slate-400">我的学习空间</p>
-          <h2 class="text-3xl font-black text-slate-950">最近题库</h2>
-        </div>
-        <Button variant="ghost" size="sm" @click="router.push('/courses')">
-          查看全部
-          <ChevronRight :size="15" :stroke-width="2.5" />
-        </Button>
-      </div>
-
-      <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
-      <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
-
-      <Card v-if="!coursesLoading && !coursesError && recentCourses.length === 0" class="border-dashed border-slate-200 bg-white">
-        <CardContent class="grid place-items-center gap-3 py-10 text-center">
-          <BookOpen :size="42" :stroke-width="1.7" class="text-slate-300" />
-          <div>
-            <strong class="text-lg font-black text-slate-900">还没有可练习题库</strong>
-            <p class="mt-1 text-sm font-semibold text-slate-500">导入资料后，这里会显示最近学习的题库。</p>
-          </div>
-          <div class="flex gap-2">
-            <Button size="sm" @click="goTo('/import')">去导入</Button>
-            <Button variant="outline" size="sm" @click="goTo('/courses')">浏览题库</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div v-if="recentCourses.length > 0" class="space-y-3">
-        <Card v-for="course in recentCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
-          <CardContent class="p-4">
-            <div class="flex items-center gap-3">
-              <button class="flex min-w-0 flex-1 items-center gap-3 text-left" type="button" @click="goTo(`/courses/${course.id}`)">
-                <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                  <BookOpen :size="22" :stroke-width="2.2" />
-                </span>
-                <span class="min-w-0">
-                  <strong class="block truncate text-base font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
-                  <small class="mt-1 block text-sm font-semibold text-slate-500">
-                    {{ course.question_count ?? 0 }} 题 · {{ course.visibility === "public" ? "公开" : "私有" }} · {{ formatCourseDate(course) }}
-                  </small>
-                </span>
-              </button>
-              <Button size="sm" @click="goTo(`/courses/${course.id}/practice`)">练习</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
-
-    <Card v-if="latestNote" class="border-blue-100 bg-blue-50/70">
-      <CardContent class="flex items-center justify-between gap-3 p-4">
-        <div class="min-w-0">
-          <p class="text-xs font-black text-blue-600">最新公告 {{ latestNote.version }}</p>
-          <h3 class="mt-1 truncate text-base font-black text-slate-950">{{ latestNote.title }}</h3>
-        </div>
-        <Button variant="outline" size="sm" @click="router.push('/announcements?from=home')">查看</Button>
-      </CardContent>
-    </Card>
+    <button
+      class="home-recommendation fade-up d4"
+      data-home-recommendation
+      type="button"
+      @click="goTo(recommendationTarget)"
+    >
+      <span class="home-recommendation__spark">✦</span>
+      <span class="home-recommendation__copy">
+        <small class="home-recommendation__tag">每日一练</small>
+        <strong>{{ recommendationTitle }}</strong>
+        <small>{{ recommendationDescription }}</small>
+      </span>
+      <ArrowRight :size="19" :stroke-width="2.4" aria-hidden="true" />
+    </button>
   </section>
 </template>
+
+<style scoped>
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.home-hero {
+  display: grid;
+  gap: 16px;
+  margin: -16px -16px 0;
+  padding: 20px 18px 18px;
+  border-radius: 0 0 28px 28px;
+  background: linear-gradient(145deg, #10b981, #0f9d7a 60%, #0d9488);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+
+.home-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-hero p,
+.home-hero h1 {
+  margin: 0;
+}
+.home-hero__eyebrow {
+  opacity: 0.82;
+  font-size: 12px;
+  font-weight: 700;
+}
+.home-hero h1 {
+  margin-top: 3px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+.home-hero h1 + p {
+  margin-top: 5px;
+  opacity: 0.86;
+  font-size: 12px;
+}
+.home-hero__avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 850;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.home-search-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  margin-top: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  color: var(--text-placeholder);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: border-color var(--ease-out);
+}
+
+.home-search-entry__mic {
+  margin-left: auto;
+  color: var(--primary-strong);
+}
+
+.home-search-entry:hover {
+  border-color: var(--primary-border);
+}
+
+.home-search-entry :deep(svg) {
+  color: var(--text-placeholder);
+}
+
+.quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quick {
+  min-height: 116px;
+  padding: var(--space-3) 8px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+}
+
+.quick-ico {
+  background: var(--primary);
+  box-shadow: none;
+}
+
+.quick-label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+
+.quick-desc {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.overview-surface {
+  min-height: 92px;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.overview-state {
+  display: grid;
+  min-height: 68px;
+  margin: 0;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.overview-state--error {
+  color: var(--rose);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.overview-grid :deep(.stat-grid__item) {
+  min-height: 64px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: none;
+}
+
+.overview-grid :deep(.stat-grid__value) {
+  font-size: var(--text-lg);
+}
+
+/* ── Course list layout ── */
+.course-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-item {
+  border-radius: 8px;
+}
+
+.course-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.course-action {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--ease-out),
+    box-shadow var(--ease-out);
+}
+
+.course-action:hover {
+  background: var(--primary-strong);
+}
+
+.course-progress {
+  display: block;
+  height: 5px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.course-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.home-recommendation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 15px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-soft), #eff6ff);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+.home-recommendation__spark {
+  color: var(--primary);
+  font-size: 24px;
+}
+.home-recommendation__copy {
+  min-width: 0;
+}
+.home-recommendation strong,
+.home-recommendation small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-recommendation strong {
+  font-size: 14px;
+}
+.home-recommendation small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.home-recommendation .home-recommendation__tag {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+.home-recommendation :deep(svg) {
+  color: var(--primary-strong);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-state :deep(svg) {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.empty-state strong {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.empty-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.empty-btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out);
+}
+
+.empty-btn--primary {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: none;
+  transition: background var(--ease-out);
+}
+
+.empty-btn--primary:hover {
+  background: var(--primary-strong);
+}
+
+@media (max-width: 420px) {
+  .overview-grid {
+    gap: 0;
+  }
+  .overview-grid :deep(.stat-grid__value) {
+    font-size: var(--text-base);
+  }
+  .course-item {
+    gap: 8px;
+  }
+  .course-action {
+    padding-inline: 10px;
+  }
+}
+
+.home-hero {
+  padding-inline: 20px;
+  border-radius: 0 0 24px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.home-hero__avatar {
+  border: 2px solid rgba(255, 255, 255, 0.72);
+}
+.home-search-entry {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.home-search-entry span {
+  color: rgba(255, 255, 255, 0.9);
+}
+.quick {
+  border-color: var(--glass-border);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+}
+.quick:nth-child(2) .quick-ico {
+  color: #2563eb;
+  background: #eff6ff;
+}
+.quick:nth-child(3) .quick-ico {
+  color: #d97706;
+  background: #fffbeb;
+}
+.quick:nth-child(4) .quick-ico {
+  color: #dc2626;
+  background: #fef2f2;
+}
+.overview-surface,
+.home-course-list .course-item,
+.home-recommendation {
+  border-color: var(--glass-border);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+.home-recommendation {
+  border-radius: 12px;
+}
+</style>

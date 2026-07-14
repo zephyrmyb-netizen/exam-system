@@ -1,34 +1,49 @@
 import warnings
+from asyncio import create_task, to_thread
 from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import admin, analytics, bookmarks, exams, exports, recommendations, tags
 from .config import (
     _IS_DEFAULT_INVITE,
     _IS_DEFAULT_SECRET,
     _RAW_CORS,
     CORS_IS_WILDCARD,
     CORS_ORIGINS,
+    IMPORT_TASK_RECOVERY_ENABLED,
+    IMPORT_TASK_RECOVERY_LIMIT,
     IS_PRODUCTION,
 )
 from .database import Base, engine
 from .logging_config import configure_logging
 from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
+from .services import import_task_service
 
 configure_logging()
-logger = structlog.get_logger("exam_system")
+logger = structlog.get_logger("xuexibao")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    if IMPORT_TASK_RECOVERY_ENABLED:
+        def schedule_import_task(task_id: str) -> None:
+            create_task(to_thread(import_task_service.process_task, task_id))
+
+        recovered = import_task_service.recover_pending_tasks(
+            schedule=schedule_import_task,
+            limit=IMPORT_TASK_RECOVERY_LIMIT,
+        )
+        if recovered:
+            logger.info("recovered_import_tasks", count=len(recovered))
     yield
 
 
-app = FastAPI(title="Exam System API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="学习宝 API", version="2.0.0", lifespan=lifespan)
 app.add_middleware(RequestIDMiddleware)
 
 # ── Startup warnings (development only — production errors are raised in config.py) ─
@@ -84,3 +99,10 @@ app.include_router(imports.router)
 app.include_router(courses.router)
 app.include_router(library.router)
 app.include_router(chat.router)
+app.include_router(exams.router)
+app.include_router(admin.router)
+app.include_router(tags.router)
+app.include_router(recommendations.router)
+app.include_router(analytics.router)
+app.include_router(exports.router)
+app.include_router(bookmarks.router)

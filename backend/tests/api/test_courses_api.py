@@ -9,8 +9,10 @@ from fastapi.testclient import TestClient
 
 from backend import models
 from backend.api.courses import router as courses_router
+from backend.api.deps import get_permission_service
 from backend.auth import get_current_user
 from backend.database import get_db
+from backend.services.permission_service import PermissionService
 
 
 def _make_app(db_session, current_user=None) -> FastAPI:
@@ -115,3 +117,32 @@ def test_layered_get_course_hides_private_course_from_other_user(db_session):
     response = client.get(f"/courses/{bank.id}")
 
     assert response.status_code == 404
+
+
+def test_layered_create_course_requires_permission(db_session):
+    user = _make_user(db_session, "api_create_denied_user")
+    app = _make_app(db_session, user)
+
+    class DenyAll(PermissionService):
+        def can(self, user, permission):
+            return False
+
+    app.dependency_overrides[get_permission_service] = lambda: DenyAll(db_session)
+    client = TestClient(app)
+
+    response = client.post("/courses/", json={"name": "Denied bank"})
+
+    assert response.status_code == 403
+
+
+def test_layered_create_course_success(db_session):
+    user = _make_user(db_session, "api_create_allowed_user")
+    client = TestClient(_make_app(db_session, user))
+
+    response = client.post("/courses/", json={"name": "Created bank", "subject": "Java"})
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Created bank"
+    assert data["subject"] == "Java"
+    assert data["owner_id"] == user.id

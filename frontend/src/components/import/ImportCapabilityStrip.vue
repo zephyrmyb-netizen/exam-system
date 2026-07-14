@@ -2,11 +2,11 @@
   <div class="import-capability-strip">
     <div class="import-capability">
       <span class="capability-label">当前支持</span>
-      <strong>Word .docx / PPT .pptx</strong>
+      <strong>Word .docx / PDF .pdf / PPTX .pptx / PNG JPG WEBP</strong>
     </div>
     <div class="import-capability">
       <span class="capability-label">处理提示</span>
-      <strong>约 30 秒，大文件会更久</strong>
+      <strong>文档 30-120 秒，图片 10-60 秒</strong>
     </div>
     <div class="import-capability import-capability--wide">
       <span class="capability-label">切换页面</span>
@@ -29,9 +29,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.88)),
-    var(--surface);
+  background: var(--surface);
 }
 
 .import-capability--wide {
@@ -40,7 +38,7 @@
 
 .capability-label {
   color: var(--text-placeholder);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -48,5 +46,13 @@
   color: var(--text-main);
   font-size: var(--text-xs);
   line-height: 1.35;
+}
+/* A layout: concise capability notes without decorative panels. */
+.import-capability-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.import-capability { min-height: 0; border-radius: 6px; background: var(--surface); }
+.import-capability--wide { grid-column: auto; }
+@media (max-width: 520px) {
+  .import-capability-strip { grid-template-columns: 1fr; }
+  .import-capability--wide { grid-column: auto; }
 }
 </style>

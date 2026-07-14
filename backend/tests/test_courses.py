@@ -1,4 +1,4 @@
-"""Tests for course/question-bank endpoints and visibility/ownership."""
+﻿"""Tests for course/question-bank endpoints and visibility/ownership."""
 
 
 class TestCourses:
@@ -54,11 +54,11 @@ class TestCourses:
             "/auth/register",
             json={
                 "username": "userB",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        resp = client.post("/auth/login", json={"username": "userB", "password": "pass"})
+        resp = client.post("/auth/login", json={"username": "userB", "password": "passpw"})
         b_token = resp.json()["access_token"]
         b_headers = {"Authorization": f"Bearer {b_token}"}
 
@@ -98,11 +98,11 @@ class TestCourses:
             "/auth/register",
             json={
                 "username": "userB2",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        resp = client.post("/auth/login", json={"username": "userB2", "password": "pass"})
+        resp = client.post("/auth/login", json={"username": "userB2", "password": "passpw"})
         b_headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
         resp = client.delete(f"{self.COURSES_URL}{cid}", headers=b_headers)
@@ -159,11 +159,11 @@ class TestCourseUpdate:
             "/auth/register",
             json={
                 "username": "course_upd_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "course_upd_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "course_upd_other", "password": "passpw"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(
             f"{self.COURSES_URL}{c['id']}",
@@ -229,11 +229,11 @@ class TestCourseUnpublish:
             "/auth/register",
             json={
                 "username": "unpub_c_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "unpub_c_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "unpub_c_other", "password": "passpw"})
         other = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"{self.COURSES_URL}{cid}/unpublish", headers=other)
         assert resp.status_code == 403
@@ -279,11 +279,11 @@ class TestQuestionVisibility:
             "/auth/register",
             json={
                 "username": username,
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        resp = client.post("/auth/login", json={"username": username, "password": "pass"})
+        resp = client.post("/auth/login", json={"username": username, "password": "passpw"})
         return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
     def test_question_owner_set_on_import(self, client, auth_headers):

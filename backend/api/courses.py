@@ -9,16 +9,27 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from .. import schemas
 from ..auth import get_current_user
 from ..models import User
 from ..services.course_service import CourseService
-from .deps import get_course_service
+from .deps import get_course_service, require_permission
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CourseServiceDep = Annotated[CourseService, Depends(get_course_service)]
 PageParam = Annotated[int, Query(ge=0)]
+
+
+@router.post("/", status_code=201)
+def create_course(
+    body: schemas.CourseCreate,
+    current_user: Annotated[User, Depends(require_permission("course:create"))],
+    service: CourseServiceDep,
+):
+    bank = service.create_course(body, owner_id=current_user.id)
+    return schemas.CourseOut.model_validate(bank).model_dump()
 
 
 @router.get("/")
@@ -33,7 +44,7 @@ def list_courses(
         page=page,
         page_size=page_size,
     )
-    items = [bank.to_dict() for bank in banks]
+    items = [schemas.CourseOut.model_validate(bank).model_dump() for bank in banks]
     if page <= 0 or page_size <= 0:
         return items
     return {"total": total, "page": page, "page_size": page_size, "items": items}
@@ -51,7 +62,7 @@ def list_my_courses(
         page=page,
         page_size=page_size,
     )
-    items = [bank.to_dict() for bank in banks]
+    items = [schemas.CourseOut.model_validate(bank).model_dump() for bank in banks]
     if page <= 0 or page_size <= 0:
         return items
     return {"total": total, "page": page, "page_size": page_size, "items": items}
@@ -64,4 +75,4 @@ def get_course(
     service: CourseServiceDep,
 ):
     bank = service.get_accessible_course(course_id, current_user.id)
-    return bank.to_dict()
+    return schemas.CourseOut.model_validate(bank).model_dump()

@@ -7,9 +7,8 @@ defineProps({
 </script>
 
 <template>
-  <div class="practice-stats-bar">
+  <div class="practice-stats-bar" aria-label="本次练习统计">
     <span class="practice-stat-chip">已答 {{ answeredCount }}</span>
-    <span class="practice-stat-sep">·</span>
     <span
       class="practice-stat-chip"
       :class="{
@@ -19,7 +18,6 @@ defineProps({
     >
       正确率 {{ accuracy !== null ? `${accuracy}%` : "--" }}
     </span>
-    <span class="practice-stat-sep">·</span>
     <span class="practice-stat-chip practice-stat-chip--streak">{{ streakText }}</span>
   </div>
 </template>
@@ -28,13 +26,15 @@ defineProps({
 .practice-stats-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
-  padding: 2px 4px 0;
+  margin: 0;
+  padding: 0;
   font-size: 12px;
   font-weight: 800;
   color: var(--text-muted);
-  overflow-x: auto;
+  overflow: hidden;
   scrollbar-width: none;
 }
 
@@ -45,6 +45,11 @@ defineProps({
 .practice-stat-chip {
   white-space: nowrap;
   color: var(--text-secondary);
+  padding: 5px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-card);
+  box-shadow: var(--glass-inner-highlight);
 }
 
 .practice-stat-chip--good {
@@ -56,11 +61,7 @@ defineProps({
 }
 
 .practice-stat-chip--streak {
-  color: var(--amber);
+  color: var(--primary-strong);
 }
 
-.practice-stat-sep {
-  color: var(--line-strong);
-  font-weight: 600;
-}
 </style>

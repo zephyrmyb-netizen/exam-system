@@ -1,6 +1,11 @@
 <script setup>
+import { computed } from "vue";
 import { CheckCircle, XCircle } from "@lucide/vue";
-import { TRUE_FALSE_FALSE, TRUE_FALSE_TRUE } from "../../utils/question";
+import {
+  normalizeMultipleChoiceKeys,
+  TRUE_FALSE_FALSE,
+  TRUE_FALSE_TRUE,
+} from "../../utils/question";
 
 const props = defineProps({
   questionType: { type: String, required: true },
@@ -13,6 +18,10 @@ const props = defineProps({
 
 const emit = defineEmits(["pick-single", "toggle-multiple"]);
 
+const correctAnswerKeys = computed(() => new Set(
+  normalizeMultipleChoiceKeys(props.correctAnswerDisplay),
+));
+
 function isSelected(key) {
   return props.questionType === "multiple_choice"
     ? props.selectedAnswers.includes(key)
@@ -21,6 +30,11 @@ function isSelected(key) {
 
 function getOptionState(key) {
   if (!props.result) return "";
+  if (props.questionType === "multiple_choice") {
+    if (correctAnswerKeys.value.has(String(key).toUpperCase())) return "is-correct";
+    if (isSelected(key)) return "is-wrong";
+    return "";
+  }
   if (key === props.correctAnswerDisplay) return "is-correct";
   if (isSelected(key)) return "is-wrong";
   return "";
@@ -42,6 +56,7 @@ function pickOption(key) {
       class="practice-boolean-button practice-boolean-button--true"
       :class="[getOptionState(TRUE_FALSE_TRUE), { 'is-selected': isSelected(TRUE_FALSE_TRUE) && !result }]"
       type="button"
+      :aria-pressed="isSelected(TRUE_FALSE_TRUE)"
       :disabled="!!result"
       @click="pickOption(TRUE_FALSE_TRUE)"
     >
@@ -52,6 +67,7 @@ function pickOption(key) {
       class="practice-boolean-button practice-boolean-button--false"
       :class="[getOptionState(TRUE_FALSE_FALSE), { 'is-selected': isSelected(TRUE_FALSE_FALSE) && !result }]"
       type="button"
+      :aria-pressed="isSelected(TRUE_FALSE_FALSE)"
       :disabled="!!result"
       @click="pickOption(TRUE_FALSE_FALSE)"
     >
@@ -67,6 +83,8 @@ function pickOption(key) {
       class="practice-option-card"
       :class="[getOptionState(option.key), { 'is-selected': isSelected(option.key) && !result }]"
       type="button"
+      :aria-label="`选项 ${option.key}：${option.value}`"
+      :aria-pressed="isSelected(option.key)"
       :disabled="!!result"
       @click="pickOption(option.key)"
     >
@@ -82,22 +100,35 @@ function pickOption(key) {
 <style scoped>
 .practice-options-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  /* 允许父级横向滑动手势，垂直滚动仍可用 */
+  touch-action: pan-y;
 }
 
 .practice-option-card {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  padding: 16px;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  padding: 11px 12px;
   border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: var(--glass-inner-highlight);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
   text-align: left;
   color: var(--text-main);
-  transition: all var(--ease-out);
+  transition: border-color var(--ease-out), background var(--ease-out),
+              box-shadow var(--ease-out), transform 0.14s ease-out;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-option-card:hover:not(:disabled) {
@@ -107,13 +138,14 @@ function pickOption(key) {
 }
 
 .practice-option-card:active:not(:disabled) {
-  transform: scale(0.99);
+  background: var(--primary-soft);
+  transform: scale(0.985);
 }
 
 .practice-option-card.is-selected {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .practice-option-card__check,
@@ -124,8 +156,8 @@ function pickOption(key) {
 }
 
 .practice-option-card__check {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 1.5px solid var(--line-strong);
   border-radius: 6px;
   color: var(--primary);
@@ -140,12 +172,12 @@ function pickOption(key) {
 }
 
 .practice-option-card__key {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--surface-soft);
   color: var(--primary-strong);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -156,10 +188,11 @@ function pickOption(key) {
 
 .practice-option-card__value {
   min-width: 0;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.42;
   font-weight: 700;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .practice-option-card.is-correct {
@@ -187,25 +220,32 @@ function pickOption(key) {
 .practice-boolean-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  touch-action: pan-y;
 }
 
 .practice-boolean-button {
   display: grid;
   place-items: center;
-  gap: 10px;
-  padding: 22px 16px;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 10px;
   border: 2px solid var(--line-strong);
-  border-radius: var(--radius-xl);
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text-main);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
-  transition: all var(--ease-out);
+  transition: border-color var(--ease-out), background var(--ease-out),
+              color var(--ease-out), box-shadow var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .practice-boolean-button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  border-color: var(--line-accent);
 }
 
 .practice-boolean-button--true:hover:not(:disabled) {
@@ -223,7 +263,7 @@ function pickOption(key) {
 .practice-boolean-button.is-selected {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  box-shadow: inset 3px 0 0 var(--primary);
   color: var(--primary-strong);
 }
 
@@ -252,13 +292,32 @@ function pickOption(key) {
 
 @media (max-width: 420px) {
   .practice-option-card {
-    padding: 14px;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 44px;
+    padding: 7px 9px;
+    gap: 7px;
+    border-radius: 8px;
+  }
+
+  .practice-option-card__check {
+    grid-column: 1;
+  }
+
+  .practice-option-card__key {
+    grid-column: 1;
+  }
+
+  .practice-option-card__value {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
 
   .practice-boolean-button {
-    padding: 18px 12px;
-    font-size: 15px;
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-md);
   }
 }
 </style>

@@ -1,6 +1,6 @@
 # Backend Dockerfile
-# Build: docker build -t exam-backend -f Dockerfile.backend .
-# Run:   docker run -p 8000:8000 --env-file backend/.env exam-backend
+# Build: docker build -t xuexibao-backend -f Dockerfile.backend .
+# Run:   docker run -p 8000:8000 --env-file backend/.env xuexibao-backend
 
 FROM python:3.11-slim
 

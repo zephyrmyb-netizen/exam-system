@@ -1,7 +1,8 @@
 @echo off
 setlocal EnableExtensions
+chcp 65001 >nul
 
-title Exam System Launcher
+title Xuexibao Launcher
 
 set "ROOT=%~dp0.."
 for %%I in ("%ROOT%") do set "ROOT=%%~fI"
@@ -12,7 +13,7 @@ set "FRONTEND_PORT=5173"
 
 echo.
 echo ============================================
-echo   Exam System Launcher
+echo   Xuexibao Launcher
 echo ============================================
 echo.
 
@@ -27,11 +28,11 @@ timeout /t 1 /nobreak >nul
 
 echo [2/4] Start backend...
 cd /d "%ROOT%"
-start "exam-backend" cmd.exe /s /k ""%BACKEND_PY%" -m uvicorn backend.main:app --host 0.0.0.0 --port %BACKEND_PORT%"
+start "xuexibao-backend" cmd.exe /s /k ""%BACKEND_PY%" -m uvicorn backend.main:app --host 0.0.0.0 --port %BACKEND_PORT%"
 
 echo [3/4] Start frontend...
 cd /d "%FRONTEND_DIR%"
-start "exam-frontend" cmd.exe /s /k "npm.cmd run dev -- --host 0.0.0.0 --port %FRONTEND_PORT%"
+start "xuexibao-frontend" cmd.exe /s /k "npm.cmd run dev -- --host 0.0.0.0 --port %FRONTEND_PORT%"
 
 echo [4/4] Waiting for startup...
 timeout /t 5 /nobreak >nul
@@ -50,8 +51,8 @@ echo.
 start "" "http://localhost:%BACKEND_PORT%/health/ai"
 
 echo   Two new windows were opened:
-echo   - exam-backend
-echo   - exam-frontend
+echo   - xuexibao-backend
+echo   - xuexibao-frontend
 echo.
 echo   To stop: close those two windows.
 echo ============================================

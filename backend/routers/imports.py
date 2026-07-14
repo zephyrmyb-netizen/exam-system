@@ -1,7 +1,8 @@
 import time
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy.orm import Session, sessionmaker
 
 from .. import auth as auth_module
 from .. import schemas
@@ -11,11 +12,13 @@ from ..database import get_db
 from ..ratelimit import RateLimiter, get_limiter
 from ..schemas import ImportedQuestion
 from ..services import imports_service
+from ..services import import_task_service
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
 # Backward-compatible exports for existing tests and callers.
 extract_text_and_warnings = imports_service.extract_text_and_warnings
+extract_images_from_file = imports_service.extract_images_from_file
 extract_text_from_file = imports_service.extract_text_from_file
 _validate_question_item = imports_service.validate_question_item
 _question_items_from_parsed_json = imports_service.question_items_from_parsed_json
@@ -24,6 +27,8 @@ _extract_questions_from_ai_response = imports_service.extract_questions_from_ai_
 _call_ai_parse_chunk = imports_service.call_ai_parse_chunk
 _deduplicate_questions = imports_service.deduplicate_questions
 call_ai_parse = imports_service.call_ai_parse
+call_ai_parse_multimodal = imports_service.call_ai_parse_multimodal
+call_ai_extract_text_from_images = imports_service.call_ai_extract_text_from_images
 OPENAI_API_KEY = imports_service.OPENAI_API_KEY
 OPENAI_BASE_URL = imports_service.OPENAI_BASE_URL
 OpenAI = imports_service.OpenAI
@@ -66,8 +71,18 @@ async def upload_file(
     try:
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
-        text, _ = imports_service.extract_text_and_warnings(saved.path)
+        text, extract_warnings = imports_service.extract_text_and_warnings(saved.path)
+        images, image_warnings = imports_service.extract_images_from_file(saved.path)
+        if not text.strip() and images:
+            _sync_ai_overrides()
+            text, ai_warnings, _parse_timing = imports_service.call_ai_extract_text_from_images(images)
+            extract_warnings = extract_warnings + image_warnings + ai_warnings
+        elif image_warnings:
+            extract_warnings = extract_warnings + image_warnings
         extract_ms = imports_service.elapsed_ms(extract_start)
+        if not text.strip():
+            detail = imports_service.empty_extract_detail(saved.path, extract_warnings)
+            raise HTTPException(status_code=400, detail=detail)
         return schemas.FileExtractResponse(
             text=text,
             filename=saved.filename,
@@ -77,7 +92,7 @@ async def upload_file(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
@@ -95,21 +110,23 @@ async def preview_import(
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
         text, extract_warnings = imports_service.extract_text_or_raise(saved.path)
+        images, image_warnings = imports_service.extract_images_from_file(saved.path)
+        extract_warnings = extract_warnings + image_warnings
         extract_ms = imports_service.elapsed_ms(extract_start)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"文件提取失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="文件提取失败，请检查文件格式") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 
     try:
         _sync_ai_overrides()
-        questions, ai_warnings, parse_timing = imports_service.preview_import_from_text(text)
+        questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"AI 解析失败: {exc}") from exc
+        raise HTTPException(status_code=502, detail="AI 解析失败，请稍后重试") from exc
 
     all_warnings = extract_warnings + ai_warnings
     total_valid = len(questions)
@@ -166,6 +183,125 @@ def confirm_import(
     )
 
 
+@router.post("/tasks", response_model=schemas.ImportTaskOut, status_code=202)
+async def create_import_task(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    course_id: int = Query(0, ge=0, description="目标课程 ID，0 表示由文件名建议课程"),
+    course_name: str = Query("", description="可选目标课程名"),
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+    limiter: RateLimiter = Depends(rate_limiter),
+):
+    """Accept a long import quickly and return a durable task identifier."""
+
+    _enforce_import_limit(current_user.id, limiter)
+    source_filename, file_path = await import_task_service.save_upload_for_task(file)
+    try:
+        task = import_task_service.create_task(
+            db,
+            owner_id=current_user.id,
+            source_filename=source_filename,
+            file_path=file_path,
+            course_id=course_id,
+            course_name=course_name,
+        )
+    except Exception:
+        imports_service.cleanup_temp_file(file_path)
+        raise
+
+    task_session_factory = sessionmaker(autocommit=False, autoflush=False, bind=db.get_bind())
+    background_tasks.add_task(
+        import_task_service.process_task,
+        task.id,
+        _sync_ai_overrides,
+        task_session_factory,
+    )
+    return import_task_service.task_to_schema(task)
+
+
+@router.get("/tasks/{task_id}", response_model=schemas.ImportTaskOut)
+def get_import_task(
+    task_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    task = import_task_service.get_owned_task(db, task_id=task_id, owner_id=current_user.id)
+    return import_task_service.task_to_schema(task)
+
+
+@router.post("/tasks/{task_id}/confirm", response_model=schemas.ConfirmImportResponse)
+def confirm_import_task(
+    task_id: str,
+    body: schemas.ConfirmImportTaskRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    task = import_task_service.get_owned_task(db, task_id=task_id, owner_id=current_user.id)
+    if task.status == "imported":
+        return schemas.ConfirmImportResponse(
+            imported_count=task.total_valid,
+            course_id=task.course_id,
+            course_name=task.course_name or "未分类题库",
+            warnings=["该导入任务已确认，无需重复导入。"],
+        )
+    if task.status != "ready":
+        raise HTTPException(status_code=409, detail="导入任务尚未解析完成，请稍后再试。")
+
+    stored_preview = import_task_service.task_to_schema(task).questions
+    source_questions = body.questions or stored_preview
+    if not source_questions:
+        raise HTTPException(status_code=422, detail="没有待导入的题目")
+
+    validated_items, errors = imports_service.validate_imported_questions(source_questions)
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail=f"部分题目校验不通过，未导入任何题目：{'；'.join(errors)}",
+        )
+
+    try:
+        task.status = "importing"
+        task.error_message = ""
+        db.flush()
+        bank = imports_service.resolve_target_course(
+            db,
+            current_user.id,
+            course_id=body.course_id or task.course_id or 0,
+            course_name=body.course_name or task.course_name or "",
+            filename=task.source_filename,
+            commit=False,
+        )
+        imported = imports_service.persist_imported_questions(
+            db,
+            user_id=current_user.id,
+            course_id=bank.id,
+            questions=validated_items,
+            commit=False,
+        )
+        task.status = "imported"
+        task.course_id = bank.id
+        task.course_name = bank.name
+        task.total_valid = imported
+        task.finished_at = task.finished_at or datetime.now(UTC)
+        db.add(task)
+        db.commit()
+    except Exception:
+        db.rollback()
+        task = import_task_service.get_owned_task(db, task_id=task_id, owner_id=current_user.id)
+        task.status = "ready"
+        task.error_message = "导入写入失败，请检查题库后重试。"
+        db.add(task)
+        db.commit()
+        raise
+
+    return schemas.ConfirmImportResponse(
+        imported_count=imported,
+        course_id=bank.id,
+        course_name=bank.name,
+    )
+
+
 @router.post("/file/auto", response_model=schemas.FileAutoResponse)
 async def import_file_auto(
     file: UploadFile = File(...),
@@ -182,9 +318,10 @@ async def import_file_auto(
         saved = await imports_service.save_upload_to_temp(file)
         extract_start = time.perf_counter()
         text, _ = imports_service.extract_text_or_raise(saved.path)
+        images, _image_warnings = imports_service.extract_images_from_file(saved.path)
         extract_ms = imports_service.elapsed_ms(extract_start)
         _sync_ai_overrides()
-        question_dicts, _warnings, parse_timing = imports_service.preview_import_from_text(text)
+        question_dicts, _warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
         bank = imports_service.resolve_target_course(
             db,
             current_user.id,
@@ -201,7 +338,7 @@ async def import_file_auto(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"导入失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail="导入失败，请稍后重试") from exc
     finally:
         imports_service.cleanup_temp_file(saved.path if saved else None)
 

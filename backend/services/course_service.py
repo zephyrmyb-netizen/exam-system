@@ -7,7 +7,7 @@ incrementally.
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models
+from .. import models, schemas
 from ..repositories.course_repo import CourseRepository
 
 
@@ -31,6 +31,11 @@ class CourseService:
         if bank.owner_id != user_id:
             raise HTTPException(status_code=403, detail="只能操作自己的课程")
         return bank
+
+    def create_course(self, data: schemas.CourseCreate, owner_id: int) -> models.QuestionBank:
+        if not data.name.strip():
+            raise HTTPException(status_code=400, detail="Course name cannot be empty")
+        return self.repo.create(owner_id=owner_id, data=data)
 
     def list_visible(
         self,

@@ -1,25 +1,35 @@
 <script setup>
-import { ArrowRight, BookMarked, CheckCircle, XCircle } from "@lucide/vue";
+import { computed } from "vue";
+import { BookMarked, CheckCircle, ChevronLeft, XCircle } from "@lucide/vue";
 
-defineProps({
+const props = defineProps({
   result: { type: Object, required: true },
   currentAnswer: { type: String, default: "" },
   correctAnswerDisplay: { type: String, default: "" },
   loading: { type: Boolean, default: false },
 });
 
-defineEmits(["next"]);
+const swipeHint = computed(() =>
+  props.loading ? "加载中" : "向左滑动进入下一题",
+);
 </script>
 
 <template>
-  <div class="practice-result" :class="result.is_correct ? 'practice-result--correct' : 'practice-result--wrong'">
+  <div
+    class="practice-result"
+    :class="result.is_correct ? 'practice-result--correct' : 'practice-result--wrong'"
+    role="status"
+    aria-live="polite"
+  >
     <div class="practice-result__head">
       <CheckCircle v-if="result.is_correct" :size="22" class="practice-result__icon" />
       <XCircle v-else :size="22" class="practice-result__icon" />
-      <span class="practice-result__title">{{ result.is_correct ? "回答正确" : "回答错误" }}</span>
+      <span class="practice-result__title">{{ result.is_correct ? "答对了" : "答错了" }}</span>
     </div>
 
-    <div class="practice-result__body">
+    <p v-if="result.is_correct" class="practice-result__next">正确，正在进入下一题</p>
+
+    <div v-else class="practice-result__body">
       <div class="practice-result__item">
         <span class="practice-result__label">你的答案</span>
         <span :class="result.is_correct ? 'practice-result__value--ok' : 'practice-result__value--bad'">
@@ -31,7 +41,7 @@ defineEmits(["next"]);
         <span class="practice-result__value--ok">{{ correctAnswerDisplay }}</span>
       </div>
       <div v-if="result.analysis" class="practice-result__analysis">
-        <span class="practice-result__label">解析</span>
+        <span class="practice-result__label">查看解析</span>
         <p>{{ result.analysis }}</p>
       </div>
     </div>
@@ -45,30 +55,30 @@ defineEmits(["next"]);
       <span>{{ result.wrongbook_recorded ? "已记录到错题本" : "已加入错题本" }}</span>
     </div>
 
-    <button class="practice-primary-button" type="button" :disabled="loading" @click="$emit('next')">
-      <ArrowRight :size="17" :stroke-width="2.5" />
-      <span>{{ loading ? "加载中..." : "下一题" }}</span>
-    </button>
+    <div v-if="!result.is_correct" class="practice-swipe-hint">
+      <ChevronLeft :size="15" :stroke-width="2.5" class="practice-swipe-hint__icon" />
+      <span>{{ swipeHint }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .practice-result {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: var(--radius-xl);
-  border: 1px solid transparent;
+  gap: 7px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
 }
 
 .practice-result--correct {
   background: var(--emerald-soft);
-  border-color: var(--emerald-border);
+  border-color: var(--emerald);
 }
 
 .practice-result--wrong {
   background: var(--rose-soft);
-  border-color: var(--rose-border);
+  border-color: var(--rose);
 }
 
 .practice-result__head {
@@ -94,38 +104,43 @@ defineEmits(["next"]);
 }
 
 .practice-result__title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
+}
+
+.practice-result__next {
+  margin: 0;
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .practice-result__body {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 .practice-result__item,
 .practice-result__analysis {
   display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.65);
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .practice-result__label {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.3;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .practice-result__item span:last-child,
 .practice-result__analysis p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.55;
   font-weight: 700;
   word-break: break-word;
 }
@@ -140,49 +155,40 @@ defineEmits(["next"]);
   align-items: center;
   gap: 6px;
   justify-self: start;
-  padding: 7px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.65);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .practice-result__wrongbook--recorded {
   color: var(--emerald);
-  background: rgba(236, 253, 245, 0.9);
+  background: var(--emerald-soft);
 }
 
-.practice-primary-button {
+.practice-swipe-hint {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  width: 100%;
-  min-height: 50px;
-  padding: 13px 18px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  color: #fff;
-  font-size: var(--text-base);
-  font-weight: 800;
-  box-shadow: var(--shadow-primary);
-  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  justify-self: start;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  opacity: 0.72;
 }
 
-.practice-primary-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
-}
-
-.practice-primary-button:disabled {
-  opacity: 0.5;
+.practice-swipe-hint__icon {
 }
 
 @media (max-width: 420px) {
   .practice-result {
-    padding: 16px;
+    padding: 10px;
+    gap: 8px;
   }
 }
 </style>

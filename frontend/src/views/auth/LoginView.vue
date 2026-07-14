@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Eye, EyeOff, Lock, User } from "@lucide/vue";
+import { Eye, EyeOff } from "@lucide/vue";
 
 import { useAuth } from "../../stores/auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const router = useRouter();
 const route = useRoute();
@@ -30,50 +28,54 @@ async function handleLogin() {
     && !redirect.startsWith("/login")
     && !redirect.startsWith("/register")
   ) {
-    router.push(redirect);
+    router.replace(redirect);
     return;
   }
-  router.push({ name: "home" });
+  router.replace({ name: "home" });
 }
 </script>
 
 <template>
-  <Card class="auth-form-section">
-    <CardHeader class="p-0 pb-5">
-      <CardTitle class="text-3xl">登录账号</CardTitle>
-      <p class="auth-desc">使用你的账号登录，开始刷题复习。</p>
-    </CardHeader>
+  <div class="auth-card fade-up d1">
+    <p class="auth-brand">学习宝 <span>学习与练习</span></p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" type="button">登录</button>
+      <router-link class="auth-tab" replace to="/register">注册</router-link>
+    </div>
 
-    <CardContent class="p-0">
-      <p v-if="authMessage" class="success-message">{{ authMessage }}</p>
-      <p v-if="authError" class="error-message">{{ authError }}</p>
+    <p v-if="authMessage" class="success-message">{{ authMessage }}</p>
+    <p v-if="authError" class="error-message">{{ authError }}</p>
 
-      <form class="stack" @submit.prevent="handleLogin">
-        <div class="input-with-icon">
-          <User class="input-icon" :size="18" />
-          <input
-            id="login-username"
-            v-model="form.username"
-            class="text-input has-left-icon"
-            type="text"
-            autocomplete="username"
-            placeholder="请输入用户名"
-          />
-        </div>
+    <div class="auth-heading">
+      <h1>登录</h1>
+      <p>继续使用你的学习空间</p>
+    </div>
 
-        <div class="input-with-icon">
-          <Lock class="input-icon" :size="18" />
+    <form @submit.prevent="handleLogin">
+      <div class="auth-field">
+        <label for="login-username">用户名</label>
+        <input
+          id="login-username"
+          v-model="form.username"
+          type="text"
+          autocomplete="username"
+          placeholder="请输入用户名"
+        />
+      </div>
+
+      <div class="auth-field">
+        <label for="login-password">密码</label>
+        <div class="auth-field-control">
           <input
             id="login-password"
             v-model="form.password"
-            class="text-input has-left-icon has-right-icon"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="current-password"
             placeholder="请输入密码"
           />
           <button
             type="button"
-            class="input-suffix"
+            class="auth-field-suffix"
             tabindex="-1"
             aria-label="切换密码显示"
             @click="showPassword = !showPassword"
@@ -82,57 +84,63 @@ async function handleLogin() {
             <Eye v-else :size="17" />
           </button>
         </div>
+      </div>
 
-        <Button class="full-button" type="submit" :disabled="loading">
-          {{ loading ? "登录中..." : "登录" }}
-        </Button>
-      </form>
-    </CardContent>
-
-    <CardFooter class="flex-col p-0 pt-5">
-      <p class="invite-hint">
-        首次使用请先注册，开发邀请码请在后端 .env 中配置。
-      </p>
-      <p class="auth-switch">
-        还没有账号？
-        <router-link :to="{ name: 'register' }">去注册</router-link>
-      </p>
-    </CardFooter>
-  </Card>
+      <button class="auth-btn" type="submit" :disabled="loading">
+        {{ loading ? "登录中..." : "登录" }}
+      </button>
+    </form>
+  </div>
 </template>
 
 <style scoped>
-.input-with-icon {
+a.auth-tab {
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+button.auth-tab {
+  font-family: inherit;
+  cursor: default;
+}
+
+.success-message,
+.error-message {
+  margin: 0 0 var(--space-3);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.auth-card { max-width: 400px; padding: 24px; border-radius: 6px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
+.auth-brand { margin: 0 0 22px; color: var(--text-main); font-size: 15px; font-weight: 800; }
+.auth-brand span { margin-left: 6px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+.auth-tabs { margin-bottom: 22px; padding: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
+.auth-tab { min-height: 44px; padding: 0 12px; border-radius: 0; }
+.auth-tab.active { border-bottom: 2px solid var(--primary); box-shadow: none; }
+.auth-heading { margin-bottom: 20px; }
+.auth-heading h1 { margin: 0; color: var(--text-main); font-family: var(--font-sans); font-size: 22px; font-weight: 800; }
+.auth-heading p { margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
+.auth-field { gap: 7px; margin-bottom: 16px; }
+.auth-field label { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.auth-field input { height: 48px; border-radius: 5px; }
+
+.auth-field-control {
   position: relative;
-  display: grid;
-  align-items: center;
 }
 
-.input-icon {
+.auth-field-control input {
+  padding-right: 44px;
+}
+
+.auth-field-suffix {
   position: absolute;
-  left: 14px;
-  top: 50%;
-  z-index: 1;
-  color: var(--text-placeholder);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.text-input.has-left-icon {
-  padding-left: 42px;
-}
-
-.text-input.has-right-icon {
-  padding-right: 46px;
-}
-
-.input-suffix {
-  position: absolute;
-  right: 10px;
+  right: 6px;
   top: 50%;
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   border: none;
   border-radius: var(--radius-sm);
@@ -141,17 +149,17 @@ async function handleLogin() {
   cursor: pointer;
   transform: translateY(-50%);
   transition: color var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.input-suffix:hover {
+.auth-field-suffix:hover {
   color: var(--text-secondary);
 }
 
-.invite-hint {
-  margin: var(--space-1) 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  line-height: 1.6;
-  text-align: center;
+/* iOS Safari: prevent zoom-on-focus (input font-size ≥ 16px) */
+.auth-field input {
+  font-size: 16px;
 }
+.auth-btn { height: 48px; margin-top: 8px; border-radius: 5px; background: var(--primary); box-shadow: none; }
+.auth-btn:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
 </style>

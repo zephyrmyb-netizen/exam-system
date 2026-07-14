@@ -1,4 +1,4 @@
-"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
+﻿"""Tests for new endpoints: /courses/mine, course questions, course practice, publish, library."""
 
 
 class TestDeleteQuestion:
@@ -36,11 +36,11 @@ class TestDeleteQuestion:
             "/auth/register",
             json={
                 "username": "delete_test",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "delete_test", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "delete_test", "password": "passpw"})
         d_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.delete(f"/questions/{qid}", headers=d_headers)
         assert resp.status_code == 403
@@ -85,11 +85,11 @@ class TestManualCreateQuestion:
             "/auth/register",
             json={
                 "username": "mc_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "mc_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "mc_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(
             self.QUESTIONS_URL,
@@ -170,11 +170,11 @@ class TestEditQuestion:
             "/auth/register",
             json={
                 "username": "eq_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "eq_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "eq_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.patch(f"{self.QUESTIONS_URL}{qid}", json={"question": "Hacked"}, headers=bh)
         assert resp.status_code == 403
@@ -228,11 +228,11 @@ class TestEditQuestion:
             "/auth/register",
             json={
                 "username": "eqc_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "eqc_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "eqc_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post("/courses/", json={"name": "B's C"}, headers=bh)
         bc = resp.json()["id"]
@@ -308,11 +308,11 @@ class TestUnpublishQuestion:
             "/auth/register",
             json={
                 "username": "uq_other",
-                "password": "pass",
+                "password": "passpw",
                 "invite_code": "dev-invite",
             },
         )
-        r = client.post("/auth/login", json={"username": "uq_other", "password": "pass"})
+        r = client.post("/auth/login", json={"username": "uq_other", "password": "passpw"})
         bh = {"Authorization": f"Bearer {r.json()['access_token']}"}
         resp = client.post(f"{self.QUESTIONS_URL}{qid}/unpublish", headers=bh)
         assert resp.status_code == 403

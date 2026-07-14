@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import request, { getErrorMessage } from "../../api/request";
-import { typeLabels, typeOptions } from "../../utils/question";
+import { typeOptions } from "../../utils/question";
 import { X, Plus, Trash2 } from "@lucide/vue";
 
 const props = defineProps({
@@ -296,8 +296,8 @@ watch(() => props.question, initForm);
 .editor-close {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
   background: transparent;

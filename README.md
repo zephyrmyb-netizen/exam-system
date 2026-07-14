@@ -1,6 +1,9 @@
-﻿# 考前刷题复习系统
+﻿# 学习宝
 
-基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PPT 预览导入等功能。
+> [!IMPORTANT]
+> **项目所有者、Codex、DeepSeek、GLM 及其他执行窗口，在开始任何操作前，必须先阅读 [README-开始工作前必读.md](./README-开始工作前必读.md)。**
+
+基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PDF/PPT/图片预览导入等功能。
 
 ## 题库逻辑
 
@@ -35,7 +38,7 @@
 ## 项目结构
 
 ```
-exam-system/
+xuexibao/
 ├── backend/             # FastAPI 后端
 │   ├── main.py          # 应用入口
 │   ├── config.py        # 环境配置（含生产环境安全校验）
@@ -155,7 +158,7 @@ copy backend\.env.example backend\.env
 | 变量                        | 默认值                               | 说明                  |
 | --------------------------- | ------------------------------------ | --------------------- |
 | `APP_ENV`                   | `development`                        | 运行环境：`development`（开发）或 `production`（生产） |
-| `DATABASE_URL`              | `sqlite:///./exam_system.db`         | 数据库连接            |
+| `DATABASE_URL`              | `sqlite:///./xuexibao.db`            | 数据库连接            |
 | `SECRET_KEY`                | `change-this-secret-key-in-production` | JWT 签名密钥（**生产环境必须修改**） |
 | `INVITE_CODE`               | `dev-invite`                         | 注册邀请码            |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440`                             | Token 过期时间（分钟）|
@@ -166,7 +169,8 @@ copy backend\.env.example backend\.env
 | `CHAT_UPSTREAM_TIMEOUT`     | `90`                                 | AI 对话单次请求超时秒数 |
 | `IMPORT_UPSTREAM_TIMEOUT`   | `90`                                 | AI 文件导入每个分块的上游超时秒数 |
 | `IMPORT_CHUNK_SIZE`         | `5000`                               | AI 文件导入每个分块约处理的字符数 |
-| `IMPORT_MAX_CHUNKS`         | `3`                                  | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_CHUNKS`         | `20`                                 | AI 文件导入最多处理的分块数 |
+| `IMPORT_MAX_TOKENS`         | `6000`                               | AI 文件导入单次模型输出 token 上限 |
 | `PRESERVE_SYSTEM_ENV`       | `0`                                  | 是否允许系统环境变量覆盖 `backend/.env` |
 
 #### SECRET_KEY 配置说明
@@ -209,20 +213,28 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 - **手动添加题目**：进入课程后可以逐道添加题目（支持单选题、多选题、判断题、填空题、简答题）
 - **批量导入**：通过 JSON 数组或 Word/PPT 文件批量导入
 
-### Word/PPT 预览导入流程
+### Word/PDF/PPT/图片预览导入流程
 
 文件上传采用**预览→修改→确认**三步流程，不是直接写入数据库：
 
-1. **上传文件**：调用 `POST /imports/file/preview`，后端提取文本后调用 AI 解析为题目数组
+1. **上传文件**：调用 `POST /imports/file/preview`，后端提取 Word/PDF/PPT 文本、PPT 内嵌图片或直接上传的图片后调用 AI 解析为题目数组
 2. **预览与修改**：前端展示 AI 解析结果，用户可以编辑题目字段（题干、选项、答案、解析等）
 3. **确认导入**：用户确认后调用 `POST /imports/confirm`，后端校验所有题目后统一写入数据库
 
 这种方式确保用户对导入内容有完全控制权，避免 AI 解析错误直接入库。
 
+支持的文件格式：
+
+- 文档：`.docx`、`.pdf`、`.pptx`
+- 图片：`.png`、`.jpg`、`.jpeg`、`.webp`
+- 旧版 `.ppt` 暂不支持，请在 PowerPoint/WPS 中另存为 `.pptx` 后上传
+
+图片题目识别依赖当前 `OPENAI_MODEL` 支持 OpenAI-compatible `image_url` / base64 多模态输入，例如 `mimo-v2.5`。如果模型不支持图片输入，纯文本 Word/PDF/PPT 导入仍可使用，图片识别会返回明确错误或 warning。扫描版 PDF 建议导出为图片后上传；加密 PDF 请先解除密码后再上传。文件解析失败返回 400/422，AI 超时返回 504，AI 服务不可用返回 502，不会当作登录失效处理。
+
 #### AI 导入超时排查
 
-AI 文件导入比普通对话更慢，因为后端会先提取 Word/PPT 文本，再把文本拆成多个分块顺序发给模型解析。
-其中 Word/PPT 文字提取通常很快，主要等待时间一般在 AI 分块生成题目阶段。前端会在等待时显示“正在读取文档 / AI 正在生成题目”，切换到其他页面后也会保留全局导入进度提示。
+AI 文件导入比普通对话更慢，因为后端会先提取 Word/PDF/PPT 文本，再把文本拆成多个分块顺序发给模型解析。
+其中 Word/PDF/PPT 文字提取通常很快，主要等待时间一般在 AI 分块生成题目阶段。前端会在等待时显示“正在读取文档 / AI 正在生成题目”，切换到其他页面后也会保留全局导入进度提示。
 
 `POST /imports/file`、`POST /imports/file/preview` 和 `POST /imports/file/auto` 会返回安全的 `timing` 统计，单位为毫秒：
 
@@ -244,7 +256,8 @@ AI 文件导入比普通对话更慢，因为后端会先提取 Word/PPT 文本�
 - 前端等待导入接口：`420` 秒
 - 后端单个分块上游超时：`IMPORT_UPSTREAM_TIMEOUT=90`
 - 每个分块字符数：`IMPORT_CHUNK_SIZE=5000`
-- 最多处理分块数：`IMPORT_MAX_CHUNKS=3`
+- 最多处理分块数：`IMPORT_MAX_CHUNKS=20`
+- 单次模型输出上限：`IMPORT_MAX_TOKENS=6000`
 
 如果导入大文件仍然超时，优先按这个顺序处理：
 
@@ -356,7 +369,7 @@ http://127.0.0.1:8000/health/ai
 
 > ⚠️ **安全警告**（提交公开仓库前必读）：
 > - ✅ **`backend/.env` 不要提交** — 已在 `.gitignore` 中忽略，提交前请确认 `git status` 中没有 `.env`
-> - ✅ **`backend/exam_system.db` 不要提交** — 包含真实数据，已在 `.gitignore` 中忽略
+> - ✅ **`backend/xuexibao.db` 不要提交** — 包含真实数据，已在 `.gitignore` 中忽略
 > - ✅ **`uploads/` 不要提交** — 用户上传的文件不应进入仓库
 > - ✅ **不要在日志、截图或视频中暴露 API Key / SECRET_KEY**
 > - ✅ **不要在任何公开渠道分享 `.env` 内容**
@@ -365,7 +378,7 @@ http://127.0.0.1:8000/health/ai
 
 ### 开发环境 — SQLite
 
-默认使用 SQLite，数据库文件生成在 `backend/exam_system.db`，零配置即可运行。
+默认使用 SQLite，数据库文件生成在 `backend/xuexibao.db`，零配置即可运行。
 
 适合单人本地开发和测试。
 
@@ -373,11 +386,11 @@ http://127.0.0.1:8000/health/ai
 
 多人正式使用时，SQLite 并发能力不足，建议切换到 PostgreSQL。
 
-1. 安装 PostgreSQL，创建数据库（如 `exam_system`）
+1. 安装 PostgreSQL，创建数据库（如 `xuexibao`）
 2. 修改 `backend/.env`：
 
 ```env
-DATABASE_URL=postgresql://用户名:密码@localhost:5432/exam_system
+DATABASE_URL=postgresql://用户名:密码@localhost:5432/xuexibao
 ```
 
 3. 安装驱动：
@@ -417,7 +430,7 @@ AI 对话（`/chat`）和 AI 导入（`/imports/file/*`）均受每用户每小�
 ### 重置开发数据库
 
 ```bash
-del backend\exam_system.db
+del backend\xuexibao.db
 ```
 
 重启后端后会自动创建全新的空数据库。
@@ -504,8 +517,8 @@ del backend\exam_system.db
 
 | 端点                  | 方法   | 说明                                        |
 | --------------------- | ------ | ------------------------------------------- |
-| `/imports/file`       | POST   | 上传 .docx/.pptx 文件，提取文本（最大 10MB）|
-| `/imports/file/preview`| POST   | 上传文件并用 AI 解析为题目，返回预览（不入库）|
+| `/imports/file`       | POST   | 上传 .docx/.pdf/.pptx/.png/.jpg/.jpeg/.webp 文件，提取文本或图片识别文本（最大 10MB）|
+| `/imports/file/preview`| POST   | 上传文件并用 AI 解析为题目，支持 PPT 内嵌图片和直接图片，返回预览（不入库）|
 | `/imports/confirm`    | POST   | 确认预览后的题目并写入数据库                |
 | `/imports/file/auto`  | POST   | 上传文件并用 AI 直接解析并导入              |
 
@@ -537,7 +550,7 @@ del backend\exam_system.db
 推荐直接双击：
 
 ```text
-scripts/start_exam_system.bat
+scripts/start_xuexibao.bat
 ```
 
 脚本会启动后端、前端，并自动打开 `http://localhost:8000/health/ai` 检查 AI 配置是否读取成功。日常使用的后端启动不带 `--reload`，这样 AI 导入大文件时不会因为文件变化自动重启。
@@ -604,19 +617,48 @@ powershell -ExecutionPolicy Bypass -File scripts\cleanup_local_artifacts.ps1 -In
 - `frontend/dist/`
 - `frontend/test-results/`
 - `frontend/.playwright-cli/`
-- `backend/exam_system.backup-*.db`
+- `backend/xuexibao.backup-*.db`
 - `backend/server.out.log`、`backend/server.err.log`
 - `frontend/server.out.log`、`frontend/server.err.log`
 
 不要删除：
 
 - `backend/.env`
-- `backend/exam_system.db`
+- `backend/xuexibao.db`
 - `backend/.venv/`
 - `frontend/node_modules/`
 - 用户自己放进项目的资料文件，除非确认已经不需要
 
 ## 验收命令
+
+### 2.0 发布门禁
+
+上线前从项目根目录依次执行：
+
+```powershell
+# 前端质量、测试和构建
+cd "D:\File\exam system\frontend"
+npm.cmd run lint
+npm.cmd run test
+npm.cmd run build
+
+# 后端质量和测试
+cd "D:\File\exam system"
+backend\.venv\Scripts\python.exe -m ruff check backend
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+
+# 公开仓库安全检查
+python scripts\security_check.py
+```
+
+生产环境发布前必须确认：
+
+- `APP_ENV=production`
+- `SECRET_KEY` 已换成随机长密钥
+- `INVITE_CODE` 已换成自己的邀请码
+- `CORS_ORIGINS` 已设置为真实前端域名
+- `DB_PASSWORD` 已设置为生产数据库密码
+- `backend/.env`、数据库、上传文件、日志和文档资料没有进入 Git
 
 ```bash
 # 后端测试
@@ -641,7 +683,7 @@ powershell -ExecutionPolicy Bypass -File scripts\smoke_test.ps1
 
 ```markdown
 - [ ] 已确认 `.env` 文件未被 Git 跟踪（运行 `git status` 检查）
-- [ ] 已确认 `backend/exam_system.db` 未被跟踪
+- [ ] 已确认 `backend/xuexibao.db` 未被跟踪
 - [ ] 已确认 `uploads/` 未被跟踪
 - [ ] 已确认 `.env.example` 中不含真实 API Key（使用 `<your-api-key>` 占位）
 - [ ] 生产环境已设置 `SECRET_KEY` 为随机字符串

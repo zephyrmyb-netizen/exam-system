@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库练习</title>
+    <style id="theme-vars">
+/* ═══════════════════════════════════════════════════════════════
+   Design System — 考试学习平台
+   清新活力 · iOS 26 Liquid Glass
+   Translucent materials, frosted glass, spring motion, generous radii.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand Primary · Emerald Green ── */
+  --primary: #10B981;
+  --primary-strong: #059669;
+  --primary-soft: #ECFDF5;
+  --primary-border: #A7F3D0;
+  --primary-glow: rgba(16, 185, 129, 0.2);
+
+  /* ── Surfaces · iOS 26 Liquid Glass ── */
+  --bg: #F2F4F8;
+  --surface: #FFFFFF;
+  --surface-muted: #F1F5F9;
+  --surface-elevated: #FFFFFF;
+
+  /* ── Glass Materials (Liquid Glass核心) ── */
+  --glass-nav: rgba(255, 255, 255, 0.72);
+  --glass-nav-blur: 24px;
+  --glass-card: rgba(255, 255, 255, 0.65);
+  --glass-card-blur: 20px;
+  --glass-header: rgba(255, 255, 255, 0.68);
+  --glass-header-blur: 20px;
+  --glass-overlay: rgba(255, 255, 255, 0.55);
+  --glass-overlay-blur: 40px;
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.6);
+
+  /* ── Text ── */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-placeholder: #CBD5E1;
+
+  /* ── Borders ── */
+  --border: #E2E8F0;
+  --border-soft: #F1F5F9;
+  --border-strong: #CBD5E1;
+
+  /* ── State Colors (semantic only, not identity) ── */
+  --state-success: #10B981;
+  --state-success-soft: #ECFDF5;
+  --state-warning: #F59E0B;
+  --state-warning-soft: #FFFBEB;
+  --state-warning-border: #FDE68A;
+  --state-error: #EF4444;
+  --state-error-soft: #FEF2F2;
+  --state-error-border: #FECACA;
+  --state-info: #3B82F6;
+  --state-info-soft: #EFF6FF;
+
+  /* ── Radii · iOS 26 generous scale ── */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows · Liquid Glass depth ── */
+  --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 8px 32px rgba(15, 23, 42, 0.10);
+  --shadow-modal: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --shadow-primary: 0 8px 24px rgba(16, 185, 129, 0.22);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  /* ── Typography ── */
+  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* ── Font sizes ── */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-md: 0.875rem;    /* 14px */
+  --text-base: 0.9375rem;  /* 15px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.375rem;    /* 22px */
+  --text-2xl: 1.75rem;    /* 28px */
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ── Transitions · iOS 26 Spring Motion ── */
+  --ease-out: 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-gentle: 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ── Dark Mode · iOS 26 ── */
+.dark {
+  --bg: #000000;
+  --surface: #1C1C1E;
+  --surface-muted: #2C2C2E;
+  --surface-elevated: #1C1C1E;
+
+  --glass-nav: rgba(28, 28, 30, 0.72);
+  --glass-card: rgba(44, 44, 46, 0.65);
+  --glass-header: rgba(28, 28, 30, 0.68);
+  --glass-overlay: rgba(28, 28, 30, 0.55);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --text-placeholder: #475569;
+
+  --border: #3A3A3C;
+  --border-soft: #2C2C2E;
+  --border-strong: #475569;
+
+  --primary-soft: #064E3B;
+  --primary-border: #065F46;
+
+  --state-success-soft: #064E3B;
+  --state-warning-soft: #451A03;
+  --state-warning-border: #78350F;
+  --state-error-soft: #450A0A;
+  --state-error-border: #7F1D1D;
+  --state-info-soft: #172554;
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Typography Classes
+   ═══════════════════════════════════════════════════════════════ */
+
+.ep-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.ep-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.ep-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.ep-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.ep-body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ep-caption {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.ep-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--text-primary);
+    --color-secondary: var(--text-secondary);
+    --color-muted: var(--text-muted);
+  }
+  @layer base {
+    body { background: var(--text-background); color: var(--text-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <!-- ═══ Shell Container (immersive mode — NO bottom nav) ═══ -->
+    <div class="shell-container">
+
+      <!-- ═══ 1. Immersive Top Bar ═══ -->
+      <header class="immersive-topbar">
+        <button type="button" data-dom-id="btn-back" class="back-btn" aria-label="返回">
+          <i data-lucide="chevron-left" class="h-6 w-6"></i>
+        </button>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: 25%;"></div>
+        </div>
+        <span class="q-counter">5/20 <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">· 25%</span></span>
+        <!-- 答题卡按钮 -->
+        <button type="button" data-dom-id="btn-answer-card" class="answer-card-btn" aria-label="答题卡" onclick="document.getElementById('answerSheet').classList.add('answer-sheet--open')">
+          <i data-lucide="layout-grid" class="h-5 w-5"></i>
+          <span class="answer-card-btn__badge">5/20</span>
+        </button>
+      </header>
+
+      <!-- ═══ 2. Scrollable Content ═══ -->
+      <main class="shell-content">
+
+        <!-- Question Card -->
+        <div class="question-card">
+          <div class="flex items-center gap-2">
+            <span class="type-tag">单选题</span>
+          </div>
+          <div class="q-meta mb-4">
+            <span class="q-meta-pill q-meta-pill--difficulty"><span style="width: 4px; height: 4px; border-radius: 50%; background: currentColor; display: inline-block;"></span>中等</span>
+            <span class="q-meta-pill q-meta-pill--source">数据库原理</span>
+            <span class="q-meta-pill q-meta-pill--score">2分</span>
+          </div>
+          <p class="question-stem">在数据库设计中，以下哪种范式要求消除非主属性对候选键的部分函数依赖？</p>
+        </div>
+
+        <!-- Answer Options -->
+        <div class="flex flex-col gap-2.5 px-4">
+          <button type="button" data-dom-id="option-a" class="option-btn">
+            <span class="option-letter">A</span>
+            <span class="option-text">第一范式 (1NF)</span>
+          </button>
+          <button type="button" data-dom-id="option-b" class="option-btn option-btn--correct">
+            <span class="option-letter">B</span>
+            <span class="option-text">第二范式 (2NF)</span>
+            <i data-lucide="check-circle-2" style="width: 20px; height: 20px; color: var(--primary); flex-shrink: 0;"></i>
+          </button>
+          <button type="button" data-dom-id="option-c" class="option-btn">
+            <span class="option-letter">C</span>
+            <span class="option-text">第三范式 (3NF)</span>
+          </button>
+          <button type="button" data-dom-id="option-d" class="option-btn">
+            <span class="option-letter">D</span>
+            <span class="option-text">BCNF 范式</span>
+          </button>
+        </div>
+
+        <!-- ═══ 3. Explanation Card (shown after answering) ═══ -->
+        <div class="explanation-card">
+          <div class="explanation-header">
+            <div class="explanation-icon">
+              <i data-lucide="lightbulb" style="width: 18px; height: 18px;"></i>
+            </div>
+            <span class="explanation-title">答案解析</span>
+            <span class="explanation-badge">答对了</span>
+          </div>
+          <p class="explanation-text">第二范式（2NF）要求消除非主属性对候选键的<strong style="color: var(--primary);">部分函数依赖</strong>。在 1NF 的基础上，确保所有非主属性完全依赖于整个候选键，而非候选键的一部分。</p>
+          <div class="explanation-tags">
+            <span class="explanation-tag">数据库原理</span>
+            <span class="explanation-tag">范式理论</span>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- ═══ 4. Sticky Action Bar (replaces bottom-nav in immersive mode) ═══ -->
+      <div class="action-bar">
+        <button type="button" data-dom-id="btn-prev" class="prev-btn" aria-label="上一题">
+          <i data-lucide="chevron-left" class="h-5 w-5"></i>
+        </button>
+        <button type="button" data-dom-id="btn-bookmark" class="bookmark-btn" aria-label="收藏">
+          <i data-lucide="bookmark" class="h-5 w-5"></i>
+        </button>
+        <button type="button" data-dom-id="cta-finish-practice" class="next-btn">
+          <span>完成练习</span>
+          <i data-lucide="check" class="h-4 w-4"></i>
+        </button>
+      </div>
+
+      <!-- ═══ 5 · 答题卡弹出层 ═══ -->
+      <div class="answer-sheet" id="answerSheet">
+        <div class="answer-sheet__backdrop" onclick="document.getElementById('answerSheet').classList.remove('answer-sheet--open')"></div>
+        <div class="answer-sheet__panel">
+          <div class="answer-sheet__handle"></div>
+          <div class="answer-sheet__header">
+            <h2 class="answer-sheet__title">答题卡</h2>
+            <span class="answer-sheet__count">共 20 题</span>
+          </div>
+          <div class="answer-sheet__progress">
+            <div class="answer-sheet__progress-track">
+              <div class="answer-sheet__progress-fill" style="width: 25%;"></div>
+            </div>
+            <span class="answer-sheet__progress-label">完成 25%</span>
+          </div>
+          <div class="answer-sheet__grid">
+            <button type="button" class="as-q as-q--done">1</button>
+            <button type="button" class="as-q as-q--done">2</button>
+            <button type="button" class="as-q as-q--done">3</button>
+            <button type="button" class="as-q as-q--done">4</button>
+            <button type="button" class="as-q as-q--current">5</button>
+            <button type="button" class="as-q">6</button>
+            <button type="button" class="as-q">7</button>
+            <button type="button" class="as-q">8</button>
+            <button type="button" class="as-q">9</button>
+            <button type="button" class="as-q">10</button>
+            <button type="button" class="as-q">11</button>
+            <button type="button" class="as-q as-q--flagged">12</button>
+            <button type="button" class="as-q">13</button>
+            <button type="button" class="as-q">14</button>
+            <button type="button" class="as-q">15</button>
+            <button type="button" class="as-q">16</button>
+            <button type="button" class="as-q">17</button>
+            <button type="button" class="as-q">18</button>
+            <button type="button" class="as-q">19</button>
+            <button type="button" class="as-q">20</button>
+          </div>
+          <div class="answer-sheet__legend">
+            <span class="as-legend"><span class="as-legend__dot as-legend__dot--done"></span>已答 5</span>
+            <span class="as-legend"><span class="as-legend__dot as-legend__dot--current"></span>当前</span>
+            <span class="as-legend"><span class="as-legend__dot as-legend__dot--flagged"></span>已标记</span>
+            <span class="as-legend"><span class="as-legend__dot"></span>未答 15</span>
+          </div>
+          <button type="button" data-dom-id="as-close" class="answer-sheet__close" onclick="document.getElementById('answerSheet').classList.remove('answer-sheet--open')">关闭</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ Shell CSS · iOS 26 Liquid Glass (PART 1 from project-shell.html) ═══ -->
+    <style>
+  /* ═══════════════════════════════════════════════════════════════
+     PART 1 · Shell CSS · iOS 26 Liquid Glass Floating Capsule Nav
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ── 1.1 基础重置 ── */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; padding: 0;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── 1.2 应用容器 ── */
+  .shell-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.10);
+    overflow: hidden;
+  }
+
+  /* ── 1.2b 装饰性背景光斑 · iOS 26 深度感 ──
+     两个模糊渐变光斑固定在容器顶部，透过玻璃卡片产生色彩折射。 */
+  .shell-container::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .shell-container::after {
+    content: '';
+    position: absolute;
+    top: 120px;
+    left: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 内容区在光斑之上 */
+  .shell-content { position: relative; z-index: 1; }
+  .bottom-nav { z-index: 50; }
+
+  /* ── 1.3 内容区 · 底部预留悬浮导航空间 ── */
+  .shell-content {
+    flex: 1;
+    padding-bottom: 96px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     1.4 底部悬浮胶囊导航 · iOS 26 Liquid Glass Floating Capsule
+     ─────────────────────────────────────────────────────────────────
+     核心特征：
+     · 悬浮于内容之上，不贴底边（bottom: 20px）
+     · 左右留边距（width: calc(100% - 32px)）
+     · 胶囊外形（border-radius: 9999px）
+     · 液态玻璃材质（半透明 + 模糊 + 饱和度增强 + 内高光）
+     · 选中项有玻璃透镜高亮（glass lens blob）
+     ═══════════════════════════════════════════════════════════════ */
+  .bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 388px;
+    height: 64px;
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px;
+    gap: 2px;
+    z-index: 50;
+    box-shadow:
+      0 8px 32px rgba(15, 23, 42, 0.12),
+      0 2px 8px rgba(15, 23, 42, 0.06),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.5 单个标签 ──
+     胶囊内等分；选中项有玻璃透镜背景。 */
+  .nav-item {
+    flex: 1;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color var(--ease-out), background var(--ease-spring), box-shadow var(--ease-spring);
+  }
+
+  .nav-item:active {
+    transform: scale(0.92);
+  }
+
+  .nav-item svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+    transition: transform var(--ease-spring);
+  }
+
+  /* ── 1.6 选中态 · Glass Lens 透镜高亮 ──
+     iOS 26 标志性效果：选中项背后出现玻璃透镜圆角矩形 */
+  .nav-item.active,
+  .nav-item[data-active="true"] {
+    color: var(--primary);
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item.active svg,
+  .nav-item[data-active="true"] svg {
+    transform: scale(1.1);
+  }
+
+  /* ── 1.7 强调标签 · 导入 ──
+     不再凸出导航栏；改为胶囊内的实心圆形图标按钮。 */
+  .nav-item--emphasis {
+    flex: 0 0 auto;
+    width: 52px;
+  }
+
+  .nav-emphasis-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #FFFFFF;
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      var(--glass-inner-highlight);
+    transition: box-shadow var(--ease-out), transform var(--ease-spring);
+  }
+
+  .nav-item--emphasis:active .nav-emphasis-badge {
+    transform: scale(0.90);
+  }
+
+  .nav-emphasis-badge svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.5;
+  }
+
+  /* 强调标签选中态 · 玻璃透镜环 */
+  .nav-item--emphasis.active,
+  .nav-item--emphasis[data-active="true"] {
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+      var(--glass-inner-highlight);
+  }
+
+  .nav-item--emphasis.active .nav-emphasis-badge,
+  .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow:
+      0 4px 12px rgba(16, 185, 129, 0.30),
+      0 0 0 3px var(--primary-soft),
+      var(--glass-inner-highlight);
+  }
+
+  /* ── 1.8 标签文字 ── */
+  .nav-label {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Dark Mode 深色模式
+     ═══════════════════════════════════════════════════════════════ */
+  .dark .bottom-nav {
+    background: var(--glass-nav);
+    backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+    border-color: var(--glass-border);
+  }
+
+  .dark .nav-item.active,
+  .dark .nav-item[data-active="true"] {
+    background: rgba(16, 185, 129, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.20), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), var(--glass-inner-highlight);
+  }
+
+  .dark .nav-item--emphasis.active .nav-emphasis-badge,
+  .dark .nav-item--emphasis[data-active="true"] .nav-emphasis-badge {
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.50), 0 0 0 3px var(--primary-soft), var(--glass-inner-highlight);
+  }
+    </style>
+
+    <!-- ═══ Page-specific component styles (placed in body per Free-Explore rules) ═══ -->
+    <style>
+      /* Immersive overrides — extra bottom padding for action bar */
+      .shell-content { padding-bottom: 88px; }
+
+      /* ── Immersive Top Bar · iOS 26 Liquid Glass ── */
+      .immersive-topbar {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 16px;
+        background: var(--glass-header);
+        backdrop-filter: blur(var(--glass-header-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(180%);
+        border-bottom: 1px solid var(--glass-border);
+        position: sticky; top: 0; z-index: 40;
+      }
+      .progress-track {
+        flex: 1; height: 6px;
+        background: var(--surface-muted);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%; background: var(--primary);
+        border-radius: var(--radius-full);
+        transition: width var(--ease-spring);
+      }
+      .back-btn {
+        width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border: none; background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+        transition: background var(--ease-spring), color var(--ease-spring), transform var(--ease-spring);
+      }
+      .back-btn:hover { background: var(--surface-muted); color: var(--text-primary); }
+      .back-btn:active { transform: scale(0.95); }
+      .back-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+      .q-counter {
+        font-size: 14px; font-weight: 700;
+        color: var(--text-primary);
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ── 答题卡按钮 ── */
+      .answer-card-btn {
+        position: relative;
+        width: 40px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        gap: 2px;
+        border: none; background: transparent;
+        color: var(--text-secondary); cursor: pointer;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+        transition: color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring);
+      }
+      .answer-card-btn:hover { color: var(--primary); background: var(--primary-soft); }
+      .answer-card-btn:active { transform: scale(0.92); }
+      .answer-card-btn__badge {
+        position: absolute;
+        bottom: -2px; right: -4px;
+        min-width: 24px; height: 16px;
+        padding: 0 4px;
+        border-radius: var(--radius-full);
+        background: var(--primary);
+        color: #FFFFFF;
+        font-size: 9px; font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        display: flex; align-items: center; justify-content: center;
+        line-height: 1;
+        box-shadow: 0 0 0 1.5px var(--surface);
+      }
+
+      /* ── Question Card · iOS 26 Liquid Glass ── */
+      .question-card {
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border-radius: var(--radius-xl);
+        padding: 20px; margin: 16px;
+        box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+      }
+      .type-tag {
+        background: var(--primary-soft); color: var(--primary);
+        font-size: 11px; font-weight: 700;
+        padding: 4px 10px;
+        border-radius: var(--radius-full);
+        white-space: nowrap;
+        display: inline-flex; align-items: center;
+      }
+      .question-stem {
+        font-size: 16px; font-weight: 500;
+        color: var(--text-primary);
+        line-height: 1.6; margin: 0;
+        text-wrap: balance;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      .q-meta {
+        display: flex; align-items: center; gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .q-meta-pill {
+        font-size: 11px; font-weight: 600;
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        display: inline-flex; align-items: center; gap: 3px;
+      }
+      .q-meta-pill--difficulty {
+        background: var(--state-warning-soft);
+        color: var(--state-warning);
+      }
+      .q-meta-pill--source {
+        background: var(--surface-muted);
+        color: var(--text-muted);
+      }
+      .q-meta-pill--score {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      /* ── Answer Options · iOS 26 Liquid Glass ── */
+      .option-btn {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px;
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border: 2px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer; text-align: left;
+        transition: border-color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring), box-shadow var(--ease-spring);
+        width: 100%; font-family: var(--font-sans);
+      }
+      .option-btn:hover { border-color: var(--primary-border); }
+      .option-btn:active { transform: scale(0.95); }
+      .option-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+      .option-btn--selected {
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow), var(--glass-inner-highlight);
+      }
+      .option-btn--selected:hover { border-color: var(--primary); }
+      .option-letter {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        border: 2px solid var(--border-strong);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+        transition: all var(--ease-spring);
+      }
+      .option-btn--selected .option-letter {
+        background: var(--primary); border-color: var(--primary); color: #FFFFFF;
+      }
+      .option-text {
+        font-size: 14px; color: var(--text-secondary);
+        transition: color var(--ease-spring), font-weight var(--ease-spring);
+      }
+      .option-btn--selected .option-text {
+        color: var(--text-primary); font-weight: 500;
+      }
+      .option-btn--correct {
+        background: rgba(16, 185, 129, 0.08);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow), var(--glass-inner-highlight);
+      }
+      .option-btn--correct .option-letter {
+        background: var(--primary); border-color: var(--primary); color: #FFFFFF;
+      }
+      .option-btn--correct .option-text {
+        color: var(--text-primary); font-weight: 500;
+      }
+      .option-btn--incorrect {
+        background: rgba(239, 68, 68, 0.08);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border-color: var(--state-error);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15), var(--glass-inner-highlight);
+      }
+      .option-btn--incorrect .option-letter {
+        background: var(--state-error); border-color: var(--state-error); color: #FFFFFF;
+      }
+      .option-btn--incorrect .option-text {
+        color: var(--text-primary); font-weight: 500;
+      }
+
+      /* ── Explanation Card · iOS 26 Liquid Glass ── */
+      .explanation-card {
+        margin: 12px 16px 0;
+        padding: 16px;
+        background: var(--glass-card);
+        backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(180%);
+        border: 1px solid var(--glass-border);
+        border-left: 3px solid var(--primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card), var(--glass-inner-highlight);
+      }
+      .explanation-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+      }
+      .explanation-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--primary-soft); color: var(--primary);
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      }
+      .explanation-title {
+        font-size: 14px; font-weight: 700; color: var(--text-primary); flex: 1;
+      }
+      .explanation-badge {
+        font-size: 11px; font-weight: 700; padding: 3px 10px;
+        border-radius: var(--radius-full);
+        background: var(--primary-soft); color: var(--primary);
+      }
+      .explanation-text {
+        font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin: 0;
+      }
+      .explanation-tags {
+        display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+      }
+      .explanation-tag {
+        font-size: 11px; font-weight: 600; padding: 3px 8px;
+        border-radius: var(--radius-full);
+        background: var(--surface-muted); color: var(--text-muted);
+      }
+
+      /* ── Sticky Action Bar · iOS 26 Liquid Glass ── */
+      .action-bar {
+        position: fixed; bottom: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 100%; max-width: 420px;
+        background: var(--glass-nav);
+        backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-nav-blur)) saturate(180%);
+        border-top: 1px solid var(--glass-border);
+        padding: 12px 16px;
+        display: flex; align-items: center; gap: 8px;
+        z-index: 40;
+        box-shadow: 0 -2px 20px rgba(15, 23, 42, 0.06);
+      }
+      .bookmark-btn {
+        width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border); background: var(--surface);
+        color: var(--text-muted); cursor: pointer;
+        border-radius: var(--radius-full); flex-shrink: 0;
+        transition: color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring);
+      }
+      .bookmark-btn:hover { color: var(--state-warning); background: var(--state-warning-soft); border-color: var(--state-warning-border); }
+      .bookmark-btn:active { transform: scale(0.92); }
+      .bookmark-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+      /* ── 答题卡弹出层 · iOS 26 Liquid Glass Bottom Sheet ── */
+      .answer-sheet {
+        position: fixed; inset: 0; z-index: 100;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s 0.3s, opacity 0.3s ease;
+      }
+      .answer-sheet--open {
+        visibility: visible;
+        opacity: 1;
+        transition: visibility 0s, opacity 0.3s ease;
+      }
+      .answer-sheet__backdrop {
+        position: absolute; inset: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+      .answer-sheet__panel {
+        position: absolute; bottom: 0; left: 50%;
+        transform: translateX(-50%) translateY(100%);
+        width: 100%; max-width: 420px;
+        max-height: 80vh; overflow-y: auto;
+        background: var(--glass-overlay);
+        backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+        -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(180%);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        border-top: 1px solid var(--glass-border);
+        border-left: 1px solid var(--glass-border);
+        border-right: 1px solid var(--glass-border);
+        box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.15);
+        padding: 8px 20px 24px;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .answer-sheet--open .answer-sheet__panel {
+        transform: translateX(-50%) translateY(0);
+      }
+      .answer-sheet__handle {
+        width: 36px; height: 4px;
+        border-radius: var(--radius-full);
+        background: var(--border-strong);
+        margin: 0 auto 16px;
+      }
+      .answer-sheet__header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .answer-sheet__title {
+        font-size: 18px; font-weight: 800;
+        color: var(--text-primary);
+        font-family: var(--font-display);
+        margin: 0;
+      }
+      .answer-sheet__count {
+        font-size: 13px; font-weight: 600;
+        color: var(--text-muted);
+      }
+      .answer-sheet__progress {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 16px;
+      }
+      .answer-sheet__progress-track {
+        flex: 1; height: 4px;
+        background: var(--surface-muted);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+      }
+      .answer-sheet__progress-fill {
+        height: 100%; background: var(--primary);
+        border-radius: var(--radius-full);
+      }
+      .answer-sheet__progress-label {
+        font-size: 11px; font-weight: 700;
+        color: var(--primary);
+        white-space: nowrap;
+      }
+      .answer-sheet__grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .as-q {
+        width: 100%; aspect-ratio: 1;
+        border: 1px solid var(--border);
+        background: var(--surface-muted);
+        color: var(--text-muted);
+        border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform var(--ease-spring), background var(--ease-spring), border-color var(--ease-spring);
+      }
+      .as-q:active { transform: scale(0.92); }
+      .as-q--done {
+        background: var(--primary); color: #FFFFFF;
+        border-color: var(--primary);
+      }
+      .as-q--current {
+        background: var(--primary); color: #FFFFFF;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-glow);
+      }
+      .as-q--flagged {
+        position: relative;
+      }
+      .as-q--flagged::after {
+        content: '';
+        position: absolute; top: 3px; right: 3px;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--state-warning);
+      }
+      .answer-sheet__legend {
+        display: flex; flex-wrap: wrap; gap: 12px;
+        margin-bottom: 16px;
+        font-size: 12px; color: var(--text-secondary);
+      }
+      .as-legend {
+        display: inline-flex; align-items: center; gap: 5px;
+      }
+      .as-legend__dot {
+        width: 10px; height: 10px;
+        border-radius: 3px;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+      }
+      .as-legend__dot--done { background: var(--primary); border-color: var(--primary); }
+      .as-legend__dot--current { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
+      .as-legend__dot--flagged { background: var(--surface-muted); position: relative; }
+      .as-legend__dot--flagged::after {
+        content: ''; position: absolute; top: 1px; right: 1px;
+        width: 4px; height: 4px; border-radius: 50%; background: var(--state-warning);
+      }
+      .answer-sheet__close {
+        width: 100%; height: 44px;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-full);
+        color: var(--text-secondary);
+        font-size: 15px; font-weight: 600;
+        cursor: pointer;
+        transition: background var(--ease-spring), transform var(--ease-spring);
+      }
+      .answer-sheet__close:active { transform: scale(0.98); background: var(--border-soft); }
+      .prev-btn {
+        width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border); background: var(--surface);
+        color: var(--text-secondary); cursor: pointer;
+        border-radius: var(--radius-full); flex-shrink: 0;
+        transition: color var(--ease-spring), background var(--ease-spring), transform var(--ease-spring);
+      }
+      .prev-btn:hover { background: var(--surface-muted); color: var(--text-primary); border-color: var(--border-strong); }
+      .prev-btn:active { transform: scale(0.92); }
+      .prev-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+      .next-btn {
+        flex: 1; height: 48px;
+        background: var(--primary); color: #FFFFFF;
+        border: none; border-radius: var(--radius-full);
+        font-size: 15px; font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--shadow-primary);
+        flex-shrink: 0;
+        transition: transform var(--ease-spring), box-shadow var(--ease-spring);
+        font-family: var(--font-sans);
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+      }
+      .next-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(16, 185, 129, 0.25); }
+      .next-btn:active { transform: scale(0.95); box-shadow: var(--shadow-sm); }
+      .next-btn:focus-visible { outline: 2px solid var(--primary-strong); outline-offset: 2px; }
+
+      /* ── Reduced motion ── */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

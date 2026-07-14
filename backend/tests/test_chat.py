@@ -250,3 +250,35 @@ class TestChatUpstreamErrors:
         resp = client.post("/chat/", json={"message": "你好"}, headers=auth_headers)
         assert resp.status_code == 503
         assert "未配置" in resp.json()["detail"]
+
+    def test_upstream_timeout_returns_504(self, client, auth_headers, monkeypatch):
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = TimeoutError("request timed out")
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: mock_client,
+        )
+
+        resp = client.post("/chat/", json={"message": "你好"}, headers=auth_headers)
+        assert resp.status_code == 504
+        assert "超时" in resp.json()["detail"]
+
+    def test_stream_timeout_emits_error_event(self, client, auth_headers, monkeypatch):
+        monkeypatch.setattr("backend.routers.chat.OPENAI_API_KEY", "sk-test")
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = TimeoutError("request timed out")
+        monkeypatch.setattr(
+            "backend.routers.chat.get_chat_client",
+            lambda: mock_client,
+        )
+
+        with client.stream("POST", "/chat/stream", json={"message": "你好"}, headers=auth_headers) as resp:
+            body = resp.read().decode("utf-8")
+
+        assert resp.status_code == 200
+        assert '"error"' in body
+        assert "超时" in body
+        assert "[DONE]" in body

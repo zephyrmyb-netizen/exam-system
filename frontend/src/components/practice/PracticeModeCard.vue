@@ -49,7 +49,7 @@ defineEmits(["select"]);
 }
 .mode-card:hover:not(.mode-card--disabled) { border-color: var(--line-accent); box-shadow: var(--shadow-xs); }
 .mode-card:active:not(.mode-card--disabled) { transform: scale(0.985); }
-.mode-card--cta { border-color: var(--primary-border); background: linear-gradient(135deg, #fafcff, #f0f6ff); }
+.mode-card--cta { border-color: var(--primary-border); background: var(--primary-soft); }
 .mode-card--disabled { opacity: 0.5; cursor: not-allowed; }
 .mode-icon { flex-shrink: 0; }
 .mode-text { display: grid; gap: 1px; min-width: 0; flex: 1; }

@@ -11,6 +11,7 @@ defineProps({
   wrongCount: { type: Number, default: null },
   dueCount: { type: Number, default: null },
   weakTypes: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 });
 
 defineEmits(["primary"]);
@@ -37,20 +38,20 @@ function displayNumber(value, emptyValue = "--") {
 
     <div class="overview-stats">
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(todayCount) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(todayCount) }}</span>
         <span class="overview-stat-label">今日练习</span>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(totalCount) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(totalCount) }}</span>
         <span class="overview-stat-label">累计</span>
       </div>
       <div class="overview-stat">
-        <span class="overview-stat-value">{{ displayNumber(wrongCount, 0) }}</span>
+        <span class="overview-stat-value">{{ loading ? "..." : displayNumber(wrongCount) }}</span>
         <span class="overview-stat-label">错题</span>
       </div>
       <div class="overview-stat">
         <span class="overview-stat-value" :class="{ 'stat-accent': dueCount > 0 }">
-          {{ displayNumber(dueCount) }}
+          {{ loading ? "..." : displayNumber(dueCount) }}
         </span>
         <span class="overview-stat-label">到期</span>
       </div>
@@ -71,10 +72,8 @@ function displayNumber(value, emptyValue = "--") {
   gap: var(--space-2);
   padding: var(--space-4);
   border: 1px solid var(--primary-border);
-  border-radius: var(--radius-md);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.16), transparent 34%),
-    linear-gradient(135deg, #ffffff, #f3f7ff);
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .overview-hero {
@@ -86,17 +85,17 @@ function displayNumber(value, emptyValue = "--") {
 
 .overview-copy { min-width: 0; }
 .overview-kicker { display: inline-flex; margin-bottom: 3px; color: var(--primary-strong); font-size: 11px; font-weight: 800; }
-.overview-hero h2 { margin: 0; color: var(--text-main); font-size: clamp(22px, 5.6vw, 30px); line-height: 1.1; font-weight: 900; }
+.overview-hero h2 { margin: 0; color: var(--text-main); font-size: 22px; line-height: 1.1; font-weight: 900; }
 .overview-hero p { margin: 6px 0 0; color: var(--text-muted); font-size: var(--text-xs); font-weight: 650; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.overview-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 92px; min-height: 40px; border: none; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; font-size: var(--text-xs); font-weight: 850; cursor: pointer; box-shadow: var(--shadow-primary); }
+.overview-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 92px; min-height: 40px; border: none; border-radius: 6px; background: var(--primary); color: #fff; font-size: var(--text-xs); font-weight: 850; cursor: pointer; box-shadow: var(--shadow-xs); }
 .overview-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); padding-top: var(--space-2); }
 .overview-stat { display: grid; gap: 1px; }
 .overview-stat-value { font-size: 18px; font-weight: 800; color: var(--text-main); }
-.overview-stat-label { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.overview-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
 .stat-accent { color: var(--teal); }
 .overview-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.overview-weak-label { font-size: 10px; font-weight: 700; color: var(--text-muted); }
-.overview-weak-chip { padding: 2px 7px; border-radius: 999px; background: var(--rose-soft); color: var(--rose); font-size: 10px; font-weight: 700; }
+.overview-weak-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.overview-weak-chip { padding: 2px 7px; border-radius: 4px; background: var(--surface-soft); color: var(--text-secondary); font-size: 11px; font-weight: 700; }
 
 @media (max-width: 420px) {
   .overview-card { padding: var(--space-3); }

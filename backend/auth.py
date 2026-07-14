@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from . import models
 from .config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
@@ -48,7 +48,12 @@ def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user = (
+        db.query(models.User)
+        .options(joinedload(models.User.role_ref))
+        .filter(models.User.id == user_id)
+        .first()
+    )
     if user is None:
         raise credentials_exception
     return user
@@ -76,7 +81,12 @@ def get_current_user_optional(
         user_id_str: str | None = payload.get("sub")
         if user_id_str is None:
             return None
-        user = db.query(models.User).filter(models.User.id == int(user_id_str)).first()
+        user = (
+            db.query(models.User)
+            .options(joinedload(models.User.role_ref))
+            .filter(models.User.id == int(user_id_str))
+            .first()
+        )
         return user
     except JWTError:
         return None

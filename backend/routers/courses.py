@@ -46,7 +46,7 @@ def list_courses(
     current_user=Depends(auth_module.get_current_user),
 ):
     banks, total = crud.get_question_banks(db, current_user.id, page=page, page_size=page_size)
-    items = [b.to_dict() for b in banks]
+    items = [schemas.CourseOut.model_validate(b).model_dump() for b in banks]
     if page <= 0 or page_size <= 0:
         return items
     return {"total": total, "page": page, "page_size": page_size, "items": items}
@@ -74,8 +74,7 @@ def list_my_courses(
 
     items = []
     for b in banks:
-        d = b.to_dict()
-        # question_count is already in to_dict() via len(b.questions)
+        d = schemas.CourseOut.model_validate(b).model_dump()
         stats = stats_map.get(b.id, {})
         d["practice_count"] = stats.get("practice_count", 0)
         d["last_practiced_at"] = stats.get("last_practiced_at")
@@ -94,7 +93,7 @@ def get_course(
     current_user=Depends(auth_module.get_current_user),
 ):
     bank = _get_accessible_course(db, course_id, current_user.id)
-    return bank.to_dict()
+    return schemas.CourseOut.model_validate(bank).model_dump()
 
 
 # ── Questions under a course ────────────────────────────────────────────────
@@ -128,7 +127,7 @@ def list_course_questions(
         q_type=type,
         course_id=course_id,
     )
-    items = [q.to_dict() for q in questions]
+    items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
     if page <= 0 or page_size <= 0:
         return items
@@ -140,6 +139,7 @@ def list_course_questions(
 def random_question_in_course(
     course_id: int,
     type: str = "",
+    exclude_ids: str = Query("", description="Comma-separated current-session question ids to exclude"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
@@ -151,10 +151,11 @@ def random_question_in_course(
         course_id,
         user_id=current_user.id,
         q_type=type,
+        excluded_ids=[int(item) for item in exclude_ids.split(",") if item.strip().isdigit()],
     )
     if not question:
         raise HTTPException(status_code=404, detail="该课程下暂无可用题目")
-    return question.to_dict()
+    return schemas.QuestionOut.model_validate(question).model_dump()
 
 
 # ── Publish entire course ───────────────────────────────────────────────────
@@ -177,7 +178,7 @@ def publish_course(
     ).update({"visibility": "public"}, synchronize_session=False)
     db.commit()
     updated = crud.get_question_bank_by_id(db, course_id)
-    return updated.to_dict()
+    return schemas.CourseOut.model_validate(updated).model_dump()
 
 
 # ── Unpublish entire course ──────────────────────────────────────────────────
@@ -200,7 +201,7 @@ def unpublish_course(
     ).update({"visibility": "private"}, synchronize_session=False)
     db.commit()
     updated = crud.get_question_bank_by_id(db, course_id)
-    return updated.to_dict()
+    return schemas.CourseOut.model_validate(updated).model_dump()
 
 
 # ── Edit course ──────────────────────────────────────────────────────────────
@@ -219,7 +220,7 @@ def update_course(
         raise HTTPException(status_code=400, detail=str(e))
     if not bank:
         raise HTTPException(status_code=404, detail="课程不存在")
-    return bank.to_dict()
+    return schemas.CourseOut.model_validate(bank).model_dump()
 
 
 # ── Delete course ───────────────────────────────────────────────────────────

@@ -1,9 +1,14 @@
 <script setup>
 import { computed, nextTick, ref } from "vue";
-import { Sparkles, Send, RefreshCw } from "@lucide/vue";
-import { sendChatMessage } from "../api/chat";
+import { useRouter } from "vue-router";
+import { ArrowLeft, Moon, Send, Sparkles, Sun, RefreshCw } from "@lucide/vue";
+import { sendChatMessage, streamChatMessage } from "../api/chat";
 import { getErrorMessage } from "../api/request";
+import { renderAssistantMarkdown } from "../utils/chatText";
+import { useThemeStore } from "../stores/theme";
 
+const router = useRouter();
+const theme = useThemeStore();
 const messageList = ref(null);
 const draft = ref("");
 const loading = ref(false);
@@ -17,8 +22,14 @@ const messages = ref([
   },
 ]);
 
+let currentStreamController = null;
+
 const suggestions = ["出一道选择题", "解释这道错题", "总结本章重点"];
 const canSend = computed(() => draft.value.trim().length > 0 && !loading.value);
+
+function normalizeAssistantText(text) {
+  return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
 
 function currentTime() {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -26,6 +37,12 @@ function currentTime() {
     minute: "2-digit",
     hour12: false,
   }).format(new Date());
+}
+
+function goBack() {
+  // 中断未完成的流式请求，避免离开页面后回调仍写入 state
+  currentStreamController?.abort();
+  router.replace({ name: "home" });
 }
 
 function scrollToBottom() {
@@ -54,6 +71,10 @@ function buildHistory() {
     .map((m) => ({ role: m.role, content: m.text }));
 }
 
+/**
+ * 发送消息。优先走流式（边生成边显示），流式失败时自动回退到一次性模式。
+ * `options.retry` 为 true 时表示重试，不再向 messages 追加用户消息。
+ */
 async function sendMessage(text = draft.value, options = {}) {
   const content = text.trim();
   if (!content || loading.value) return;
@@ -65,16 +86,61 @@ async function sendMessage(text = draft.value, options = {}) {
   scrollToBottom();
 
   loading.value = true;
+  // 预占一条 assistant 消息，流式 delta 持续追加到它的 text
+  const placeholder = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    role: "assistant",
+    text: "",
+    time: currentTime(),
+    error: false,
+    streaming: true,
+  };
+  messages.value.push(placeholder);
+  scrollToBottom();
+
   try {
-    const data = await sendChatMessage(content, buildHistory());
-    addMessage("assistant", data.reply || "AI 没有返回内容，请重试。", {
-      error: !data.reply,
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      currentStreamController = streamChatMessage(content, buildHistory(), {
+        onDelta: (delta) => {
+          placeholder.text += delta;
+          scrollToBottom();
+        },
+        onDone: (fullText) => {
+          if (settled) return;
+          settled = true;
+          placeholder.streaming = false;
+          if (!fullText.trim()) {
+            placeholder.text = "AI 没有返回内容，请重试。";
+            placeholder.error = true;
+            resolve();
+            return;
+          }
+          placeholder.text = normalizeAssistantText(fullText);
+          resolve();
+        },
+        onError: (msg) => {
+          if (settled) return;
+          settled = true;
+          reject(new Error(msg));
+        },
+      });
     });
-  } catch (err) {
-    const msg = getErrorMessage(err, "AI 回复失败，请稍后重试");
-    addMessage("assistant", msg, { error: true });
+  } catch {
+    // 流式失败：移除占位消息，回退到一次性请求
+    const idx = messages.value.indexOf(placeholder);
+    if (idx !== -1) messages.value.splice(idx, 1);
+    try {
+      const data = await sendChatMessage(content, buildHistory());
+      const reply = normalizeAssistantText(data.reply || "AI 没有返回内容，请重试。");
+      addMessage("assistant", reply, { error: !data.reply });
+    } catch (fallbackErr) {
+      const msg = getErrorMessage(fallbackErr, "AI 回复失败，请稍后重试");
+      addMessage("assistant", msg, { error: true });
+    }
   } finally {
     loading.value = false;
+    currentStreamController = null;
     scrollToBottom();
   }
 }
@@ -89,19 +155,32 @@ function retry(index) {
   messages.value.splice(index, 1);
   sendMessage(lastUserMsg.text, { retry: true });
 }
+
+function getAssistantHtml(text) {
+  return renderAssistantMarkdown(text);
+}
 </script>
 
 <template>
   <section class="chat-page" aria-label="学习对话">
     <div class="chat-topbar">
-      <div>
+      <button class="chat-back-btn" type="button" aria-label="返回" @click="goBack">
+        <ArrowLeft :size="20" :stroke-width="2.5" />
+      </button>
+      <div class="chat-topbar-center">
         <p class="chat-kicker">
           <Sparkles :size="12" :stroke-width="3" style="margin-right:4px;vertical-align:-1px" />
           AI 复习助手
         </p>
         <h2>对话练习</h2>
       </div>
-      <span class="online-dot">在线</span>
+      <div class="chat-topbar-right">
+        <span class="online-dot">在线</span>
+        <button class="chat-theme-btn" type="button" aria-label="切换主题" @click="theme.toggle()">
+          <Sun v-if="theme.isDark" :size="18" :stroke-width="2.4" />
+          <Moon v-else :size="18" :stroke-width="2.4" />
+        </button>
+      </div>
     </div>
 
     <div ref="messageList" class="chat-messages">
@@ -115,8 +194,18 @@ function retry(index) {
           {{ message.role === "assistant" ? "AI" : "我" }}
         </div>
         <div class="chat-bubble">
-          <p>{{ message.text }}</p>
-          <time>{{ message.time }}</time>
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-if="message.text && message.role === 'assistant'"
+            class="chat-markdown"
+            v-html="getAssistantHtml(message.text)"
+          ></div>
+          <!-- eslint-enable vue/no-v-html -->
+          <p v-else-if="message.text">{{ message.text }}</p>
+          <div v-else class="typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
+          <time v-if="!message.streaming">{{ message.time }}</time>
           <button
             v-if="message.role === 'assistant' && message.error"
             class="retry-btn"
@@ -128,13 +217,6 @@ function retry(index) {
           </button>
         </div>
       </article>
-
-      <div v-if="loading" class="chat-row assistant">
-        <div class="chat-avatar" aria-hidden="true">AI</div>
-        <div class="chat-bubble typing-indicator">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
     </div>
 
     <div class="suggestion-row" aria-label="快捷提问">
@@ -165,6 +247,44 @@ function retry(index) {
 </template>
 
 <style scoped>
+.chat-back-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chat-topbar-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-theme-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-main);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .chat-kicker {
   display: inline-flex;
   align-items: center;
@@ -177,8 +297,25 @@ function retry(index) {
 .chat-composer button {
   display: grid;
   place-items: center;
-  min-width: 48px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--ease-spring), box-shadow var(--ease-out);
+}
+
+.chat-composer button:hover:not(:disabled) {
+  background: var(--primary-strong);
+  box-shadow: var(--shadow-primary);
+}
+
+.chat-composer button:active:not(:disabled) {
+  transform: scale(0.9);
 }
 
 .retry-btn {
@@ -189,5 +326,124 @@ function retry(index) {
 .chat-row.is-error .chat-bubble {
   border-color: var(--rose-border);
   background: var(--rose-soft);
+}
+
+.chat-markdown {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chat-markdown :deep(p),
+.chat-markdown :deep(ul) {
+  margin: 0;
+}
+
+.chat-markdown :deep(ul) {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.2em;
+}
+
+.chat-markdown :deep(li) {
+  padding-left: 2px;
+}
+
+.chat-markdown :deep(strong) {
+  color: var(--text-main);
+  font-weight: 850;
+}
+
+.chat-markdown :deep(code) {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--primary-strong);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+/* ── AI 对话视觉装饰 ── */
+
+/* 在线状态点 — 金色而非绿色 */
+.online-dot {
+  color: var(--emerald);
+  background: var(--emerald-soft);
+  border: 1px solid var(--emerald-border);
+}
+
+/* AI 头像 — 金色印章风格（36x36 圆形，靛蓝渐变背景 + 金色虚线圆环） */
+.chat-row.assistant .chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--primary-soft);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+}
+
+.chat-row.assistant .chat-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--primary-border);
+  pointer-events: none;
+}
+
+/* 用户头像 — 靛蓝渐变 */
+.chat-row.user .chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--surface-strong);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  box-shadow: 0 4px 10px -2px rgba(67, 56, 202, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* AI 气泡 — 白色卡片 + 金色左边竖条 */
+.chat-row.assistant .chat-bubble {
+  border-left: 4px solid var(--primary);
+}
+
+/* 输入框圆角 */
+.chat-composer textarea {
+  border-radius: var(--radius-xl);
+  padding: 11px 18px;
+}
+/* A layout overrides: compact, neutral surfaces and one blue action. */
+.chat-topbar-center h2 { margin: 0; font-size: var(--text-base); line-height: 1.25; }
+.chat-kicker { display: none; }
+.chat-topbar-status { margin: 2px 0 0; color: var(--text-muted); font-size: var(--text-xs); }
+.chat-theme-btn, .chat-back-btn { border-radius: 6px; }
+.chat-theme-btn { display: none; }
+.chat-composer button { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
+.chat-composer button:hover:not(:disabled) { background: var(--primary-strong); box-shadow: var(--shadow-primary); }
+.suggestion-row { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.suggestion-row::-webkit-scrollbar { display: none; }
+.suggestion-row button { flex: 0 0 auto; }
+.online-dot { color: var(--emerald); background: var(--emerald-soft); border-color: var(--emerald-border); }
+.chat-row .chat-avatar { width: 30px; height: 30px; border-radius: 6px; box-shadow: none; }
+.chat-row .chat-avatar { font-family: inherit; }
+.chat-row.assistant .chat-avatar::after { display: none; }
+.chat-row.assistant .chat-avatar { background: var(--primary-soft); border: 1px solid var(--primary-border); color: var(--primary-strong); }
+.chat-row.user .chat-avatar { background: var(--surface-strong); border: 1px solid var(--line-soft); color: var(--text-secondary); }
+.chat-row.assistant .chat-bubble { border-left: 2px solid var(--primary); }
+.chat-composer textarea { border-radius: 6px; padding: 11px 14px; }
+@media (max-width: 420px) {
+  .chat-row { gap: 8px; }
+  .chat-row .chat-avatar { width: 28px; height: 28px; }
+  .chat-bubble { max-width: calc(100vw - 72px); }
 }
 </style>

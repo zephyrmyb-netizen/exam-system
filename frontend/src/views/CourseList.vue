@@ -1,39 +1,67 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
 import {
-  BookOpen,
-  ChevronRight,
+  Bookmark,
+  Eye,
   Globe,
   GraduationCap,
-  Layers,
+  ListOrdered,
   Lock,
+  MoreHorizontal,
   Pencil,
   Play,
   Plus,
   Search,
+  Shuffle,
   Sparkles,
   Trash2,
   X,
+  XCircle,
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
+import BottomSheet from "../components/ui/BottomSheet.vue";
 import Button from "../components/ui/button/Button.vue";
-import Card from "../components/ui/card/Card.vue";
-import CardContent from "../components/ui/card/CardContent.vue";
+import FilterTabs from "../components/ui/FilterTabs.vue";
 
-const router = useRouter();
+const { replaceWithSource } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
 
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
+const successMessage = ref("");
 const deleteLoading = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const searchText = ref("");
+const visibilityFilter = ref<"all" | "private" | "public" | "recent">("all");
+const openCourseMenuId = ref<number | null>(null);
+const practiceSheetCourse = ref<Course | null>(null);
+
+const visibilityFilters = [
+  { value: "all", label: "全部" },
+  { value: "private", label: "我的" },
+  { value: "public", label: "公开" },
+  { value: "recent", label: "最近练习" },
+];
+
+const practiceModes = [
+  { key: "sequential", label: "顺序练习", desc: "按题目顺序逐题完成", icon: ListOrdered },
+  { key: "random", label: "随机练习", desc: "随机抽取题目进行练习", icon: Shuffle },
+  { key: "wrong", label: "错题强化", desc: "集中回顾易错题目", icon: XCircle },
+  { key: "bookmark", label: "收藏题目", desc: "查看你收藏的重点题目", icon: Bookmark },
+] as const;
+
+function flashSuccess(msg: string) {
+  successMessage.value = msg;
+  setTimeout(() => {
+    successMessage.value = "";
+  }, 2500);
+}
 
 const showForm = ref(false);
 const editingCourse = ref<Course | null>(null);
@@ -43,9 +71,10 @@ const form = reactive({ name: "", description: "", subject: "" });
 
 const filteredCourses = computed(() => {
   const keyword = searchText.value.trim().toLowerCase();
-  if (!keyword) return courses.value;
-
   return courses.value.filter((course) => {
+    if (visibilityFilter.value === "recent" && !course.last_practiced_at) return false;
+    if (visibilityFilter.value !== "all" && visibilityFilter.value !== "recent" && course.visibility !== visibilityFilter.value) return false;
+    if (!keyword) return true;
     const fields = [course.name, course.subject, course.description, course.visibility];
     return fields.some((field) => String(field || "").toLowerCase().includes(keyword));
   });
@@ -55,7 +84,7 @@ const courseSummary = computed(() => {
   const total = courses.value.length;
   const visible = filteredCourses.value.length;
   if (!total) return "创建题库或导入资料后，就可以开始练习。";
-  if (searchText.value.trim()) return `已筛选 ${visible} / ${total} 个题库`;
+  if (searchText.value.trim() || visibilityFilter.value !== "all") return `已筛选 ${visible} / ${total} 个题库`;
   return `共 ${total} 个题库，选择一个开始练习。`;
 });
 
@@ -76,6 +105,7 @@ function openEdit(course: Course) {
   form.subject = course.subject || "";
   editingCourse.value = course;
   formError.value = "";
+  openCourseMenuId.value = null;
   showForm.value = true;
 }
 
@@ -85,6 +115,10 @@ function closeForm() {
 
 function clearSearch() {
   searchText.value = "";
+}
+
+function toggleCourseMenu(courseId: number) {
+  openCourseMenuId.value = openCourseMenuId.value === courseId ? null : courseId;
 }
 
 async function handleSave() {
@@ -106,9 +140,11 @@ async function handleSave() {
     if (editingCourse.value) {
       const { data } = await request.patch<Course>(`/courses/${editingCourse.value.id}`, payload);
       Object.assign(editingCourse.value, data);
+      flashSuccess("题库已更新");
     } else {
       const { data } = await request.post<Course>("/courses/", { ...payload, visibility: "private" });
       courses.value.unshift(data);
+      flashSuccess("题库已创建");
     }
 
     closeForm();
@@ -134,6 +170,7 @@ async function fetchCourses() {
 }
 
 async function deleteCourse(course: Course) {
+  openCourseMenuId.value = null;
   const confirmed = await confirmDialog.confirm({
     title: "删除题库",
     message: `确定删除「${getCourseDisplayName(course)}」吗？\n其中 ${course.question_count ?? 0} 道题会一起移除。`,
@@ -150,6 +187,7 @@ async function deleteCourse(course: Course) {
   try {
     await request.delete(`/courses/${course.id}`);
     courses.value = courses.value.filter((item) => item.id !== course.id);
+    flashSuccess("题库已删除");
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "删除失败");
   } finally {
@@ -158,6 +196,7 @@ async function deleteCourse(course: Course) {
 }
 
 async function togglePublish(course: Course) {
+  openCourseMenuId.value = null;
   publishLoading.value = course.id;
   errorMessage.value = "";
 
@@ -165,9 +204,11 @@ async function togglePublish(course: Course) {
     if (course.visibility === "public") {
       const { data } = await request.post<Course>(`/courses/${course.id}/unpublish`);
       course.visibility = data.visibility || "private";
+      flashSuccess("已取消发布");
     } else {
       const { data } = await request.post<Course>(`/courses/${course.id}/publish`);
       course.visibility = data.visibility || "public";
+      flashSuccess("已发布到公共题库");
     }
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "操作失败");
@@ -178,170 +219,870 @@ async function togglePublish(course: Course) {
 
 function goToPractice(course: Course) {
   if (!isPracticeReadyCourse(course)) return;
-  router.push(`/courses/${course.id}/practice`);
+  openCourseMenuId.value = null;
+  practiceSheetCourse.value = course;
+}
+
+function closePracticeSheet() {
+  practiceSheetCourse.value = null;
+}
+
+function updatePracticeSheet(isOpen: boolean) {
+  if (!isOpen) closePracticeSheet();
+}
+
+function setVisibilityFilter(value: string) {
+  if (value === "all" || value === "private" || value === "public" || value === "recent") {
+    visibilityFilter.value = value;
+  }
+}
+
+function startPractice(mode: string) {
+  const course = practiceSheetCourse.value;
+  if (!course) return;
+  practiceSheetCourse.value = null;
+  if (mode === "bookmark") {
+    replaceWithSource({ name: "bookmarks", query: { course_id: course.id } }, "courses");
+    return;
+  }
+  replaceWithSource({
+    name: "course-practice",
+    params: { courseId: course.id },
+    query: { mode, autostart: "1" },
+  }, "courses");
+}
+
+function courseCoverage(course: Course) {
+  if (!course.question_count) return 0;
+  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
+}
+
+function formatLastPracticed(course: Course) {
+  if (!course.last_practiced_at) return "尚未练习";
+  return `最近练习 ${new Intl.DateTimeFormat("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+  }).format(new Date(course.last_practiced_at))}`;
 }
 
 onMounted(fetchCourses);
 </script>
 
 <template>
-  <section class="space-y-4 pb-24">
-    <div class="flex items-start justify-between gap-3">
+  <section class="library-page" data-reference-page="courses">
+    <header class="library-head fade-up">
       <div>
-        <p class="text-sm font-bold text-slate-400">选择课程开始练习</p>
-        <h1 class="mt-1 text-4xl font-black text-slate-950">我的题库</h1>
-        <p class="mt-2 text-sm font-semibold text-slate-500">{{ courseSummary }}</p>
+        <h2 class="library-title">题库</h2>
+        <p class="library-count">我的题库 · {{ courses.length }} 个</p>
       </div>
-      <div class="flex shrink-0 gap-2">
-        <Button variant="outline" :disabled="loading" @click="fetchCourses">刷新</Button>
-        <Button @click="openCreate">
-          <Plus :size="16" :stroke-width="2.5" />
-          创建题库
-        </Button>
-      </div>
-    </div>
+      <button
+        class="library-create-button"
+        data-create-course
+        type="button"
+        aria-label="创建题库"
+        @click="openCreate"
+      >
+        <Plus :size="17" :stroke-width="2.4" />
+      </button>
+    </header>
 
     <p v-if="loading" class="status-banner status-banner--info">题库加载中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
+    <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
-    <Card v-if="courses.length > 0" class="border-slate-200 bg-white">
-      <CardContent class="flex items-center gap-3 p-3">
-        <Search :size="19" :stroke-width="2.4" class="text-slate-400" />
+    <div v-if="courses.length > 0" class="library-tools fade-up d1">
+      <div class="search-bar">
+        <Search :size="18" :stroke-width="2.4" class="search-icon" />
         <input
           v-model="searchText"
-          class="min-h-10 min-w-0 flex-1 border-0 bg-transparent text-base font-bold text-slate-800 outline-none placeholder:text-slate-400"
           type="search"
+          class="search-input"
           placeholder="搜索题库、科目或描述"
+          aria-label="搜索题库、科目或描述"
         />
-        <button v-if="searchText" class="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" @click="clearSearch">
-          <X :size="15" :stroke-width="2.6" />
+        <button
+          v-if="searchText"
+          class="search-clear"
+          type="button"
+          aria-label="清空搜索"
+          @click="clearSearch"
+        >
+          <X :size="14" :stroke-width="2.6" />
         </button>
-      </CardContent>
-    </Card>
-
-    <Card v-if="!loading && courses.length === 0 && !errorMessage" class="border-dashed border-slate-200 bg-white">
-      <CardContent class="grid place-items-center gap-4 py-12 text-center">
-        <GraduationCap :size="48" :stroke-width="1.5" class="text-slate-300" />
-        <div>
-          <strong class="text-lg font-black text-slate-900">还没有题库</strong>
-          <p class="mt-1 text-sm font-semibold text-slate-500">创建一门课程，或先去导入题目。</p>
-        </div>
-        <div class="flex gap-2">
-          <Button @click="openCreate">
-            <Plus :size="16" :stroke-width="2.5" />
-            创建题库
-          </Button>
-          <Button variant="outline" @click="router.push('/import')">
-            <Sparkles :size="16" :stroke-width="2.5" />
-            去导入
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card v-if="!loading && courses.length > 0 && filteredCourses.length === 0 && !errorMessage" class="border-dashed border-slate-200 bg-white">
-      <CardContent class="grid place-items-center gap-4 py-10 text-center">
-        <Search :size="44" :stroke-width="1.5" class="text-slate-300" />
-        <div>
-          <strong class="text-lg font-black text-slate-900">没有找到匹配题库</strong>
-          <p class="mt-1 text-sm font-semibold text-slate-500">换个关键词，或者清空搜索查看全部。</p>
-        </div>
-        <Button variant="outline" @click="clearSearch">清空搜索</Button>
-      </CardContent>
-    </Card>
-
-    <div class="space-y-3">
-      <Card v-for="course in filteredCourses" :key="course.id" class="overflow-hidden border-slate-200 bg-white">
-        <CardContent class="p-4">
-          <button class="flex w-full items-center gap-3 text-left" type="button" @click="router.push(`/courses/${course.id}`)">
-            <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <BookOpen :size="22" :stroke-width="2.2" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <strong class="block truncate text-lg font-black text-slate-950">{{ getCourseDisplayName(course) }}</strong>
-              <small class="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
-                <span class="inline-flex items-center gap-1"><Layers :size="13" />{{ course.question_count ?? 0 }} 道题</span>
-                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-                  <Lock v-if="course.visibility === 'private'" :size="12" />
-                  <Globe v-else :size="12" />
-                  {{ course.visibility === "public" ? "已公开" : "私有" }}
-                </span>
-              </small>
-            </span>
-            <ChevronRight :size="20" :stroke-width="2.5" class="text-slate-300" />
-          </button>
-
-          <div class="mt-4 grid grid-cols-[1fr_1.4fr_auto_auto_auto] gap-2 border-t border-slate-100 pt-3">
-            <Button variant="outline" size="sm" @click="router.push(`/courses/${course.id}`)">查看题目</Button>
-            <Button size="sm" :disabled="!isPracticeReadyCourse(course)" @click="goToPractice(course)">
-              <Play :size="14" :stroke-width="2.6" />
-              {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
-            </Button>
-            <button class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700" type="button" title="编辑" @click.stop="openEdit(course)">
-              <Pencil :size="15" :stroke-width="2.5" />
-            </button>
-            <button
-              class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              type="button"
-              :title="course.visibility === 'public' ? '撤回公开' : '发布到公共题库'"
-              :disabled="publishLoading === course.id"
-              @click.stop="togglePublish(course)"
-            >
-              <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
-              <Lock v-else :size="15" :stroke-width="2.5" />
-            </button>
-            <button
-              class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-              type="button"
-              title="删除"
-              :disabled="deleteLoading === course.id"
-              @click.stop="deleteCourse(course)"
-            >
-              <Trash2 :size="15" :stroke-width="2.5" />
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
+      <FilterTabs
+        :model-value="visibilityFilter"
+        :items="visibilityFilters"
+        label="题库筛选"
+        @update:model-value="setVisibilityFilter"
+      />
     </div>
 
-    <Button v-if="courses.length > 0 && filteredCourses.length > 0" variant="outline" class="w-full" @click="router.push('/public-library')">
+    <p v-if="courses.length > 0" class="lib-summary fade-up d1">{{ courseSummary }}</p>
+
+    <div
+      v-if="!loading && courses.length === 0 && !errorMessage"
+      class="empty-state ink-card fade-up d2"
+    >
+      <GraduationCap :size="48" :stroke-width="1.5" class="empty-icon" />
+      <strong class="empty-title">还没有题库</strong>
+      <p class="empty-desc">创建一门课程，或先去导入题目。</p>
+      <div class="empty-actions">
+        <button class="btn-solid" type="button" @click="openCreate">
+          <Plus :size="16" :stroke-width="2.5" />
+          创建题库
+        </button>
+        <button class="btn-outline" type="button" @click="replaceWithSource('/import', 'courses')">
+          <Sparkles :size="16" :stroke-width="2.5" />
+          去导入
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="!loading && courses.length > 0 && filteredCourses.length === 0 && !errorMessage"
+      class="empty-state ink-card fade-up d2"
+    >
+      <Search :size="44" :stroke-width="1.5" class="empty-icon" />
+      <strong class="empty-title">没有找到匹配题库</strong>
+      <p class="empty-desc">换个关键词，或者清空搜索查看全部。</p>
+      <button class="btn-outline" type="button" @click="clearSearch">清空搜索</button>
+    </div>
+
+    <div v-if="filteredCourses.length > 0" class="section-head fade-up d2">
+      <h3 class="section-title">我的题库</h3>
+      <button
+        class="section-more"
+        type="button"
+        :disabled="loading"
+        aria-label="刷新题库列表"
+        @click="fetchCourses"
+      >
+        刷新
+      </button>
+    </div>
+
+    <div v-if="filteredCourses.length > 0" class="course-list fade-up d2">
+      <div
+        v-for="(course, idx) in filteredCourses"
+        :key="course.id"
+        class="course-row fade-up"
+        :class="'d' + ((idx % 5) + 1)"
+      >
+        <div
+          class="course-item"
+          role="button"
+          tabindex="0"
+          @click="replaceWithSource(`/courses/${course.id}`, 'courses')"
+          @keydown.enter="replaceWithSource(`/courses/${course.id}`, 'courses')"
+        >
+          <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
+          <div class="course-info">
+            <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</strong>
+            <span class="course-subline">
+              {{ course.subject || '未分类' }} · {{ course.visibility === 'public' ? '公开' : '私有' }} · {{ formatLastPracticed(course) }}
+            </span>
+          </div>
+          <span class="course-stat"><strong>{{ course.question_count ?? 0 }}</strong><small>题</small></span>
+          <span class="visibility-label" :class="course.visibility === 'public' ? 'is-public' : 'is-private'">
+            {{ course.visibility === 'public' ? '公开' : '私有' }}
+          </span>
+          <span class="course-recent">{{ formatLastPracticed(course) }}</span>
+          <button
+            class="practice-action"
+            type="button"
+            aria-label="开始练习"
+            :disabled="!isPracticeReadyCourse(course)"
+            @click.stop="goToPractice(course)"
+          >
+            <Play :size="15" :stroke-width="2.5" />
+            练习
+          </button>
+          <button
+            class="more-btn"
+            type="button"
+            :aria-label="`更多操作：${getCourseDisplayName(course)}`"
+            :aria-expanded="openCourseMenuId === course.id"
+            @click.stop="toggleCourseMenu(course.id)"
+          >
+            <MoreHorizontal :size="18" :stroke-width="2.5" />
+          </button>
+        </div>
+
+        <div v-if="openCourseMenuId === course.id" class="course-menu">
+          <button
+            class="menu-option"
+            type="button"
+            :disabled="!isPracticeReadyCourse(course)"
+            @click.stop="goToPractice(course)"
+          >
+            <Play :size="15" :stroke-width="2.5" />
+            {{ isPracticeReadyCourse(course) ? '开始练习' : '暂无题目' }}
+          </button>
+          <button
+            class="menu-option"
+            type="button"
+            @click.stop="replaceWithSource(`/courses/${course.id}`, 'courses')"
+          >
+            <Eye :size="15" :stroke-width="2.5" />
+            查看题目
+          </button>
+          <div class="menu-divider"></div>
+          <button
+            class="menu-option"
+            type="button"
+            :aria-label="`编辑${getCourseDisplayName(course)}`"
+            @click.stop="openEdit(course)"
+          >
+            <Pencil :size="15" :stroke-width="2.5" />
+            编辑
+          </button>
+          <button
+            class="menu-option"
+            type="button"
+            :aria-label="`${course.visibility === 'public' ? '撤回' : '公开'}${getCourseDisplayName(course)}`"
+            :disabled="publishLoading === course.id"
+            @click.stop="togglePublish(course)"
+          >
+            <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
+            <Lock v-else :size="15" :stroke-width="2.5" />
+            {{ course.visibility === 'public' ? '撤回公开' : '发布到公共题库' }}
+          </button>
+          <div class="menu-divider"></div>
+          <button
+            class="menu-option menu-danger"
+            type="button"
+            :aria-label="`删除${getCourseDisplayName(course)}`"
+            :disabled="deleteLoading === course.id"
+            @click.stop="deleteCourse(course)"
+          >
+            <Trash2 :size="15" :stroke-width="2.5" />
+            删除
+          </button>
+        </div>
+        <div class="course-row__progress" aria-label="练习覆盖进度">
+          <i :style="{ width: `${courseCoverage(course)}%` }"></i>
+        </div>
+      </div>
+    </div>
+
+    <button
+      v-if="courses.length > 0 && filteredCourses.length > 0"
+      class="btn-outline btn-block"
+      type="button"
+      @click="replaceWithSource('/public-library', 'courses')"
+    >
       <Globe :size="17" :stroke-width="2.5" />
       浏览公共题库
-    </Button>
+    </button>
 
-    <div v-if="showForm" class="fixed inset-0 z-[100] grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm" @click.self="closeForm">
-      <Card class="w-full max-w-[430px] border-slate-200 bg-white shadow-2xl">
-        <CardContent class="space-y-4 p-5">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xl font-black text-slate-950">{{ isEdit ? "编辑题库" : "创建题库" }}</h3>
-            <button class="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-500" type="button" @click="closeForm">
-              <X :size="18" :stroke-width="2.5" />
-            </button>
-          </div>
+    <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
+      <div class="ink-card modal-card">
+        <div class="modal-head">
+          <h3 class="modal-title">{{ isEdit ? '编辑题库' : '创建题库' }}</h3>
+          <button class="modal-close" type="button" aria-label="关闭" @click="closeForm">
+            <X :size="18" :stroke-width="2.5" />
+          </button>
+        </div>
 
-          <p v-if="formError" class="status-banner status-banner--error">{{ formError }}</p>
+        <p v-if="formError" class="status-banner status-banner--error">{{ formError }}</p>
 
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">题库名称</span>
-            <input v-model="form.name" class="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold outline-none focus:border-blue-400" type="text" placeholder="如：Java 期末复习" />
-          </label>
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">科目（可选）</span>
-            <input v-model="form.subject" class="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-bold outline-none focus:border-blue-400" type="text" placeholder="如：Java" />
-          </label>
-          <label class="grid gap-1">
-            <span class="text-sm font-black text-slate-600">描述（可选）</span>
-            <textarea v-model="form.description" class="min-h-20 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-bold outline-none focus:border-blue-400" placeholder="简单描述题库内容" />
-          </label>
+        <label class="form-field">
+          <span class="field-label">题库名称</span>
+          <input v-model="form.name" class="text-input" type="text" placeholder="如：Java 期末复习" />
+        </label>
+        <label class="form-field">
+          <span class="field-label">科目（可选）</span>
+          <input v-model="form.subject" class="text-input" type="text" placeholder="如：Java" />
+        </label>
+        <label class="form-field">
+          <span class="field-label">描述（可选）</span>
+          <textarea
+            v-model="form.description"
+            class="text-input form-textarea"
+            placeholder="简单描述题库内容"
+          />
+        </label>
 
-          <div class="grid grid-cols-2 gap-2">
-            <Button variant="outline" @click="closeForm">取消</Button>
-            <Button :disabled="formLoading" @click="handleSave">
-              {{ formLoading ? "保存中..." : isEdit ? "保存修改" : "创建" }}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div class="modal-actions">
+          <Button variant="outline" @click="closeForm">取消</Button>
+          <Button :disabled="formLoading" @click="handleSave">
+            {{ formLoading ? '保存中...' : isEdit ? '保存修改' : '创建' }}
+          </Button>
+        </div>
+      </div>
     </div>
+
+    <BottomSheet
+      :model-value="!!practiceSheetCourse"
+      :title="practiceSheetCourse ? getCourseDisplayName(practiceSheetCourse) : '选择练习方式'"
+      @update:model-value="updatePracticeSheet"
+      @close="closePracticeSheet"
+    >
+      <section v-if="practiceSheetCourse" class="practice-sheet">
+        <p class="practice-sheet__summary">开始练习 · {{ practiceSheetCourse.question_count ?? 0 }} 道题目</p>
+        <button
+          v-for="mode in practiceModes"
+          :key="mode.key"
+          class="practice-sheet__option"
+          type="button"
+          @click="startPractice(mode.key)"
+        >
+          <span class="practice-sheet__icon"><component :is="mode.icon" :size="19" :stroke-width="2.2" /></span>
+          <span><strong>{{ mode.label }}</strong><small>{{ mode.desc }}</small></span>
+          <Play :size="17" :stroke-width="2.4" aria-hidden="true" />
+        </button>
+      </section>
+    </BottomSheet>
   </section>
 </template>
+
+<style scoped>
+/* ── Page container ── */
+.library-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: calc(var(--nav-bottom-clearance) + 72px);
+}
+
+/* ── Search bar ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 14px;
+}
+.search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--text-base);
+  font-weight: 600;
+  outline: none;
+}
+.search-input::placeholder {
+  color: var(--text-placeholder);
+}
+.search-clear {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.search-clear:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+
+/* ── Summary line ── */
+.lib-summary {
+  margin: 0;
+  padding: 0 4px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+.empty-icon {
+  color: var(--text-placeholder);
+}
+.empty-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--text-main);
+}
+.empty-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.empty-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Section more button ── */
+.section-more {
+  cursor: pointer;
+}
+.section-more:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Course list ── */
+.course-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* ── Course row (single-line card: item + dropdown menu) ── */
+.course-row {
+  position: relative;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-xs);
+  overflow: visible;
+  transition: box-shadow var(--ease-out);
+}
+.course-row__progress {
+  height: 4px;
+  margin: 0 12px 10px 60px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.course-row__progress i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.course-row:hover {
+  box-shadow: var(--shadow-card);
+}
+
+/* Override global .course-item to act as compact clickable row */
+.course-row .course-item {
+  cursor: pointer;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--radius-lg);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  transition: background var(--ease-out);
+}
+.course-row .course-item:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+.course-row .course-item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Course icon text character */
+.course-icon {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: 900;
+}
+
+/* ── More button ── */
+.more-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.more-btn:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+
+/* ── Dropdown menu (anchored below more-btn) ── */
+.course-menu {
+  position: absolute;
+  right: var(--space-2);
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-card);
+}
+.menu-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.menu-option:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text-main);
+}
+.menu-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu-danger {
+  color: var(--rose);
+}
+.menu-danger:hover:not(:disabled) {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.menu-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--line-soft);
+}
+
+/* ── Buttons ── */
+.btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #ffffff;
+  font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--ease-out), box-shadow var(--ease-out);
+  box-shadow: var(--shadow-primary);
+}
+.btn-solid:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary);
+}
+.btn-solid:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-strong);
+}
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: var(--text-xs);
+}
+.btn-block {
+  width: 100%;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.modal-card {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-modal);
+  max-height: calc(100dvh - var(--space-8));
+  overflow-y: auto;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  color: var(--text-main);
+}
+.modal-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--ease-out), color var(--ease-out);
+}
+.modal-close:hover {
+  background: var(--surface-strong);
+  color: var(--text-main);
+}
+.form-field {
+  display: grid;
+  gap: 6px;
+}
+.form-textarea {
+  min-height: 72px;
+  padding: 10px 14px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+}
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.practice-sheet {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.practice-sheet__summary { margin: 0 2px 4px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.practice-sheet__option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-main); text-align: left; }
+.practice-sheet__option:active { transform: scale(.985); border-color: var(--primary-border); background: var(--primary-soft); }
+.practice-sheet__icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-strong); }
+.practice-sheet__option strong, .practice-sheet__option small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.practice-sheet__option strong { font-size: 14px; }
+.practice-sheet__option small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }
+.practice-sheet__option :deep(svg:last-child) { color: var(--primary-strong); }
+
+/* ── Mobile compact (≤400px / 6.3 inch) ── */
+@media (max-width: 400px) {
+  .modal-actions {
+    grid-template-columns: 1fr;
+  }
+  .course-menu {
+    right: var(--space-1);
+    min-width: 160px;
+  }
+  .course-row .course-item {
+    min-height: 60px;
+    padding: var(--space-2);
+  }
+  .empty-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .empty-actions button {
+    width: 100%;
+  }
+}
+
+/* A-plan overrides: restrained surfaces, clear hierarchy, and 44px touch targets. */
+.library-page {
+  gap: 16px;
+  padding-bottom: calc(var(--nav-bottom-clearance) + 24px);
+  font-family: var(--font-sans);
+}
+.library-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.library-head > div { min-width: 0; }
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.library-title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.library-count {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.primary-action,
+.library-create-button,
+.practice-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.primary-action { padding: 0 14px; flex-shrink: 0; }
+.library-create-button {
+  width: 44px;
+  padding: 0;
+  flex: 0 0 44px;
+  border-radius: 50%;
+}
+.primary-action:hover,
+.library-create-button:hover,
+.practice-action:hover:not(:disabled) { background: var(--primary-strong); }
+.library-tools { display: flex; align-items: center; gap: 10px; }
+.library-tools .search-bar {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: none;
+}
+.search-input { min-height: 28px; font-size: 14px; }
+.search-clear { width: 36px; height: 36px; border-radius: 6px; }
+.library-tools .filter-tabs { flex-shrink: 0; }
+.lib-summary { padding: 0; }
+.section-head { margin-top: 4px; }
+.section-title { font-family: var(--font-sans); font-size: 16px; font-weight: 800; }
+.course-list { gap: 8px; }
+.course-row {
+  border-radius: 6px;
+  box-shadow: none;
+}
+.course-row:hover { box-shadow: var(--shadow-xs); }
+.course-row .course-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto minmax(104px, auto) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.course-icon { width: 36px; height: 36px; border-radius: 4px; font-family: var(--font-sans); font-size: 15px; }
+.course-info { min-width: 0; }
+.course-info strong { font-size: 14px; }
+.course-subline { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.course-stat { display: inline-flex; align-items: baseline; gap: 3px; color: var(--text-main); white-space: nowrap; }
+.course-stat strong { font-size: 16px; font-weight: 800; }
+.course-stat small { color: var(--text-muted); font-size: 11px; }
+.visibility-label { min-width: 40px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.visibility-label.is-public { color: var(--primary-strong); }
+.visibility-label.is-private { color: var(--text-muted); }
+.course-recent { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.practice-action { min-width: 76px; padding: 0 10px; }
+.practice-action:disabled { border-color: var(--line-soft); background: var(--surface-soft); color: var(--text-placeholder); cursor: not-allowed; }
+.more-btn { width: 44px; height: 44px; border-radius: 6px; }
+.course-menu {
+  top: auto;
+  right: 10px;
+  bottom: 10px;
+  min-width: 196px;
+  max-width: calc(100% - 20px);
+  padding: 6px;
+  border-radius: 6px;
+}
+.menu-option { min-height: 44px; border-radius: 4px; }
+.btn-solid { background: var(--primary); border-radius: 6px; box-shadow: none; }
+.btn-solid:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-strong); }
+.modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.modal-card { border-radius: 6px; }
+.modal-title { font-family: var(--font-sans); }
+.modal-close { width: 44px; height: 44px; border-radius: 6px; }
+
+@media (max-width: 700px) {
+  .library-tools { align-items: stretch; flex-direction: column; }
+  .library-tools .filter-tabs { align-self: flex-start; }
+  .course-row .course-item {
+    grid-template-columns: 36px minmax(0, 1fr) auto 44px 44px;
+    gap: 8px;
+    min-height: 72px;
+    padding: 10px 8px;
+  }
+  .course-stat { grid-column: 3; grid-row: 1; }
+  .practice-action {
+    grid-column: 4;
+    grid-row: 1;
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+  .practice-action svg { width: 17px; height: 17px; }
+  .visibility-label, .course-recent { display: none; }
+  .course-subline { font-size: 11px; }
+  .course-menu { right: 8px; bottom: 8px; min-width: 188px; }
+}
+@media (max-width: 400px) {
+  .library-head { align-items: flex-start; }
+  .library-title { font-size: 24px; }
+  .library-create-button { width: 42px; flex-basis: 42px; }
+}
+
+/* Keep the reference treatment after the compact desktop/mobile overrides. */
+.library-page { padding-top: 20px; }
+.library-title { letter-spacing: 0; }
+.library-tools { gap: 12px; }
+.library-tools .search-bar { min-height: 48px; border-radius: 999px; }
+.library-tools .filter-tabs { width: 100%; }
+.course-row { border-color: var(--glass-border); border-radius: 12px; background: var(--glass-card); box-shadow: var(--shadow-card), var(--glass-inner-highlight); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); }
+.course-row .course-item { border-radius: 12px; }
+</style>

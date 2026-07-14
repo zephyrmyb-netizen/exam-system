@@ -26,11 +26,21 @@ defineProps({
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
   padding: var(--space-3);
   border: 1px solid var(--line-accent);
   border-radius: var(--radius-lg);
   background: var(--primary-soft);
   color: var(--primary-strong);
+}
+
+.running-panel > div {
+  min-width: 0;
+}
+
+.running-panel strong,
+.running-panel p {
+  overflow-wrap: anywhere;
 }
 
 .running-panel p {
@@ -60,4 +70,7 @@ defineProps({
     transform: scale(1.25);
   }
 }
+/* A layout: visible progress, no decorative motion or oversized treatment. */
+.running-panel { border-radius: 6px; background: var(--surface); border-color: var(--primary-border); box-shadow: var(--shadow-xs); }
+.running-dot { border-radius: 2px; animation: none; }
 </style>
