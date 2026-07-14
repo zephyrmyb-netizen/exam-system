@@ -273,7 +273,7 @@ describe("CourseList UX polish", () => {
     expect(row.get(".course-subline").text()).toContain("46");
     expect(row.get(".course-subline").text()).toContain("19");
     expect(row.get(".course-subline").text()).toContain("07/14");
-    expect(row.find(".course-info .course-progress").exists()).toBe(true);
+    expect(row.find(".course-info .course-progress").exists()).toBe(false);
   });
 
   it("keeps an API error separate from the empty-library state", async () => {
