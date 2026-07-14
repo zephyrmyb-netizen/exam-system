@@ -661,7 +661,7 @@ onMounted(() => {
   position: relative;
   z-index: 1;
   gap: 16px;
-  margin: 12px 0 0;
+  margin: 4px 0 0;
 }
 .quick {
   min-height: 136px;
@@ -681,7 +681,7 @@ onMounted(() => {
 }
 .overview-surface {
   min-height: 92px;
-  margin: 22px 0;
+  margin: 10px 0;
   padding: 10px 8px;
   border-radius: var(--radius-lg);
 }
@@ -690,6 +690,9 @@ onMounted(() => {
 .home-page > .status-banner,
 .home-page > .empty-state {
   margin-inline: 0;
+}
+.home-page .section-head {
+  margin-block: 10px 8px;
 }
 .home-course-list {
   margin-top: 0;
