@@ -147,8 +147,10 @@ def test_rule_parser_marks_non_continuous_numbering_partial_without_ai_fallback(
 
     questions, warnings, timing = import_orchestrator.parse_rule_based_question_document(text)
 
-    assert [question["line_number"] for question in questions] == [1]
+    assert [question["line_number"] for question in questions] == [1, 3]
     assert timing["is_complete"] is False
+    assert timing["completed_chunks"] == 1
+    assert timing["missing_question_numbers"] == [2]
     assert any("题号 3" in warning for warning in warnings)
 
 
@@ -165,6 +167,7 @@ def test_rule_parser_binds_embedded_images_without_creating_duplicate_questions(
 
     text = """一、判断题
 1. 如下图所示，判断结论是否正确。
+[[IMAGE:1]]
 答案：正确"""
     monkeypatch.setattr(
         import_orchestrator,
@@ -181,6 +184,62 @@ def test_rule_parser_binds_embedded_images_without_creating_duplicate_questions(
     assert warnings == []
     assert timing["is_complete"] is True
     assert questions[0]["image_urls"] == ["data:image/png;base64,aW1hZ2U="]
+    assert timing["image_bindings"] == {"1": 1}
+
+
+def test_rule_parser_accepts_solution_blocks_as_written_answers():
+    from backend.imports import import_orchestrator
+
+    text = """一、简答与计算题
+1. Solve the calculation
+解：
+（1）First calculation step
+（2）Second calculation step
+2. Explain the result
+解析：The explanation is the response."""
+
+    questions, warnings, timing = import_orchestrator.parse_rule_based_question_document(text)
+
+    assert warnings == []
+    assert timing["is_complete"] is True
+    assert timing["ai_calls"] == 0
+    assert "First calculation step" in questions[0]["answer"]
+    assert questions[1]["answer"] == "The explanation is the response."
+
+
+def test_docx_body_image_marker_is_bound_to_current_question(tmp_path):
+    from io import BytesIO
+
+    from docx import Document
+    from PIL import Image
+    from backend.imports import import_orchestrator
+    from backend.imports.image_extractor import extract_images_from_docx
+
+    image_bytes = BytesIO()
+    Image.new("RGB", (8, 8), "red").save(image_bytes, format="PNG")
+    image_path = tmp_path / "diagram.png"
+    image_path.write_bytes(image_bytes.getvalue())
+
+    document = Document()
+    document.add_paragraph("一、判断题")
+    document.add_paragraph("1. 如下图所示，判断结论是否正确。")
+    document.add_picture(str(image_path))
+    document.add_paragraph("答案：正确")
+    source = tmp_path / "figure.docx"
+    document.save(source)
+
+    text, warnings = import_orchestrator.extract_text_and_warnings(str(source))
+    images, image_warnings = extract_images_from_docx(str(source))
+    questions, preview_warnings, timing = import_orchestrator.preview_import_from_file_content(text, images)
+
+    assert warnings == []
+    assert image_warnings == []
+    assert "[[IMAGE:1]]" in text
+    assert preview_warnings == []
+    assert timing["is_complete"] is True
+    assert timing["completed_chunks"] == 1
+    assert timing["image_bindings"] == {"1": 1}
+    assert len(questions[0]["image_urls"]) == 1
 
 
 def test_chunk_document_text_splits_one_large_numbered_paragraph(monkeypatch):

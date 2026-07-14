@@ -93,13 +93,24 @@ def extract_images_from_docx(path: str) -> tuple[list[ImagePayload], list[str]]:
     doc = Document(path)
     images: list[ImagePayload] = []
     warnings: list[str] = []
-    for rel in doc.part.rels.values():
-        if "image" not in rel.reltype:
-            continue
+    # Walk document.xml in body order. Relationship iteration is not visual
+    # order and also includes unrelated parts; it cannot safely associate an
+    # image with the question that precedes it. Header/footer media is outside
+    # this body traversal and deliberately excluded.
+    relationship_ids: list[str] = []
+    for child in doc.element.body.iterchildren():
+        for blip in child.xpath(".//a:blip"):
+            rel_id = blip.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+            if rel_id:
+                relationship_ids.append(rel_id)
+
+    for occurrence, rel_id in enumerate(relationship_ids, start=1):
         try:
-            part = rel.target_part
+            part = doc.part.related_parts[rel_id]
             mime_type = getattr(part, "content_type", "") or _mime_from_name(getattr(part, "partname", ""))
-            images.append(_normalize_payload(part.blob, mime_type, str(getattr(part, "partname", ""))))
+            images.append(_normalize_payload(part.blob, mime_type, f"Body image {occurrence}"))
+        except KeyError:
+            warnings.append(f"文档图片 {occurrence} 无法读取，已跳过")
         except Exception as exc:
             warnings.append(f"图片处理失败：{exc}")
     limited, limit_warnings = _limit_images(images)

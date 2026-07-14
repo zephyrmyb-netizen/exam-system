@@ -234,7 +234,12 @@ function handleRetry() {
     </div>
     <div v-if="!isComplete" class="warnings-box incomplete-import" role="alert">
       <AlertCircle :size="16" :stroke-width="2.5" color="var(--danger)" style="flex-shrink: 0" />
-      <p>仅完成 {{ timing?.completed_chunks ?? 0 }} / {{ timing?.chunks ?? 0 }} 个分块，当前预览不完整，不能确认导入。</p>
+      <div>
+        <p>已处理 {{ timing?.completed_chunks ?? 0 }} / {{ timing?.chunks ?? 0 }} 个分块，但当前预览不完整，不能确认导入。</p>
+        <p v-if="timing?.missing_question_numbers?.length" class="warn-line">
+          缺失原始题号：{{ timing.missing_question_numbers.join("、") }}
+        </p>
+      </div>
     </div>
 
     <!-- ── Summary bar ── -->

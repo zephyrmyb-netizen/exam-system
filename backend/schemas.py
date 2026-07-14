@@ -323,6 +323,10 @@ class ImportTiming(BaseModel):
     failed_chunks: int = 0
     batches: int = 0
     is_complete: bool = True
+    parse_method: str = ""
+    ai_calls: int = 0
+    missing_question_numbers: list[int] = []
+    image_bindings: dict[str, int] = {}
 
 
 class FileExtractResponse(BaseModel):
