@@ -12,6 +12,26 @@ def _question(text: str) -> dict:
     }
 
 
+def test_docx_extraction_preserves_paragraph_table_order(tmp_path):
+    """Table questions must remain between the surrounding Word paragraphs."""
+    from docx import Document
+    from backend.imports import import_orchestrator
+
+    document = Document()
+    document.add_paragraph("1. First question")
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "A. First option"
+    table.cell(0, 1).text = "B. Second option"
+    document.add_paragraph("Answer: A")
+    source = tmp_path / "ordered.docx"
+    document.save(source)
+
+    text, warnings = import_orchestrator.extract_text_and_warnings(str(source))
+
+    assert warnings == []
+    assert text.index("1. First question") < text.index("A. First option") < text.index("Answer: A")
+
+
 def test_chunk_document_text_splits_one_large_numbered_paragraph(monkeypatch):
     """A Word document can store many numbered questions in one paragraph."""
     from backend.imports import import_orchestrator
@@ -93,31 +113,54 @@ def test_numbered_document_over_batch_size_processes_every_chunk(monkeypatch):
     assert timing["is_complete"] is True
 
 
-def test_unexpected_chunk_error_keeps_later_chunks_and_returns_partial(monkeypatch):
-    """One malformed AI result must not become a generic task failure."""
+def test_long_document_reports_persistable_progress_after_each_chunk(monkeypatch):
+    """Progress checkpoints must cover every chunk, not only the final result."""
     from backend.imports import import_orchestrator
 
     monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 1)
     text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 13))
-    calls = 0
+    checkpoints: list[tuple[int, int, int]] = []
 
-    def fake_parse(_chunk: str, _index: int, _expected_question_count: int = 0):
-        nonlocal calls
-        calls += 1
-        if calls == 1:
-            raise AttributeError("malformed provider item")
-        return [_question("question after failure")], []
+    def fake_parse(chunk: str, _index: int, _expected_question_count: int = 0):
+        numbers = [int(match.group(1)) for match in __import__("re").finditer(r"(?m)^(\d+)\.", chunk)]
+        return [_question(f"question {number}") for number in numbers], []
 
     monkeypatch.setattr(import_orchestrator, "call_ai_parse_chunk", fake_parse)
 
-    questions, warnings, timing = import_orchestrator.call_ai_parse(text)
+    import_orchestrator.call_ai_parse(
+        text,
+        on_progress=lambda questions, _warnings, timing: checkpoints.append(
+            (len(questions), timing["completed_chunks"], timing["chunks"])
+        ),
+    )
 
-    assert [item["question"] for item in questions] == ["question after failure"]
-    assert timing["completed_chunks"] == 1
-    assert timing["failed_chunks"] == 1
-    assert timing["is_complete"] is False
-    assert any("返回格式异常" in warning for warning in warnings)
+    assert checkpoints[0] == (0, 0, 2)
+    assert checkpoints[-1] == (12, 2, 2)
+    assert len(checkpoints) == 3
+
+
+def test_transient_chunk_failure_retries_without_restarting_document(monkeypatch):
+    """A temporary upstream timeout should retry only the affected chunk."""
+    from fastapi import HTTPException
+    from backend.imports import import_orchestrator
+
+    attempts = 0
+
+    def fake_parse(_chunk: str, _index: int):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise HTTPException(status_code=504, detail="timeout")
+        return [_question("recovered question")], []
+
+    monkeypatch.setattr(import_orchestrator, "parse_chunk_with_coverage_retry", fake_parse)
+
+    questions, warnings = import_orchestrator.parse_chunk_with_transient_retry("1. Question", 0)
+
+    assert attempts == 2
+    assert [item["question"] for item in questions] == ["recovered question"]
+    assert warnings == []
 
 
 def test_non_object_ai_items_are_skipped_without_crashing(monkeypatch):

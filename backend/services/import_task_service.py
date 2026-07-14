@@ -137,6 +137,32 @@ def _mark_failed(db: Session, task: ImportTask, message: str) -> None:
     _save(db, task)
 
 
+def _persist_parse_checkpoint(
+    db: Session,
+    task: ImportTask,
+    questions: list[dict],
+    warnings: list[str],
+    parse_timing: dict,
+    *,
+    total_start: float,
+    extract_ms: int,
+) -> None:
+    """Persist each parsed chunk so progress survives navigation and polling."""
+    timing = imports_service.build_timing(
+        total_start=total_start,
+        extract_ms=extract_ms,
+        parse_timing=parse_timing,
+    )
+    task.progress_current = int(parse_timing.get("completed_chunks") or 0)
+    task.progress_total = timing.chunks
+    task.preview_questions_json = json.dumps(questions, ensure_ascii=False)
+    task.warnings_json = json.dumps(warnings, ensure_ascii=False)
+    task.timing_json = json.dumps(timing.model_dump(), ensure_ascii=False)
+    task.total_valid = len(questions)
+    task.total_invalid = sum(1 for warning in warnings if "格式有误" in warning)
+    _save(db, task)
+
+
 def recover_pending_tasks(
     session_factory: Callable[[], Session] = SessionLocal,
     schedule: Callable[[str], None] | None = None,
@@ -224,7 +250,24 @@ def process_task(
         if sync_ai_overrides is not None:
             sync_ai_overrides()
         stage = "parse_ai"
-        questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
+        def persist_progress(
+            questions: list[dict], warnings: list[str], parse_timing: dict
+        ) -> None:
+            _persist_parse_checkpoint(
+                db,
+                task,
+                questions,
+                warnings,
+                parse_timing,
+                total_start=total_start,
+                extract_ms=extract_ms,
+            )
+
+        questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(
+            text,
+            images,
+            on_text_progress=persist_progress,
+        )
         if not questions:
             _mark_failed(db, task, "AI 未能解析出可导入题目，请检查文档内容后重试。")
             return
@@ -237,7 +280,7 @@ def process_task(
         )
         is_complete = bool(parse_timing.get("is_complete", True))
         task.status = "ready" if is_complete else "partial"
-        task.progress_current = int(parse_timing.get("completed_chunks") or timing.chunks)
+        task.progress_current = int(parse_timing.get("completed_chunks") or 0)
         task.progress_total = timing.chunks
         task.preview_questions_json = json.dumps(questions, ensure_ascii=False)
         task.warnings_json = json.dumps(extract_warnings + image_warnings + ai_warnings, ensure_ascii=False)

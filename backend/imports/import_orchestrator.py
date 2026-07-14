@@ -1,9 +1,9 @@
 import json as json_module
-import logging
 import os
 import re
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,9 +45,10 @@ AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
 AI_IMAGE_BATCH_SIZE = 3
 MAX_NUMBERED_QUESTIONS_PER_CHUNK = 6
 RETRY_NUMBERED_QUESTIONS_PER_CHUNK = 2
+AI_CHUNK_MAX_ATTEMPTS = 2
 MIN_NUMBERED_QUESTION_COVERAGE_RATIO = 0.8
-logger = logging.getLogger("xuexibao.import_orchestrator")
 _NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
+ParseProgressCallback = Callable[[list[dict[str, Any]], list[str], dict[str, Any]], None]
 
 
 @dataclass
@@ -224,20 +225,36 @@ def empty_extract_detail(file_path: str, warnings: list[str] | None = None) -> s
 
 def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
     from docx import Document
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
 
     doc = Document(path)
     parts: list[str] = []
 
-    for paragraph in doc.paragraphs:
-        text = paragraph.text.strip()
-        if text:
-            parts.append(text)
-
-    for table in doc.tables:
+    def table_rows(table: Table) -> list[str]:
+        rows: list[str] = []
         for row in table.rows:
-            row_texts = [cell.text.strip() for cell in row.cells if cell.text.strip()]
-            if row_texts:
-                parts.append(" | ".join(row_texts))
+            cells: list[str] = []
+            for cell in row.cells:
+                paragraphs = [paragraph.text.strip() for paragraph in cell.paragraphs if paragraph.text.strip()]
+                nested = [text for nested_table in cell.tables for text in table_rows(nested_table)]
+                cell_text = "\n".join(paragraphs + nested)
+                if cell_text:
+                    cells.append(cell_text)
+            if cells:
+                rows.append(" | ".join(cells))
+        return rows
+
+    # Iterate the XML body so ordinary paragraphs and tables remain in their
+    # original interleaved order. Reading doc.paragraphs then doc.tables loses
+    # that order and can split an answer from its question.
+    for child in doc.element.body.iterchildren():
+        if child.tag.endswith("}p"):
+            text = Paragraph(child, doc).text.strip()
+            if text:
+                parts.append(text)
+        elif child.tag.endswith("}tbl"):
+            parts.extend(table_rows(Table(child, doc)))
 
     return "\n".join(parts), warnings
 
@@ -909,7 +926,39 @@ def parse_chunk_with_coverage_retry(
     return items, warnings
 
 
-def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+def parse_chunk_with_transient_retry(
+    text_chunk: str,
+    chunk_index: int,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Retry only transient upstream failures; malformed input is not retried."""
+    for attempt in range(AI_CHUNK_MAX_ATTEMPTS):
+        try:
+            return parse_chunk_with_coverage_retry(text_chunk, chunk_index)
+        except HTTPException as exc:
+            if exc.status_code not in {502, 504} or attempt + 1 >= AI_CHUNK_MAX_ATTEMPTS:
+                raise
+    raise AssertionError("unreachable")
+
+
+def _validated_question_snapshot(items: list[Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    """Return only persistable questions plus safe validation warnings."""
+    valid: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    for index, item in enumerate(deduplicate_questions(items), start=1):
+        validated, error = validate_question_item(item)
+        if validated:
+            validated["line_number"] = index
+            valid.append(validated)
+        else:
+            warnings.append(f"第 {index} 题格式有误: {error}")
+    return valid, warnings
+
+
+def call_ai_parse(
+    text: str,
+    *,
+    on_progress: ParseProgressCallback | None = None,
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
     total_start = time.perf_counter()
     timing = {
         "chunk_ms": 0,
@@ -935,6 +984,9 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     timing["chunks"] = len(chunks)
     expected_numbered_questions = sum(count_numbered_question_blocks(chunk) for chunk in chunks)
 
+    if on_progress is not None:
+        on_progress([], [], timing.copy())
+
     saw_timeout = False
     saw_invalid_json = False
     saw_upstream_error = False
@@ -947,7 +999,7 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         for index, chunk in enumerate(chunks[batch_start : batch_start + AI_BATCH_SIZE], start=batch_start):
             ai_start = time.perf_counter()
             try:
-                items, warnings = parse_chunk_with_coverage_retry(chunk, index)
+                items, warnings = parse_chunk_with_transient_retry(chunk, index)
                 all_items.extend(items)
                 all_warnings.extend(warnings)
                 timing["completed_chunks"] += 1
@@ -963,22 +1015,14 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
                 elif exc.status_code != 400:
                     other_http_error = exc
                 all_warnings.append(f"第 {index + 1} 部分解析失败: {exc.detail}")
-            except Exception as exc:
-                # A malformed result from one chunk must not abort every
-                # later chunk in a long document. Keep a partial preview and
-                # provide safe diagnostics without logging document content.
-                timing["failed_chunks"] += 1
-                timing["is_complete"] = False
-                logger.error(
-                    "import_chunk_unexpected_failure chunk=%s exception=%s",
-                    index + 1,
-                    type(exc).__name__,
-                )
-                all_warnings.append(f"第 {index + 1} 部分返回格式异常，已跳过该部分；请重新解析。")
             finally:
                 ai_chunk_ms = elapsed_ms(ai_start)
                 timing["ai_chunks"].append(ai_chunk_ms)
                 timing["ai_ms"] += ai_chunk_ms
+                timing["total_ms"] = elapsed_ms(total_start)
+                if on_progress is not None:
+                    snapshot_questions, snapshot_warnings = _validated_question_snapshot(all_items)
+                    on_progress(snapshot_questions, all_warnings + snapshot_warnings, timing.copy())
 
     malformed_item_count = sum(1 for item in all_items if not isinstance(item, dict))
     if malformed_item_count:
@@ -986,14 +1030,8 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         all_warnings.append(f"AI 返回了 {malformed_item_count} 条无效题目记录，已跳过；当前结果不能确认导入。")
     all_items = deduplicate_questions(all_items)
 
-    valid: list[dict[str, Any]] = []
-    for index, item in enumerate(all_items):
-        validated, error = validate_question_item(item)
-        if validated:
-            validated["line_number"] = index + 1
-            valid.append(validated)
-        else:
-            all_warnings.append(f"第 {index + 1} 题格式有误: {error}")
+    valid, validation_warnings = _validated_question_snapshot(all_items)
+    all_warnings.extend(validation_warnings)
 
     invalid_item_count = len(all_items) - len(valid)
     if invalid_item_count:
@@ -1042,6 +1080,8 @@ def preview_import_from_text(text: str) -> tuple[list[dict[str, Any]], list[str]
 def preview_import_from_file_content(
     text: str,
     images: list[ImagePayload],
+    *,
+    on_text_progress: ParseProgressCallback | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
     all_questions: list[dict[str, Any]] = []
     all_warnings: list[str] = []
@@ -1053,7 +1093,10 @@ def preview_import_from_file_content(
     # multimodal request with a truncated answer.
     if text.strip():
         try:
-            questions, warnings, timing = call_ai_parse(text)
+            if on_text_progress is None:
+                questions, warnings, timing = call_ai_parse(text)
+            else:
+                questions, warnings, timing = call_ai_parse(text, on_progress=on_text_progress)
             all_questions.extend(questions)
             all_warnings.extend(warnings)
             timings.append(timing)
