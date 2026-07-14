@@ -196,7 +196,12 @@ onMounted(() => {
     <!-- Course list -->
     <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
       <div v-for="course in recentCourses" :key="course.id" class="course-item">
-        <button class="course-main" type="button" @click="goTo(`/courses/${course.id}`)">
+        <button
+          class="course-main"
+          type="button"
+          :aria-label="`开始练习：${getCourseDisplayName(course)}`"
+          @click="goTo(`/courses/${course.id}/practice`)"
+        >
           <span class="course-icon" data-home-course-icon aria-hidden="true">
             <FileText :size="20" :stroke-width="2.25" />
           </span>
@@ -210,14 +215,6 @@ onMounted(() => {
               <i :style="{ width: `${courseProgress(course)}%` }"></i>
             </span>
           </div>
-        </button>
-        <button
-          class="course-action"
-          type="button"
-          :aria-label="`开始练习：${getCourseDisplayName(course)}`"
-          @click="goTo(`/courses/${course.id}/practice`)"
-        >
-          开始练习
         </button>
       </div>
     </div>
@@ -387,36 +384,15 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-3);
   flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 44px;
   background: transparent;
   border: none;
-  padding: 0;
+  padding: 10px 12px;
   text-align: left;
   cursor: pointer;
   color: inherit;
-}
-
-.course-action {
-  flex-shrink: 0;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  border: none;
-  box-shadow: none;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    transform var(--ease-out),
-    box-shadow var(--ease-out);
-}
-
-.course-action:hover {
-  background: var(--primary-strong);
 }
 
 .course-progress {
@@ -558,9 +534,6 @@ onMounted(() => {
   .course-item {
     gap: 8px;
   }
-  .course-action {
-    padding-inline: 10px;
-  }
 }
 
 .home-search-entry {
@@ -687,5 +660,20 @@ onMounted(() => {
 .home-recommendation {
   margin: 16px 0;
   width: 100%;
+}
+
+/* 首页统一使用圆角方形的内容与图标底座；搜索和进度条保留胶囊形。 */
+.home-page .quick-grid,
+.home-page .home-course-list .course-item,
+.home-page .home-recommendation {
+  border-radius: 16px !important;
+}
+.home-page .quick-ico,
+.home-page .course-icon {
+  border-radius: 12px !important;
+}
+.home-page .course-action,
+.home-page .home-recommendation__tag {
+  border-radius: 10px;
 }
 </style>
