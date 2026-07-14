@@ -188,7 +188,7 @@ onMounted(() => fetchAll());
 
 <style scoped>
 .mine-page {
-  padding-bottom: var(--space-5);
+  padding-bottom: var(--nav-bottom-clearance);
   min-width: 0;
 }
 
@@ -377,7 +377,11 @@ button.menu-item {
 .profile-card--centered .profile-level__track { width: min(220px, 100%); margin-inline: auto; }
 .profile-card--centered .avatar-wrap, .profile-card--centered .avatar { width: 64px; height: 64px; }
 .profile-card--centered .profile-name { font-size: 20px; }
-.stat-grid-4 { position: relative; z-index: 2; margin-top: -12px; }
+.stat-grid-4 {
+  position: relative;
+  z-index: 2;
+  margin-top: 12px;
+}
 .mine-quick { min-height: 112px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
 .mine-quick__icon { grid-row: auto; width: 48px; height: 48px; border-radius: 50%; }
 .mine-quick strong, .mine-quick small { max-width: 100%; }
