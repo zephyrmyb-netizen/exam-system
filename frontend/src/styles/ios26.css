@@ -196,6 +196,114 @@ button:active:not(:disabled) { transform: scale(.97); }
   box-shadow: var(--ios-shadow) !important;
 }
 
+/* 首页和个人页的统计是一组数据，不再拆成第二层四张小卡。 */
+.home-page .overview-surface,
+.mine-page .stat-link {
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.home-page .overview-surface { padding: 8px !important; }
+.mine-page .stat-link { padding: 6px !important; }
+
+.home-page .overview-grid,
+.mine-page .stat-grid-4 { gap: 0 !important; }
+
+.home-page .overview-grid .stat-grid__item,
+.mine-page .stat-grid-4 .stat-grid__item {
+  min-height: 60px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-page .overview-grid .stat-grid__item + .stat-grid__item,
+.mine-page .stat-grid-4 .stat-grid__item + .stat-grid__item {
+  border-left: 1px solid var(--ios-line) !important;
+}
+
+/* 快捷入口采用 iOS 式分组，而非四张互不相关的悬浮卡。 */
+.home-page .quick-grid {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.home-page .quick {
+  min-height: 110px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-page .quick:nth-child(odd) { border-right: 1px solid var(--ios-line) !important; }
+.home-page .quick:nth-child(n + 3) { border-top: 1px solid var(--ios-line) !important; }
+
+.mine-page .mine-quick-grid {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.mine-page .mine-quick {
+  min-height: 104px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mine-page .mine-quick:nth-child(odd) { border-right: 1px solid var(--ios-line) !important; }
+.mine-page .mine-quick:nth-child(n + 3) { border-top: 1px solid var(--ios-line) !important; }
+
+/* 题库是一个可浏览的集合，使用分组行而非五张层层投影的卡片。 */
+.library-page .course-list {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.library-page .course-row {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.library-page .course-row + .course-row { border-top: 1px solid var(--ios-line) !important; }
+.library-page .course-row .course-item { border-radius: 0 !important; }
+
+.mine-page .profile-card--centered {
+  padding: 20px 20px 16px !important;
+}
+
+.mine-page .profile-card--centered .profile-head { gap: 8px !important; }
+.mine-page .profile-card--centered .avatar-wrap,
+.mine-page .profile-card--centered .avatar { width: 56px !important; height: 56px !important; }
+.mine-page .profile-card--centered .profile-name { font-size: 18px !important; }
+.mine-page .profile-card--centered .profile-level { margin-top: 10px !important; }
+
 .course-row .course-item:hover,
 .menu-item:hover { background: color-mix(in srgb, var(--primary-soft) 52%, transparent) !important; }
 
