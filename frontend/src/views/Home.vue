@@ -5,7 +5,6 @@ import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, ScanLine, Target
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
-import StatGrid from "../components/ui/StatGrid.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import type { Course } from "../types";
@@ -14,28 +13,11 @@ import { typeLabel } from "../utils/question";
 import { openGlobalSearch } from "../utils/globalSearch";
 
 const { replaceTo } = useAppNavigation();
-const { stats, streak, recommendation, streakAvailable, recommendationAvailable, loading, errorMessage, fetchAll } =
-  useStudyOverview();
+const { recommendation, recommendationAvailable, fetchAll } = useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
-
-const accuracyDisplay = computed(() => {
-  const rate = stats.value.accuracyRate;
-  if (rate === null || rate === undefined) return "--";
-  return `${(rate * 100).toFixed(0)}%`;
-});
-
-const statCards = computed(() => [
-  { label: "总题数", value: stats.value.totalCount },
-  { label: "正确率", value: accuracyDisplay.value },
-  {
-    label: "连续学习",
-    value: streakAvailable.value === true ? `${streak.value.current_streak}天` : null,
-    dataKey: "streak",
-  },
-]);
 
 const recommendationMode = computed(() =>
   recommendationAvailable.value === true ? recommendation.value?.recommended_modes?.[0] || "" : "",
@@ -191,12 +173,6 @@ onMounted(() => {
         <span class="quick-desc">{{ item.desc }}</span>
       </button>
     </nav>
-
-    <div class="overview-surface fade-up d3" data-testid="home-stats">
-      <p v-if="loading" class="overview-state">学习数据加载中...</p>
-      <p v-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
-      <StatGrid v-if="!loading" class="overview-grid" label="首页学习统计" :items="statCards" />
-    </div>
 
     <div class="section-head fade-up d3" data-testid="home-recent">
       <h3 class="section-title">最近题库</h3>

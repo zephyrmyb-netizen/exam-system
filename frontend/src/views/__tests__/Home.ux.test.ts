@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Home from "../Home.vue";
 import type { Course, TodayRecommendation } from "../../types";
-import StatGrid from "../../components/ui/StatGrid.vue";
 
 const replace = vi.fn();
 const searchMocks = vi.hoisted(() => ({
@@ -134,7 +133,7 @@ describe("Home UX polish", () => {
     expect(wrapper.find(".home-hero").exists()).toBe(true);
   });
 
-  it("keeps the reference content order from shortcuts to stats to recent courses", () => {
+  it("keeps the reference content order from shortcuts to recent courses", () => {
     const wrapper = mount(Home);
     const page = wrapper.get("[data-reference-page='home']");
     const children = page.element.children;
@@ -142,11 +141,6 @@ describe("Home UX polish", () => {
     expect(
       wrapper
         .get("[data-testid='home-shortcuts']")
-        .element.compareDocumentPosition(wrapper.get("[data-testid='home-stats']").element),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(
-      wrapper
-        .get("[data-testid='home-stats']")
         .element.compareDocumentPosition(wrapper.get("[data-testid='home-recent']").element),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
@@ -154,17 +148,13 @@ describe("Home UX polish", () => {
     ).toBe(false);
   });
 
-  it("uses real streak and recommendation fields in the reference page order", async () => {
+  it("uses the real recommendation fields in the reference page order", async () => {
     const wrapper = mount(Home);
 
     expect(wrapper.find("[data-home-ai-chat]").exists()).toBe(false);
     expect(wrapper.find("[data-home-recommendation]").exists()).toBe(true);
     expect(wrapper.find(".home-recommendation__tag").text()).toContain("每日一练");
-    expect(wrapper.findComponent(StatGrid).exists()).toBe(true);
-    expect(wrapper.findAll(".stat-grid__item")).toHaveLength(3);
-    expect(wrapper.text()).not.toContain("今日练习");
-    expect(wrapper.text()).toContain("连续学习");
-    expect(wrapper.get("[data-stat-streak]").text()).toContain("7");
+    expect(wrapper.find("[data-testid='home-stats']").exists()).toBe(false);
     expect(wrapper.get("[data-home-recommendation]").text()).toContain("函数");
     expect(wrapper.get("[data-home-recommendation]").text()).toContain("8 题待复习");
     expect(wrapper.get("[data-home-recommendation]").text()).toContain("薄弱标签");
@@ -214,25 +204,12 @@ describe("Home UX polish", () => {
     expect(wrapper.get("[data-home-recommendation]").text()).not.toContain("函数");
   });
 
-  it("does not present stale streak or recommendation values when their requests fail", () => {
-    streak.value.current_streak = 99;
-    streakAvailable.value = false;
+  it("does not present stale recommendation values when its request fails", () => {
     recommendationAvailable.value = false;
     const wrapper = mount(Home);
 
-    expect(wrapper.get("[data-stat-streak]").text()).toContain("--");
-    expect(wrapper.get("[data-stat-streak]").text()).not.toContain("99");
     expect(wrapper.get("[data-home-recommendation]").text()).toContain("推荐暂不可用");
     expect(wrapper.get("[data-home-recommendation]").text()).not.toContain("函数");
-  });
-
-  it("keeps a fulfilled zero-day streak as real data", () => {
-    streak.value.current_streak = 0;
-    streakAvailable.value = true;
-    const wrapper = mount(Home);
-
-    expect(wrapper.get("[data-stat-streak]").text()).toContain("0天");
-    expect(wrapper.get("[data-stat-streak]").text()).not.toContain("--");
   });
 
   it("enters study overview with replace and an explicit home source", async () => {
@@ -266,20 +243,6 @@ describe("Home UX polish", () => {
     expect(icons).toHaveLength(1);
     expect(icons[0].find("svg").exists()).toBe(true);
     expect(icons[0].text()).toBe("");
-  });
-
-  it("does not break when stats are loading or failed", () => {
-    loading.value = true;
-    const loadingWrapper = mount(Home);
-    expect(loadingWrapper.text()).toContain("学习数据加载中");
-
-    loading.value = false;
-    errorMessage.value = "学习数据暂时不可用";
-    stats.value.totalCount = 36;
-    const errorWrapper = mount(Home);
-    expect(errorWrapper.text()).toContain("学习数据暂时不可用");
-    expect(errorWrapper.find(".overview-surface").exists()).toBe(true);
-    expect(errorWrapper.find(".overview-surface").text()).toContain("36");
   });
 
   it("keeps the recent course title separate from its practice action", async () => {
