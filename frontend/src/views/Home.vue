@@ -8,13 +8,11 @@ import { getErrorMessage } from "../api/request";
 import StatGrid from "../components/ui/StatGrid.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
-import { useAuth } from "../stores/auth";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { typeLabel } from "../utils/question";
 
 const { replaceTo } = useAppNavigation();
-const { user } = useAuth();
 const { stats, streak, recommendation, streakAvailable, recommendationAvailable, loading, errorMessage, fetchAll } =
   useStudyOverview();
 
@@ -27,25 +25,6 @@ const accuracyDisplay = computed(() => {
   if (rate === null || rate === undefined) return "--";
   return `${(rate * 100).toFixed(0)}%`;
 });
-
-const greeting = computed(() => {
-  const hour = new Date().getHours();
-  if (hour < 6) return "夜深了";
-  if (hour < 12) return "早上好";
-  if (hour < 18) return "下午好";
-  return "晚上好";
-});
-
-const greetingDate = computed(() =>
-  new Intl.DateTimeFormat("zh-CN", {
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  }).format(new Date()),
-);
-
-const greetingName = computed(() => user.value?.username?.trim() || "未登录");
-const avatarChar = computed(() => Array.from(greetingName.value)[0]?.toUpperCase() || "?");
 
 const statCards = computed(() => [
   { label: "今日练习", value: stats.value.todayCount, tone: "primary" as const },
@@ -195,13 +174,6 @@ onMounted(() => {
 <template>
   <section class="home-page" data-reference-page="home">
     <header class="home-hero fade-up">
-      <div class="home-hero__top">
-        <div>
-          <p class="home-hero__eyebrow">{{ greetingDate }}</p>
-          <h1>{{ greeting }}，{{ greetingName }}</h1>
-        </div>
-        <span class="home-hero__avatar" :aria-label="`${greetingName}的头像`">{{ avatarChar }}</span>
-      </div>
       <button class="home-search-entry" data-home-search type="button" @click="replaceTo('/courses')">
         <Search :size="15" :stroke-width="2.4" />
         <span>搜索题库、课程、题目</span>
@@ -299,53 +271,12 @@ onMounted(() => {
 
 .home-hero {
   display: grid;
-  gap: 16px;
   margin: -16px -16px 0;
-  padding: 20px 18px 18px;
+  padding: 14px 18px;
   border-radius: 0 0 28px 28px;
   background: linear-gradient(145deg, #10b981, #0f9d7a 60%, #0d9488);
   color: #fff;
   box-shadow: var(--shadow-primary);
-}
-
-.home-hero__top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.home-hero p,
-.home-hero h1 {
-  margin: 0;
-}
-.home-hero__eyebrow {
-  opacity: 0.82;
-  font-size: 12px;
-  font-weight: 700;
-}
-.home-hero h1 {
-  margin-top: 3px;
-  font-size: 24px;
-  letter-spacing: 0;
-}
-.home-hero h1 + p {
-  margin-top: 5px;
-  opacity: 0.86;
-  font-size: 12px;
-}
-.home-hero__avatar {
-  display: grid;
-  flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-weight: 850;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
 .home-search-entry {
@@ -655,9 +586,6 @@ onMounted(() => {
   padding-inline: 20px;
   border-radius: 0 0 24px 24px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-.home-hero__avatar {
-  border: 2px solid rgba(255, 255, 255, 0.72);
 }
 .home-search-entry {
   border-color: rgba(255, 255, 255, 0.42);
