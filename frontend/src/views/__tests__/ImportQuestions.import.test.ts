@@ -210,10 +210,13 @@ describe("ImportQuestions file import behavior", () => {
     expect(blur).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps file and destination controls above the iOS auto-zoom threshold", () => {
+  it("removes the native file input from layout and keeps text controls above the iOS auto-zoom threshold", () => {
+    const wrapper = mountPage();
     const source = readFileSync(resolve(process.cwd(), "src/views/ImportQuestions.vue"), "utf8");
 
-    expect(source).toMatch(/\.file-input-native,\s*\.opt-input,\s*\.adv-textarea\s*\{\s*font-size:\s*16px/s);
+    expect(wrapper.get("input[type='file']").attributes()).toHaveProperty("hidden");
+    expect(source).toMatch(/\.file-input-native\s*\{\s*display:\s*none/s);
+    expect(source).toMatch(/\.opt-input,\s*\.adv-textarea\s*\{\s*font-size:\s*16px/s);
   });
 
   it("rejects an oversized dropped file before starting an AI task", async () => {
