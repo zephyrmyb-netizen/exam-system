@@ -43,7 +43,8 @@ const PARSING_RECOVERY_HINT = "AI 正在解析，请稍候，通常需要 30 秒
 const selectedFile = ref(null);
 const derivedCourseName = ref("");
 const selectedCourseId = ref(0);
-const advancedOpen = ref(true);
+// JSON 是备用入口。首次进入时保持收起，避免把文件导入主流程挤到首屏外。
+const advancedOpen = ref(false);
 const confirmError = ref("");
 const confirmLoading = ref(false);
 const importResult = ref(null);

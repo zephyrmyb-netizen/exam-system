@@ -200,8 +200,42 @@ button:active:not(:disabled) { transform: scale(.97); }
 .menu-item:hover { background: color-mix(in srgb, var(--primary-soft) 52%, transparent) !important; }
 
 .practice-page,
-.exam-take-page,
 .exam-result-page { background: transparent !important; }
+
+.exam-take-page {
+  background:
+    radial-gradient(30rem 22rem at -12% 12%, rgba(61, 125, 255, .16), transparent 62%),
+    radial-gradient(26rem 22rem at 110% 52%, rgba(134, 104, 255, .14), transparent 66%),
+    var(--ios-canvas) !important;
+}
+
+.exam-take-page .exam-question-card,
+.exam-take-page .exam-actions {
+  border-color: var(--ios-line) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.exam-take-page .exam-actions {
+  border-top: 1px solid var(--ios-line) !important;
+  box-shadow: 0 -10px 34px rgba(38, 62, 83, .12) !important;
+}
+
+.exam-result-page .score-card,
+.exam-result-page .summary-card,
+.exam-result-page .details-card,
+.exam-result-page .result-meta {
+  border-color: var(--ios-line) !important;
+  background: var(--ios-glass) !important;
+  box-shadow: var(--ios-shadow) !important;
+  backdrop-filter: blur(26px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(155%) !important;
+}
+
+.exam-result-page .score-card,
+.exam-result-page .summary-card { border-radius: var(--ios-radius) !important; }
 
 .practice-page .practice-topbar,
 .exam-take-page .exam-topbar {
@@ -210,6 +244,13 @@ button:active:not(:disabled) { transform: scale(.97); }
   box-shadow: var(--ios-shadow) !important;
   backdrop-filter: blur(28px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+}
+
+.practice-page .practice-topbar {
+  margin: 0 !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
 }
 
 .practice-page .practice-card-shell,

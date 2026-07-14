@@ -293,9 +293,17 @@ export async function prepareSurface(page: Page, surface: SurfaceName): Promise<
   }
   await page.goto(surfaceDefinition.path);
 
-  if (surface === "course-practice" || surface === "practice-complete") {
+  if (surface === "course-practice") {
+    await expect(page.locator("[data-reference-page='course-practice'] .practice-option-card").first()).toBeVisible();
+    // 选择错误项，展示解析且不会触发答对后的自动下一题计时器。
+    await page.locator("[data-reference-page='course-practice'] .practice-option-card").nth(1).click();
+    await expect(page.locator("[data-reference-page='course-practice'] .practice-result")).toBeVisible();
+  }
+
+  if (surface === "practice-complete") {
     await expect(page.locator("[data-reference-page='course-practice'] .practice-option-card").first()).toBeVisible();
     await page.locator("[data-reference-page='course-practice'] .practice-option-card").first().click();
+    await expect(page.locator("[data-reference-page='practice-complete']")).toBeVisible();
   }
 
   if (surface === "exam-complete") {

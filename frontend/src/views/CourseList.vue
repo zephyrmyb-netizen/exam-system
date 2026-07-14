@@ -356,15 +356,9 @@ onMounted(fetchCourses);
           <span class="course-icon" :class="'ci-' + ((idx % 6) + 1)">{{ getCourseDisplayName(course).charAt(0) }}</span>
           <div class="course-info">
             <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{ getCourseDisplayName(course) }}</strong>
-            <span class="course-subline">
-              {{ course.subject || '未分类' }} · {{ course.visibility === 'public' ? '公开' : '私有' }} · {{ formatLastPracticed(course) }}
-            </span>
+            <span class="course-subline">{{ course.subject || '未分类' }} · {{ formatLastPracticed(course) }}</span>
           </div>
           <span class="course-stat"><strong>{{ course.question_count ?? 0 }}</strong><small>题</small></span>
-          <span class="visibility-label" :class="course.visibility === 'public' ? 'is-public' : 'is-private'">
-            {{ course.visibility === 'public' ? '公开' : '私有' }}
-          </span>
-          <span class="course-recent">{{ formatLastPracticed(course) }}</span>
           <button
             class="practice-action"
             type="button"
@@ -987,7 +981,7 @@ onMounted(fetchCourses);
 .course-row:hover { box-shadow: var(--shadow-xs); }
 .course-row .course-item {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto auto minmax(104px, auto) auto auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto minmax(104px, auto) auto;
   align-items: center;
   gap: 12px;
   min-height: 72px;
