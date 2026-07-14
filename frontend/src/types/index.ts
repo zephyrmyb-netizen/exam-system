@@ -22,6 +22,7 @@ export interface Question {
   options: Record<string, string> | null;
   answer: string;
   analysis: string;
+  image_urls?: string[];
   difficulty: Difficulty;
   line_number?: number;
 }
@@ -34,6 +35,7 @@ export interface QuestionCreate {
   options?: Record<string, string> | null;
   answer: string;
   analysis?: string;
+  image_urls?: string[];
   difficulty?: Difficulty;
   course_id?: number | null;
 }

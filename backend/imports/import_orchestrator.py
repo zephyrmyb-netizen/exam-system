@@ -648,6 +648,8 @@ def validate_question_item(item: Any) -> tuple[dict[str, Any] | None, str | None
     q_type = _text_field(item.get("type"))
     question = _text_field(item.get("question"))
     answer = _text_field(item.get("answer"))
+    image_urls = item.get("image_urls")
+    image_urls = [url for url in image_urls if isinstance(url, str)] if isinstance(image_urls, list) else []
 
     if q_type not in VALID_QUESTION_TYPES:
         return None, f"无效的题目类型 '{q_type}'"
@@ -676,6 +678,7 @@ def validate_question_item(item: Any) -> tuple[dict[str, Any] | None, str | None
         "options": item.get("options"),
         "answer": normalize_answer(answer, q_type),
         "analysis": (item.get("analysis") or "").strip(),
+        "image_urls": image_urls,
         "subject": (item.get("subject") or "默认科目").strip(),
         "chapter": (item.get("chapter") or "默认章节").strip(),
         "difficulty": (item.get("difficulty") or "normal").strip(),
@@ -1329,16 +1332,24 @@ def preview_import_from_file_content(
 
     if used_rule_parser and images:
         # Re-parsing a regular text document through the image model creates
-        # detached duplicates. A question that explicitly needs a diagram must
-        # remain partial until question-image storage is available.
-        if re.search(r"(?:如下图|下图|见图|如图)", text):
-            all_warnings.append("题目引用了文档图片，但当前题库数据模型尚不能关联题图；为避免导入缺图题目，已禁止确认导入。")
+        # detached duplicates. Instead, bind images in their original document
+        # order to the rule-parsed questions that explicitly reference a figure.
+        image_questions = [
+            question
+            for question in all_questions
+            if re.search(r"(?:如下图|下图|见图|如图)", str(question.get("question") or ""))
+        ]
+        if image_questions and len(image_questions) == len(images):
+            for question, image in zip(image_questions, images, strict=True):
+                question["image_urls"] = [image_bytes_to_data_url(image.data, image.mime_type)]
+        elif image_questions:
+            all_warnings.append("题目引用图片的数量与提取到的图片数量不一致；为避免错绑题图，已禁止确认导入。")
             if timings:
                 timings[0]["is_complete"] = False
                 timings[0]["failed_chunks"] = max(1, int(timings[0].get("failed_chunks") or 0))
                 timings[0]["completed_chunks"] = 0
         else:
-            all_warnings.append("已跳过内嵌图片的独立 AI 识别，避免与规则解析出的题目重复。")
+            all_warnings.append("已跳过与题干无关的内嵌图片识别，避免与规则解析出的题目重复。")
 
     # Keep image recognition available, but bound each request. A document can
     # contain up to 12 images; one oversized multimodal request is both slower
@@ -1439,6 +1450,7 @@ def persist_imported_questions(
             difficulty=data.get("difficulty", "normal"),
         )
         question.set_options_dict(data.get("options"))
+        question.set_image_urls(data.get("image_urls"))
         models_to_add.append(question)
 
     try:

@@ -160,7 +160,7 @@ def test_nested_ai_response_questions_are_accepted():
     ]
 
 
-def test_rule_parser_does_not_duplicate_embedded_images(monkeypatch):
+def test_rule_parser_binds_embedded_images_without_creating_duplicate_questions(monkeypatch):
     from backend.imports import import_orchestrator
 
     text = """一、判断题
@@ -178,9 +178,9 @@ def test_rule_parser_does_not_duplicate_embedded_images(monkeypatch):
     )
 
     assert len(questions) == 1
-    assert timing["is_complete"] is False
-    assert timing["failed_chunks"] == 1
-    assert any("题图" in warning for warning in warnings)
+    assert warnings == []
+    assert timing["is_complete"] is True
+    assert questions[0]["image_urls"] == ["data:image/png;base64,aW1hZ2U="]
 
 
 def test_chunk_document_text_splits_one_large_numbered_paragraph(monkeypatch):

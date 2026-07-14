@@ -17,7 +17,7 @@ from .config import (
     IMPORT_TASK_RECOVERY_LIMIT,
     IS_PRODUCTION,
 )
-from .database import Base, engine
+from .database import Base, engine, ensure_runtime_schema
 from .logging_config import configure_logging
 from .middleware import RequestIDMiddleware
 from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
@@ -30,6 +30,7 @@ logger = structlog.get_logger("xuexibao")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_schema()
     if IMPORT_TASK_RECOVERY_ENABLED:
         def schedule_import_task(task_id: str) -> None:
             create_task(to_thread(import_task_service.process_task, task_id))

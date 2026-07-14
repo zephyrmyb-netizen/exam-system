@@ -273,6 +273,7 @@ function handleRetry() {
           <span class="q-type-tag">{{ typeLabel(q.type) }}</span>
           <span class="q-preview">{{ q.question?.slice(0, 60) }}{{ (q.question?.length || 0) > 60 ? "..." : "" }}</span>
         </div>
+        <span v-if="q.image_urls?.length" class="q-image-count">含 {{ q.image_urls.length }} 张题图</span>
         <div class="q-item-actions">
           <button class="q-btn" type="button" @click="editQuestion(idx)" title="编辑">
             <Edit3 :size="14" :stroke-width="2.5" />
@@ -557,6 +558,12 @@ function handleRetry() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.q-image-count {
+  flex-shrink: 0;
+  color: var(--primary-strong);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .q-item-actions {
