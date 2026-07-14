@@ -200,6 +200,19 @@ describe("CourseList UX polish", () => {
     expect(createButton.attributes("aria-label")).toContain("创建题库");
   });
 
+  it("keeps the search and four filters directly above the compact course cards", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const tools = wrapper.get("[data-testid='course-tools']");
+    const list = wrapper.get("[data-testid='course-list']");
+
+    expect(tools.findComponent(FilterTabs).findAll('[role="tab"]')).toHaveLength(4);
+    expect(tools.element.compareDocumentPosition(list.element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(wrapper.find(".lib-summary").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='course-list-heading']").exists()).toBe(false);
+  });
+
   it("enters course detail with replace and a courses source", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
