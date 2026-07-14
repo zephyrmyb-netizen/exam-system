@@ -207,3 +207,21 @@ def test_persist_imported_questions_can_join_callers_transaction(db_session):
     assert db_session.query(models.Question).count() == 1
     db_session.rollback()
     assert db_session.query(models.Question).count() == 0
+
+
+def test_persist_imported_questions_keeps_rule_bound_question_images(db_session):
+    owner_id = create_task_owner(db_session)
+    bank = models.QuestionBank(owner_id=owner_id, name="image-bank", visibility="private")
+    db_session.add(bank)
+    db_session.commit()
+    question = parsed_question()[0] | {"image_urls": ["data:image/png;base64,aW1hZ2U="]}
+
+    import_task_service.imports_service.persist_imported_questions(
+        db_session,
+        user_id=owner_id,
+        course_id=bank.id,
+        questions=[question],
+    )
+
+    stored = db_session.query(models.Question).one()
+    assert stored.get_image_urls() == ["data:image/png;base64,aW1hZ2U="]

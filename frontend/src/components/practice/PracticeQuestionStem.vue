@@ -26,6 +26,9 @@ const difficultyLabels = {
       <span v-if="question.type === 'multiple_choice'" class="practice-stem__hint"> 多选题，请选择所有正确选项 </span>
     </div>
     <h2 class="practice-stem__title">{{ question.question }}</h2>
+    <div v-if="question.image_urls?.length" class="practice-stem__images">
+      <img v-for="(url, index) in question.image_urls" :key="url" :src="url" :alt="`题图 ${index + 1}`" />
+    </div>
   </header>
 </template>
 
@@ -102,6 +105,22 @@ const difficultyLabels = {
   color: var(--text-main);
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+.practice-stem__images {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.practice-stem__images img {
+  display: block;
+  width: min(100%, 560px);
+  max-height: 360px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  object-fit: contain;
 }
 
 @media (max-width: 420px) {

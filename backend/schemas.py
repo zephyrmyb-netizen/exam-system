@@ -229,6 +229,7 @@ class QuestionOut(BaseModel):
     options: dict[str, Any] | None = None
     answer: str
     analysis: str
+    image_urls: list[str] = []
     difficulty: str
 
     model_config = ConfigDict(from_attributes=True)
@@ -250,6 +251,18 @@ class QuestionOut(BaseModel):
     @classmethod
     def _none_to_empty_analysis(cls, v: Any) -> str:
         return v if v is not None else ""
+
+    @field_validator("image_urls", mode="before")
+    @classmethod
+    def _parse_image_urls_json(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            import json
+
+            try:
+                v = json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return [item for item in v if isinstance(item, str)] if isinstance(v, list) else []
 
     @field_validator("created_at", mode="before")
     @classmethod
@@ -334,6 +347,7 @@ class ImportedQuestion(BaseModel):
     options: dict[str, Any] | None = None
     answer: str = ""
     analysis: str = ""
+    image_urls: list[str] = []
     subject: str = "默认科目"
     chapter: str = "默认章节"
     difficulty: str = "normal"

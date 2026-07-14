@@ -94,6 +94,7 @@ def main():
             "visibility": "TEXT NOT NULL DEFAULT 'private'",
             "source": "TEXT NOT NULL DEFAULT 'import'",
             "created_at": "TEXT",  # SQLite ALTER can't use non-constant default; backfill later
+            "image_urls": "TEXT NOT NULL DEFAULT '[]'",
         }
 
         added = []

@@ -72,6 +72,7 @@ class Question(Base):
     options = Column(Text, nullable=True)  # JSON string
     answer = Column(String(500), nullable=False)
     analysis = Column(Text, nullable=True, default="")
+    image_urls = Column(Text, nullable=False, default="[]")
     difficulty = Column(String(20), nullable=True, default="normal")
 
     course = relationship("QuestionBank", back_populates="questions")
@@ -87,6 +88,16 @@ class Question(Base):
 
     def set_options_dict(self, options_dict):
         self.options = json.dumps(options_dict, ensure_ascii=False) if options_dict else None
+
+    def get_image_urls(self) -> list[str]:
+        try:
+            value = json.loads(self.image_urls or "[]")
+        except (json.JSONDecodeError, TypeError):
+            return []
+        return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+
+    def set_image_urls(self, image_urls: list[str] | None) -> None:
+        self.image_urls = json.dumps([item for item in (image_urls or []) if isinstance(item, str)], ensure_ascii=False)
 
 
 class WrongRecord(Base):
