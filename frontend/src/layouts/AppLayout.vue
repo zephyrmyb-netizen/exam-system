@@ -58,7 +58,7 @@ watch(aiStatus, (val) => {
 const navItems = [
   { key: "home", label: "首页", icon: Home, to: "/" },
   { key: "list", label: "题库", icon: Library, to: "/courses" },
-  { key: "import", label: "导入", icon: Upload, to: "/import", emphasis: true },
+  { key: "import", label: "导入", icon: Upload, to: "/import" },
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
@@ -235,15 +235,15 @@ onUnmounted(() => {
         v-for="item in navItems"
         :key="item.key"
         class="nav-button"
-        :class="{ active: activeNavKey === item.key, 'nav-button--ai': item.emphasis }"
+        :class="{ active: activeNavKey === item.key }"
         type="button"
         :data-testid="`bottom-tab-${item.key}`"
         :data-nav-key="item.key"
         :aria-label="item.label"
         @click.stop.prevent="handleTabClick(item)"
       >
-        <span class="nav-icon" :class="{ 'nav-icon--ai': item.emphasis }" aria-hidden="true">
-          <component :is="item.icon" :size="item.emphasis ? 24 : 20" :stroke-width="item.emphasis ? 2.4 : 2" />
+        <span class="nav-icon" aria-hidden="true">
+          <component :is="item.icon" :size="20" :stroke-width="2" />
         </span>
         <span class="nav-label">{{ item.label }}</span>
       </button>
@@ -488,16 +488,6 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-}
-.nav-icon--ai {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: #ffffff;
-  background: var(--primary);
-  box-shadow:
-    0 4px 12px rgba(16, 185, 129, 0.3),
-    var(--glass-inner-highlight);
 }
 .nav-label {
   line-height: 1;

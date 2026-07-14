@@ -139,7 +139,7 @@ describe("AppLayout immersive routes", () => {
       "import",
       "mine",
     ]);
-    expect(wrapper.find(".nav-button--ai .nav-icon--ai").exists()).toBe(true);
+    expect(wrapper.findAll(".nav-button--ai, .nav-icon--ai")).toHaveLength(0);
     await wrapper.findAll(".nav-button")[1].trigger("click");
 
     expect(router.replace).toHaveBeenCalledWith({ path: "/courses" });
