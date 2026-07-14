@@ -47,6 +47,15 @@ MAX_NUMBERED_QUESTIONS_PER_CHUNK = 6
 RETRY_NUMBERED_QUESTIONS_PER_CHUNK = 2
 AI_CHUNK_MAX_ATTEMPTS = 2
 MIN_NUMBERED_QUESTION_COVERAGE_RATIO = 0.8
+# A document-level question start is deliberately stricter than the legacy AI
+# chunking boundary below. In particular, ``(1)`` and ``①`` are content of
+# the current question, never independent questions.
+_TOP_LEVEL_QUESTION_LINE = re.compile(r"^\s*(?P<number>\d{1,4})\s*[.．、]\s*(?P<body>.*\S)?\s*$")
+_SECTION_HEADING_LINE = re.compile(r"^\s*[一二三四五六七八九十百]+、\s*(?P<title>.+?)\s*$")
+_OPTION_LINE = re.compile(r"^\s*(?P<key>[A-Ha-h])\s*[.．、:：]\s*(?P<value>.*\S)\s*$")
+_ANSWER_LINE = re.compile(r"^\s*(?:参考)?答案\s*[:：]\s*(?P<value>.*)\s*$", re.IGNORECASE)
+_ANALYSIS_LINE = re.compile(r"^\s*(?:答案)?解析\s*[:：]\s*(?P<value>.*)\s*$", re.IGNORECASE)
+_SOLUTION_LINE = re.compile(r"^\s*解\s*[:：]\s*(?P<value>.*)\s*$")
 _NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
 ParseProgressCallback = Callable[[list[dict[str, Any]], list[str], dict[str, Any]], None]
 
@@ -257,6 +266,207 @@ def _extract_docx(path: str, warnings: list[str]) -> tuple[str, list[str]]:
             parts.extend(table_rows(Table(child, doc)))
 
     return "\n".join(parts), warnings
+
+
+def _section_question_type(title: str) -> str | None:
+    """Map a Word section heading to a supported question type."""
+    normalized = (title or "").replace(" ", "")
+    if "多项" in normalized or "多选" in normalized:
+        return "multiple_choice"
+    if "单项" in normalized or "单选" in normalized:
+        return "single_choice"
+    if "判断" in normalized:
+        return "true_false"
+    if "填空" in normalized:
+        return "fill_blank"
+    if any(keyword in normalized for keyword in ("名词解释", "简答", "计算", "讨论", "论述", "问答")):
+        return "short_answer"
+    return None
+
+
+def _infer_rule_question_type(
+    section_type: str | None,
+    options: dict[str, str],
+    answer: str,
+) -> str:
+    if section_type in VALID_QUESTION_TYPES:
+        return section_type
+    if len(options) >= 2:
+        return "single_choice"
+    normalized_answer = (answer or "").strip().lower()
+    if normalized_answer in {"true", "false", "yes", "no", "对", "错", "正确", "错误", "是", "否"}:
+        return "true_false"
+    return "short_answer"
+
+
+def _rule_question_from_block(
+    *,
+    number: int,
+    body_lines: list[str],
+    section_title: str,
+    section_type: str | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Build one import question from a complete top-level numbered block."""
+    stem_lines: list[str] = []
+    answer_lines: list[str] = []
+    analysis_lines: list[str] = []
+    options: dict[str, str] = {}
+    target = stem_lines
+
+    for raw_line in body_lines:
+        # Word exports often put ``题干 答案：A`` in one paragraph. Split that
+        # deterministic delimiter before interpreting the line state.
+        inline_marker = re.search(r"\s+((?:参考)?答案|(?:答案)?解析|解)\s*[:：]", raw_line)
+        pieces = (
+            [raw_line[: inline_marker.start()], raw_line[inline_marker.start() :]]
+            if inline_marker
+            else [raw_line]
+        )
+        for raw_piece in pieces:
+            line = raw_piece.strip()
+            if not line:
+                continue
+            answer_match = _ANSWER_LINE.match(line)
+            analysis_match = _ANALYSIS_LINE.match(line) or _SOLUTION_LINE.match(line)
+            option_match = _OPTION_LINE.match(line)
+            if analysis_match:
+                target = analysis_lines
+                if analysis_match.group("value").strip():
+                    target.append(analysis_match.group("value").strip())
+                continue
+            if answer_match:
+                target = answer_lines
+                if answer_match.group("value").strip():
+                    target.append(answer_match.group("value").strip())
+                continue
+            if option_match and target is stem_lines:
+                options[option_match.group("key").upper()] = option_match.group("value").strip()
+                continue
+            target.append(line)
+
+    question = "\n".join(stem_lines).strip()
+    answer = "\n".join(answer_lines).strip()
+    question_type = _infer_rule_question_type(section_type, options, answer)
+    item: dict[str, Any] = {
+        "type": question_type,
+        "question": question,
+        "options": options or None,
+        "answer": answer,
+        "analysis": "\n".join(analysis_lines).strip(),
+        "subject": "默认科目",
+        "chapter": section_title or "默认章节",
+        "difficulty": "normal",
+        "line_number": number,
+    }
+    validated, error = validate_question_item(item)
+    if validated is None:
+        return None, error
+    validated["line_number"] = number
+    return validated, None
+
+
+def parse_rule_based_question_document(
+    text: str,
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]] | None:
+    """Parse regular numbered Word-style question banks without asking AI.
+
+    This parser intentionally accepts only a sequence starting at ``1.`` (or
+    Chinese punctuation variants). Once selected, a non-contiguous top-level
+    number makes the preview partial rather than silently turning a subquestion
+    into another question. Free-form documents still use the AI fallback.
+    """
+    start = time.perf_counter()
+    blocks: list[tuple[int, list[str], str, str | None]] = []
+    warnings: list[str] = []
+    current_lines: list[str] | None = None
+    current_number: int | None = None
+    current_section = ""
+    current_section_type: str | None = None
+    expected_number = 1
+    saw_top_level = False
+    sequence_error = False
+
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        heading_match = _SECTION_HEADING_LINE.match(line)
+        if heading_match:
+            current_section = heading_match.group("title").strip()
+            current_section_type = _section_question_type(current_section)
+            continue
+
+        question_match = _TOP_LEVEL_QUESTION_LINE.match(line)
+        if question_match:
+            number = int(question_match.group("number"))
+            if not saw_top_level and number != 1:
+                return None
+            saw_top_level = True
+            if number != expected_number:
+                sequence_error = True
+                warnings.append(
+                    f"检测到题号 {number}，但当前应为 {expected_number}；已保留预览但禁止确认导入。"
+                )
+                if current_lines is not None:
+                    current_lines.append(line)
+                continue
+            if current_lines is not None and current_number is not None:
+                blocks.append((current_number, current_lines, current_section_at_start, current_section_type_at_start))
+            current_number = number
+            current_lines = []
+            current_section_at_start = current_section
+            current_section_type_at_start = current_section_type
+            body = (question_match.group("body") or "").strip()
+            if body:
+                current_lines.append(body)
+            expected_number += 1
+            continue
+
+        if current_lines is not None:
+            # Parenthesized subquestions, circled answer steps, tables and
+            # ordinary paragraphs all remain in the current top-level block.
+            current_lines.append(line)
+
+    if not saw_top_level or current_lines is None or current_number is None:
+        return None
+    blocks.append((current_number, current_lines, current_section_at_start, current_section_type_at_start))
+
+    valid: list[dict[str, Any]] = []
+    for number, body_lines, section_title, section_type in blocks:
+        item, error = _rule_question_from_block(
+            number=number,
+            body_lines=body_lines,
+            section_title=section_title,
+            section_type=section_type,
+        )
+        if item is None:
+            warnings.append(f"第 {number} 题格式不完整：{error}。")
+        else:
+            valid.append(item)
+
+    # A document with no complete rule-shaped questions is still a candidate
+    # for the AI fallback (for example an OCR text export without answers).
+    # Once at least one complete block exists, however, keep the deterministic
+    # partial result instead of letting AI invent replacements for the others.
+    if not valid:
+        return None
+
+    is_complete = not sequence_error and len(valid) == len(blocks)
+    if not is_complete:
+        warnings.append("规则解析结果不完整，当前预览不能确认导入。")
+    return valid, warnings, {
+        "chunk_ms": elapsed_ms(start),
+        "ai_ms": 0,
+        "total_ms": elapsed_ms(start),
+        "chunks": 1,
+        "ai_chunks": [],
+        "completed_chunks": 1 if is_complete else 0,
+        "failed_chunks": 0 if is_complete else 1,
+        "batches": 1,
+        "is_complete": is_complete,
+        "rule_based": True,
+        "source_questions": len(blocks),
+    }
 
 
 def _extract_pdf(path: str, warnings: list[str]) -> tuple[str, list[str]]:
@@ -477,6 +687,8 @@ def question_items_from_parsed_json(parsed: Any) -> list[dict[str, Any]]:
         return parsed
     if isinstance(parsed, dict):
         items = parsed.get("questions") or parsed.get("items") or parsed.get("data") or parsed.get("result") or []
+        if isinstance(items, dict):
+            items = items.get("questions") or items.get("items") or items.get("result") or []
         if not items and parsed and ("question" in parsed or "type" in parsed):
             return [parsed]
         return items if isinstance(items, list) else []
@@ -1072,7 +1284,11 @@ def ensure_questions_found(questions: list[dict[str, Any]], warnings: list[str])
 
 
 def preview_import_from_text(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
-    questions, warnings, timing = call_ai_parse(text)
+    rule_result = parse_rule_based_question_document(text)
+    if rule_result is not None:
+        questions, warnings, timing = rule_result
+    else:
+        questions, warnings, timing = call_ai_parse(text)
     ensure_questions_found(questions, warnings)
     return questions, warnings, timing
 
@@ -1087,13 +1303,20 @@ def preview_import_from_file_content(
     all_warnings: list[str] = []
     timings: list[dict[str, Any]] = []
     failures: list[HTTPException] = []
+    used_rule_parser = False
 
     # Text is the most complete source for Word/PDF/PPT exports. Parse it first
     # so embedded logos or screenshots cannot collapse a long document into one
     # multimodal request with a truncated answer.
     if text.strip():
         try:
-            if on_text_progress is None:
+            rule_result = parse_rule_based_question_document(text)
+            used_rule_parser = rule_result is not None
+            if rule_result is not None:
+                questions, warnings, timing = rule_result
+                if on_text_progress is not None:
+                    on_text_progress(questions, warnings, timing.copy())
+            elif on_text_progress is None:
                 questions, warnings, timing = call_ai_parse(text)
             else:
                 questions, warnings, timing = call_ai_parse(text, on_progress=on_text_progress)
@@ -1104,10 +1327,25 @@ def preview_import_from_file_content(
             failures.append(exc)
             all_warnings.append(f"文本解析失败：{exc.detail}")
 
+    if used_rule_parser and images:
+        # Re-parsing a regular text document through the image model creates
+        # detached duplicates. A question that explicitly needs a diagram must
+        # remain partial until question-image storage is available.
+        if re.search(r"(?:如下图|下图|见图|如图)", text):
+            all_warnings.append("题目引用了文档图片，但当前题库数据模型尚不能关联题图；为避免导入缺图题目，已禁止确认导入。")
+            if timings:
+                timings[0]["is_complete"] = False
+                timings[0]["failed_chunks"] = max(1, int(timings[0].get("failed_chunks") or 0))
+                timings[0]["completed_chunks"] = 0
+        else:
+            all_warnings.append("已跳过内嵌图片的独立 AI 识别，避免与规则解析出的题目重复。")
+
     # Keep image recognition available, but bound each request. A document can
     # contain up to 12 images; one oversized multimodal request is both slower
     # and more likely to return only a sample of the questions.
     for index in range(0, len(images), AI_IMAGE_BATCH_SIZE):
+        if used_rule_parser:
+            break
         batch = images[index : index + AI_IMAGE_BATCH_SIZE]
         try:
             questions, warnings, timing = call_ai_parse_multimodal("", batch)
@@ -1126,6 +1364,10 @@ def preview_import_from_file_content(
             "total_ms": sum(int(item.get("total_ms") or 0) for item in timings),
             "chunks": sum(int(item.get("chunks") or 0) for item in timings),
             "ai_chunks": [duration for item in timings for duration in item.get("ai_chunks") or []],
+            "completed_chunks": sum(int(item.get("completed_chunks") or 0) for item in timings),
+            "failed_chunks": sum(int(item.get("failed_chunks") or 0) for item in timings),
+            "batches": sum(int(item.get("batches") or 0) for item in timings),
+            "is_complete": all(bool(item.get("is_complete", True)) for item in timings),
         }
 
     if failures:
