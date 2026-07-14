@@ -154,6 +154,28 @@ async function handleApi(route: Route): Promise<void> {
     await json(route, courses);
     return;
   }
+  if (path === "/imports/tasks" && method === "POST") {
+    await json(route, {
+      id: "visual-import-preview-task",
+      status: "ready",
+      source_filename: "very-long-source-file-name-for-mobile-import-layout-check.docx",
+      course_id: null,
+      course_name: "",
+      progress_current: 1,
+      progress_total: 1,
+      questions: [{ id: 901, type: "short_answer", question: "Explain the result.", answer: "Answer" }],
+      suggested_course_name: "A very long course name that must never expand the preview layout on a phone",
+      warnings: [],
+      total_valid: 1,
+      total_invalid: 0,
+      timing: null,
+      error_message: "",
+      created_at: null,
+      started_at: null,
+      finished_at: null,
+    });
+    return;
+  }
   if (path === "/courses/9") {
     await json(route, courses[0]);
     return;
