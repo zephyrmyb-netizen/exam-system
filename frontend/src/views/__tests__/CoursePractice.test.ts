@@ -54,6 +54,23 @@ describe("CoursePractice", () => {
     expect(wrapper.find("[data-test=practice]").exists()).toBe(true);
   });
 
+  it("returns to the recorded source from mode selection", async () => {
+    route.query = { from: "home" };
+    const wrapper = mount(CoursePractice);
+    await vi.waitFor(() => expect(get).toHaveBeenCalled());
+
+    await wrapper.get("[data-practice-mode-back]").trigger("click");
+    expect(replace).toHaveBeenCalledWith({ name: "home" });
+  });
+
+  it("falls back to the course list when the mode page has no source", async () => {
+    const wrapper = mount(CoursePractice);
+    await vi.waitFor(() => expect(get).toHaveBeenCalled());
+
+    await wrapper.get("[data-practice-mode-back]").trigger("click");
+    expect(replace).toHaveBeenCalledWith({ name: "courses" });
+  });
+
   it("passes the real course total to normal random practice", async () => {
     route.query = { autostart: "1" };
     const wrapper = mount(CoursePractice);

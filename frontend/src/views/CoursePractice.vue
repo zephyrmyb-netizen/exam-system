@@ -3,11 +3,13 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import request, { getErrorMessage } from "../api/request";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
-import { BookOpen, Layers, Play, Shuffle, RefreshCw } from "@lucide/vue";
+import { BookOpen, ChevronLeft, Layers, Play, Shuffle, RefreshCw } from "@lucide/vue";
+import { useAppNavigation } from "../composables/useAppNavigation";
 import Practice from "./Practice.vue";
 
 const route = useRoute();
 const router = useRouter();
+const { returnToSource } = useAppNavigation();
 const courseId = computed(() => route.params.courseId);
 
 const course = ref(null);
@@ -49,6 +51,10 @@ function endPractice() {
   showPractice.value = false;
 }
 
+function returnToModeSource() {
+  returnToSource({ name: "courses" });
+}
+
 async function fetchCourse() {
   if (!courseId.value) return;
   loading.value = true;
@@ -77,6 +83,13 @@ watch(
 
 <template>
   <section v-if="!showPractice" class="stack course-practice-page">
+    <div class="settings-page-nav">
+      <button class="settings-back-button" data-practice-mode-back type="button" @click="returnToModeSource">
+        <ChevronLeft :size="20" :stroke-width="2.5" />
+        <span>返回</span>
+      </button>
+    </div>
+
     <div v-if="course" class="settings-header">
       <div class="settings-header-top">
         <div class="settings-icon"><BookOpen :size="22" :stroke-width="2" /></div>
@@ -144,6 +157,29 @@ watch(
 </template>
 
 <style scoped>
+.settings-page-nav {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+}
+.settings-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 36px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.settings-back-button:active {
+  background: var(--surface-soft);
+}
 .settings-header {
   padding: 12px 14px;
   border: 1px solid var(--line-soft);
