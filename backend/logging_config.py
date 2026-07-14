@@ -2,6 +2,8 @@
 
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -17,10 +19,21 @@ def add_request_id(_logger: Any, _method_name: str, event_dict: dict[str, Any]) 
 
 
 def configure_logging() -> None:
+    # Keep a compact local log for background tasks, which otherwise lose
+    # their stdout after the server process exits. Callers only log safe
+    # metadata, never document content or credentials.
+    log_dir = Path(__file__).resolve().parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    file_handler = RotatingFileHandler(
+        log_dir / "app.log",
+        maxBytes=2 * 1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
+    )
     logging.basicConfig(
         format="%(message)s",
-        stream=sys.stdout,
         level=logging.INFO,
+        handlers=[logging.StreamHandler(sys.stdout), file_handler],
     )
     structlog.configure(
         processors=[

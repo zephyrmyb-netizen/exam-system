@@ -9,6 +9,7 @@ the frontend API.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 from collections.abc import Callable
@@ -27,6 +28,7 @@ from . import imports_service
 
 TASK_UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "import_tasks"
 RECOVERABLE_STATUSES = ("queued", "extracting", "parsing")
+logger = logging.getLogger("xuexibao.import_task")
 
 
 def _now() -> datetime:
@@ -193,6 +195,7 @@ def process_task(
 
     db = session_factory()
     task: ImportTask | None = None
+    stage = "load_task"
     try:
         task = db.query(ImportTask).filter(ImportTask.id == task_id).first()
         if task is None or task.status != "queued":
@@ -206,8 +209,10 @@ def process_task(
         task.started_at = _now()
         _save(db, task)
 
+        stage = "extract_text"
         extract_start = __import__("time").perf_counter()
         text, extract_warnings = imports_service.extract_text_or_raise(task.file_path)
+        stage = "extract_images"
         images, image_warnings = imports_service.extract_images_from_file(task.file_path)
         extract_ms = imports_service.elapsed_ms(extract_start)
 
@@ -218,11 +223,13 @@ def process_task(
 
         if sync_ai_overrides is not None:
             sync_ai_overrides()
+        stage = "parse_ai"
         questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(text, images)
         if not questions:
             _mark_failed(db, task, "AI 未能解析出可导入题目，请检查文档内容后重试。")
             return
 
+        stage = "save_preview"
         timing = imports_service.build_timing(
             total_start=total_start,
             extract_ms=extract_ms,
@@ -243,8 +250,16 @@ def process_task(
     except HTTPException as exc:
         if task is not None:
             _mark_failed(db, task, str(exc.detail))
-    except Exception:
+    except Exception as exc:
         if task is not None:
+            # Do not persist exception text: upstream errors can contain
+            # sensitive request metadata. Log only safe diagnostic metadata.
+            logger.error(
+                "import_task_unexpected_failure task_id=%s stage=%s exception=%s",
+                task.id,
+                stage,
+                type(exc).__name__,
+            )
             _mark_failed(db, task, "AI 解析失败，请稍后重试。")
     finally:
         if task is not None and task.file_path:

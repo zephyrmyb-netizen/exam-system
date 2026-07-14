@@ -1,4 +1,5 @@
 import json as json_module
+import logging
 import os
 import re
 import tempfile
@@ -45,6 +46,7 @@ AI_IMAGE_BATCH_SIZE = 3
 MAX_NUMBERED_QUESTIONS_PER_CHUNK = 6
 RETRY_NUMBERED_QUESTIONS_PER_CHUNK = 2
 MIN_NUMBERED_QUESTION_COVERAGE_RATIO = 0.8
+logger = logging.getLogger("xuexibao.import_orchestrator")
 _NUMBERED_QUESTION_BOUNDARY = re.compile(r"(?<!\S)(?:\d{1,4}[.、．)]|[（(]\d{1,4}[）)])\s*")
 
 
@@ -724,10 +726,14 @@ def call_ai_parse_chunk(
     return items, warnings
 
 
-def deduplicate_questions(questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def deduplicate_questions(questions: list[Any]) -> list[dict[str, Any]]:
     seen: set[str] = set()
     result: list[dict[str, Any]] = []
     for item in questions:
+        # Valid JSON can still contain a scalar or a nested list. Ignore that
+        # record instead of letting AttributeError abort the entire task.
+        if not isinstance(item, dict):
+            continue
         key = (item.get("question") or "").strip()[:100]
         if key and key not in seen:
             seen.add(key)
@@ -933,11 +939,27 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
                 elif exc.status_code != 400:
                     other_http_error = exc
                 all_warnings.append(f"第 {index + 1} 部分解析失败: {exc.detail}")
+            except Exception as exc:
+                # A malformed result from one chunk must not abort every
+                # later chunk in a long document. Keep a partial preview and
+                # provide safe diagnostics without logging document content.
+                timing["failed_chunks"] += 1
+                timing["is_complete"] = False
+                logger.error(
+                    "import_chunk_unexpected_failure chunk=%s exception=%s",
+                    index + 1,
+                    type(exc).__name__,
+                )
+                all_warnings.append(f"第 {index + 1} 部分返回格式异常，已跳过该部分；请重新解析。")
             finally:
                 ai_chunk_ms = elapsed_ms(ai_start)
                 timing["ai_chunks"].append(ai_chunk_ms)
                 timing["ai_ms"] += ai_chunk_ms
 
+    malformed_item_count = sum(1 for item in all_items if not isinstance(item, dict))
+    if malformed_item_count:
+        timing["is_complete"] = False
+        all_warnings.append(f"AI 返回了 {malformed_item_count} 条无效题目记录，已跳过；当前结果不能确认导入。")
     all_items = deduplicate_questions(all_items)
 
     valid: list[dict[str, Any]] = []

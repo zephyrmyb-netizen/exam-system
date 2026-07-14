@@ -93,6 +93,52 @@ def test_numbered_document_over_batch_size_processes_every_chunk(monkeypatch):
     assert timing["is_complete"] is True
 
 
+def test_unexpected_chunk_error_keeps_later_chunks_and_returns_partial(monkeypatch):
+    """One malformed AI result must not become a generic task failure."""
+    from backend.imports import import_orchestrator
+
+    monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 1)
+    text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 13))
+    calls = 0
+
+    def fake_parse(_chunk: str, _index: int, _expected_question_count: int = 0):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise AttributeError("malformed provider item")
+        return [_question("question after failure")], []
+
+    monkeypatch.setattr(import_orchestrator, "call_ai_parse_chunk", fake_parse)
+
+    questions, warnings, timing = import_orchestrator.call_ai_parse(text)
+
+    assert [item["question"] for item in questions] == ["question after failure"]
+    assert timing["completed_chunks"] == 1
+    assert timing["failed_chunks"] == 1
+    assert timing["is_complete"] is False
+    assert any("返回格式异常" in warning for warning in warnings)
+
+
+def test_non_object_ai_items_are_skipped_without_crashing(monkeypatch):
+    """A scalar inside an AI JSON array must not crash deduplication."""
+    from backend.imports import import_orchestrator
+
+    monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 1)
+    monkeypatch.setattr(
+        import_orchestrator,
+        "call_ai_parse_chunk",
+        lambda _chunk, _index, _expected_question_count=0: (["not-a-question", _question("valid question")], []),
+    )
+
+    questions, warnings, timing = import_orchestrator.call_ai_parse("1. Simulated question")
+
+    assert [item["question"] for item in questions] == ["valid question"]
+    assert timing["is_complete"] is False
+    assert any("无效题目记录" in warning for warning in warnings)
+
+
 def test_file_content_combines_chunked_text_and_image_questions(monkeypatch):
     """Embedded images must not make a long text document skip text parsing."""
     from backend.imports import import_orchestrator
