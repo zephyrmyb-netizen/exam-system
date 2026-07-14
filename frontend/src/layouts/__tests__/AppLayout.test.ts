@@ -83,6 +83,21 @@ describe("AppLayout immersive routes", () => {
     expect(wrapper.find(".bottom-nav").exists()).toBe(true);
   });
 
+  it("exposes stable semantic markers for a tabbed shell and its home tab", () => {
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(wrapper.get("[data-testid='app-shell']").attributes("data-layout")).toBe("tabbed");
+    expect(wrapper.get("[data-testid='bottom-tab-home']").attributes("data-nav-key")).toBe("home");
+  });
+
   it("lets the import page own its heading while keeping bottom navigation", () => {
     route.name = "import";
     route.path = "/import";

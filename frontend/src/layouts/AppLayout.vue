@@ -172,7 +172,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--keyboard': keyboardActive, 'app-shell--immersive': isImmersiveRoute }">
+  <div
+    class="app-shell"
+    data-testid="app-shell"
+    :data-layout="isImmersiveRoute ? 'immersive' : 'tabbed'"
+    :class="{ 'app-shell--keyboard': keyboardActive, 'app-shell--immersive': isImmersiveRoute }"
+  >
     <header v-if="showHeader" class="app-header">
       <button v-if="showBackButton" class="layout-back-button" type="button" @click="goBack">
         <ArrowLeft :size="18" :stroke-width="2.5" />
@@ -235,6 +240,7 @@ onUnmounted(() => {
         class="nav-button"
         :class="{ active: activeNavKey === item.key, 'nav-button--ai': item.emphasis }"
         type="button"
+        :data-testid="`bottom-tab-${item.key}`"
         :data-nav-key="item.key"
         :aria-label="item.label"
         @click.stop.prevent="handleTabClick(item)"

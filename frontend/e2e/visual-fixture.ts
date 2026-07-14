@@ -234,33 +234,28 @@ export type SurfaceName =
   | "exam-complete"
   | "mine";
 
-export const surfaces: Array<{ name: SurfaceName; referencePage: string }> = [
-  { name: "home", referencePage: "home" },
-  { name: "course-list", referencePage: "courses" },
-  { name: "course-practice", referencePage: "course-practice" },
-  { name: "ai-import", referencePage: "import" },
-  { name: "exam-take", referencePage: "exam-take" },
-  { name: "practice-complete", referencePage: "practice-complete" },
-  { name: "exam-complete", referencePage: "exam-complete" },
-  { name: "mine", referencePage: "mine" },
+export const surfaces: Array<{ name: SurfaceName; path: string; referencePage: string }> = [
+  { name: "home", path: "/", referencePage: "home" },
+  { name: "course-list", path: "/courses", referencePage: "courses" },
+  { name: "course-practice", path: "/courses/9/practice?autostart=1", referencePage: "course-practice" },
+  { name: "ai-import", path: "/import", referencePage: "import" },
+  { name: "exam-take", path: "/exams/7/take", referencePage: "exam-take" },
+  { name: "practice-complete", path: "/courses/9/practice?autostart=1", referencePage: "practice-complete" },
+  { name: "exam-complete", path: "/exams/7/take", referencePage: "exam-complete" },
+  { name: "mine", path: "/mine", referencePage: "mine" },
 ];
 
 export async function prepareSurface(page: Page, surface: SurfaceName): Promise<void> {
+  const surfaceDefinition = surfaces.find((item) => item.name === surface);
+  if (!surfaceDefinition) throw new Error(`Unknown visual surface: ${surface}`);
+
   // Completion surfaces must start from a newly mounted session. The review
   // command intentionally reuses one Page, and navigating to an identical URL
   // does not remount Vue Router components.
   if (surface === "practice-complete" || surface === "exam-complete") {
     await page.goto("/");
   }
-
-  if (surface === "home") await page.goto("/");
-  if (surface === "course-list") await page.goto("/courses");
-  if (surface === "course-practice" || surface === "practice-complete") {
-    await page.goto("/courses/9/practice?autostart=1");
-  }
-  if (surface === "ai-import") await page.goto("/import");
-  if (surface === "exam-take" || surface === "exam-complete") await page.goto("/exams/7/take");
-  if (surface === "mine") await page.goto("/mine");
+  await page.goto(surfaceDefinition.path);
 
   if (surface === "practice-complete") {
     await expect(page.locator("[data-reference-page='course-practice'] .practice-option-card").first()).toBeVisible();
@@ -273,9 +268,7 @@ export async function prepareSurface(page: Page, surface: SurfaceName): Promise<
     await page.locator("[data-reference-page='exam-take'] .submit-button").click();
   }
 
-  const pageId = surfaces.find((item) => item.name === surface)?.referencePage;
-  if (!pageId) throw new Error(`Unknown visual surface: ${surface}`);
-  await expect(page.locator(`[data-reference-page='${pageId}']`)).toBeVisible();
+  await expect(page.locator(`[data-reference-page='${surfaceDefinition.referencePage}']`)).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({
     content: `
@@ -298,6 +291,7 @@ type VisualFixtures = {
 export const test = base.extend<VisualFixtures>({
   mockedPage: async ({ page }, use) => {
     await page.addInitScript((fixedNow) => {
+      const importTaskStorageKey = "xuexibao:active-import-task";
       const NativeDate = Date;
       class FixedDate extends NativeDate {
         constructor(...args: ConstructorParameters<typeof Date>) {
@@ -311,7 +305,8 @@ export const test = base.extend<VisualFixtures>({
       window.Date = FixedDate as DateConstructor;
       window.localStorage.setItem("xuexibao_token", "visual-test-token");
       window.localStorage.setItem("xuexibao-theme", "light");
-      window.localStorage.removeItem("xuexibao:active-import-task");
+      // Each capture starts from the same explicit idle import-task state.
+      window.localStorage.removeItem(importTaskStorageKey);
     }, FIXED_NOW);
     await page.route("**/*", handleApi);
     await use(page);
