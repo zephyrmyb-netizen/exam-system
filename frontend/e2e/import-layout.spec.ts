@@ -7,6 +7,26 @@ async function readLayout(page: Parameters<typeof prepareSurface>[0]) {
     bodyWidth: document.body.scrollWidth,
     shellWidth: document.querySelector<HTMLElement>(".app-shell")?.getBoundingClientRect().width ?? 0,
     pageWidth: document.querySelector<HTMLElement>("[data-reference-page='import']")?.getBoundingClientRect().width ?? 0,
+    constrainedSurfaces: [
+      ".import-file-card",
+      ".import-file-card__summary",
+      ".import-file-card__actions",
+      ".opt-panel",
+      ".hero-cta",
+      ".adv-section",
+      ".import-guide",
+    ].map(
+      (selector) => {
+        const rect = document.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
+        return { selector, left: rect?.left ?? 0, right: rect?.right ?? 0, width: rect?.width ?? 0 };
+      },
+    ),
+    finalGuideItemRight:
+      document.querySelector<HTMLElement>(".import-guide li:last-child")?.getBoundingClientRect().right ?? 0,
+    fileNameBottom:
+      document.querySelector<HTMLElement>(".hero-drop-selected")?.getBoundingClientRect().bottom ?? 0,
+    fileHintTop:
+      document.querySelector<HTMLElement>(".import-file-card__summary .hero-drop-hint")?.getBoundingClientRect().top ?? 0,
   }));
 }
 
@@ -17,6 +37,24 @@ for (const viewport of [
 ]) {
   test(`selecting a file keeps the import layout stable at ${viewport.width}px`, async ({ mockedPage }) => {
     await mockedPage.setViewportSize(viewport);
+    await mockedPage.route("**/courses/mine", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json; charset=utf-8",
+        body: JSON.stringify([
+          {
+            id: 99,
+            owner_id: 42,
+            name: "这是一个用于验证题库选择框不会把移动端导入页面撑开的超长题库名称",
+            description: "",
+            subject: "机器学习",
+            visibility: "private",
+            created_at: "2026-07-15T00:00:00+08:00",
+            question_count: 12,
+          },
+        ]),
+      });
+    });
     await prepareSurface(mockedPage, "ai-import");
 
     const before = await readLayout(mockedPage);
@@ -32,5 +70,12 @@ for (const viewport of [
     expect(after.bodyWidth).toBeLessThanOrEqual(after.clientWidth);
     expect(after.shellWidth).toBeCloseTo(before.shellWidth, 0);
     expect(after.pageWidth).toBeCloseTo(before.pageWidth, 0);
+    for (const surface of after.constrainedSurfaces) {
+      expect(surface.left, `${surface.selector} must stay inside the left edge`).toBeGreaterThanOrEqual(0);
+      expect(surface.right, `${surface.selector} must stay inside the right edge`).toBeLessThanOrEqual(after.clientWidth);
+      expect(surface.width, `${surface.selector} must not exceed the viewport`).toBeLessThanOrEqual(after.clientWidth);
+    }
+    expect(after.finalGuideItemRight, "the third import step must remain visible").toBeLessThanOrEqual(after.clientWidth);
+    expect(after.fileNameBottom, "file name and metadata must not overlap").toBeLessThanOrEqual(after.fileHintTop);
   });
 }
