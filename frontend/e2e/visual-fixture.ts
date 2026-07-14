@@ -293,7 +293,7 @@ export async function prepareSurface(page: Page, surface: SurfaceName): Promise<
   }
   await page.goto(surfaceDefinition.path);
 
-  if (surface === "practice-complete") {
+  if (surface === "course-practice" || surface === "practice-complete") {
     await expect(page.locator("[data-reference-page='course-practice'] .practice-option-card").first()).toBeVisible();
     await page.locator("[data-reference-page='course-practice'] .practice-option-card").first().click();
   }
