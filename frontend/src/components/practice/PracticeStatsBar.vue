@@ -26,12 +26,12 @@ defineProps({
 .practice-stats-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
+  gap: 0;
   min-width: 0;
-  margin: 0;
-  padding: 0;
-  font-size: 12px;
+  margin: 0 4px;
+  padding: 2px 0 0;
+  font-size: 11px;
   font-weight: 800;
   color: var(--text-muted);
   overflow: hidden;
@@ -45,12 +45,11 @@ defineProps({
 .practice-stat-chip {
   white-space: nowrap;
   color: var(--text-secondary);
-  padding: 5px 9px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-full);
-  background: var(--glass-card);
-  box-shadow: var(--glass-inner-highlight);
+  padding: 0 10px;
+  line-height: 1.2;
 }
+
+.practice-stat-chip + .practice-stat-chip { border-left: 1px solid var(--line-soft); }
 
 .practice-stat-chip--good {
   color: var(--emerald);

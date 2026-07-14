@@ -6,7 +6,6 @@ import PracticeActionBar from "../components/practice/PracticeActionBar.vue";
 import PracticeChoiceOptions from "../components/practice/PracticeChoiceOptions.vue";
 import PracticeQuestionStem from "../components/practice/PracticeQuestionStem.vue";
 import PracticeResultPanel from "../components/practice/PracticeResultPanel.vue";
-import PracticeStatsBar from "../components/practice/PracticeStatsBar.vue";
 import PracticeSummaryModal from "../components/practice/PracticeSummaryModal.vue";
 import PracticeTextAnswer from "../components/practice/PracticeTextAnswer.vue";
 import PracticeTopBar from "../components/practice/PracticeTopBar.vue";
@@ -50,7 +49,6 @@ const {
   sessionStats,
   setSingleAnswer,
   startSession,
-  streakText,
   submitAnswer,
   submitting,
   textAnswer,
@@ -183,13 +181,6 @@ watch(sessionComplete, (complete) => {
       :total-questions="props.totalQuestions"
       @back="goBack"
       @end="endPractice"
-    />
-
-    <PracticeStatsBar
-      v-if="question"
-      :answered-count="sessionStats.answeredCount"
-      :accuracy="accuracy"
-      :streak-text="streakText"
     />
 
     <div v-if="!props.courseId && !canStartWithoutCourse && !question && !loading" class="state-block">
