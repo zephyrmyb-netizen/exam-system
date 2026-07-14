@@ -25,4 +25,17 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
       // PWA support is progressive; app usage should not depend on service worker registration.
     });
   });
+} else if ("serviceWorker" in navigator) {
+  // A production service worker may still own this origin when the same phone
+  // opens the Vite server later. Remove it so development always loads the
+  // current Vue modules instead of a previously cached screen.
+  void navigator.serviceWorker.getRegistrations().then((registrations) =>
+    Promise.all(registrations.map((registration) => registration.unregister())),
+  );
+
+  if ("caches" in window) {
+    void caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key.startsWith("xuexibao-shell-")).map((key) => caches.delete(key))),
+    );
+  }
 }
