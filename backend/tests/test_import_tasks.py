@@ -40,7 +40,7 @@ def install_parser_stub(monkeypatch):
     monkeypatch.setattr(
         import_task_service.imports_service,
         "preview_import_from_file_content",
-        lambda _text, _images: (parsed_question(), [], {"chunks": 1, "ai_ms": 1}),
+        lambda _text, _images, **_kwargs: (parsed_question(), [], {"chunks": 1, "ai_ms": 1}),
     )
 
 
@@ -70,7 +70,7 @@ def test_import_task_marks_partial_preview_and_rejects_confirmation(client, auth
     monkeypatch.setattr(
         import_task_service.imports_service,
         "preview_import_from_file_content",
-        lambda _text, _images: (
+        lambda _text, _images, **_kwargs: (
             parsed_question(),
             ["第 2 部分解析失败: timeout"],
             {"chunks": 3, "completed_chunks": 2, "failed_chunks": 1, "is_complete": False, "ai_ms": 1},
