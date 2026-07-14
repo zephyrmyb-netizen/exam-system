@@ -991,6 +991,31 @@ class TestLongDocumentAIImport:
         assert "Do not summarize" in prompt
         assert "Do not return only one sample" in prompt
 
+    def test_ai_parse_marks_a_failed_chunk_as_partial_without_dropping_later_chunks(self, monkeypatch):
+        from fastapi import HTTPException
+        from backend.imports import import_orchestrator
+
+        monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "sk-test")
+        monkeypatch.setattr(import_orchestrator, "MAX_NUMBERED_QUESTIONS_PER_CHUNK", 1)
+        monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 2)
+
+        def parse_chunk(_text, chunk_index):
+            if chunk_index == 1:
+                raise HTTPException(status_code=504, detail="timeout")
+            return ([{"type": "fill_blank", "question": f"Question {chunk_index}", "answer": "Answer"}], [])
+
+        monkeypatch.setattr(import_orchestrator, "parse_chunk_with_coverage_retry", parse_chunk)
+
+        questions, warnings, timing = import_orchestrator.call_ai_parse("1. First\n2. Second\n3. Third")
+
+        assert [item["question"] for item in questions] == ["Question 0", "Question 2"]
+        assert timing["chunks"] == 3
+        assert timing["batches"] == 2
+        assert timing["completed_chunks"] == 2
+        assert timing["failed_chunks"] == 1
+        assert timing["is_complete"] is False
+        assert any("第 2 部分解析失败" in warning for warning in warnings)
+
 
 class TestImportRateLimit:
     """Per-user rate limits on AI import endpoints prevent API-key burning."""

@@ -235,6 +235,10 @@ export interface ImportTiming {
   total_ms: number;
   chunks: number;
   ai_chunks: number[];
+  completed_chunks: number;
+  failed_chunks: number;
+  batches: number;
+  is_complete: boolean;
 }
 
 export interface ImportPreviewResponse {
@@ -244,6 +248,7 @@ export interface ImportPreviewResponse {
   total_parsed: number;
   total_valid: number;
   total_invalid: number;
+  is_complete?: boolean;
   timing: ImportTiming | null;
 }
 
@@ -259,7 +264,7 @@ export interface ConfirmImportResponse {
   course_name: string;
 }
 
-export type ImportTaskStatus = "queued" | "extracting" | "parsing" | "ready" | "importing" | "imported" | "failed";
+export type ImportTaskStatus = "queued" | "extracting" | "parsing" | "ready" | "partial" | "importing" | "imported" | "failed";
 
 export interface ImportTaskResponse {
   id: string;

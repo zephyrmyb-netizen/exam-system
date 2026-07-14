@@ -306,6 +306,10 @@ class ImportTiming(BaseModel):
     total_ms: int = 0
     chunks: int = 0
     ai_chunks: list[int] = []
+    completed_chunks: int = 0
+    failed_chunks: int = 0
+    batches: int = 0
+    is_complete: bool = True
 
 
 class FileExtractResponse(BaseModel):
@@ -345,6 +349,7 @@ class PreviewImportResponse(BaseModel):
     total_parsed: int = 0
     total_valid: int = 0
     total_invalid: int = 0
+    is_complete: bool = True
     timing: ImportTiming | None = None
 
 

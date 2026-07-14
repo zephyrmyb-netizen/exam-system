@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 
 from .. import crud, schemas
 from ..config import (
+    IMPORT_BATCH_SIZE,
     IMPORT_CHUNK_SIZE,
-    IMPORT_MAX_CHUNKS,
     IMPORT_MAX_TOKENS,
     IMPORT_UPSTREAM_TIMEOUT,
     OPENAI_API_KEY,
@@ -37,7 +37,9 @@ ALLOWED_EXTENSIONS = {".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"
 LEGACY_PPT_EXTENSION = ".ppt"
 MAX_FILE_SIZE = 10 * 1024 * 1024
 AI_CHUNK_SIZE = max(1000, IMPORT_CHUNK_SIZE)
-MAX_CHUNKS = max(1, IMPORT_MAX_CHUNKS)
+# This deliberately bounds one sequential batch, not the whole document.  A
+# long file must not silently lose every chunk after the first batch.
+AI_BATCH_SIZE = max(1, IMPORT_BATCH_SIZE)
 AI_MAX_TOKENS = max(1000, IMPORT_MAX_TOKENS)
 AI_IMAGE_BATCH_SIZE = 3
 MAX_NUMBERED_QUESTIONS_PER_CHUNK = 6
@@ -71,6 +73,10 @@ def build_timing(
         total_ms=elapsed_ms(total_start),
         chunks=int(parse_timing.get("chunks") or 0),
         ai_chunks=list(parse_timing.get("ai_chunks") or []),
+        completed_chunks=int(parse_timing.get("completed_chunks") or 0),
+        failed_chunks=int(parse_timing.get("failed_chunks") or 0),
+        batches=int(parse_timing.get("batches") or 0),
+        is_complete=bool(parse_timing.get("is_complete", True)),
     )
 
 
@@ -881,6 +887,10 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         "total_ms": 0,
         "chunks": 0,
         "ai_chunks": [],
+        "completed_chunks": 0,
+        "failed_chunks": 0,
+        "batches": 0,
+        "is_complete": True,
     }
     if not OPENAI_API_KEY:
         raise HTTPException(
@@ -892,14 +902,6 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     all_warnings: list[str] = []
     chunks, timing["chunk_ms"] = chunk_document_text(text)
 
-    if len(chunks) > MAX_CHUNKS:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"文档需要分成 {len(chunks)} 部分，超过安全处理上限 {MAX_CHUNKS} 部分。"
-                "为避免只导入前半部分题目，系统未创建预览；请拆分文件后重新导入。"
-            ),
-        )
     timing["chunks"] = len(chunks)
     expected_numbered_questions = sum(count_numbered_question_blocks(chunk) for chunk in chunks)
 
@@ -908,26 +910,33 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
     saw_upstream_error = False
     other_http_error: HTTPException | None = None
 
-    for index, chunk in enumerate(chunks):
-        ai_start = time.perf_counter()
-        try:
-            items, warnings = parse_chunk_with_coverage_retry(chunk, index)
-            all_items.extend(items)
-            all_warnings.extend(warnings)
-            if any("非 JSON" in warning for warning in warnings):
-                saw_invalid_json = True
-        except HTTPException as exc:
-            if exc.status_code == 504:
-                saw_timeout = True
-            elif exc.status_code == 502:
-                saw_upstream_error = True
-            elif exc.status_code != 400:
-                other_http_error = exc
-            all_warnings.append(f"第 {index + 1} 部分解析失败: {exc.detail}")
-        finally:
-            ai_chunk_ms = elapsed_ms(ai_start)
-            timing["ai_chunks"].append(ai_chunk_ms)
-            timing["ai_ms"] += ai_chunk_ms
+    for batch_start in range(0, len(chunks), AI_BATCH_SIZE):
+        # Batches are intentionally sequential.  This protects the upstream
+        # service while every document chunk is still processed in order.
+        timing["batches"] += 1
+        for index, chunk in enumerate(chunks[batch_start : batch_start + AI_BATCH_SIZE], start=batch_start):
+            ai_start = time.perf_counter()
+            try:
+                items, warnings = parse_chunk_with_coverage_retry(chunk, index)
+                all_items.extend(items)
+                all_warnings.extend(warnings)
+                timing["completed_chunks"] += 1
+                if any("非 JSON" in warning for warning in warnings):
+                    saw_invalid_json = True
+            except HTTPException as exc:
+                timing["failed_chunks"] += 1
+                timing["is_complete"] = False
+                if exc.status_code == 504:
+                    saw_timeout = True
+                elif exc.status_code == 502:
+                    saw_upstream_error = True
+                elif exc.status_code != 400:
+                    other_http_error = exc
+                all_warnings.append(f"第 {index + 1} 部分解析失败: {exc.detail}")
+            finally:
+                ai_chunk_ms = elapsed_ms(ai_start)
+                timing["ai_chunks"].append(ai_chunk_ms)
+                timing["ai_ms"] += ai_chunk_ms
 
     all_items = deduplicate_questions(all_items)
 
@@ -946,13 +955,10 @@ def call_ai_parse(text: str) -> tuple[list[dict[str, Any]], list[str], dict[str,
         expected_numbered_questions >= MAX_NUMBERED_QUESTIONS_PER_CHUNK
         and len(valid) / expected_numbered_questions < MIN_NUMBERED_QUESTION_COVERAGE_RATIO
     ):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"AI 解析不完整：检测到约 {expected_numbered_questions} 道编号题，"
-                f"当前仅解析到 {len(valid)} 道。系统已自动缩小分块重试，"
-                "仍无法保证题目完整，请重新解析后再确认导入。"
-            ),
+        timing["is_complete"] = False
+        all_warnings.append(
+            f"AI 解析不完整：检测到约 {expected_numbered_questions} 道编号题，"
+            f"当前仅解析到 {len(valid)} 道。已保留可预览结果，但不能确认导入。"
         )
 
     if not valid and other_http_error:

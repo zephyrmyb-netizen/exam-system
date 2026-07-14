@@ -159,7 +159,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
       this.progressCurrent = task.progress_current || 0;
       this.progressTotal = task.progress_total || 0;
 
-      if (task.status === "ready" || task.status === "imported") {
+      if (task.status === "ready" || task.status === "partial" || task.status === "imported") {
         this.previewData = {
           questions: task.questions,
           suggested_course_name: task.suggested_course_name,
@@ -167,6 +167,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
           total_parsed: task.total_valid + task.total_invalid,
           total_valid: task.total_valid,
           total_invalid: task.total_invalid,
+          is_complete: task.status !== "partial",
           timing: task.timing,
         };
         this.status = "success";
@@ -178,7 +179,9 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
         this.message =
           task.status === "imported"
             ? `导入成功，已导入 ${task.total_valid} 道题。`
-            : `AI 已解析出 ${task.total_valid} 道题，请确认后导入。`;
+            : task.status === "partial"
+              ? `已完成 ${task.progress_current} / ${task.progress_total} 个分块；结果不完整，不能导入。`
+              : `AI 已解析出 ${task.total_valid} 道题，请确认后导入。`;
         clearElapsedTimer();
         return;
       }

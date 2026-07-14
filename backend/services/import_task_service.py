@@ -53,7 +53,7 @@ def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
     question_data = _decode_list(task.preview_questions_json)
     timing_data = _decode_dict(task.timing_json)
     warnings = [str(item) for item in _decode_list(task.warnings_json)]
-    if task.status == "ready" and task.error_message:
+    if task.status in {"ready", "partial"} and task.error_message:
         warnings.append(task.error_message)
     return schemas.ImportTaskOut(
         id=task.id,
@@ -228,15 +228,16 @@ def process_task(
             extract_ms=extract_ms,
             parse_timing=parse_timing,
         )
-        task.status = "ready"
-        task.progress_current = timing.chunks
+        is_complete = bool(parse_timing.get("is_complete", True))
+        task.status = "ready" if is_complete else "partial"
+        task.progress_current = int(parse_timing.get("completed_chunks") or timing.chunks)
         task.progress_total = timing.chunks
         task.preview_questions_json = json.dumps(questions, ensure_ascii=False)
         task.warnings_json = json.dumps(extract_warnings + image_warnings + ai_warnings, ensure_ascii=False)
         task.timing_json = json.dumps(timing.model_dump(), ensure_ascii=False)
         task.total_valid = len(questions)
         task.total_invalid = sum(1 for warning in ai_warnings if "格式有误" in warning)
-        task.error_message = ""
+        task.error_message = "" if is_complete else "部分分块解析失败或题目覆盖不足，当前结果不完整，不能确认导入。"
         task.finished_at = _now()
         _save(db, task)
     except HTTPException as exc:
