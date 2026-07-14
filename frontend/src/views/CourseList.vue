@@ -265,11 +265,6 @@ function startPractice(mode: string) {
   );
 }
 
-function courseCoverage(course: Course) {
-  if (!course.question_count) return 0;
-  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
-}
-
 function formatCourseDate(course: Course) {
   const raw = course.last_practiced_at || course.created_at;
   if (!raw) return "--";
@@ -377,9 +372,6 @@ onMounted(fetchCourses);
             }}</strong>
             <span class="course-subline">
               {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 · {{ formatCourseDate(course) }}
-            </span>
-            <span class="course-progress" aria-label="练习覆盖进度">
-              <i :style="{ width: `${courseCoverage(course)}%` }"></i>
             </span>
           </div>
           <button
@@ -632,19 +624,6 @@ onMounted(fetchCourses);
   box-shadow: var(--shadow-xs);
   overflow: visible;
   transition: box-shadow var(--ease-out);
-}
-.course-row__progress {
-  height: 4px;
-  margin: 0 12px 10px 60px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-soft);
-}
-.course-row__progress i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
 }
 .course-row:hover {
   box-shadow: var(--shadow-card);
@@ -1269,21 +1248,6 @@ onMounted(fetchCourses);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.library-page .course-progress {
-  display: block;
-  width: 100%;
-  height: 4px;
-  margin-top: 5px;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--surface-soft);
-}
-.library-page .course-progress i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
-}
 .library-page .more-btn {
   width: 32px;
   min-width: 32px;
@@ -1418,10 +1382,6 @@ onMounted(fetchCourses);
   min-width: 32px;
   height: 32px;
   border-radius: 10px;
-}
-.library-page .course-row__progress {
-  height: 4px;
-  margin: 0 10px 8px 58px;
 }
 
 /* The glass treatment creates a stacking context per card.  Lift the active

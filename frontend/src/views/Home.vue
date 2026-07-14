@@ -52,11 +52,6 @@ const recentCourses = computed(() => {
     .slice(0, 3);
 });
 
-function courseProgress(course: Course) {
-  if (!course.question_count) return 0;
-  return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
-}
-
 const coreActions = [
   {
     label: "AI 导入",
@@ -241,9 +236,6 @@ onMounted(() => {
             <span>
               {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 ·
               {{ formatCourseDate(course) }}
-            </span>
-            <span class="course-progress" aria-label="练习覆盖进度">
-              <i :style="{ width: `${courseProgress(course)}%` }"></i>
             </span>
           </div>
         </button>
@@ -533,20 +525,6 @@ onMounted(() => {
   background: var(--line-soft);
 }
 
-.course-progress {
-  display: block;
-  height: 5px;
-  margin-top: 7px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-soft);
-}
-.course-progress i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
-}
 
 /* ── Empty state ── */
 .empty-state {
@@ -803,10 +781,6 @@ onMounted(() => {
 }
 .home-page .home-course-list .course-info strong {
   font-size: 15px;
-}
-.home-page .course-progress {
-  height: 4px;
-  margin-top: 5px;
 }
 .home-page .home-recommendation {
   gap: 9px;
