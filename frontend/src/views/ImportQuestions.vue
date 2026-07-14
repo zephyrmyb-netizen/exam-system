@@ -381,6 +381,7 @@ onMounted(() => {
             id="import-file-input"
             ref="fileInput"
             class="file-input-native"
+            hidden
             type="file"
             :accept="ACCEPTED_FILE_TYPES"
             :aria-describedby="
@@ -837,12 +838,7 @@ onMounted(() => {
 }
 
 .file-input-native {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
+  display: none;
 }
 
 .hero-drop-zone--disabled .file-input-native {
@@ -1089,8 +1085,7 @@ onMounted(() => {
   resize: vertical;
 }
 
-/* iOS/WebView auto-zooms focused controls below 16px, leaving the page clipped after file selection. */
-.file-input-native,
+/* iOS/WebView auto-zooms focused text controls below 16px. */
 .opt-input,
 .adv-textarea {
   font-size: 16px;
@@ -1283,16 +1278,7 @@ onMounted(() => {
   grid-row: 2;
 }
 .import-file-card .file-input-native {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  pointer-events: none;
+  display: none;
 }
 .import-file-card .hero-drop-icon {
   width: 42px;
