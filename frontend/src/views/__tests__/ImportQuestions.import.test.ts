@@ -198,6 +198,18 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.get(".hero-drop-selected").classes()).toContain("truncate-file-name");
   });
 
+  it("releases file input focus after selection so mobile WebViews cannot retain a zoomed viewport", async () => {
+    const wrapper = mountPage();
+    const input = wrapper.find("input[type='file']");
+    const blur = vi.fn();
+    Object.defineProperty(input.element, "blur", { value: blur, configurable: true });
+    Object.defineProperty(input.element, "files", { value: [new File(["x"], "questions.docx")], configurable: true });
+
+    await input.trigger("change");
+
+    expect(blur).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps file and destination controls above the iOS auto-zoom threshold", () => {
     const source = readFileSync(resolve(process.cwd(), "src/views/ImportQuestions.vue"), "utf8");
 
