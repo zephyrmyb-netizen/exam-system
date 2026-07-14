@@ -12,6 +12,7 @@
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
+| 2026-07-14 | 学习宝参考 UI 高保真迁移与 Codex 交接包 | [2026-07-14-reference-ui-handoff-implementation.md](./archive/2026-07-14-reference-ui-handoff-implementation.md) |
 | 2026-07-13 | AI 长文档题目覆盖率与缺题重试修复 | [2026-07-13-ai-import-coverage-retry.md](./archive/2026-07-13-ai-import-coverage-retry.md) |
 | 2026-07-13 | AI 长文档与多模态导入可靠性修复 | [2026-07-13-ai-import-reliability.md](./archive/2026-07-13-ai-import-reliability.md) |
 | 2026-07-13 | AI 导入重启恢复、原子写入与前端测试工具链安全修复 | [2026-07-13-import-recovery-and-tooling-security.md](./archive/2026-07-13-import-recovery-and-tooling-security.md) |
