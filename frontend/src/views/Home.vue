@@ -676,4 +676,58 @@ onMounted(() => {
 .home-page .home-recommendation__tag {
   border-radius: 10px;
 }
+
+/* Keep the homepage dense enough for the first screen without losing touch targets. */
+.home-page .quick-grid {
+  padding: 6px 2px;
+}
+.home-page .quick {
+  min-height: 68px !important;
+  gap: 3px;
+}
+.home-page .quick-ico {
+  width: 32px;
+  height: 32px;
+}
+.home-page .quick-ico :deep(svg) {
+  width: 17px;
+  height: 17px;
+}
+.home-page .home-course-list {
+  gap: 8px;
+}
+.home-page .home-course-list .course-item {
+  padding: 0;
+}
+.home-page .home-course-list .course-main {
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px 12px;
+}
+.home-page .home-course-list .course-icon {
+  width: 40px;
+  height: 40px;
+}
+.home-page .home-course-list .course-icon :deep(svg) {
+  width: 19px;
+  height: 19px;
+}
+.home-page .home-course-list .course-info {
+  gap: 1px;
+}
+.home-page .home-course-list .course-info strong {
+  font-size: 15px;
+}
+.home-page .course-progress {
+  height: 4px;
+  margin-top: 5px;
+}
+.home-page .home-recommendation {
+  gap: 9px;
+  margin: 10px 0 12px;
+  padding: 11px 13px;
+}
+.home-page .home-recommendation__spark {
+  font-size: 20px;
+}
 </style>
