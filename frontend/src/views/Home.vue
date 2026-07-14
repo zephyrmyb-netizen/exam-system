@@ -177,7 +177,7 @@ onMounted(() => {
     <header class="home-hero fade-up">
       <button class="home-search-entry" data-home-search type="button" @click="openGlobalSearch">
         <span class="home-search-entry__scan" aria-hidden="true">
-          <ScanLine :size="22" :stroke-width="2.25" />
+          <ScanLine :size="20" :stroke-width="2.2" />
         </span>
         <span>搜索题库、文档、作者</span>
       </button>
@@ -273,29 +273,29 @@ onMounted(() => {
 
 .home-hero {
   display: grid;
-  margin: -16px -16px 0;
-  padding: 12px 18px;
+  margin: 0;
+  padding: 8px 0 4px;
   border: 0 !important;
   border-radius: 0 !important;
-  background: linear-gradient(135deg, #1f8df4, #218bf2) !important;
-  color: #fff;
+  background: transparent !important;
+  color: var(--text-primary);
   box-shadow: none !important;
 }
 
 .home-search-entry {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 52px;
-  padding: 0 12px;
+  gap: 7px;
+  min-height: 46px;
+  padding: 0 11px;
   margin-top: 0;
-  border: 0 !important;
+  border: 1px solid #e3eaf2 !important;
   border-radius: var(--radius-full);
   background: #ffffff !important;
   color: #64748b;
-  font-size: 18px;
-  font-weight: 650;
-  box-shadow: none !important;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(71, 85, 105, 0.08) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   cursor: pointer;
@@ -596,8 +596,8 @@ onMounted(() => {
 .home-search-entry__scan {
   display: grid;
   place-items: center;
-  min-width: 44px;
-  height: 28px;
+  min-width: 38px;
+  height: 24px;
   border-right: 1px solid #e2e8f0;
   color: #218bf2;
 }
@@ -635,7 +635,7 @@ onMounted(() => {
 .home-hero {
   min-height: 0 !important;
   gap: 0;
-  padding: 12px 18px !important;
+  padding: 8px 0 4px !important;
   box-shadow: none !important;
 }
 .home-hero h1 {
@@ -644,7 +644,7 @@ onMounted(() => {
   line-height: 1.22;
 }
 .home-search-entry {
-  min-height: 52px !important;
+  min-height: 46px !important;
   border-radius: var(--radius-full);
   background: #ffffff !important;
   color: #64748b !important;
