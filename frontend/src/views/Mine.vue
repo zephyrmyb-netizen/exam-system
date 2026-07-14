@@ -12,7 +12,6 @@ import {
   Megaphone,
   Palette,
   Settings2,
-  ShieldCheck,
 } from "@lucide/vue";
 
 import StatGrid from "../components/ui/StatGrid.vue";
@@ -29,14 +28,6 @@ const { stats, streak, streakAvailable, loading, errorMessage, fetchAll } = useS
 
 const usernameText = computed(() => user.value?.username || "未登录");
 const avatarChar = computed(() => usernameText.value.slice(0, 1).toUpperCase());
-const roleText = computed(() => {
-  if (!user.value) return "未登录";
-  const role = user.value?.role;
-  if (role === "admin") return "管理员";
-  if (role === "teacher") return "教师";
-  return "普通用户";
-});
-
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
   if (rate === null || rate === undefined) return "--";
@@ -115,10 +106,7 @@ onMounted(() => fetchAll());
         </div>
         <div class="profile-info">
           <h3 class="profile-name">{{ usernameText }}</h3>
-          <span class="profile-tag">
-            <ShieldCheck :size="11" :stroke-width="2.5" />
-            {{ roleText }}
-          </span>
+          <span class="profile-id">UID: {{ user?.id ?? "--" }}</span>
         </div>
       </div>
       <div class="profile-level">
@@ -139,9 +127,6 @@ onMounted(() => fetchAll());
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
-    <div class="section-head fade-up d3">
-      <h3 class="section-title">快捷入口</h3>
-    </div>
     <nav class="mine-quick-grid fade-up d3">
       <button v-for="item in quickItems" :key="item.label" class="mine-quick" type="button" @click="goTo(item.to)">
         <span class="mine-quick__icon" :class="`mine-quick__icon--${item.tone}`"
@@ -499,6 +484,12 @@ button.menu-item {
 .profile-card--centered .profile-name {
   font-size: 17px;
 }
+.profile-id {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
 .profile-card--centered .profile-level,
 .profile-card--centered .profile-level__track {
   display: none;
@@ -508,22 +499,39 @@ button.menu-item {
   z-index: 2;
   margin-top: 0;
 }
-.mine-quick {
-  min-height: 92px;
-  padding: 10px;
+.mine-page .mine-quick-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 !important;
+  margin-top: 0;
+  padding: 10px 4px;
+}
+.mine-page .mine-quick {
+  min-height: 78px !important;
+  padding: 4px 2px !important;
   grid-template-columns: 1fr;
   justify-items: center;
+  gap: 5px;
   text-align: center;
 }
-.mine-quick__icon {
-  grid-row: auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.mine-page .mine-quick:nth-child(odd),
+.mine-page .mine-quick:nth-child(n + 3) {
+  border: 0 !important;
 }
-.mine-quick strong,
-.mine-quick small {
+.mine-page .mine-quick__icon {
+  grid-row: auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+.mine-page .mine-quick strong,
+.mine-page .mine-quick small {
   max-width: 100%;
+}
+.mine-page .mine-quick strong {
+  font-size: 11px;
+}
+.mine-page .mine-quick small {
+  display: none;
 }
 .menu-list {
   margin-top: 4px;
