@@ -321,7 +321,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="stack import-page" data-reference-page="import">
+  <section
+    class="stack import-page"
+    :class="{ 'import-page--file-active': hasActiveFile }"
+    data-reference-page="import"
+  >
     <div class="section-heading import-page__head">
       <h2>AI 导入</h2>
       <p>智能解析 · 一键导入题目</p>
@@ -343,7 +347,7 @@ onMounted(() => {
       <template v-else>
         <label
           class="hero-drop-zone"
-          :class="{ 'is-dragging': isDragging }"
+          :class="{ 'is-dragging': isDragging, 'has-file': hasActiveFile }"
           for="import-file-input"
           @dragenter.prevent="onDragEnter"
           @dragover.prevent="onDragEnter"
@@ -739,6 +743,55 @@ onMounted(() => {
   border-color: var(--line-soft);
   background: var(--surface-soft);
   cursor: wait;
+}
+
+/* A selected document is confirmation, not a second oversized upload screen. */
+.import-page--file-active {
+  gap: 8px;
+}
+.import-page .hero-drop-zone.has-file {
+  grid-template-areas:
+    "icon file"
+    "icon hint";
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: stretch;
+  min-height: 106px !important;
+  padding: 14px;
+  gap: 3px 12px;
+  text-align: left;
+}
+.hero-drop-zone.has-file .hero-drop-icon {
+  grid-area: icon;
+  align-self: center;
+  width: 40px;
+  height: 40px;
+}
+.hero-drop-zone.has-file .hero-drop-selected {
+  grid-area: file;
+  min-width: 0;
+  align-self: end;
+  justify-content: flex-start;
+  font-size: 14px;
+}
+.hero-drop-zone.has-file .hero-drop-hint {
+  grid-area: hint;
+  align-self: start;
+  font-size: 11px;
+}
+.import-page--file-active .opt-panel {
+  gap: 10px;
+  padding: 12px;
+}
+.import-page--file-active .opt-input {
+  min-height: 40px;
+  padding: 8px 12px;
+}
+.import-page--file-active .hero-cta {
+  min-height: 48px;
+  padding-block: 10px;
+}
+.import-page--file-active .target-hint {
+  margin-top: 0;
 }
 
 .file-input-native {
