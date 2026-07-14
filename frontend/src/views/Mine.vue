@@ -198,8 +198,12 @@ onMounted(() => fetchAll());
 
 <style scoped>
 .mine-page {
-  padding-bottom: var(--nav-bottom-clearance);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: 0;
   min-width: 0;
+  gap: 12px !important;
 }
 
 /* Profile card internal layout */
@@ -437,7 +441,7 @@ button.menu-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: var(--space-5);
+  margin-top: auto;
   padding-top: var(--space-3);
   border-top: 1px dashed var(--line-soft);
   font-size: var(--text-xs);
@@ -467,53 +471,54 @@ button.menu-item {
   padding-top: 0;
 }
 .profile-card--centered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-inline: -16px;
-  padding: 28px 20px 22px;
-  border-radius: 0 0 24px 24px;
+  display: block;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--glass-card) !important;
+  color: var(--text-main) !important;
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight) !important;
 }
 .profile-card--centered .profile-head {
   width: 100%;
-  align-self: stretch;
-  justify-content: center;
+  align-self: auto;
+  flex-direction: row;
+  justify-content: flex-start;
 }
 .profile-card--centered .profile-info {
-  width: 100%;
-  text-align: center;
-}
-.profile-card--centered .profile-level {
-  width: 100%;
-  justify-content: center;
-}
-.profile-card--centered .profile-level__track {
-  width: min(220px, 100%);
-  margin-inline: auto;
+  width: auto;
+  text-align: left;
+  align-items: flex-start;
 }
 .profile-card--centered .avatar-wrap,
 .profile-card--centered .avatar {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
 }
 .profile-card--centered .profile-name {
-  font-size: 20px;
+  font-size: 17px;
+}
+.profile-card--centered .profile-level,
+.profile-card--centered .profile-level__track {
+  display: none;
 }
 .stat-grid-4 {
   position: relative;
   z-index: 2;
-  margin-top: 12px;
+  margin-top: 0;
 }
 .mine-quick {
-  min-height: 112px;
+  min-height: 92px;
+  padding: 10px;
   grid-template-columns: 1fr;
   justify-items: center;
   text-align: center;
 }
 .mine-quick__icon {
   grid-row: auto;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
 }
 .mine-quick strong,
