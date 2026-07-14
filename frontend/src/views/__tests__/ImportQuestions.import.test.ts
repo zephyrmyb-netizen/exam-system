@@ -191,6 +191,8 @@ describe("ImportQuestions file import behavior", () => {
     await zone.trigger("drop", { dataTransfer: { files: [file] } });
 
     expect(zone.classes()).not.toContain("is-dragging");
+    expect(zone.classes()).toContain("has-file");
+    expect(wrapper.get("[data-reference-page='import']").classes()).toContain("import-page--file-active");
     expect((wrapper.get(".opt-input").element as HTMLInputElement).value).toBe(name.slice(0, -5));
     expect(wrapper.get(".hero-drop-selected").attributes("title")).toBe(name);
     expect(wrapper.get(".hero-drop-selected").classes()).toContain("truncate-file-name");
