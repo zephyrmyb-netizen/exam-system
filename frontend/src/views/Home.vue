@@ -199,7 +199,6 @@ onMounted(() => {
         <div>
           <p class="home-hero__eyebrow">{{ greetingDate }}</p>
           <h1>{{ greeting }}，{{ greetingName }}</h1>
-          <p>从一小步开始，今天也会有收获。</p>
         </div>
         <span class="home-hero__avatar" :aria-label="`${greetingName}的头像`">{{ avatarChar }}</span>
       </div>
@@ -210,7 +209,7 @@ onMounted(() => {
       </button>
     </header>
 
-    <nav class="quick-grid fade-up d1" aria-label="快捷操作">
+    <nav class="quick-grid fade-up d1" data-testid="home-shortcuts" aria-label="快捷操作">
       <button v-for="item in coreActions" :key="item.label" class="quick" type="button" @click="goTo(item.to)">
         <span class="quick-ico">
           <component :is="item.icon" :size="18" :stroke-width="2.3" />
@@ -220,19 +219,13 @@ onMounted(() => {
       </button>
     </nav>
 
-    <div class="section-head fade-up d3">
-      <h3 class="section-title">学习概览</h3>
-      <button class="section-more" type="button" @click="goTo({ name: 'study-overview', query: { from: 'home' } })">
-        查看全部
-      </button>
-    </div>
-    <div class="overview-surface fade-up d3">
+    <div class="overview-surface fade-up d3" data-testid="home-stats">
       <p v-if="loading" class="overview-state">学习数据加载中...</p>
       <p v-if="errorMessage" class="overview-state overview-state--error">{{ errorMessage }}</p>
       <StatGrid v-if="!loading" class="overview-grid" label="首页学习统计" :items="statCards" />
     </div>
 
-    <div class="section-head fade-up d3">
+    <div class="section-head fade-up d3" data-testid="home-recent">
       <h3 class="section-title">最近题库</h3>
       <button class="section-more" type="button" @click="replaceTo('/courses')">查看全部</button>
     </div>
@@ -700,4 +693,63 @@ onMounted(() => {
 .home-recommendation {
   border-radius: 12px;
 }
+
+/* Keep the mobile reference hierarchy compact: the shortcut cards bridge the hero and stats. */
+.home-hero {
+  min-height: 140px;
+  gap: 8px;
+  padding: 14px 20px 20px;
+  box-shadow: none;
+}
+.home-hero h1 {
+  margin-top: 2px;
+  font-size: 22px;
+  line-height: 1.22;
+}
+.home-search-entry {
+  min-height: 40px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text-placeholder);
+}
+.home-search-entry span,
+.home-search-entry :deep(svg) {
+  color: var(--text-placeholder);
+}
+.quick-grid {
+  position: relative;
+  z-index: 1;
+  gap: 16px;
+  margin: -18px 0 0;
+}
+.quick {
+  min-height: 136px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 18px 16px;
+  border-radius: var(--radius-lg);
+}
+.quick-label,
+.quick-desc {
+  text-align: left;
+  white-space: normal;
+}
+.quick-desc {
+  line-height: 1.35;
+}
+.overview-surface {
+  min-height: 92px;
+  margin: 22px 0;
+  padding: 10px 8px;
+  border-radius: var(--radius-lg);
+}
+.home-page .section-head,
+.home-course-list,
+.home-page > .status-banner,
+.home-page > .empty-state {
+  margin-inline: 0;
+}
+.home-course-list { margin-top: 0; }
+.home-recommendation { margin: 16px 0; width: 100%; }
 </style>

@@ -107,7 +107,7 @@ describe("Home UX polish", () => {
     expect(wrapper.find("[data-reference-page='home']").exists()).toBe(true);
     expect(wrapper.text()).toContain("林海同学");
     expect(wrapper.get(".home-hero__avatar").text()).toBe("林");
-    expect(wrapper.text()).toContain("从一小步开始");
+    expect(wrapper.find(".home-hero__top > div > p:not(.home-hero__eyebrow)").exists()).toBe(false);
     expect(searchEntry.classes()).toContain("home-search-entry");
   });
 
@@ -121,6 +121,18 @@ describe("Home UX polish", () => {
     expect(wrapper.findAll(".quick")).toHaveLength(4);
     expect(wrapper.find(".quick-grid").attributes("aria-label")).toBe("快捷操作");
     expect(wrapper.find(".home-hero").exists()).toBe(true);
+  });
+
+  it("keeps the reference content order from shortcuts to stats to recent courses", () => {
+    const wrapper = mount(Home);
+    const page = wrapper.get("[data-reference-page='home']");
+    const children = page.element.children;
+
+    expect(wrapper.get("[data-testid='home-shortcuts']").element.compareDocumentPosition(wrapper.get("[data-testid='home-stats']").element))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(wrapper.get("[data-testid='home-stats']").element.compareDocumentPosition(wrapper.get("[data-testid='home-recent']").element))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(Array.from(children).some((child) => child.textContent?.includes("学习概览") && child.tagName === "DIV")).toBe(false);
   });
 
   it("uses real streak and recommendation fields in the reference page order", async () => {

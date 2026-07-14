@@ -80,14 +80,6 @@ const filteredCourses = computed(() => {
   });
 });
 
-const courseSummary = computed(() => {
-  const total = courses.value.length;
-  const visible = filteredCourses.value.length;
-  if (!total) return "创建题库或导入资料后，就可以开始练习。";
-  if (searchText.value.trim() || visibilityFilter.value !== "all") return `已筛选 ${visible} / ${total} 个题库`;
-  return `共 ${total} 个题库，选择一个开始练习。`;
-});
-
 const isEdit = computed(() => !!editingCourse.value);
 
 function openCreate() {
@@ -290,7 +282,7 @@ onMounted(fetchCourses);
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
     <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
-    <div v-if="courses.length > 0" class="library-tools fade-up d1">
+    <div v-if="courses.length > 0" class="library-tools fade-up d1" data-testid="course-tools">
       <div class="search-bar">
         <Search :size="18" :stroke-width="2.4" class="search-icon" />
         <input
@@ -317,8 +309,6 @@ onMounted(fetchCourses);
         @update:model-value="setVisibilityFilter"
       />
     </div>
-
-    <p v-if="courses.length > 0" class="lib-summary fade-up d1">{{ courseSummary }}</p>
 
     <div
       v-if="!loading && courses.length === 0 && !errorMessage"
@@ -349,20 +339,7 @@ onMounted(fetchCourses);
       <button class="btn-outline" type="button" @click="clearSearch">清空搜索</button>
     </div>
 
-    <div v-if="filteredCourses.length > 0" class="section-head fade-up d2">
-      <h3 class="section-title">我的题库</h3>
-      <button
-        class="section-more"
-        type="button"
-        :disabled="loading"
-        aria-label="刷新题库列表"
-        @click="fetchCourses"
-      >
-        刷新
-      </button>
-    </div>
-
-    <div v-if="filteredCourses.length > 0" class="course-list fade-up d2">
+    <div v-if="filteredCourses.length > 0" class="course-list fade-up d2" data-testid="course-list">
       <div
         v-for="(course, idx) in filteredCourses"
         :key="course.id"
@@ -1078,7 +1055,7 @@ onMounted(fetchCourses);
 }
 
 /* Keep the reference treatment after the compact desktop/mobile overrides. */
-.library-page { padding-top: 20px; }
+.library-page { padding-top: 0; }
 .library-title { letter-spacing: 0; }
 .library-tools { gap: 12px; }
 .library-tools .search-bar { min-height: 48px; border-radius: 999px; }
