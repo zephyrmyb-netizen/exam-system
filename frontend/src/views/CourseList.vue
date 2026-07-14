@@ -345,7 +345,12 @@ onMounted(fetchCourses);
       <button class="btn-outline" type="button" @click="clearSearch">清空搜索</button>
     </div>
 
-    <div v-if="filteredCourses.length > 0" class="course-list fade-up d2" data-testid="course-list">
+    <div
+      v-if="filteredCourses.length > 0"
+      class="course-list fade-up d2"
+      :class="{ 'course-list--menu-open': openCourseMenuId !== null }"
+      data-testid="course-list"
+    >
       <div
         v-for="(course, idx) in filteredCourses"
         :key="course.id"
@@ -1430,6 +1435,11 @@ onMounted(fetchCourses);
   bottom: auto;
   z-index: 100;
   max-width: calc(100% - 20px);
+}
+/* The grouped iOS list normally clips its rounded corners. While a menu is
+   open, release that clip so every management action remains reachable. */
+.library-page .course-list--menu-open {
+  overflow: visible !important;
 }
 
 @media (max-width: 700px) {

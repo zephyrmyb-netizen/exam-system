@@ -51,6 +51,9 @@ test("course menu remains fully visible above other course cards", async ({ mock
   await prepareSurface(mockedPage, "course-list");
   await mockedPage.locator(".course-row .more-btn").first().click();
 
+  const courseList = mockedPage.locator("[data-testid='course-list']");
+  await expect(courseList).toHaveClass(/course-list--menu-open/);
+  await expect(courseList).toHaveCSS("overflow", "visible");
   const options = mockedPage.locator(".course-row--menu-open .course-menu .menu-option");
   await expect(options).toHaveCount(5);
 
