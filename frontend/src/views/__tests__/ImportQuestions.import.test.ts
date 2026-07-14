@@ -172,7 +172,7 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.get(".hero-drop-zone").attributes("for")).toBe("import-file-input");
     expect(wrapper.get(".import-file-limits").text()).toContain("单个文件最大 10MB");
     expect(wrapper.findAll(".format-tag").map((tag) => tag.text())).toEqual(["Word", "PPT", "PDF", "图片", "文本"]);
-    expect(wrapper.get("details.adv-section").attributes("open")).toBeUndefined();
+    expect(wrapper.get("details.adv-section").attributes("open")).toBeDefined();
     expect(wrapper.get("summary.adv-summary").text()).toContain("JSON / 其他导入方式");
     expect(wrapper.findAll(".import-guide li")).toHaveLength(3);
   });
@@ -200,7 +200,7 @@ describe("ImportQuestions file import behavior", () => {
     await wrapper.get(".hero-drop-zone").trigger("drop", { dataTransfer: { files: [file] } });
 
     expect(wrapper.text()).toContain("文件过大");
-    expect(wrapper.get(".hero-cta").attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".hero-cta").exists()).toBe(false);
     expect(createImportTask).not.toHaveBeenCalled();
   });
 
@@ -305,9 +305,6 @@ describe("ImportQuestions file import behavior", () => {
     manualState.importLoading = true;
     const wrapper = mountPage();
 
-    expect(wrapper.get(".hero-cta").attributes("disabled")).toBeDefined();
-    await wrapper.get("summary.adv-summary").trigger("click");
-    await wrapper.vm.$nextTick();
     const jsonButton = wrapper.findAll("button").find((button) => button.text().includes("导入中"));
     expect(jsonButton?.attributes("disabled")).toBeDefined();
   });

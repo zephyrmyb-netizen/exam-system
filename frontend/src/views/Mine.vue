@@ -370,7 +370,11 @@ button.menu-item {
 }
 
 .mine-page { padding-top: 0; }
-.profile-card--centered { margin-inline: -16px; padding: 28px 20px 22px; border-radius: 0 0 24px 24px; }
+.profile-card--centered { display: flex; flex-direction: column; align-items: center; margin-inline: -16px; padding: 28px 20px 22px; border-radius: 0 0 24px 24px; }
+.profile-card--centered .profile-head { width: 100%; align-self: stretch; justify-content: center; }
+.profile-card--centered .profile-info { width: 100%; text-align: center; }
+.profile-card--centered .profile-level { width: 100%; justify-content: center; }
+.profile-card--centered .profile-level__track { width: min(220px, 100%); margin-inline: auto; }
 .profile-card--centered .avatar-wrap, .profile-card--centered .avatar { width: 64px; height: 64px; }
 .profile-card--centered .profile-name { font-size: 20px; }
 .stat-grid-4 { position: relative; z-index: 2; margin-top: -12px; }
