@@ -67,3 +67,4 @@ htmlcov/
 prompt.docx
 /*.docx
 docs/superpowers/
+.worktrees/
