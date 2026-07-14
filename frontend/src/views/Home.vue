@@ -269,6 +269,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 0 !important;
 }
 
 .home-hero {
@@ -681,7 +682,7 @@ onMounted(() => {
 }
 .overview-surface {
   min-height: 92px;
-  margin: 10px 0;
+  margin: 10px 0 2px;
   padding: 10px 8px;
   border-radius: var(--radius-lg);
 }
@@ -692,7 +693,7 @@ onMounted(() => {
   margin-inline: 0;
 }
 .home-page .section-head {
-  margin-block: 10px 8px;
+  margin-block: 8px 6px;
 }
 .home-course-list {
   margin-top: 0;
