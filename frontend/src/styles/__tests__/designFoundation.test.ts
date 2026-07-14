@@ -48,7 +48,7 @@ describe("design foundation", () => {
     const baseCss = readFrontendFile("src/styles/base.css");
 
     expect(indexHtml).toMatch(
-      /<meta\s+name="viewport"\s+content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"\s*\/>/,
+      /<meta\s+name="viewport"\s+content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"\s*\/>/,
     );
     expect(baseCss).toMatch(/html\s*\{[^}]*-webkit-text-size-adjust:\s*100%[^}]*text-size-adjust:\s*100%/s);
   });
