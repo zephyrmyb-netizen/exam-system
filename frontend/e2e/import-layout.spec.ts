@@ -79,3 +79,40 @@ for (const viewport of [
     expect(after.fileNameBottom, "file name and metadata must not overlap").toBeLessThanOrEqual(after.fileHintTop);
   });
 }
+
+test("parsed preview keeps the course selector and source file within the mobile viewport", async ({ mockedPage }) => {
+  await mockedPage.setViewportSize({ width: 390, height: 844 });
+  await prepareSurface(mockedPage, "ai-import");
+
+  await mockedPage.locator("#import-file-input").setInputFiles({
+    name: "very-long-source-file-name-for-mobile-import-layout-check.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: Buffer.from("test document"),
+  });
+  await mockedPage.locator(".hero-cta").click();
+  await expect(mockedPage.locator(".preview-root")).toBeVisible();
+
+  const layout = await mockedPage.evaluate(() => {
+    const clientWidth = document.documentElement.clientWidth;
+    const surfaces = [".preview-root", ".preview-head-text", ".course-section", ".course-row", ".course-input", ".course-select"].map(
+      (selector) => {
+        const rect = document.querySelector<HTMLElement>(selector)?.getBoundingClientRect();
+        return { selector, left: rect?.left ?? 0, right: rect?.right ?? 0, width: rect?.width ?? 0 };
+      },
+    );
+    return {
+      clientWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.scrollWidth,
+      surfaces,
+    };
+  });
+
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.clientWidth);
+  expect(layout.bodyWidth).toBeLessThanOrEqual(layout.clientWidth);
+  for (const surface of layout.surfaces) {
+    expect(surface.left, `${surface.selector} must stay inside the left edge`).toBeGreaterThanOrEqual(0);
+    expect(surface.right, `${surface.selector} must stay inside the right edge`).toBeLessThanOrEqual(layout.clientWidth);
+    expect(surface.width, `${surface.selector} must not exceed the viewport`).toBeLessThanOrEqual(layout.clientWidth);
+  }
+});

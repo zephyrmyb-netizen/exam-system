@@ -1355,6 +1355,16 @@ select.opt-input {
 .import-file-card.has-file .hero-drop-hint {
   grid-area: auto;
 }
+.import-page .import-file-card.has-file .hero-drop-icon,
+.import-page .import-file-card.has-file .import-file-card__summary,
+.import-page .import-file-card.has-file .import-file-card__actions,
+.import-page .import-file-card.has-file .hero-drop-selected,
+.import-page .import-file-card.has-file .hero-drop-hint {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  min-width: 0;
+  max-width: 100%;
+}
 .import-file-card__actions {
   display: inline-flex;
   align-items: center;

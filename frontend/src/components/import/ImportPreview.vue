@@ -333,6 +333,9 @@ function handleRetry() {
 <style scoped>
 .preview-root {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: var(--space-3);
 }
 
@@ -341,6 +344,8 @@ function handleRetry() {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 .back-btn {
   display: grid;
@@ -574,6 +579,9 @@ function handleRetry() {
 /* ── Course section ── */
 .course-section {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 6px;
 }
 .section-label {
@@ -586,11 +594,18 @@ function handleRetry() {
 }
 .course-row {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: var(--space-2);
   align-items: center;
 }
 .course-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 42px;
   padding: 8px 12px;
   border: 1.5px solid var(--line-strong);
@@ -617,6 +632,10 @@ function handleRetry() {
   font-weight: 600;
 }
 .course-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 42px;
   padding: 8px 10px;
   border: 1.5px solid var(--line-strong);
@@ -624,6 +643,9 @@ function handleRetry() {
   background: var(--surface-soft);
   font-size: var(--text-sm);
   color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Messages ── */
@@ -680,7 +702,7 @@ function handleRetry() {
 
 @media (max-width: 420px) {
   .course-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .course-or {
     text-align: center;
@@ -747,7 +769,7 @@ function handleRetry() {
     width: 100%;
   }
   .course-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .course-or {
     text-align: center;
