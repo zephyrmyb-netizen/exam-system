@@ -1267,4 +1267,99 @@ onMounted(fetchCourses);
 .course-row .course-item {
   border-radius: 12px;
 }
+
+/* Use the same compact card rhythm as the homepage without changing course management. */
+.library-page {
+  gap: 10px !important;
+  padding-bottom: calc(var(--nav-bottom-clearance) + 16px);
+}
+.library-head {
+  align-items: center;
+  min-height: 42px;
+}
+.library-title {
+  font-size: 22px;
+  line-height: 1.15;
+}
+.library-count {
+  margin-top: 2px;
+  font-size: 11px;
+}
+.library-create-button {
+  width: 40px;
+  min-height: 40px;
+  flex-basis: 40px;
+  border-radius: 12px;
+}
+.library-tools {
+  gap: 8px;
+}
+.library-tools .search-bar {
+  min-height: 44px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+}
+.library-tools .search-input {
+  min-height: 30px;
+  font-size: 14px;
+}
+.library-tools :deep(.filter-tabs) {
+  padding: 3px;
+  border-radius: 14px;
+}
+.library-tools :deep(.filter-tabs__tab) {
+  min-height: 32px;
+  padding-inline: 9px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.library-page .course-list {
+  gap: 8px;
+}
+.library-page .course-row {
+  overflow: hidden;
+  border-radius: 16px;
+}
+.library-page .course-row .course-item {
+  min-height: 68px;
+  padding: 8px 10px;
+}
+.library-page .course-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+.library-page .course-icon :deep(svg) {
+  width: 19px;
+  height: 19px;
+}
+.library-page .course-info strong {
+  font-size: 14px;
+}
+.library-page .course-subline {
+  font-size: 10px;
+}
+.library-page .course-stat strong {
+  font-size: 15px;
+}
+.library-page .practice-action,
+.library-page .more-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  border-radius: 11px;
+}
+.library-page .course-row__progress {
+  height: 4px;
+  margin: 0 10px 8px 58px;
+}
+
+@media (max-width: 700px) {
+  .library-page .course-row .course-item {
+    grid-template-columns: 38px minmax(0, 1fr) auto 40px 40px;
+    gap: 7px;
+    min-height: 68px;
+    padding: 8px 10px;
+  }
+}
 </style>
