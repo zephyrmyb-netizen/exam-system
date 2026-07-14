@@ -1047,6 +1047,13 @@ onMounted(() => {
   resize: vertical;
 }
 
+/* iOS/WebView auto-zooms focused controls below 16px, leaving the page clipped after file selection. */
+.file-input-native,
+.opt-input,
+.adv-textarea {
+  font-size: 16px;
+}
+
 .adv-extracted {
   display: grid;
   gap: var(--space-2);

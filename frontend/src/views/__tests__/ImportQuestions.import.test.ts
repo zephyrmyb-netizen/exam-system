@@ -198,6 +198,12 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.get(".hero-drop-selected").classes()).toContain("truncate-file-name");
   });
 
+  it("keeps file and destination controls above the iOS auto-zoom threshold", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/views/ImportQuestions.vue"), "utf8");
+
+    expect(source).toMatch(/\.file-input-native,\s*\.opt-input,\s*\.adv-textarea\s*\{\s*font-size:\s*16px/s);
+  });
+
   it("rejects an oversized dropped file before starting an AI task", async () => {
     const wrapper = mountPage();
     const file = new File([new Uint8Array(10 * 1024 * 1024 + 1)], "too-large.pdf");
