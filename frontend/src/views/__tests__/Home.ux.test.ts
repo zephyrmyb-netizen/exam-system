@@ -9,6 +9,11 @@ const replace = vi.fn();
 const searchMocks = vi.hoisted(() => ({
   openGlobalSearch: vi.fn(),
 }));
+const courseActionMocks = vi.hoisted(() => ({
+  requestPost: vi.fn(),
+  requestDelete: vi.fn(),
+  confirm: vi.fn(),
+}));
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -54,6 +59,15 @@ vi.mock("../../api/courses", () => ({
   getMyCourses: () => Promise.resolve(courses.value),
 }));
 
+vi.mock("../../api/request", () => ({
+  default: { post: courseActionMocks.requestPost, delete: courseActionMocks.requestDelete },
+  getErrorMessage: (_error: unknown, fallback: string) => fallback,
+}));
+
+vi.mock("../../stores/confirmDialog", () => ({
+  useConfirmDialog: () => ({ confirm: courseActionMocks.confirm }),
+}));
+
 vi.mock("../../utils/globalSearch", () => ({
   openGlobalSearch: searchMocks.openGlobalSearch,
 }));
@@ -76,6 +90,10 @@ describe("Home UX polish", () => {
   beforeEach(() => {
     replace.mockClear();
     searchMocks.openGlobalSearch.mockClear();
+    courseActionMocks.requestPost.mockReset();
+    courseActionMocks.requestDelete.mockReset();
+    courseActionMocks.confirm.mockReset();
+    courseActionMocks.confirm.mockResolvedValue(false);
     courses.value = [];
     loading.value = false;
     errorMessage.value = "";
@@ -274,6 +292,8 @@ describe("Home UX polish", () => {
     expect(moreButton.attributes("aria-label")).toContain("机器学习");
 
     await moreButton.trigger("click");
-    expect(replace).toHaveBeenCalledWith("/courses");
+    expect(replace).not.toHaveBeenCalled();
+    expect(wrapper.findAll(".home-course-menu .home-menu-option")).toHaveLength(5);
+    expect(wrapper.find(".home-course-list").classes()).toContain("home-course-list--menu-open");
   });
 });
