@@ -34,6 +34,8 @@ describe("design foundation", () => {
       expect(darkBlock, `missing dark token ${token}`).toContain(token);
     }
     expect(baseCss).toContain("@media (min-width: 760px)");
+    expect(baseCss).toMatch(/body\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*max-width:\s*100%/s);
+    expect(baseCss).toMatch(/input\[type="file"\],[\s\S]*?font-size:\s*16px\s*!important/s);
   });
 
   it("has no competing root token blocks in legacy stylesheets", () => {

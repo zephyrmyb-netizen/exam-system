@@ -178,7 +178,9 @@ html {
 }
 
 body {
-  min-width: 320px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
@@ -226,6 +228,8 @@ a:focus:not(:focus-visible) {
 
 #app {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -233,6 +237,7 @@ a:focus:not(:focus-visible) {
 }
 
 @media (max-width: 759px) {
+  input[type="file"],
   input[type="text"],
   input[type="password"],
   input[type="email"],

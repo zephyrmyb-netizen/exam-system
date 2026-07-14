@@ -170,7 +170,10 @@ function selectFile(file, input = null) {
 }
 
 function onFileChange(event) {
-  selectFile(event.target.files?.[0] || null, event.target);
+  const input = event.target;
+  selectFile(input.files?.[0] || null, input);
+  // Native iOS/WebView file pickers can leave the hidden control focused and zoom the whole page.
+  input.blur();
 }
 
 function onDragEnter() {
