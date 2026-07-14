@@ -57,6 +57,8 @@ describe("Mine UX polish", () => {
     expect(wrapper.get("[data-stat-today]").text()).toContain("今日练习");
     expect(wrapper.find(".profile-card--centered").exists()).toBe(true);
     expect(wrapper.text()).toContain("Student");
+    expect(wrapper.get(".profile-id").text()).toContain("UID: 7");
+    expect(wrapper.findAll(".mine-quick")).toHaveLength(4);
     expect(wrapper.get("[data-stat-streak]").text()).toContain("5");
     expect(wrapper.get("[data-stat-today]").text()).toContain("2");
   });
@@ -67,7 +69,7 @@ describe("Mine UX polish", () => {
 
     expect(wrapper.get(".profile-name").text()).toBe("未登录");
     expect(wrapper.get(".avatar").text()).toBe("未");
-    expect(wrapper.get(".profile-tag").text()).toContain("未登录");
+    expect(wrapper.get(".profile-id").text()).toContain("UID: --");
     expect(wrapper.get("[data-stat-today]").text()).toContain("2");
   });
 
