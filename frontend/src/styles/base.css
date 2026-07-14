@@ -107,7 +107,7 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
   --shell-max: 420px;
   --reference-nav-max: 388px;
-  --reference-nav-offset: 8px;
+  --reference-nav-offset: 0px;
   --nav-height: 64px;
   --nav-safe-gap: max(32px, var(--safe-area-bottom));
   --nav-bottom-clearance: calc(96px + var(--safe-area-bottom));
