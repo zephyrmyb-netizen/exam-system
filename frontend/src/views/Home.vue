@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
-import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, ScanLine, Target, TrendingUp } from "@lucide/vue";
+import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, MoreHorizontal, ScanLine, Target, TrendingUp } from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
@@ -216,6 +216,15 @@ onMounted(() => {
             </span>
           </div>
         </button>
+        <button
+          class="home-course-more"
+          data-home-course-more
+          type="button"
+          :aria-label="`管理题库：${getCourseDisplayName(course)}`"
+          @click.stop="replaceTo('/courses')"
+        >
+          <MoreHorizontal :size="18" :stroke-width="2.5" />
+        </button>
       </div>
     </div>
 
@@ -372,6 +381,8 @@ onMounted(() => {
 }
 
 .course-item {
+  display: flex;
+  align-items: center;
   border-radius: 8px;
 }
 
@@ -384,7 +395,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-3);
   flex: 1;
-  width: 100%;
+  width: auto;
   min-width: 0;
   min-height: 44px;
   background: transparent;
@@ -393,6 +404,24 @@ onMounted(() => {
   text-align: left;
   cursor: pointer;
   color: inherit;
+}
+.home-course-more {
+  display: grid;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.home-course-more:hover {
+  background: var(--surface-soft);
+  color: var(--text-main);
 }
 
 .course-progress {
