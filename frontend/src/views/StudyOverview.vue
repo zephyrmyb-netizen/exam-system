@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import {
-  BookMarked,
-  BookOpen,
-  Clock,
-  RefreshCw,
-  Target,
-  TrendingUp,
-  Zap,
-} from "@lucide/vue";
+import { BookMarked, BookOpen, Clock, RefreshCw, Target, TrendingUp, Zap } from "@lucide/vue";
 import ActivityTrendChart from "../components/charts/ActivityTrendChart.vue";
 import CourseAnalyticsChart from "../components/charts/CourseAnalyticsChart.vue";
 import HeatmapChart from "../components/charts/HeatmapChart.vue";
@@ -151,9 +143,7 @@ onMounted(() => fetchAll());
           <RefreshCw :size="15" :stroke-width="2.5" />
           错题强化
         </button>
-        <button class="ghost-button" type="button" @click="replaceTo('/practice')">
-          开始练习
-        </button>
+        <button class="ghost-button" type="button" @click="replaceTo('/practice')">开始练习</button>
       </div>
     </div>
   </section>
@@ -194,11 +184,21 @@ onMounted(() => fetchAll());
   justify-self: center;
   margin-bottom: 1px;
 }
-.stat-icon.teal { color: var(--teal); }
-.stat-icon.blue { color: var(--primary); }
-.stat-icon.rose { color: var(--rose); }
-.stat-icon.amber { color: var(--amber); }
-.stat-icon.green { color: var(--emerald); }
+.stat-icon.teal {
+  color: var(--teal);
+}
+.stat-icon.blue {
+  color: var(--primary);
+}
+.stat-icon.rose {
+  color: var(--rose);
+}
+.stat-icon.amber {
+  color: var(--amber);
+}
+.stat-icon.green {
+  color: var(--emerald);
+}
 
 .stat-val {
   color: var(--text-main);
@@ -207,10 +207,18 @@ onMounted(() => fetchAll());
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
-.stat-val.blue { color: var(--primary-strong); }
-.stat-val.rose { color: var(--rose); }
-.stat-val.amber { color: var(--amber); }
-.stat-val.green { color: var(--emerald); }
+.stat-val.blue {
+  color: var(--primary-strong);
+}
+.stat-val.rose {
+  color: var(--rose);
+}
+.stat-val.amber {
+  color: var(--amber);
+}
+.stat-val.green {
+  color: var(--emerald);
+}
 
 .stat-lbl {
   color: var(--text-muted);
@@ -218,9 +226,15 @@ onMounted(() => fetchAll());
   font-weight: 600;
 }
 
-.green .stat-val { color: var(--emerald); }
-.amber .stat-val { color: var(--amber); }
-.rose .stat-val { color: var(--rose); }
+.green .stat-val {
+  color: var(--emerald);
+}
+.amber .stat-val {
+  color: var(--amber);
+}
+.rose .stat-val {
+  color: var(--rose);
+}
 
 .insight-strip {
   display: grid;

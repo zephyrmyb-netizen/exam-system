@@ -5,13 +5,16 @@ import { X } from "@lucide/vue";
 import Button from "./button/Button.vue";
 import Card from "./card/Card.vue";
 
-const props = withDefaults(defineProps<{
-  modelValue: boolean;
-  title: string;
-  closeOnBackdrop?: boolean;
-}>(), {
-  closeOnBackdrop: true,
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    title: string;
+    closeOnBackdrop?: boolean;
+  }>(),
+  {
+    closeOnBackdrop: true,
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
@@ -32,9 +35,7 @@ const focusableSelector = [
 ].join(",");
 
 function focusableElements(): HTMLElement[] {
-  return dialogRef.value
-    ? Array.from(dialogRef.value.querySelectorAll<HTMLElement>(focusableSelector))
-    : [];
+  return dialogRef.value ? Array.from(dialogRef.value.querySelectorAll<HTMLElement>(focusableSelector)) : [];
 }
 
 async function moveFocusInside() {
@@ -93,10 +94,13 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch(() => props.modelValue, (isOpen, wasOpen) => {
-  if (isOpen && !wasOpen) void moveFocusInside();
-  if (!isOpen && wasOpen) restoreFocus();
-});
+watch(
+  () => props.modelValue,
+  (isOpen, wasOpen) => {
+    if (isOpen && !wasOpen) void moveFocusInside();
+    if (!isOpen && wasOpen) restoreFocus();
+  },
+);
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeydown);

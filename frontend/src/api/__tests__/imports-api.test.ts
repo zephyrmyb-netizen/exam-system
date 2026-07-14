@@ -30,7 +30,9 @@ describe("imports api", () => {
   });
 
   it("allows enough time for a large mobile upload to create its background task", async () => {
-    const file = new File(["large"], "long-review.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    const file = new File(["large"], "long-review.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
 
     await createImportTask(file, { course_name: "期末复习" });
 

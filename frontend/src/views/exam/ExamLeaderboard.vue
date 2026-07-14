@@ -71,7 +71,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.leaderboard-page { display: grid; gap: var(--space-4); }
+.leaderboard-page {
+  display: grid;
+  gap: var(--space-4);
+}
 .back-button {
   justify-self: start;
   display: inline-flex;
@@ -137,8 +140,14 @@ onMounted(() => {
   color: var(--text-muted);
   text-align: center;
 }
-.empty-card strong { color: var(--text-main); font-size: var(--text-lg); }
-.leaderboard-list { display: grid; gap: var(--space-3); }
+.empty-card strong {
+  color: var(--text-main);
+  font-size: var(--text-lg);
+}
+.leaderboard-list {
+  display: grid;
+  gap: var(--space-3);
+}
 .leaderboard-row {
   display: grid;
   grid-template-columns: 52px 1fr auto;
@@ -178,6 +187,11 @@ onMounted(() => {
   font-size: var(--text-xs);
   font-weight: 800;
 }
-.score-block { justify-items: end; }
-.score-block strong { font-size: var(--text-2xl); line-height: 1; }
+.score-block {
+  justify-items: end;
+}
+.score-block strong {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
 </style>

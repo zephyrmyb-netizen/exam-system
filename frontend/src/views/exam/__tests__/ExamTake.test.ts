@@ -150,9 +150,12 @@ describe("ExamTake", () => {
   it("does not sync or start a timer after a slow start resolves post-unmount", async () => {
     vi.useFakeTimers();
     let resolveStart!: () => void;
-    store.startAttempt.mockImplementationOnce(() => new Promise<void>((resolve) => {
-      resolveStart = resolve;
-    }));
+    store.startAttempt.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
     const mounted = mountExam();
 
     mounted.unmount();
@@ -223,7 +226,11 @@ describe("ExamTake", () => {
 
     expect(wrapper.findAll("[data-exam-answer-sheet] .answer-map button")).toHaveLength(2);
     expect(wrapper.findAll("[data-exam-answer-sheet] .answer-map button")[0].classes()).toContain("answered");
-    expect(wrapper.findAll("[data-exam-answer-sheet] .answer-map button").map((button) => button.attributes("data-question-id"))).toEqual(["9", "2"]);
+    expect(
+      wrapper
+        .findAll("[data-exam-answer-sheet] .answer-map button")
+        .map((button) => button.attributes("data-question-id")),
+    ).toEqual(["9", "2"]);
   });
 
   it("uses the shared accessible bottom sheet for the answer card", async () => {

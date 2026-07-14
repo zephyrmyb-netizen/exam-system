@@ -30,15 +30,17 @@ function makeExamDetail(id = 1): ExamDetail {
     status: "published",
     question_count: 1,
     created_at: null,
-    questions: [{
-      id: id * 10,
-      question_id: id * 20,
-      question_type: "single_choice",
-      question: `${id}+${id}=?`,
-      options: { A: "1", B: "2" },
-      score: 1,
-      order_index: 0,
-    }],
+    questions: [
+      {
+        id: id * 10,
+        question_id: id * 20,
+        question_type: "single_choice",
+        question: `${id}+${id}=?`,
+        options: { A: "1", B: "2" },
+        score: 1,
+        order_index: 0,
+      },
+    ],
   };
 }
 
@@ -135,19 +137,18 @@ describe("exam store", () => {
     expect(store.result?.accuracy_rate).toBe(100);
   });
 
-  it.each([
-    "2026-07-14T02:00:00.000000",
-    "2026-07-14T02:00:00.000Z",
-    "2026-07-14T10:00:00.000+08:00",
-  ])("derives remaining time from API start time %s", async (startedAt) => {
-    const store = useExamStore();
-    await store.startAttempt(1);
+  it.each(["2026-07-14T02:00:00.000000", "2026-07-14T02:00:00.000Z", "2026-07-14T10:00:00.000+08:00"])(
+    "derives remaining time from API start time %s",
+    async (startedAt) => {
+      const store = useExamStore();
+      await store.startAttempt(1);
 
-    store.currentAttempt!.started_at = startedAt;
-    store.syncRemainingSeconds(Date.parse("2026-07-14T02:12:34.000Z"));
+      store.currentAttempt!.started_at = startedAt;
+      store.syncRemainingSeconds(Date.parse("2026-07-14T02:12:34.000Z"));
 
-    expect(store.remainingSeconds).toBe(47 * 60 + 26);
-  });
+      expect(store.remainingSeconds).toBe(47 * 60 + 26);
+    },
+  );
 
   it("does not invent a countdown when the server did not provide a start time", async () => {
     const store = useExamStore();
@@ -172,9 +173,12 @@ describe("exam store", () => {
     store.setAnswer(20, "B");
 
     let resolveSubmission!: (value: typeof submittedResult) => void;
-    vi.mocked(submitExam).mockImplementationOnce(() => new Promise((resolve) => {
-      resolveSubmission = resolve;
-    }));
+    vi.mocked(submitExam).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSubmission = resolve;
+        }),
+    );
 
     const manualSubmission = store.submitCurrentExam();
     const timerSubmission = store.submitCurrentExam();
@@ -191,9 +195,7 @@ describe("exam store", () => {
   it("clears the in-flight guard after failure so a safe retry can submit", async () => {
     const store = useExamStore();
     await store.startAttempt(1);
-    vi.mocked(submitExam)
-      .mockRejectedValueOnce(new Error("network down"))
-      .mockResolvedValueOnce(submittedResult);
+    vi.mocked(submitExam).mockRejectedValueOnce(new Error("network down")).mockResolvedValueOnce(submittedResult);
 
     await expect(store.submitCurrentExam()).rejects.toThrow("network down");
     expect(store.submitting).toBe(false);
@@ -236,12 +238,8 @@ describe("exam store", () => {
     const firstAttempt = deferred<ExamAttempt>();
     const secondDetail = deferred<ExamDetail>();
     const secondAttempt = deferred<ExamAttempt>();
-    vi.mocked(getExamDetail)
-      .mockReturnValueOnce(firstDetail.promise)
-      .mockReturnValueOnce(secondDetail.promise);
-    vi.mocked(startExam)
-      .mockReturnValueOnce(firstAttempt.promise)
-      .mockReturnValueOnce(secondAttempt.promise);
+    vi.mocked(getExamDetail).mockReturnValueOnce(firstDetail.promise).mockReturnValueOnce(secondDetail.promise);
+    vi.mocked(startExam).mockReturnValueOnce(firstAttempt.promise).mockReturnValueOnce(secondAttempt.promise);
 
     const firstStart = store.startAttempt(1);
     const secondStart = store.startAttempt(2);
@@ -264,12 +262,8 @@ describe("exam store", () => {
     const firstAttempt = deferred<ExamAttempt>();
     const secondDetail = deferred<ExamDetail>();
     const secondAttempt = deferred<ExamAttempt>();
-    vi.mocked(getExamDetail)
-      .mockReturnValueOnce(firstDetail.promise)
-      .mockReturnValueOnce(secondDetail.promise);
-    vi.mocked(startExam)
-      .mockReturnValueOnce(firstAttempt.promise)
-      .mockReturnValueOnce(secondAttempt.promise);
+    vi.mocked(getExamDetail).mockReturnValueOnce(firstDetail.promise).mockReturnValueOnce(secondDetail.promise);
+    vi.mocked(startExam).mockReturnValueOnce(firstAttempt.promise).mockReturnValueOnce(secondAttempt.promise);
 
     const firstStart = store.startAttempt(1);
     const secondStart = store.startAttempt(1);
@@ -288,9 +282,7 @@ describe("exam store", () => {
     const store = useExamStore();
     const firstDetail = deferred<ExamDetail>();
     const secondDetail = deferred<ExamDetail>();
-    vi.mocked(getExamDetail)
-      .mockReturnValueOnce(firstDetail.promise)
-      .mockReturnValueOnce(secondDetail.promise);
+    vi.mocked(getExamDetail).mockReturnValueOnce(firstDetail.promise).mockReturnValueOnce(secondDetail.promise);
 
     const firstLoad = store.loadExam(1);
     const secondLoad = store.loadExam(2);
@@ -308,9 +300,7 @@ describe("exam store", () => {
     const store = useExamStore();
     const firstDetail = deferred<ExamDetail>();
     const secondDetail = deferred<ExamDetail>();
-    vi.mocked(getExamDetail)
-      .mockReturnValueOnce(firstDetail.promise)
-      .mockReturnValueOnce(secondDetail.promise);
+    vi.mocked(getExamDetail).mockReturnValueOnce(firstDetail.promise).mockReturnValueOnce(secondDetail.promise);
 
     const firstLoad = store.loadExam(1);
     const secondLoad = store.loadExam(2);
@@ -327,9 +317,12 @@ describe("exam store", () => {
     const store = useExamStore();
     await store.startAttempt(1);
     let resolveOldSubmission!: (value: typeof submittedResult) => void;
-    vi.mocked(submitExam).mockImplementationOnce(() => new Promise((resolve) => {
-      resolveOldSubmission = resolve;
-    }));
+    vi.mocked(submitExam).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOldSubmission = resolve;
+        }),
+    );
 
     const oldSubmission = store.submitCurrentExam();
     await store.startAttempt(1);

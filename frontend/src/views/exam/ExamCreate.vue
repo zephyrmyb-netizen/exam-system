@@ -159,7 +159,10 @@ watch(selectedCourseId, loadQuestions);
 </template>
 
 <style scoped>
-.exam-create-page { display: grid; gap: var(--space-4); }
+.exam-create-page {
+  display: grid;
+  gap: var(--space-4);
+}
 .create-hero {
   display: grid;
   gap: var(--space-1);
@@ -168,13 +171,39 @@ watch(selectedCourseId, loadQuestions);
   background: linear-gradient(135deg, #eaf3ff, #f6fbff);
   border: 1px solid var(--line-soft);
 }
-.create-hero p, .create-hero h1, .create-hero span { margin: 0; }
-.create-hero p { color: var(--primary); font-size: var(--text-xs); font-weight: 900; }
-.create-hero h1 { color: var(--text-main); font-size: clamp(28px, 7vw, 42px); line-height: 1.1; }
-.create-hero span { color: var(--text-muted); font-size: var(--text-sm); }
-.create-form { display: grid; gap: var(--space-3); }
-.create-form label { display: grid; gap: 7px; color: var(--text-muted); font-size: var(--text-xs); font-weight: 900; }
-.create-form input, .create-form textarea, .create-form select {
+.create-hero p,
+.create-hero h1,
+.create-hero span {
+  margin: 0;
+}
+.create-hero p {
+  color: var(--primary);
+  font-size: var(--text-xs);
+  font-weight: 900;
+}
+.create-hero h1 {
+  color: var(--text-main);
+  font-size: clamp(28px, 7vw, 42px);
+  line-height: 1.1;
+}
+.create-hero span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.create-form {
+  display: grid;
+  gap: var(--space-3);
+}
+.create-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 900;
+}
+.create-form input,
+.create-form textarea,
+.create-form select {
   width: 100%;
   min-height: 48px;
   border: 1px solid var(--line-soft);
@@ -184,11 +213,31 @@ watch(selectedCourseId, loadQuestions);
   color: var(--text-main);
   font: inherit;
 }
-.create-form textarea { min-height: 92px; padding-top: 12px; }
-.form-grid { display: grid; grid-template-columns: 1fr 96px 96px; gap: var(--space-2); }
-.question-picker { display: grid; gap: var(--space-2); }
-.picker-head { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: var(--text-sm); font-weight: 850; }
-.picker-head strong { color: var(--text-main); font-size: var(--text-lg); }
+.create-form textarea {
+  min-height: 92px;
+  padding-top: 12px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 96px 96px;
+  gap: var(--space-2);
+}
+.question-picker {
+  display: grid;
+  gap: var(--space-2);
+}
+.picker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 850;
+}
+.picker-head strong {
+  color: var(--text-main);
+  font-size: var(--text-lg);
+}
 .question-row {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
@@ -212,9 +261,24 @@ watch(selectedCourseId, loadQuestions);
   background: var(--surface-soft);
   color: var(--primary);
 }
-.question-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.question-row.selected { border-color: var(--primary); background: var(--primary-soft); }
-.empty-panel { padding: var(--space-5); border: 1px dashed var(--line-strong); border-radius: 20px; background: var(--surface); color: var(--text-muted); text-align: center; font-weight: 800; }
+.question-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.question-row.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.empty-panel {
+  padding: var(--space-5);
+  border: 1px dashed var(--line-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 800;
+}
 .sticky-actions {
   position: sticky;
   bottom: calc(110px + env(safe-area-inset-bottom));
@@ -240,7 +304,18 @@ watch(selectedCourseId, loadQuestions);
   font: inherit;
   font-weight: 900;
 }
-.sticky-actions button.primary { border: 0; background: var(--primary); color: #fff; box-shadow: var(--shadow-primary); }
-.sticky-actions button:disabled { opacity: .55; }
-@media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+.sticky-actions button.primary {
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+.sticky-actions button:disabled {
+  opacity: 0.55;
+}
+@media (max-width: 520px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

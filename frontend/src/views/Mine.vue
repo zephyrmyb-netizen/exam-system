@@ -66,9 +66,27 @@ const quickItems = computed(() => [
     to: { name: "wrongbook", query: { from: "mine" } },
     tone: "rose",
   },
-  { label: "收藏题目", desc: "重点题目", icon: Bookmark, to: { name: "bookmarks", query: { from: "mine" } }, tone: "amber" },
-  { label: "练习记录", desc: "查看学习轨迹", icon: Clock, to: { name: "practice-history", query: { from: "mine" } }, tone: "blue" },
-  { label: "AI 对话", desc: "智能复习助手", icon: MessageCircle, to: { name: "chat", query: { from: "mine" } }, tone: "emerald" },
+  {
+    label: "收藏题目",
+    desc: "重点题目",
+    icon: Bookmark,
+    to: { name: "bookmarks", query: { from: "mine" } },
+    tone: "amber",
+  },
+  {
+    label: "练习记录",
+    desc: "查看学习轨迹",
+    icon: Clock,
+    to: { name: "practice-history", query: { from: "mine" } },
+    tone: "blue",
+  },
+  {
+    label: "AI 对话",
+    desc: "智能复习助手",
+    icon: MessageCircle,
+    to: { name: "chat", query: { from: "mine" } },
+    tone: "emerald",
+  },
 ]);
 
 function toggleTheme() {
@@ -115,11 +133,7 @@ onMounted(() => fetchAll());
       type="button"
       @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
     >
-      <StatGrid
-        class="stat-grid-4"
-        label="我的学习统计"
-        :items="mineStatItems"
-      />
+      <StatGrid class="stat-grid-4" label="我的学习统计" :items="mineStatItems" />
     </button>
 
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
@@ -129,14 +143,10 @@ onMounted(() => fetchAll());
       <h3 class="section-title">快捷入口</h3>
     </div>
     <nav class="mine-quick-grid fade-up d3">
-      <button
-        v-for="item in quickItems"
-        :key="item.label"
-        class="mine-quick"
-        type="button"
-        @click="goTo(item.to)"
-      >
-        <span class="mine-quick__icon" :class="`mine-quick__icon--${item.tone}`"><component :is="item.icon" :size="20" :stroke-width="2.2" /></span>
+      <button v-for="item in quickItems" :key="item.label" class="mine-quick" type="button" @click="goTo(item.to)">
+        <span class="mine-quick__icon" :class="`mine-quick__icon--${item.tone}`"
+          ><component :is="item.icon" :size="20" :stroke-width="2.2"
+        /></span>
         <strong>{{ item.label }}</strong>
         <small>{{ item.desc }}</small>
       </button>
@@ -212,28 +222,56 @@ onMounted(() => fetchAll());
   max-width: 100%;
 }
 
-.profile-card { padding: var(--space-3); }
-.profile-card { border-radius: var(--radius-xl); }
-.profile-card--centered { text-align: center; }
-.profile-card--centered .profile-head { flex-direction: column; align-items: center; }
-.profile-card--centered .profile-info { align-items: center; }
+.profile-card {
+  padding: var(--space-3);
+}
+.profile-card {
+  border-radius: var(--radius-xl);
+}
+.profile-card--centered {
+  text-align: center;
+}
+.profile-card--centered .profile-head {
+  flex-direction: column;
+  align-items: center;
+}
+.profile-card--centered .profile-info {
+  align-items: center;
+}
 
 .profile-level {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   margin-top: 14px;
-  color: rgba(255,255,255,.9);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 11px;
   font-weight: 700;
 }
-.profile-level__track { height: 5px; margin-top: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.28); }
-.profile-level__track i { display: block; width: 0; height: 100%; border-radius: inherit; background: rgba(255,255,255,.94); }
+.profile-level__track {
+  height: 5px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+.profile-level__track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.94);
+}
 
-.profile-head { min-height: 44px; }
+.profile-head {
+  min-height: 44px;
+}
 
 .avatar-wrap,
-.avatar { width: 56px; height: 56px; }
+.avatar {
+  width: 56px;
+  height: 56px;
+}
 
 /* Clickable stat grid (button element reset) */
 button.stat-link {
@@ -254,7 +292,11 @@ button.stat-link:active :deep(.stat-grid__item) {
   border-color: var(--primary-border);
 }
 
-.stat-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
 .stat-grid-4 :deep(.stat-grid__item) {
   min-height: 72px;
   padding: 14px 4px;
@@ -282,15 +324,47 @@ button.stat-link:active :deep(.stat-grid__item) {
   text-align: left;
   box-shadow: var(--shadow-xs), var(--glass-inner-highlight);
 }
-.mine-quick:active { transform: scale(.98); }
-.mine-quick__icon { display: grid; width: 36px; height: 36px; grid-row: span 2; place-items: center; border-radius: 13px; }
-.mine-quick__icon--rose { background: var(--rose-soft); color: var(--rose); }
-.mine-quick__icon--amber { background: var(--amber-soft); color: var(--amber); }
-.mine-quick__icon--blue { background: #eff6ff; color: #2563eb; }
-.mine-quick__icon--emerald { background: var(--primary-soft); color: var(--primary-strong); }
-.mine-quick strong, .mine-quick small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mine-quick strong { font-size: 13px; }
-.mine-quick small { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+.mine-quick:active {
+  transform: scale(0.98);
+}
+.mine-quick__icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 13px;
+}
+.mine-quick__icon--rose {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.mine-quick__icon--amber {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.mine-quick__icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.mine-quick__icon--emerald {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.mine-quick strong,
+.mine-quick small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mine-quick strong {
+  font-size: 13px;
+}
+.mine-quick small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
 
 /* Button / label menu-item resets */
 button.menu-item {
@@ -304,8 +378,12 @@ button.menu-item {
   align-items: center;
 }
 
-.menu-item { min-height: 52px; }
-.menu-item { border-radius: 8px; }
+.menu-item {
+  min-height: 52px;
+}
+.menu-item {
+  border-radius: 8px;
+}
 .menu-item:active {
   transform: translateX(2px);
 }
@@ -338,9 +416,21 @@ button.menu-item {
   background: var(--line-strong);
   transition: background var(--ease-out);
 }
-.theme-switch i { display: block; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-xs); transition: transform var(--ease-out); }
-.theme-switch.is-active { background: var(--primary); }
-.theme-switch.is-active i { transform: translateX(16px); }
+.theme-switch i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--ease-out);
+}
+.theme-switch.is-active {
+  background: var(--primary);
+}
+.theme-switch.is-active i {
+  transform: translateX(16px);
+}
 
 /* Footer */
 .mine-foot {
@@ -365,25 +455,72 @@ button.menu-item {
 }
 
 @media (max-width: 420px) {
-  .stat-grid-4 :deep(.stat-grid__value) { font-size: var(--text-lg); }
-  .menu-item { min-height: 52px; }
+  .stat-grid-4 :deep(.stat-grid__value) {
+    font-size: var(--text-lg);
+  }
+  .menu-item {
+    min-height: 52px;
+  }
 }
 
-.mine-page { padding-top: 0; }
-.profile-card--centered { display: flex; flex-direction: column; align-items: center; margin-inline: -16px; padding: 28px 20px 22px; border-radius: 0 0 24px 24px; }
-.profile-card--centered .profile-head { width: 100%; align-self: stretch; justify-content: center; }
-.profile-card--centered .profile-info { width: 100%; text-align: center; }
-.profile-card--centered .profile-level { width: 100%; justify-content: center; }
-.profile-card--centered .profile-level__track { width: min(220px, 100%); margin-inline: auto; }
-.profile-card--centered .avatar-wrap, .profile-card--centered .avatar { width: 64px; height: 64px; }
-.profile-card--centered .profile-name { font-size: 20px; }
+.mine-page {
+  padding-top: 0;
+}
+.profile-card--centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-inline: -16px;
+  padding: 28px 20px 22px;
+  border-radius: 0 0 24px 24px;
+}
+.profile-card--centered .profile-head {
+  width: 100%;
+  align-self: stretch;
+  justify-content: center;
+}
+.profile-card--centered .profile-info {
+  width: 100%;
+  text-align: center;
+}
+.profile-card--centered .profile-level {
+  width: 100%;
+  justify-content: center;
+}
+.profile-card--centered .profile-level__track {
+  width: min(220px, 100%);
+  margin-inline: auto;
+}
+.profile-card--centered .avatar-wrap,
+.profile-card--centered .avatar {
+  width: 64px;
+  height: 64px;
+}
+.profile-card--centered .profile-name {
+  font-size: 20px;
+}
 .stat-grid-4 {
   position: relative;
   z-index: 2;
   margin-top: 12px;
 }
-.mine-quick { min-height: 112px; grid-template-columns: 1fr; justify-items: center; text-align: center; }
-.mine-quick__icon { grid-row: auto; width: 48px; height: 48px; border-radius: 50%; }
-.mine-quick strong, .mine-quick small { max-width: 100%; }
-.menu-list { margin-top: 4px; }
+.mine-quick {
+  min-height: 112px;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+.mine-quick__icon {
+  grid-row: auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+.mine-quick strong,
+.mine-quick small {
+  max-width: 100%;
+}
+.menu-list {
+  margin-top: 4px;
+}
 </style>

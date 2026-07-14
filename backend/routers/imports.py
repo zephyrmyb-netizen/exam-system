@@ -11,8 +11,7 @@ from ..crud import derive_course_name_from_filename
 from ..database import get_db
 from ..ratelimit import RateLimiter, get_limiter
 from ..schemas import ImportedQuestion
-from ..services import imports_service
-from ..services import import_task_service
+from ..services import import_task_service, imports_service
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 

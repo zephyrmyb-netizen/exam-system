@@ -53,7 +53,7 @@ function initForm() {
     const opts = q.options;
     if (opts && typeof opts === "object") {
       const keys = Object.keys(opts).sort();
-      form.options = keys.map(k => opts[k]);
+      form.options = keys.map((k) => opts[k]);
     } else {
       form.options = ["", ""];
     }
@@ -79,7 +79,7 @@ function validate() {
   if (!form.answer.trim()) errors.push("请输入答案");
 
   if (t === "single_choice" || t === "multiple_choice") {
-    const filled = form.options.filter(o => o.trim());
+    const filled = form.options.filter((o) => o.trim());
     if (filled.length < 2) errors.push("选择题至少需要 2 个有效选项");
   }
 
@@ -304,7 +304,9 @@ watch(() => props.question, initForm);
   color: var(--text-muted);
   cursor: pointer;
 }
-.editor-close:hover { background: var(--surface-soft); }
+.editor-close:hover {
+  background: var(--surface-soft);
+}
 
 .editor-body {
   display: grid;
@@ -369,7 +371,9 @@ watch(() => props.question, initForm);
   gap: var(--space-2);
 }
 
-.flex-1 { flex: 1; }
+.flex-1 {
+  flex: 1;
+}
 
 /* Options list */
 .options-list {
@@ -410,7 +414,11 @@ watch(() => props.question, initForm);
   font-weight: 700;
   cursor: pointer;
 }
-.add-opt-btn:hover { background: var(--primary-soft); border-color: var(--primary-border); color: var(--primary-strong); }
+.add-opt-btn:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+  color: var(--primary-strong);
+}
 
 .opt-remove {
   display: grid;
@@ -423,7 +431,10 @@ watch(() => props.question, initForm);
   color: var(--text-placeholder);
   cursor: pointer;
 }
-.opt-remove:hover { background: var(--rose-soft); color: var(--rose); }
+.opt-remove:hover {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
 
 .error-msg {
   margin: 0;
@@ -463,7 +474,9 @@ watch(() => props.question, initForm);
   font-size: var(--text-sm);
   cursor: pointer;
 }
-.btn-cancel:hover { background: var(--surface-soft); }
+.btn-cancel:hover {
+  background: var(--surface-soft);
+}
 
 .btn-save {
   min-height: 44px;
@@ -476,8 +489,13 @@ watch(() => props.question, initForm);
   cursor: pointer;
   box-shadow: var(--shadow-primary);
 }
-.btn-save:hover:not(:disabled) { transform: translateY(-1px); }
-.btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 @media (max-width: 420px) {
   .editor-modal {

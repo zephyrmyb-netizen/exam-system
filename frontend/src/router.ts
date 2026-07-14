@@ -82,13 +82,24 @@ const routes: RouteRecordRaw[] = [
         path: "exams/new",
         name: "exam-create",
         component: () => import("./views/exam/ExamCreate.vue"),
-        meta: { title: "创建考试", description: "从题库选择题目组卷。", navKey: "home", parent: "exams", requiresPermission: "exam:create" },
+        meta: {
+          title: "创建考试",
+          description: "从题库选择题目组卷。",
+          navKey: "home",
+          parent: "exams",
+          requiresPermission: "exam:create",
+        },
       },
       {
         path: "exams/:examId/leaderboard",
         name: "exam-leaderboard",
         component: () => import("./views/exam/ExamLeaderboard.vue"),
-        meta: { title: "考试排行榜", navKey: "home", parent: "exam-detail", requiresPermission: "exam:view_leaderboard" },
+        meta: {
+          title: "考试排行榜",
+          navKey: "home",
+          parent: "exam-detail",
+          requiresPermission: "exam:view_leaderboard",
+        },
       },
       {
         path: "exams/:examId",
@@ -192,12 +203,18 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const token = getToken();
+  const auth = useAuthStore();
 
-  if (to.matched.some((route) => route.meta.requiresAuth) && !token) {
-    return { name: "login", query: { redirect: to.fullPath } };
+  if (to.matched.some((route) => route.meta.requiresAuth) && !token && !auth.user) {
+    await auth.fetchProfile();
+    if (!auth.user) return { name: "login", query: { redirect: to.fullPath } };
   }
 
-  if (to.matched.some((route) => route.meta.guest) && token) {
+  if (to.matched.some((route) => route.meta.guest) && !token && !auth.user) {
+    await auth.fetchProfile();
+  }
+
+  if (to.matched.some((route) => route.meta.guest) && (token || auth.user)) {
     const redirect = to.query.redirect;
     if (
       redirect &&
@@ -215,8 +232,7 @@ router.beforeEach(async (to) => {
     .map((route) => route.meta.requiresPermission)
     .find((permission): permission is string => typeof permission === "string");
 
-  if (requiredPermission && token) {
-    const auth = useAuthStore();
+  if (requiredPermission && (token || auth.user)) {
     if (!auth.user) await auth.fetchProfile();
     if (!auth.can(requiredPermission)) return { name: "home" };
   }

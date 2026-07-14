@@ -198,11 +198,7 @@ export const releaseNotes: ReleaseNote[] = [
     date: "2026-07-10",
     type: "优化",
     title: "AI 导入体验优化",
-    items: [
-      "优化 PDF、PPT 和图片文件选择。",
-      "优化 AI 解析中的状态提示。",
-      "优化解析失败和 0 题时的提示。",
-    ],
+    items: ["优化 PDF、PPT 和图片文件选择。", "优化 AI 解析中的状态提示。", "优化解析失败和 0 题时的提示。"],
   },
   {
     id: "v2.3.7-practice-answering-polish",
@@ -223,11 +219,7 @@ export const releaseNotes: ReleaseNote[] = [
     date: "2026-07-10",
     type: "优化",
     title: "移动端首页与题库体验优化",
-    items: [
-      "优化首页核心入口和学习概览布局。",
-      "优化题库卡片操作区。",
-      "改善移动端按钮拥挤和空状态体验。",
-    ],
+    items: ["优化首页核心入口和学习概览布局。", "优化题库卡片操作区。", "改善移动端按钮拥挤和空状态体验。"],
   },
   {
     id: "v2.3.5-ux-copy-polish",

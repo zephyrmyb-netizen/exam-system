@@ -1,7 +1,16 @@
 /**
  * Practice-related API calls → /practice/*
  */
-import type { SubmitRequest, SubmitResponse, PracticeStats, PracticeRecord, PaginatedResponse, Question, TodayReview, WeakType } from "@/types";
+import type {
+  SubmitRequest,
+  SubmitResponse,
+  PracticeStats,
+  PracticeRecord,
+  PaginatedResponse,
+  Question,
+  TodayReview,
+  WeakType,
+} from "@/types";
 import { useOfflineSync, type PendingOfflineAction } from "@/composables/useOfflineSync";
 import request from "./request.ts";
 
@@ -60,7 +69,9 @@ export function getPracticeStats(): Promise<PracticeStats> {
   return practiceGet<PracticeStats>("/practice/stats");
 }
 
-export function getPracticeHistory(params?: Record<string, string | number>): Promise<PaginatedResponse<PracticeRecord>> {
+export function getPracticeHistory(
+  params?: Record<string, string | number>,
+): Promise<PaginatedResponse<PracticeRecord>> {
   return practiceGet<PaginatedResponse<PracticeRecord>>("/practice/history", params);
 }
 

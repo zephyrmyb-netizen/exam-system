@@ -28,7 +28,7 @@ watch(
     form.description = course?.description || "";
     form.subject = course?.subject || "";
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function save() {

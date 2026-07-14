@@ -38,7 +38,10 @@ defineEmits(["update:modelValue", "keydown"]);
   font-size: 15px;
   line-height: 1.75;
   resize: vertical;
-  transition: border-color var(--ease-out), box-shadow var(--ease-out), background var(--ease-out);
+  transition:
+    border-color var(--ease-out),
+    box-shadow var(--ease-out),
+    background var(--ease-out);
 }
 
 .practice-text-answer__input:focus {

@@ -21,10 +21,11 @@ defineEmits(["back", "end"]);
     <div class="practice-topbar__center">
       <span class="practice-topbar__title">{{ courseName || modeLabel || "练习" }}</span>
       <span class="practice-topbar__meta">
-        {{ totalQuestions ? `已答 ${answeredCount} / ${totalQuestions}` : `已答 ${answeredCount}` }} · {{ accuracy !== null ? `${accuracy}%` : "--" }}
+        {{ totalQuestions ? `已答 ${answeredCount} / ${totalQuestions}` : `已答 ${answeredCount}` }} ·
+        {{ accuracy !== null ? `${accuracy}%` : "--" }}
       </span>
       <span v-if="totalQuestions" class="practice-topbar__track" aria-label="练习进度">
-        <i :style="{ width: `${Math.min(100, Math.round(answeredCount / totalQuestions * 100))}%` }"></i>
+        <i :style="{ width: `${Math.min(100, Math.round((answeredCount / totalQuestions) * 100))}%` }"></i>
       </span>
     </div>
 
@@ -112,7 +113,11 @@ defineEmits(["back", "end"]);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.42);
   color: var(--text-muted);
-  transition: background var(--ease-out), border-color var(--ease-out), color var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    background var(--ease-out),
+    border-color var(--ease-out),
+    color var(--ease-out),
+    box-shadow var(--ease-out);
   flex-shrink: 0;
 }
 
@@ -153,9 +158,12 @@ defineEmits(["back", "end"]);
     padding-inline: 10px;
   }
 
-  .practice-topbar__title { max-width: 96px; }
+  .practice-topbar__title {
+    max-width: 96px;
+  }
 
-  .practice-topbar__meta { font-size: 10px; }
+  .practice-topbar__meta {
+    font-size: 10px;
+  }
 }
-
 </style>

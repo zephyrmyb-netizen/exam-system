@@ -18,9 +18,7 @@ vi.mock("@/api/courses", () => ({
 
 vi.mock("@/api/questions", () => ({
   getQuestions: vi.fn(async () => ({
-    items: [
-      { id: 9, course_id: 1, question: "JVM 是什么？" },
-    ],
+    items: [{ id: 9, course_id: 1, question: "JVM 是什么？" }],
   })),
 }));
 

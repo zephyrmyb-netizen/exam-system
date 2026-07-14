@@ -78,7 +78,7 @@ xuexibao/
 | 测试   | pytest（后端 300+）/ Vitest（前端）           |
 | 后端   | Python 3.11+ / FastAPI + SQLAlchemy + Alembic |
 | 数据库 | 开发：SQLite / 生产：推荐 PostgreSQL         |
-| 认证   | JWT（Bearer Token）                          |
+| 认证   | HttpOnly Cookie（浏览器）+ JWT Bearer（兼容客户端） |
 | 限流   | 内存（开发）/ Redis（生产，可选）             |
 | 部署   | Docker + docker-compose                      |
 
@@ -94,8 +94,8 @@ cp backend/.env.example backend/.env
 # 2. 启动全部服务
 docker compose up -d
 
-# 前端 → http://localhost:8080
-# 后端 → http://localhost:8000/docs
+# 应用与 API → http://localhost:8080
+# 后端 8000 仅在 Compose 内网，由 Nginx 反向代理，不直接暴露到主机
 ```
 
 ### 方式二：本地开发
@@ -543,7 +543,7 @@ del backend\xuexibao.db
 4. 重启前端：`npm.cmd run dev -- --host 0.0.0.0`
 5. 手机浏览器打开：`http://192.168.1.8:5173`
 
-> 前端代码已内置自动推导逻辑：如果访问的 hostname 不是 localhost 或 127.0.0.1，会自动将 API 地址拼为 `http://<hostname>:8000`。
+> 默认使用同源 `/api` 代理，因此手机只需访问前端地址。只有开发时绕过 Vite 代理直连后端，才需要设置 `VITE_API_BASE_URL`；这时也要把该前端来源加入后端 `CORS_ORIGINS`。
 
 ## 一键启动（Windows PowerShell）
 

@@ -1,12 +1,5 @@
 import { defineStore } from "pinia";
-import {
-  getExamLeaderboard,
-  getExamDetail,
-  listExams,
-  listMyExams,
-  startExam,
-  submitExam,
-} from "@/api/exams";
+import { getExamLeaderboard, getExamDetail, listExams, listMyExams, startExam, submitExam } from "@/api/exams";
 import { getErrorMessage } from "@/api/request";
 import type { Exam, ExamAttempt, ExamDetail, ExamLeaderboard, ExamQuestion, ExamResult } from "@/types";
 import { parseApiTimestamp } from "@/utils/date";
@@ -42,7 +35,9 @@ export const useExamStore = defineStore("exam", {
     answeredCount: (state): number => Object.values(state.answers).filter((value) => value.trim()).length,
     progress: (state): number => {
       const total = state.currentExam?.questions.length || 0;
-      return total ? Math.round((Object.values(state.answers).filter((value) => value.trim()).length / total) * 100) : 0;
+      return total
+        ? Math.round((Object.values(state.answers).filter((value) => value.trim()).length / total) * 100)
+        : 0;
     },
   },
   actions: {
@@ -184,7 +179,8 @@ export const useExamStore = defineStore("exam", {
       this.submissionError = "";
       const submission = submitExam(examId, { answers })
         .then((result) => {
-          if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration) this.result = result;
+          if (this.currentExam?.id === examId && examSessionGenerations.get(storeKey) === sessionGeneration)
+            this.result = result;
           return result;
         })
         .catch((error: unknown) => {

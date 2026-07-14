@@ -52,7 +52,10 @@ describe("CourseList UX polish", () => {
     mocks.confirm.mockReset();
     mocks.confirm.mockResolvedValue(false);
     mocks.requestGet.mockResolvedValue({
-      data: [course({ id: 1, name: "Course one", question_count: 8 }), course({ id: 2, name: "Empty course", question_count: 0 })],
+      data: [
+        course({ id: 1, name: "Course one", question_count: 8 }),
+        course({ id: 2, name: "Empty course", question_count: 0 }),
+      ],
     });
   });
 
@@ -88,7 +91,9 @@ describe("CourseList UX polish", () => {
   });
 
   it("filters private and public courses without changing the API shape", async () => {
-    mocks.requestGet.mockResolvedValue({ data: [course({ id: 1, name: "Private course" }), course({ id: 2, name: "Public course", visibility: "public" })] });
+    mocks.requestGet.mockResolvedValue({
+      data: [course({ id: 1, name: "Private course" }), course({ id: 2, name: "Public course", visibility: "public" })],
+    });
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -100,10 +105,12 @@ describe("CourseList UX polish", () => {
   });
 
   it("searches course content and filters the recently practised subset", async () => {
-    mocks.requestGet.mockResolvedValue({ data: [
-      course({ id: 1, name: "线性代数", subject: "数学", last_practiced_at: "2026-07-13" }),
-      course({ id: 2, name: "英语阅读", subject: "英语", last_practiced_at: undefined }),
-    ] });
+    mocks.requestGet.mockResolvedValue({
+      data: [
+        course({ id: 1, name: "线性代数", subject: "数学", last_practiced_at: "2026-07-13" }),
+        course({ id: 2, name: "英语阅读", subject: "英语", last_practiced_at: undefined }),
+      ],
+    });
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -145,8 +152,22 @@ describe("CourseList UX polish", () => {
     });
 
     const expectedTargets = [
-      { index: 1, target: { name: "course-practice", params: { courseId: 1 }, query: { mode: "random", autostart: "1", from: "courses" } } },
-      { index: 2, target: { name: "course-practice", params: { courseId: 1 }, query: { mode: "wrong", autostart: "1", from: "courses" } } },
+      {
+        index: 1,
+        target: {
+          name: "course-practice",
+          params: { courseId: 1 },
+          query: { mode: "random", autostart: "1", from: "courses" },
+        },
+      },
+      {
+        index: 2,
+        target: {
+          name: "course-practice",
+          params: { courseId: 1 },
+          query: { mode: "wrong", autostart: "1", from: "courses" },
+        },
+      },
       { index: 3, target: { name: "bookmarks", query: { course_id: 1, from: "courses" } } },
     ];
     for (const { index, target } of expectedTargets) {
@@ -167,9 +188,14 @@ describe("CourseList UX polish", () => {
     await wrapper.get('.modal-card input[placeholder="如：Java 期末复习"]').setValue("新题库");
     await wrapper.findAll(".modal-actions button").at(-1)?.trigger("click");
     await flushPromises();
-    expect(mocks.requestPost).toHaveBeenCalledWith("/courses/", expect.objectContaining({ name: "新题库", visibility: "private" }));
+    expect(mocks.requestPost).toHaveBeenCalledWith(
+      "/courses/",
+      expect.objectContaining({ name: "新题库", visibility: "private" }),
+    );
 
-    const originalRow = wrapper.findAll(".course-row").find((row) => row.get("[data-course-title]").attributes("title") === "Course one");
+    const originalRow = wrapper
+      .findAll(".course-row")
+      .find((row) => row.get("[data-course-title]").attributes("title") === "Course one");
     await originalRow?.get(".more-btn").trigger("click");
     await originalRow?.findAll(".course-menu .menu-option")[2].trigger("click");
     await wrapper.get('.modal-card input[placeholder="如：Java 期末复习"]').setValue("改名题库");
@@ -177,7 +203,9 @@ describe("CourseList UX polish", () => {
     await flushPromises();
     expect(mocks.requestPatch).toHaveBeenCalledWith("/courses/1", expect.objectContaining({ name: "改名题库" }));
 
-    const editedRow = wrapper.findAll(".course-row").find((row) => row.get("[data-course-title]").attributes("title") === "改名题库");
+    const editedRow = wrapper
+      .findAll(".course-row")
+      .find((row) => row.get("[data-course-title]").attributes("title") === "改名题库");
     await editedRow?.get(".more-btn").trigger("click");
     await editedRow?.findAll(".course-menu .menu-option")[3].trigger("click");
     await flushPromises();

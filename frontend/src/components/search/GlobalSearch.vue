@@ -107,7 +107,13 @@ function goQuestion(question: Question) {
           <template v-else>
             <div v-if="courses.length" class="result-group">
               <p class="result-title">题库</p>
-              <button v-for="course in courses" :key="course.id" type="button" class="result-item" @click="goCourse(course)">
+              <button
+                v-for="course in courses"
+                :key="course.id"
+                type="button"
+                class="result-item"
+                @click="goCourse(course)"
+              >
                 <span>{{ course.name }}</span>
                 <small>{{ course.question_count ?? 0 }} 题</small>
               </button>

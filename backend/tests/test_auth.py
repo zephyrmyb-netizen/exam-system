@@ -79,6 +79,27 @@ class TestAuth:
         assert "access_token" in data
         assert "token" in data
         assert data["token_type"] == "bearer"
+        assert "xuexibao_access" in resp.headers["set-cookie"]
+        assert "HttpOnly" in resp.headers["set-cookie"]
+        assert "SameSite=lax" in resp.headers["set-cookie"]
+
+    def test_cookie_session_can_access_profile_and_logout(self, client):
+        client.post(
+            "/auth/register",
+            json={
+                "username": "cookieuser",
+                "password": "mypassword",
+                "invite_code": "dev-invite",
+            },
+        )
+        client.post("/auth/login", json={"username": "cookieuser", "password": "mypassword"})
+
+        assert client.get("/auth/me").json()["username"] == "cookieuser"
+
+        logout = client.post("/auth/logout")
+        assert logout.status_code == 204
+        assert "xuexibao_access" in logout.headers["set-cookie"]
+        assert client.get("/auth/me").status_code == 401
 
     def test_login_wrong_password(self, client):
         client.post(

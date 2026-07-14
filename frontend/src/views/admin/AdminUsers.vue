@@ -74,7 +74,10 @@ onMounted(fetchUsers);
 </template>
 
 <style scoped>
-.admin-users-page { display: grid; gap: var(--space-3); }
+.admin-users-page {
+  display: grid;
+  gap: var(--space-3);
+}
 .refresh-button {
   display: inline-flex;
   align-items: center;
@@ -98,9 +101,22 @@ onMounted(fetchUsers);
   border-radius: 18px;
   background: var(--surface);
 }
-.user-row div { display: grid; gap: 2px; min-width: 0; }
-.user-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-main); }
-.user-row span { color: var(--text-muted); font-size: var(--text-xs); font-weight: 800; }
+.user-row div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.user-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+}
+.user-row span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
 .user-row select {
   min-height: 40px;
   border: 1px solid var(--line-soft);

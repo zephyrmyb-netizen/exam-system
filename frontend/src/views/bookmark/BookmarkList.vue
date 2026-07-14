@@ -94,22 +94,137 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.bookmark-page { display: grid; gap: var(--space-4); }
-.bookmark-hero { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--surface), var(--primary-soft)); }
-.bookmark-hero-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 18px; background: var(--primary); color: #fff; }
-.bookmark-hero p { margin: 0; color: var(--text-muted); font-size: var(--text-xs); font-weight: 800; }
-.bookmark-hero h1 { margin: 2px 0 0; color: var(--text-main); font-size: var(--text-2xl); font-weight: 900; }
-.folder-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.folder-tabs button { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line-soft); border-radius: var(--radius-full); background: var(--surface); color: var(--text-muted); font-weight: 800; white-space: nowrap; }
-.folder-tabs button.active { border-color: var(--line-accent); background: var(--primary-soft); color: var(--primary-strong); }
-.bookmark-list { display: grid; gap: var(--space-3); }
-.bookmark-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; padding: var(--space-3); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); background: var(--surface); }
-.bookmark-body { display: grid; gap: 5px; min-width: 0; border: none; background: transparent; color: inherit; text-align: left; }
-.bookmark-folder { width: fit-content; padding: 2px 8px; border-radius: var(--radius-full); background: var(--surface-soft); color: var(--text-muted); font-size: 11px; font-weight: 800; }
-.bookmark-body strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-main); font-size: var(--text-sm); }
-.bookmark-body small { color: var(--text-muted); font-size: var(--text-xs); }
-.bookmark-delete { display: grid; place-items: center; width: 36px; height: 36px; border: none; border-radius: 50%; background: var(--rose-soft); color: var(--rose); }
-.bookmark-empty { display: grid; place-items: center; gap: 8px; min-height: 180px; padding: var(--space-5); border: 1px dashed var(--line-strong); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-muted); text-align: center; font-weight: 800; }
-.bookmark-empty p, .bookmark-empty small { margin: 0; }
-.bookmark-empty small { max-width: 260px; font-size: var(--text-xs); font-weight: 650; }
+.bookmark-page {
+  display: grid;
+  gap: var(--space-4);
+}
+.bookmark-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--surface), var(--primary-soft));
+}
+.bookmark-hero-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  background: var(--primary);
+  color: #fff;
+}
+.bookmark-hero p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+.bookmark-hero h1 {
+  margin: 2px 0 0;
+  color: var(--text-main);
+  font-size: var(--text-2xl);
+  font-weight: 900;
+}
+.folder-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.folder-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.folder-tabs button.active {
+  border-color: var(--line-accent);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.bookmark-list {
+  display: grid;
+  gap: var(--space-3);
+}
+.bookmark-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.bookmark-body {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.bookmark-folder {
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.bookmark-body strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+  font-size: var(--text-sm);
+}
+.bookmark-body small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.bookmark-delete {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.bookmark-empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 180px;
+  padding: var(--space-5);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 800;
+}
+.bookmark-empty p,
+.bookmark-empty small {
+  margin: 0;
+}
+.bookmark-empty small {
+  max-width: 260px;
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
 </style>

@@ -1,15 +1,5 @@
 <script setup>
-import {
-  BookOpen,
-  Download,
-  Globe,
-  Layers,
-  Lock,
-  Pencil,
-  Play,
-  Trash2,
-  Upload,
-} from "@lucide/vue";
+import { BookOpen, Download, Globe, Layers, Lock, Pencil, Play, Trash2, Upload } from "@lucide/vue";
 
 import { getCourseDisplayName } from "../../utils/course";
 
@@ -67,9 +57,7 @@ defineEmits(["practice", "import", "edit", "publish", "unpublish", "export", "de
       已公开，其他用户可在公共题库中看到
     </p>
 
-    <p v-if="!canStartPractice" class="public-hint public-hint--empty">
-      当前题库还没有题目，先导入题目后再开始练习。
-    </p>
+    <p v-if="!canStartPractice" class="public-hint public-hint--empty">当前题库还没有题目，先导入题目后再开始练习。</p>
 
     <div class="course-header-actions">
       <button class="primary-button" type="button" :disabled="!canStartPractice" @click="$emit('practice')">

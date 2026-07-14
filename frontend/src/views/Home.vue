@@ -750,6 +750,11 @@ onMounted(() => {
 .home-page > .empty-state {
   margin-inline: 0;
 }
-.home-course-list { margin-top: 0; }
-.home-recommendation { margin: 16px 0; width: 100%; }
+.home-course-list {
+  margin-top: 0;
+}
+.home-recommendation {
+  margin: 16px 0;
+  width: 100%;
+}
 </style>

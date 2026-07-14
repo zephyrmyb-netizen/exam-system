@@ -33,7 +33,9 @@ const { cancel: cancelKeywordSearch, schedule: scheduleKeywordSearch } = useDebo
   void fetchWrongBook();
 });
 
-function onKeywordInput() { scheduleKeywordSearch(); }
+function onKeywordInput() {
+  scheduleKeywordSearch();
+}
 function onFilterChange() {
   cancelKeywordSearch();
   page.value = 1;
@@ -86,11 +88,17 @@ async function fetchWrongBook() {
 }
 
 function goPrevPage() {
-  if (page.value > 1) { page.value--; fetchWrongBook(); }
+  if (page.value > 1) {
+    page.value--;
+    fetchWrongBook();
+  }
 }
 
 function goNextPage() {
-  if (hasMore.value) { page.value++; fetchWrongBook(); }
+  if (hasMore.value) {
+    page.value++;
+    fetchWrongBook();
+  }
 }
 
 async function loadMore() {
@@ -152,7 +160,7 @@ onMounted(() => {
         <p>共 {{ total }} 道错题</p>
       </div>
       <button class="ghost-button" type="button" aria-label="刷新错题本" :disabled="loading" @click="fetchWrongBook">
-        <RefreshCw :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        <RefreshCw :size="16" :stroke-width="2.5" style="margin-right: 4px" />
         刷新
       </button>
     </div>
@@ -239,8 +247,10 @@ onMounted(() => {
       </template>
       <div v-else class="deleted-question-notice">
         <p>题目已删除或不可用。</p>
-        <div class="wrongbook-stats" style="justify-content:center;margin-top:8px">
-          <span class="stat-badge">错题次数：<strong>{{ item.wrong_count }}</strong></span>
+        <div class="wrongbook-stats" style="justify-content: center; margin-top: 8px">
+          <span class="stat-badge"
+            >错题次数：<strong>{{ item.wrong_count }}</strong></span
+          >
           <span class="stat-badge wrong-answer">
             上次错误答案：<strong>{{ item.last_wrong_answer || "无记录" }}</strong>
           </span>
@@ -248,7 +258,7 @@ onMounted(() => {
       </div>
 
       <button class="danger-button full-button" type="button" @click="removeWrongItem(item)">
-        <Trash2 :size="16" :stroke-width="2.5" style="margin-right:4px" />
+        <Trash2 :size="16" :stroke-width="2.5" style="margin-right: 4px" />
         移除错题
       </button>
     </article>
@@ -257,13 +267,13 @@ onMounted(() => {
 
     <div v-if="total > pageSize" class="pagination-bar">
       <button class="ghost-button" :disabled="page <= 1 || loading" @click="goPrevPage">
-        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right:2px" />
+        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right: 2px" />
         上一页
       </button>
       <span class="page-info">{{ page }} / {{ totalPages }}</span>
       <button class="ghost-button" :disabled="!hasMore || loading" @click="goNextPage">
         下一页
-        <ChevronRight :size="16" :stroke-width="2.5" style="margin-left:2px" />
+        <ChevronRight :size="16" :stroke-width="2.5" style="margin-left: 2px" />
       </button>
     </div>
 

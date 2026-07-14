@@ -1,16 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle,
-  ChevronDown,
-  CloudUpload,
-  FileUp,
-  Layers,
-  Sparkles,
-} from "@lucide/vue";
+import { ArrowRight, BookOpen, CheckCircle, ChevronDown, CloudUpload, FileUp, Layers, Sparkles } from "@lucide/vue";
 
 import { confirmImport, confirmImportTask, extractFileText } from "../api/imports";
 import { getErrorMessage } from "../api/request";
@@ -55,30 +46,30 @@ const extractedText = ref("");
 const isDragging = ref(false);
 
 const { courses, coursesLoading, coursesError, fetchCourses } = useImportCourses();
-const {
-  jsonText,
-  importLoading,
-  importMessage,
-  importError,
-  jsonResultCourseId,
-  importQuestions,
-} = useManualQuestionImport(selectedCourseId);
+const { jsonText, importLoading, importMessage, importError, jsonResultCourseId, importQuestions } =
+  useManualQuestionImport(selectedCourseId);
 
 const isParsing = computed(() => aiTask.status.value === "running");
 const hasPreview = computed(() => aiTask.status.value === "success" && aiTask.previewData.value);
 const hasImportSuccess = computed(() => !!importResult.value || aiTask.imported.value);
-const resolvedImportResult = computed(() => importResult.value || (aiTask.imported.value
-  ? {
-    imported_count: aiTask.importedCount.value,
-    course_id: aiTask.resultCourseId.value,
-    course_name: aiTask.resultCourseName.value || aiTask.courseName.value,
-  }
-  : null));
+const resolvedImportResult = computed(
+  () =>
+    importResult.value ||
+    (aiTask.imported.value
+      ? {
+          imported_count: aiTask.importedCount.value,
+          course_id: aiTask.resultCourseId.value,
+          course_name: aiTask.resultCourseName.value || aiTask.courseName.value,
+        }
+      : null),
+);
 const activeFileName = computed(() => selectedFile.value?.name || aiTask.fileName.value || "");
 const hasActiveFile = computed(() => !!activeFileName.value);
 const activeFileKind = computed(() => getFileKindLabel(selectedFile.value || { name: aiTask.fileName.value }));
 const activeFileSize = computed(() => formatImportFileSize(selectedFile.value?.size));
-const activeFileDisplay = computed(() => [activeFileName.value, activeFileKind.value, activeFileSize.value].filter(Boolean).join(" · "));
+const activeFileDisplay = computed(() =>
+  [activeFileName.value, activeFileKind.value, activeFileSize.value].filter(Boolean).join(" · "),
+);
 const selectedFileIsImage = computed(() => isImageFile(selectedFile.value));
 const canExtractText = computed(() => !!selectedFile.value && !selectedFileIsImage.value && !isParsing.value);
 const activeCourseId = computed(() => selectedCourseId.value || aiTask.courseId.value || 0);
@@ -108,13 +99,10 @@ watch(
     if (data?.suggested_course_name && !derivedCourseName.value) {
       derivedCourseName.value = data.suggested_course_name;
     }
-  }
+  },
 );
 
-watch(
-  () => [route.query.course_id, route.query.courseId],
-  syncTargetCourseFromRoute
-);
+watch(() => [route.query.course_id, route.query.courseId], syncTargetCourseFromRoute);
 
 function deriveNameFromFile(file) {
   if (!file?.name) return "";
@@ -367,16 +355,16 @@ onMounted(() => {
             class="file-input-native"
             type="file"
             :accept="ACCEPTED_FILE_TYPES"
-            :aria-describedby="fileError ? 'import-file-hint import-file-limits import-file-error' : 'import-file-hint import-file-limits'"
+            :aria-describedby="
+              fileError
+                ? 'import-file-hint import-file-limits import-file-error'
+                : 'import-file-hint import-file-limits'
+            "
             @change="onFileChange"
           />
           <span class="hero-drop-icon" aria-hidden="true"><CloudUpload :size="30" :stroke-width="1.8" /></span>
           <span v-if="!hasActiveFile" class="hero-drop-text">点击或拖拽上传文件</span>
-          <span
-            v-else
-            class="hero-drop-text hero-drop-selected truncate-file-name"
-            :title="activeFileName"
-          >
+          <span v-else class="hero-drop-text hero-drop-selected truncate-file-name" :title="activeFileName">
             <CheckCircle :size="15" :stroke-width="2.5" />
             {{ activeFileDisplay }}
           </span>
@@ -417,7 +405,13 @@ onMounted(() => {
           </div>
         </div>
 
-        <button v-if="hasActiveFile || aiTask.error.value" class="hero-cta" type="button" :disabled="!hasActiveFile" @click="handlePreview">
+        <button
+          v-if="hasActiveFile || aiTask.error.value"
+          class="hero-cta"
+          type="button"
+          :disabled="!hasActiveFile"
+          @click="handlePreview"
+        >
           <Sparkles :size="20" :stroke-width="2.5" />
           {{ aiTask.error.value ? "重新解析" : "AI 解析文件" }}
         </button>
@@ -450,13 +444,19 @@ onMounted(() => {
               </button>
               <p v-if="importMessage" class="msg msg-ok">{{ importMessage }}</p>
               <pre v-if="importError" class="msg msg-err-pre">{{ importError }}</pre>
-              <button v-if="importMessage" class="ghost-button" type="button" @click="goToCourse(jsonResultCourseId)">查看</button>
+              <button v-if="importMessage" class="ghost-button" type="button" @click="goToCourse(jsonResultCourseId)">
+                查看
+              </button>
             </div>
 
             <div class="adv-card">
               <div class="adv-title">只提取文本</div>
               <p class="adv-desc">
-                {{ selectedFileIsImage ? "图片文件没有可直接提取的文本，请使用 AI 解析。" : "提取文件文字，给其他 AI 工具整理。" }}
+                {{
+                  selectedFileIsImage
+                    ? "图片文件没有可直接提取的文本，请使用 AI 解析。"
+                    : "提取文件文字，给其他 AI 工具整理。"
+                }}
               </p>
               <button class="ghost-button" type="button" :disabled="fileLoading || !canExtractText" @click="uploadFile">
                 {{ selectedFileIsImage ? "图片需使用 AI 解析" : fileLoading ? "提取中..." : "提取文本" }}
@@ -472,9 +472,18 @@ onMounted(() => {
         </details>
 
         <ol class="import-guide" aria-label="导入步骤说明">
-          <li><span>1</span><p><strong>上传文件或粘贴 JSON</strong><small>选择资料并确认导入题库名称</small></p></li>
-          <li><span>2</span><p><strong>AI 智能解析</strong><small>自动识别题干、选项、答案和解析</small></p></li>
-          <li><span>3</span><p><strong>预览确认后导入</strong><small>检查结果后一次性写入题库</small></p></li>
+          <li>
+            <span>1</span>
+            <p><strong>上传文件或粘贴 JSON</strong><small>选择资料并确认导入题库名称</small></p>
+          </li>
+          <li>
+            <span>2</span>
+            <p><strong>AI 智能解析</strong><small>自动识别题干、选项、答案和解析</small></p>
+          </li>
+          <li>
+            <span>3</span>
+            <p><strong>预览确认后导入</strong><small>检查结果后一次性写入题库</small></p>
+          </li>
         </ol>
       </template>
     </template>
@@ -499,7 +508,9 @@ onMounted(() => {
       <div class="ai-done">
         <div class="ai-done-icon"><CheckCircle :size="36" :stroke-width="2.5" color="var(--emerald)" /></div>
         <p class="ai-done-title">导入成功</p>
-        <p class="ai-done-target">已导入到题库：<strong>{{ resolvedImportResult?.course_name || activeCourseName || "未命名题库" }}</strong></p>
+        <p class="ai-done-target">
+          已导入到题库：<strong>{{ resolvedImportResult?.course_name || activeCourseName || "未命名题库" }}</strong>
+        </p>
         <div class="ai-done-stats">
           <div class="ai-done-stat">
             <span class="ai-done-num">{{ resolvedImportResult?.imported_count || 0 }}</span>
@@ -571,7 +582,10 @@ onMounted(() => {
   background: var(--surface-muted);
   text-align: center;
   cursor: pointer;
-  transition: border-color var(--ease-out), background var(--ease-out), transform var(--ease-spring);
+  transition:
+    border-color var(--ease-out),
+    background var(--ease-out),
+    transform var(--ease-spring);
 }
 
 .import-format-tags {
@@ -595,11 +609,26 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 800;
 }
-.format-tag--word { background: #eff6ff; color: #2563eb; }
-.format-tag--ppt { background: #fff7ed; color: #ea580c; }
-.format-tag--pdf { background: var(--rose-soft); color: var(--rose); }
-.format-tag--image { background: #f5f3ff; color: #7c3aed; }
-.format-tag--text { background: var(--primary-soft); color: var(--primary-strong); }
+.format-tag--word {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.format-tag--ppt {
+  background: #fff7ed;
+  color: #ea580c;
+}
+.format-tag--pdf {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.format-tag--image {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+.format-tag--text {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
 
 .import-file-limits {
   margin: -4px 0 0;
@@ -619,11 +648,36 @@ onMounted(() => {
   box-shadow: var(--shadow-xs), var(--glass-inner-highlight);
   list-style: none;
 }
-.import-guide li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; align-items: center; }
-.import-guide li > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--primary-soft); color: var(--primary-strong); font-size: 11px; font-weight: 850; }
-.import-guide p { display: grid; gap: 2px; margin: 0; }
-.import-guide strong { font-size: 12px; color: var(--text-main); }
-.import-guide small { color: var(--text-muted); font-size: 11px; }
+.import-guide li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+.import-guide li > span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 850;
+}
+.import-guide p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.import-guide strong {
+  font-size: 12px;
+  color: var(--text-main);
+}
+.import-guide small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
 
 .import-running-state {
   display: grid;
@@ -1030,25 +1084,59 @@ onMounted(() => {
   min-height: 38px;
 }
 /* Reference layout overrides: compact at 390px without hiding real workflows. */
-.hero-drop-selected { display: flex; }
-.hero-drop-selected svg { flex-shrink: 0; }
-.hero-cta { border-radius: 6px; background: var(--primary); box-shadow: var(--shadow-primary); }
-.hero-cta:hover:not(:disabled) { background: var(--primary-strong); }
-.opt-panel, .adv-card { border-radius: 6px; box-shadow: var(--shadow-xs); }
-.ai-done { border-radius: 8px; background: var(--surface); border-color: var(--line-soft); }
+.hero-drop-selected {
+  display: flex;
+}
+.hero-drop-selected svg {
+  flex-shrink: 0;
+}
+.hero-cta {
+  border-radius: 6px;
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+}
+.hero-cta:hover:not(:disabled) {
+  background: var(--primary-strong);
+}
+.opt-panel,
+.adv-card {
+  border-radius: 6px;
+  box-shadow: var(--shadow-xs);
+}
+.ai-done {
+  border-radius: 8px;
+  background: var(--surface);
+  border-color: var(--line-soft);
+}
 @media (max-width: 420px) {
-  .hero-drop-zone { min-height: 136px; padding-block: 18px; }
-  .target-hint { text-align: left; }
+  .hero-drop-zone {
+    min-height: 136px;
+    padding-block: 18px;
+  }
+  .target-hint {
+    text-align: left;
+  }
 }
 
 @media (max-width: 340px) {
-  .import-page { padding-inline: 12px; }
-  .hero-drop-zone { min-height: 128px; padding-inline: 12px; }
-  .import-guide { padding-inline: 10px; }
+  .import-page {
+    padding-inline: 12px;
+  }
+  .hero-drop-zone {
+    min-height: 128px;
+    padding-inline: 12px;
+  }
+  .import-guide {
+    padding-inline: 10px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-drop-zone { transition: none; }
-  .hero-drop-zone.is-dragging { transform: none; }
+  .hero-drop-zone {
+    transition: none;
+  }
+  .hero-drop-zone.is-dragging {
+    transform: none;
+  }
 }
 </style>

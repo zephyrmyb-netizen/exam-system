@@ -10,13 +10,8 @@ vi.mock("@/api/request", () => ({
 
 describe("phase4 analytics api", () => {
   it("calls the analytics endpoints used by the study dashboard", async () => {
-    const {
-      getDailyActivity,
-      getTypeDistribution,
-      getStreak,
-      getTagAccuracy,
-      getTodayRecommendation,
-    } = await import("../analytics");
+    const { getDailyActivity, getTypeDistribution, getStreak, getTagAccuracy, getTodayRecommendation } =
+      await import("../analytics");
 
     await getDailyActivity(14);
     await getTypeDistribution();

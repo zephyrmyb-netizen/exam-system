@@ -2,15 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { getPracticeHistory } from "../api/practice";
 import { getErrorMessage } from "../api/request";
-import {
-  Clock,
-  CheckCircle,
-  XCircle,
-  ChevronLeft,
-  ChevronRight,
-  History,
-  Play,
-} from "@lucide/vue";
+import { Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight, History, Play } from "@lucide/vue";
 
 const records = ref([]);
 const loading = ref(false);
@@ -76,18 +68,14 @@ onMounted(() => fetchPage(1));
       <History :size="40" :stroke-width="1.5" color="var(--text-placeholder)" />
       <p>还没有练习记录。</p>
       <p class="empty-hint">去练习页面选择题库，记录会自动保存。</p>
-      <button class="primary-button" type="button" @click="$router.replace('/practice')" style="margin-top:4px">
-        <Play :size="16" :stroke-width="2.5" style="margin-right:4px" />
+      <button class="primary-button" type="button" @click="$router.replace('/practice')" style="margin-top: 4px">
+        <Play :size="16" :stroke-width="2.5" style="margin-right: 4px" />
         去练习
       </button>
     </div>
 
     <!-- Record list -->
-    <article
-      v-for="record in records"
-      :key="record.id"
-      class="history-card"
-    >
+    <article v-for="record in records" :key="record.id" class="history-card">
       <div class="history-top">
         <span class="history-status" :class="record.is_correct ? 'status-ok' : 'status-fail'">
           <CheckCircle v-if="record.is_correct" :size="15" :stroke-width="2.5" />
@@ -95,7 +83,7 @@ onMounted(() => fetchPage(1));
           {{ record.is_correct ? "正确" : "错误" }}
         </span>
         <time v-if="record.answered_at" class="history-time">
-          <Clock :size="12" :stroke-width="2.5" style="margin-right:3px" />
+          <Clock :size="12" :stroke-width="2.5" style="margin-right: 3px" />
           {{ formatTime(record.answered_at) }}
         </time>
       </div>
@@ -123,13 +111,13 @@ onMounted(() => fetchPage(1));
     <!-- Pagination -->
     <div v-if="total > pageSize" class="pagination-bar">
       <button class="ghost-button" :disabled="page <= 1 || loading" @click="goPrev">
-        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right:2px" />
+        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right: 2px" />
         上一页
       </button>
       <span class="page-info">{{ page }} / {{ totalPages }}</span>
       <button class="ghost-button" :disabled="!hasMore || loading" @click="goNext">
         下一页
-        <ChevronRight :size="16" :stroke-width="2.5" style="margin-left:2px" />
+        <ChevronRight :size="16" :stroke-width="2.5" style="margin-left: 2px" />
       </button>
     </div>
   </section>

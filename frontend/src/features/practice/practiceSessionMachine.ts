@@ -5,14 +5,7 @@ import { setup } from "xstate";
  * prevents a late fetch or auto-next timer from reviving a completed session.
  */
 export type PracticeSessionPhase =
-  | "idle"
-  | "loading"
-  | "answering"
-  | "submitting"
-  | "correct"
-  | "wrong"
-  | "error"
-  | "completed";
+  "idle" | "loading" | "answering" | "submitting" | "correct" | "wrong" | "error" | "completed";
 
 export type PracticeSessionEvent =
   | { type: "START" }

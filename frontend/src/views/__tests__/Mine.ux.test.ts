@@ -8,7 +8,11 @@ import StatGrid from "../../components/ui/StatGrid.vue";
 const replace = vi.fn();
 const logout = vi.fn();
 const setMode = vi.fn();
-const user = ref<{ id: number; username: string; role: string } | null>({ id: 7, username: "Student", role: "student" });
+const user = ref<{ id: number; username: string; role: string } | null>({
+  id: 7,
+  username: "Student",
+  role: "student",
+});
 const stats = ref({ todayCount: 2, totalCount: 42, accuracyRate: 0.75, recentCount7d: 9, wrongCount: 5 });
 const streak = ref({ current_streak: 5, longest_streak: 11, last_practiced_date: "2026-07-14" });
 const streakAvailable = ref<boolean | null>(true);

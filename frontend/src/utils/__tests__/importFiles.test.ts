@@ -37,15 +37,9 @@ describe("import file helpers", () => {
   });
 
   it("offers only formats the AI importer can parse directly in mobile file pickers", () => {
-    expect(ACCEPTED_IMPORT_FILE_TYPES.split(",")).toEqual(expect.arrayContaining([
-      ".docx",
-      ".pdf",
-      ".pptx",
-      ".png",
-      ".jpg",
-      ".jpeg",
-      ".webp",
-    ]));
+    expect(ACCEPTED_IMPORT_FILE_TYPES.split(",")).toEqual(
+      expect.arrayContaining([".docx", ".pdf", ".pptx", ".png", ".jpg", ".jpeg", ".webp"]),
+    );
     expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".doc,");
     expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".ppt,");
     expect(ACCEPTED_IMPORT_FILE_TYPES).not.toContain(".txt");

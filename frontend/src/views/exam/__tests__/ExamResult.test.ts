@@ -19,7 +19,15 @@ const store = {
     id: 7,
     title: "期末考试",
     questions: [
-      { id: 10, question_id: 1, question: "一段很长但必须完整展示的真实题目文本", question_type: "single_choice", score: 2, order_index: 0, options: { A: "答案" } },
+      {
+        id: 10,
+        question_id: 1,
+        question: "一段很长但必须完整展示的真实题目文本",
+        question_type: "single_choice",
+        score: 2,
+        order_index: 0,
+        options: { A: "答案" },
+      },
     ],
   },
   currentAttempt: {
@@ -65,16 +73,15 @@ describe("ExamResult", () => {
     expect(wrapper.get("[data-question-status]").text()).toBe("--");
   });
 
-  it.each([
-    "2026-07-14T02:00:00.000000",
-    "2026-07-14T02:00:00.000Z",
-    "2026-07-14T10:00:00.000+08:00",
-  ])("derives duration from API start time %s", (startedAt) => {
-    store.currentAttempt.started_at = startedAt;
-    const wrapper = mount(ExamResult);
+  it.each(["2026-07-14T02:00:00.000000", "2026-07-14T02:00:00.000Z", "2026-07-14T10:00:00.000+08:00"])(
+    "derives duration from API start time %s",
+    (startedAt) => {
+      store.currentAttempt.started_at = startedAt;
+      const wrapper = mount(ExamResult);
 
-    expect(wrapper.get("[data-exam-result-duration]").text()).toBe("30分0秒");
-  });
+      expect(wrapper.get("[data-exam-result-duration]").text()).toBe("30分0秒");
+    },
+  );
 
   it("prefers a provided duration and rejects missing or invalid timestamps", () => {
     store.result = { ...baseResult(), duration_seconds: 125 };
@@ -116,7 +123,7 @@ describe("ExamResult", () => {
   it("returns to the exam list without changing submission data", async () => {
     const wrapper = mount(ExamResult);
 
-    await wrapper.get('[data-exam-result-action="back"]') .trigger("click");
+    await wrapper.get('[data-exam-result-action="back"]').trigger("click");
 
     expect(store.reset).toHaveBeenCalledOnce();
     expect(router.replace).toHaveBeenCalledWith({ name: "exams" });

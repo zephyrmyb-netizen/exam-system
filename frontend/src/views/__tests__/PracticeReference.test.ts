@@ -193,11 +193,13 @@ describe("Practice reference migration", () => {
     expect(loading.find(".practice-skeleton").exists()).toBe(true);
 
     const fetchRandomQuestion = vi.fn();
-    sessionFactory.mockReturnValue(makeSession({
-      question: ref(null),
-      errorMessage: ref("网络暂时不可用"),
-      fetchRandomQuestion,
-    }));
+    sessionFactory.mockReturnValue(
+      makeSession({
+        question: ref(null),
+        errorMessage: ref("网络暂时不可用"),
+        fetchRandomQuestion,
+      }),
+    );
     const failed = mount(Practice, { props: { courseId: "7" } });
     expect(failed.text()).toContain("网络暂时不可用");
     await failed.get(".retry-btn").trigger("click");

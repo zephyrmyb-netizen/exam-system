@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
-from .. import crud, schemas
+from .. import crud, models, schemas
 from ..database import get_db
 from ..routers.courses import _get_accessible_course
 
@@ -69,35 +70,78 @@ def submit_answer(
     if not question:
         raise HTTPException(status_code=404, detail="题目不存在")
 
-    is_correct = crud.check_answer(question, body.user_answer)
+    if body.client_submission_id:
+        existing = (
+            db.query(models.PracticeRecord)
+            .filter(
+                models.PracticeRecord.user_id == current_user.id,
+                models.PracticeRecord.client_submission_id == body.client_submission_id,
+            )
+            .first()
+        )
+        if existing:
+            if existing.question_id != question.id or existing.user_answer != body.user_answer:
+                raise HTTPException(status_code=409, detail="Submission ID was already used for a different answer")
+            return schemas.SubmitResponse(
+                is_correct=bool(existing.is_correct),
+                correct_answer=existing.correct_answer or question.answer,
+                analysis=question.analysis or "",
+                wrongbook_recorded=not bool(existing.is_correct),
+            )
 
-    if is_correct:
-        crud.clear_wrong_record_if_correct(db, current_user.id, question.id)
-        wrongbook_recorded = False
-    else:
-        record = crud.upsert_wrong_record(db, current_user.id, question.id, body.user_answer)
-        wrongbook_recorded = record is not None
+    try:
+        is_correct = crud.check_answer(question, body.user_answer)
 
-    crud.create_practice_record(
-        db,
-        user_id=current_user.id,
-        question_id=question.id,
-        course_id=question.course_id,
-        question_type=question.type,
-        is_correct=is_correct,
-        user_answer=body.user_answer,
-        correct_answer=question.answer,
-    )
+        if is_correct:
+            crud.clear_wrong_record_if_correct(db, current_user.id, question.id)
+            wrongbook_recorded = False
+        else:
+            record = crud.upsert_wrong_record(db, current_user.id, question.id, body.user_answer)
+            wrongbook_recorded = record is not None
 
-    crud.upsert_user_question_review(
-        db,
-        user_id=current_user.id,
-        question_id=question.id,
-        course_id=question.course_id,
-        is_correct=is_correct,
-    )
+        crud.create_practice_record(
+            db,
+            user_id=current_user.id,
+            question_id=question.id,
+            course_id=question.course_id,
+            question_type=question.type,
+            is_correct=is_correct,
+            user_answer=body.user_answer,
+            correct_answer=question.answer,
+            client_submission_id=body.client_submission_id,
+        )
 
-    db.commit()
+        crud.upsert_user_question_review(
+            db,
+            user_id=current_user.id,
+            question_id=question.id,
+            course_id=question.course_id,
+            is_correct=is_correct,
+        )
+
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if not body.client_submission_id:
+            raise
+        existing = (
+            db.query(models.PracticeRecord)
+            .filter(
+                models.PracticeRecord.user_id == current_user.id,
+                models.PracticeRecord.client_submission_id == body.client_submission_id,
+            )
+            .first()
+        )
+        if not existing:
+            raise
+        if existing.question_id != question.id or existing.user_answer != body.user_answer:
+            raise HTTPException(status_code=409, detail="Submission ID was already used for a different answer")
+        return schemas.SubmitResponse(
+            is_correct=bool(existing.is_correct),
+            correct_answer=existing.correct_answer or question.answer,
+            analysis=question.analysis or "",
+            wrongbook_recorded=not bool(existing.is_correct),
+        )
 
     return schemas.SubmitResponse(
         is_correct=is_correct,

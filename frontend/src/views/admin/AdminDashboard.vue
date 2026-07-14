@@ -68,7 +68,10 @@ onMounted(fetchStats);
 </template>
 
 <style scoped>
-.admin-page { display: grid; gap: var(--space-4); }
+.admin-page {
+  display: grid;
+  gap: var(--space-4);
+}
 .admin-hero {
   display: flex;
   align-items: center;
@@ -78,9 +81,19 @@ onMounted(fetchStats);
   background: linear-gradient(135deg, #111827, #1d4ed8);
   color: #fff;
 }
-.admin-hero p, .admin-hero h1 { margin: 0; }
-.admin-hero p { font-size: var(--text-xs); font-weight: 900; opacity: .75; }
-.admin-hero h1 { font-size: clamp(28px, 7vw, 42px); line-height: 1.1; }
+.admin-hero p,
+.admin-hero h1 {
+  margin: 0;
+}
+.admin-hero p {
+  font-size: var(--text-xs);
+  font-weight: 900;
+  opacity: 0.75;
+}
+.admin-hero h1 {
+  font-size: clamp(28px, 7vw, 42px);
+  line-height: 1.1;
+}
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -95,8 +108,16 @@ onMounted(fetchStats);
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
-.admin-grid strong { color: var(--text-main); font-size: 30px; line-height: 1; }
-.admin-grid span { color: var(--text-muted); font-size: var(--text-xs); font-weight: 900; }
+.admin-grid strong {
+  color: var(--text-main);
+  font-size: 30px;
+  line-height: 1;
+}
+.admin-grid span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 900;
+}
 .admin-link {
   display: inline-flex;
   align-items: center;

@@ -2,9 +2,8 @@
 # Start:  docker compose up -d
 # Stop:   docker compose down
 #
-# Services are exposed at http://localhost:8080 (frontend) and
-# http://localhost:8000 (backend).  The frontend container proxies
-# API requests to the backend automatically via nginx.
+# The frontend is exposed at http://localhost:8080. The backend remains on
+# the internal Compose network and is reached through the Nginx API proxy.
 #
 # PostgreSQL and Redis are optional — uncomment their blocks and set
 # the corresponding environment variables in backend/.env.
@@ -14,8 +13,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - backend/.env
     volumes:

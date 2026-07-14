@@ -48,11 +48,23 @@
   line-height: 1.35;
 }
 /* A layout: concise capability notes without decorative panels. */
-.import-capability-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.import-capability { min-height: 0; border-radius: 6px; background: var(--surface); }
-.import-capability--wide { grid-column: auto; }
+.import-capability-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.import-capability {
+  min-height: 0;
+  border-radius: 6px;
+  background: var(--surface);
+}
+.import-capability--wide {
+  grid-column: auto;
+}
 @media (max-width: 520px) {
-  .import-capability-strip { grid-template-columns: 1fr; }
-  .import-capability--wide { grid-column: auto; }
+  .import-capability-strip {
+    grid-template-columns: 1fr;
+  }
+  .import-capability--wide {
+    grid-column: auto;
+  }
 }
 </style>

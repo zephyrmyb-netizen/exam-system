@@ -51,6 +51,8 @@ export default [
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-unused-expressions": "off",
       "vue/attributes-order": "off",
+      "vue/html-closing-bracket-newline": "off",
+      "vue/html-indent": "off",
       "vue/html-self-closing": "off",
       "vue/max-attributes-per-line": "off",
       "vue/multi-word-component-names": "off",

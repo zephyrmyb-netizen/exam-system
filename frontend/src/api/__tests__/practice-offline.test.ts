@@ -39,7 +39,9 @@ describe("practice offline queue", () => {
 
   it("flushes pending practice submissions when the network is available", async () => {
     vi.stubGlobal("navigator", { onLine: true });
-    postMock.mockResolvedValue({ data: { is_correct: true, correct_answer: "A", analysis: "", wrongbook_recorded: false } });
+    postMock.mockResolvedValue({
+      data: { is_correct: true, correct_answer: "A", analysis: "", wrongbook_recorded: false },
+    });
 
     const { flushPendingPracticeSubmissions } = await import("../practice.ts");
     const { useOfflineSync } = await import("../../composables/useOfflineSync.ts");

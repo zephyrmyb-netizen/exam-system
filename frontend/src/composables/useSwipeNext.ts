@@ -102,11 +102,7 @@ export function useSwipeNext(options: UseSwipeNextOptions): void {
         shouldTrigger = true;
       }
       // 2. 速度触发：快速横划，同时排除斜向滚动
-      else if (
-        absDx >= 36
-        && absDx >= absDy * 1.25
-        && (velocity <= -0.65 || avgVelocity >= 0.65)
-      ) {
+      else if (absDx >= 36 && absDx >= absDy * 1.25 && (velocity <= -0.65 || avgVelocity >= 0.65)) {
         shouldTrigger = true;
       }
     }

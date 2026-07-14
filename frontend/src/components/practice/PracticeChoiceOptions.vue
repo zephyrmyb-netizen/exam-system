@@ -1,11 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { CheckCircle, XCircle } from "@lucide/vue";
-import {
-  normalizeMultipleChoiceKeys,
-  TRUE_FALSE_FALSE,
-  TRUE_FALSE_TRUE,
-} from "../../utils/question";
+import { normalizeMultipleChoiceKeys, TRUE_FALSE_FALSE, TRUE_FALSE_TRUE } from "../../utils/question";
 
 const props = defineProps({
   questionType: { type: String, required: true },
@@ -18,14 +14,10 @@ const props = defineProps({
 
 const emit = defineEmits(["pick-single", "toggle-multiple"]);
 
-const correctAnswerKeys = computed(() => new Set(
-  normalizeMultipleChoiceKeys(props.correctAnswerDisplay),
-));
+const correctAnswerKeys = computed(() => new Set(normalizeMultipleChoiceKeys(props.correctAnswerDisplay)));
 
 function isSelected(key) {
-  return props.questionType === "multiple_choice"
-    ? props.selectedAnswers.includes(key)
-    : props.selectedAnswer === key;
+  return props.questionType === "multiple_choice" ? props.selectedAnswers.includes(key) : props.selectedAnswer === key;
 }
 
 function getOptionState(key) {
@@ -126,8 +118,11 @@ function pickOption(key) {
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   text-align: left;
   color: var(--text-main);
-  transition: border-color var(--ease-out), background var(--ease-out),
-              box-shadow var(--ease-out), transform 0.14s ease-out;
+  transition:
+    border-color var(--ease-out),
+    background var(--ease-out),
+    box-shadow var(--ease-out),
+    transform 0.14s ease-out;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -239,8 +234,11 @@ function pickOption(key) {
   color: var(--text-main);
   font-size: 14px;
   font-weight: 800;
-  transition: border-color var(--ease-out), background var(--ease-out),
-              color var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    border-color var(--ease-out),
+    background var(--ease-out),
+    color var(--ease-out),
+    box-shadow var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 

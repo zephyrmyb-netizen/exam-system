@@ -91,7 +91,10 @@ function mountPage() {
   return mount(ImportQuestions, {
     global: {
       stubs: {
-        ImportTaskMonitor: { template: "<div class='task-monitor'><slot />{{ title }} {{ detail }}</div>", props: ["title", "detail"] },
+        ImportTaskMonitor: {
+          template: "<div class='task-monitor'><slot />{{ title }} {{ detail }}</div>",
+          props: ["title", "detail"],
+        },
         ImportCapabilityStrip: true,
         ImportPreview: {
           template: `
@@ -344,7 +347,9 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.get(".adv-extracted pre").text()).toBe(longText);
 
     await wrapper.get(".adv-extracted button").trigger("click");
-    expect(copyText).toHaveBeenCalledWith(`请把下面的试题文本整理成标准 JSON 数组，只输出 JSON，不要解释：\n\n${longText}`);
+    expect(copyText).toHaveBeenCalledWith(
+      `请把下面的试题文本整理成标准 JSON 数组，只输出 JSON，不要解释：\n\n${longText}`,
+    );
   });
 
   it("guards task preview confirmation from duplicate submits and transitions with the real result", async () => {
@@ -403,9 +408,13 @@ describe("ImportQuestions file import behavior", () => {
     const source = readFileSync(resolve(process.cwd(), "src/views/ImportQuestions.vue"), "utf8");
 
     expect(source).toMatch(/\.import-page\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%[^}]*overflow-x:\s*clip/s);
-    expect(source).toMatch(/\.truncate-file-name\s*\{[^}]*max-width:\s*100%[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
+    expect(source).toMatch(
+      /\.truncate-file-name\s*\{[^}]*max-width:\s*100%[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s,
+    );
     expect(source).toMatch(/\.import-format-tags\s*\{[^}]*min-width:\s*0[^}]*overflow-x:\s*auto/s);
-    expect(source).toMatch(/\.adv-extracted pre\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%[^}]*max-height:\s*180px[^}]*overflow:\s*auto[^}]*overflow-wrap:\s*anywhere/s);
+    expect(source).toMatch(
+      /\.adv-extracted pre\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%[^}]*max-height:\s*180px[^}]*overflow:\s*auto[^}]*overflow-wrap:\s*anywhere/s,
+    );
   });
 
   it("shows an already imported task as a completion state after returning", async () => {

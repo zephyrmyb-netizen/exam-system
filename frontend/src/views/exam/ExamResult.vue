@@ -99,21 +99,34 @@ function retakeExam() {
 
       <section class="score-card" aria-label="考试成绩">
         <div class="score-ring" :style="{ '--score-angle': `${scorePercent * 3.6}deg` }">
-          <div class="score-ring__inner"><strong>{{ result.score ?? "--" }}</strong><span>分</span></div>
+          <div class="score-ring__inner">
+            <strong>{{ result.score ?? "--" }}</strong
+            ><span>分</span>
+          </div>
         </div>
         <span
           class="result-badge"
           :class="{ passed: result.passed === true, failed: result.passed === false }"
           data-exam-result-pass
-        >{{ passedLabel }}</span>
+          >{{ passedLabel }}</span
+        >
         <span class="score-total">满分 {{ result.total_score ?? "--" }} 分</span>
         <strong class="score-accuracy">正确率 {{ result.accuracy_rate ?? "--" }}%</strong>
       </section>
 
       <section class="summary-card" aria-label="答题统计">
-        <div><strong class="success-text">{{ result.correct_count ?? "--" }}</strong><span>答对</span></div>
-        <div><strong class="error-text">{{ result.wrong_count ?? "--" }}</strong><span>答错</span></div>
-        <div><strong data-exam-result-duration>{{ durationLabel }}</strong><span>用时</span></div>
+        <div>
+          <strong class="success-text">{{ result.correct_count ?? "--" }}</strong
+          ><span>答对</span>
+        </div>
+        <div>
+          <strong class="error-text">{{ result.wrong_count ?? "--" }}</strong
+          ><span>答错</span>
+        </div>
+        <div>
+          <strong data-exam-result-duration>{{ durationLabel }}</strong
+          ><span>用时</span>
+        </div>
       </section>
 
       <section class="details-card">
@@ -126,10 +139,17 @@ function retakeExam() {
               <span>{{ question.score ?? "--" }} 分</span>
             </div>
             <strong class="question-detail__question">{{ question.question }}</strong>
-            <div class="question-detail__status" :class="{ correct: formatStatus(question) === '正确', incorrect: formatStatus(question) === '错误' }">
+            <div
+              class="question-detail__status"
+              :class="{ correct: formatStatus(question) === '正确', incorrect: formatStatus(question) === '错误' }"
+            >
               <span data-question-answer>你的答案：{{ formatAnswer(question) }}</span>
-              <strong v-if="formatStatus(question) === '正确'" data-question-status><CheckCircle2 :size="16" /> 正确</strong>
-              <strong v-else-if="formatStatus(question) === '错误'" data-question-status><XCircle :size="16" /> 错误</strong>
+              <strong v-if="formatStatus(question) === '正确'" data-question-status
+                ><CheckCircle2 :size="16" /> 正确</strong
+              >
+              <strong v-else-if="formatStatus(question) === '错误'" data-question-status
+                ><XCircle :size="16" /> 错误</strong
+              >
               <strong v-else data-question-status>--</strong>
             </div>
           </article>
@@ -323,8 +343,12 @@ function retakeExam() {
   font-size: var(--text-xs);
 }
 
-.success-text { color: var(--primary-strong) !important; }
-.error-text { color: var(--state-error) !important; }
+.success-text {
+  color: var(--primary-strong) !important;
+}
+.error-text {
+  color: var(--state-error) !important;
+}
 
 .details-card {
   padding: var(--space-4);
@@ -405,8 +429,12 @@ function retakeExam() {
   gap: 4px;
 }
 
-.question-detail__status.correct strong { color: var(--primary-strong); }
-.question-detail__status.incorrect strong { color: var(--state-error); }
+.question-detail__status.correct strong {
+  color: var(--primary-strong);
+}
+.question-detail__status.incorrect strong {
+  color: var(--state-error);
+}
 
 .empty-detail {
   margin: var(--space-4) 0 4px;
@@ -461,7 +489,7 @@ function retakeExam() {
 
 .primary-button:active,
 .ghost-button:active {
-  transform: scale(.98);
+  transform: scale(0.98);
 }
 
 .primary-button {

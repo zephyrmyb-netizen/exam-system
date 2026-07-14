@@ -15,9 +15,11 @@ const emit = defineEmits<{
 }>();
 
 const optionEntries = computed(() => Object.entries(props.question.options || {}));
-const selectedOptionKeys = computed(() => props.question.question_type === "multiple_choice"
-  ? new Set(normalizeMultipleChoiceKeys(props.answer))
-  : new Set(props.answer ? [props.answer] : []));
+const selectedOptionKeys = computed(() =>
+  props.question.question_type === "multiple_choice"
+    ? new Set(normalizeMultipleChoiceKeys(props.answer))
+    : new Set(props.answer ? [props.answer] : []),
+);
 
 const questionTypeLabel = computed(() => {
   const labels: Record<string, string> = {
@@ -35,9 +37,7 @@ function onTextInput(event: Event) {
 }
 
 function selectOption(key: string) {
-  emit("answer", props.question.question_type === "multiple_choice"
-    ? toggleMultipleChoiceKey(props.answer, key)
-    : key);
+  emit("answer", props.question.question_type === "multiple_choice" ? toggleMultipleChoiceKey(props.answer, key) : key);
 }
 </script>
 
@@ -67,12 +67,7 @@ function selectOption(key: string) {
 
     <label v-else class="text-answer">
       <span>你的答案</span>
-      <textarea
-        :value="answer"
-        rows="6"
-        placeholder="在这里输入答案"
-        @input="onTextInput"
-      />
+      <textarea :value="answer" rows="6" placeholder="在这里输入答案" @input="onTextInput" />
     </label>
   </article>
 </template>
@@ -144,7 +139,11 @@ h2 {
   font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.5;
-  transition: transform var(--ease-spring), border-color var(--ease-out), background var(--ease-out), box-shadow var(--ease-out);
+  transition:
+    transform var(--ease-spring),
+    border-color var(--ease-out),
+    background var(--ease-out),
+    box-shadow var(--ease-out);
 }
 
 .option-button strong {
@@ -157,13 +156,20 @@ h2 {
   color: var(--text-secondary);
 }
 
-.option-button span { min-width: 0; overflow-wrap: anywhere; }
-.option-button:active { transform: scale(.99); }
+.option-button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.option-button:active {
+  transform: scale(0.99);
+}
 
 .option-button.active {
   border-color: var(--primary);
   background: var(--primary-soft);
-  box-shadow: 0 0 0 3px var(--primary-glow), var(--glass-inner-highlight);
+  box-shadow:
+    0 0 0 3px var(--primary-glow),
+    var(--glass-inner-highlight);
 }
 
 .option-button.active strong {
@@ -193,6 +199,8 @@ h2 {
 }
 
 @media (max-width: 340px) {
-  .exam-question-card { padding: var(--space-4); }
+  .exam-question-card {
+    padding: var(--space-4);
+  }
 }
 </style>

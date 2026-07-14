@@ -24,7 +24,7 @@ const props = defineProps({
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
 const showSummary = ref(false);
-const practiceSurface = ref<HTMLElement | null>(null);
+const practiceSurface = (ref < HTMLElement) | (null > null);
 
 const {
   answerHint,
@@ -60,15 +60,10 @@ const {
 // 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
 // 答对时 composable 内 650ms 自动跳仍保留；右滑则让用户主动立即跳。
 // fetchRandomQuestion 开头会 clearCorrectAutoNextTimer，不会重复触发。
-const canSwipeNext = computed(() =>
-  !!result.value
-  && !loading.value
-  && !submitting.value
-  && (phase.value === "correct" || phase.value === "wrong"),
+const canSwipeNext = computed(
+  () => !!result.value && !loading.value && !submitting.value && (phase.value === "correct" || phase.value === "wrong"),
 );
-const requiresManualSubmit = computed(() =>
-  isTextQuestion.value || question.value?.type === "multiple_choice",
-);
+const requiresManualSubmit = computed(() => isTextQuestion.value || question.value?.type === "multiple_choice");
 useSwipeNext({
   onSwipe: () => {
     if (canSwipeNext.value) {
@@ -89,30 +84,33 @@ const modeLabel = computed(() => {
   return "";
 });
 
-const isWrongReviewEmpty = computed(() =>
-  props.mode === "wrong_review"
-    && !loading.value
-    && !errorMessage.value
-    && question.value === null
-    && sessionStats.value.answeredCount === 0,
+const isWrongReviewEmpty = computed(
+  () =>
+    props.mode === "wrong_review" &&
+    !loading.value &&
+    !errorMessage.value &&
+    question.value === null &&
+    sessionStats.value.answeredCount === 0,
 );
 
-const isDueReviewEmpty = computed(() =>
-  props.mode === "due_review"
-    && !loading.value
-    && !errorMessage.value
-    && question.value === null
-    && sessionStats.value.answeredCount === 0,
+const isDueReviewEmpty = computed(
+  () =>
+    props.mode === "due_review" &&
+    !loading.value &&
+    !errorMessage.value &&
+    question.value === null &&
+    sessionStats.value.answeredCount === 0,
 );
 
-const isCourseEmpty = computed(() =>
-  props.mode === "normal"
-    && !!props.courseId
-    && sessionComplete.value
-    && !loading.value
-    && !errorMessage.value
-    && question.value === null
-    && sessionStats.value.answeredCount === 0,
+const isCourseEmpty = computed(
+  () =>
+    props.mode === "normal" &&
+    !!props.courseId &&
+    sessionComplete.value &&
+    !loading.value &&
+    !errorMessage.value &&
+    question.value === null &&
+    sessionStats.value.answeredCount === 0,
 );
 
 function goBack() {
@@ -129,7 +127,10 @@ function goBack() {
 function endPractice() {
   cancelPendingAdvance?.();
   if (sessionStats.value.startedAt && sessionStats.value.durationSeconds === null) {
-    sessionStats.value.durationSeconds = Math.max(0, Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000));
+    sessionStats.value.durationSeconds = Math.max(
+      0,
+      Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000),
+    );
   }
   showSummary.value = true;
 }
@@ -191,7 +192,7 @@ watch(sessionComplete, (complete) => {
     </div>
 
     <div v-else-if="isWrongReviewEmpty" class="state-block">
-      <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color:var(--emerald)" /></div>
+      <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color: var(--emerald)" /></div>
       <p class="state-title">暂无错题</p>
       <p class="state-hint">继续练习积累后再来强化。</p>
       <button class="primary-button" type="button" @click="goBack">
@@ -201,7 +202,7 @@ watch(sessionComplete, (complete) => {
     </div>
 
     <div v-else-if="isDueReviewEmpty" class="state-block">
-      <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color:var(--emerald)" /></div>
+      <div class="state-icon"><CheckCircle :size="44" :stroke-width="1.5" style="color: var(--emerald)" /></div>
       <p class="state-title">暂无到期题目</p>
       <p class="state-hint">你已清空今日到期复习，继续保持。</p>
       <button class="primary-button" type="button" @click="goBack">
@@ -219,7 +220,11 @@ watch(sessionComplete, (complete) => {
           <Library :size="16" :stroke-width="2.5" />
           <span>返回题库</span>
         </button>
-        <button class="primary-button" type="button" @click="router.replace({ name: 'import', query: { from: 'practice' } })">
+        <button
+          class="primary-button"
+          type="button"
+          @click="router.replace({ name: 'import', query: { from: 'practice' } })"
+        >
           <Sparkles :size="16" :stroke-width="2.5" />
           <span>去导入题目</span>
         </button>
@@ -246,10 +251,7 @@ watch(sessionComplete, (complete) => {
 
     <div v-else-if="question" ref="practiceSurface" class="practice-content">
       <Transition name="question-fade">
-        <div
-          :key="question.id"
-          class="practice-card-shell"
-        >
+        <div :key="question.id" class="practice-card-shell">
           <PracticeQuestionStem :question="question" />
 
           <div class="practice-answer-section">
@@ -333,9 +335,7 @@ watch(sessionComplete, (complete) => {
   min-height: 100dvh;
   overflow-x: hidden;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
-  background:
-    radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.09), transparent 34%),
-    var(--page-bg);
+  background: radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.09), transparent 34%), var(--page-bg);
 }
 
 .practice-page--with-action {
@@ -369,7 +369,9 @@ watch(sessionComplete, (complete) => {
 
 /* 高频答题只保留一次轻量交接，不再使用 out-in 留出空白帧。 */
 .question-fade-enter-active {
-  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .question-fade-leave-active {
@@ -377,7 +379,9 @@ watch(sessionComplete, (complete) => {
   inset: 0;
   width: 100%;
   pointer-events: none;
-  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  transition:
+    opacity 0.12s ease-out,
+    transform 0.12s ease-out;
 }
 
 .question-fade-enter-from {
@@ -393,7 +397,9 @@ watch(sessionComplete, (complete) => {
 /* ── 结果面板出现：短暂淡入轻移 ── */
 .result-fade-enter-active,
 .result-fade-leave-active {
-  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.16s ease-out;
 }
 
 .result-fade-enter-from,

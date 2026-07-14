@@ -1,14 +1,19 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import request, { getErrorMessage } from "../api/request";
+import { typeLabel, typeOptions, formatOptions } from "../utils/question";
 import {
-  typeLabel,
-  typeOptions,
-  formatOptions,
-} from "../utils/question";
-import {
-  Search, RefreshCw, Eye, EyeOff, Trash2, ChevronLeft, ChevronRight,
-  Plus, Pencil, Globe, Lock,
+  Search,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Pencil,
+  Globe,
+  Lock,
 } from "@lucide/vue";
 import QuestionEditor from "../components/question/QuestionEditor.vue";
 import { useConfirmDialog } from "../stores/confirmDialog";
@@ -50,14 +55,18 @@ const { cancel: cancelKeywordSearch, schedule: scheduleKeywordSearch } = useDebo
   void fetchQuestions();
 });
 
-function onKeywordInput() { scheduleKeywordSearch(); }
+function onKeywordInput() {
+  scheduleKeywordSearch();
+}
 function onFilterChange() {
   cancelKeywordSearch();
   page.value = 1;
   void fetchQuestions();
 }
 
-function isExpanded(id) { return expandedIds.value.has(id); }
+function isExpanded(id) {
+  return expandedIds.value.has(id);
+}
 
 function toggleAnswer(id) {
   const next = new Set(expandedIds.value);
@@ -76,8 +85,9 @@ async function fetchMeta() {
     subjects.value = [];
     chapters.value = [];
     metaError.value = getErrorMessage(error, "筛选条件加载失败");
+  } finally {
+    metaLoading.value = false;
   }
-  finally { metaLoading.value = false; }
 }
 
 async function fetchQuestions() {
@@ -92,16 +102,34 @@ async function fetchQuestions() {
   if (props.courseId) params.course_id = props.courseId;
   try {
     const { data } = await request.get("/questions/", { params });
-    if (Array.isArray(data)) { questions.value = data; total.value = data.length; }
-    else { questions.value = data.items || []; total.value = data.total || 0; }
+    if (Array.isArray(data)) {
+      questions.value = data;
+      total.value = data.length;
+    } else {
+      questions.value = data.items || [];
+      total.value = data.total || 0;
+    }
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "获取题目列表失败");
-    questions.value = []; total.value = 0;
-  } finally { loading.value = false; }
+    questions.value = [];
+    total.value = 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
-function goPrevPage() { if (page.value > 1) { page.value--; fetchQuestions(); } }
-function goNextPage() { if (hasMore.value) { page.value++; fetchQuestions(); } }
+function goPrevPage() {
+  if (page.value > 1) {
+    page.value--;
+    fetchQuestions();
+  }
+}
+function goNextPage() {
+  if (hasMore.value) {
+    page.value++;
+    fetchQuestions();
+  }
+}
 
 async function loadMore() {
   if (!hasMore.value || loading.value) return;
@@ -119,8 +147,12 @@ async function loadMore() {
     const newItems = Array.isArray(data) ? data : data.items || [];
     questions.value = [...questions.value, ...newItems];
     total.value = Array.isArray(data) ? questions.value.length : data.total || 0;
-  } catch (error) { errorMessage.value = getErrorMessage(error, "加载更多失败"); page.value--; }
-  finally { loading.value = false; }
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "加载更多失败");
+    page.value--;
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function deleteQuestion(q) {
@@ -137,7 +169,9 @@ async function deleteQuestion(q) {
     await request.delete(`/questions/${q.id}`);
     actionMessage.value = "题目已删除。";
     await fetchQuestions();
-  } catch (error) { errorMessage.value = getErrorMessage(error, "删除题目失败"); }
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "删除题目失败");
+  }
 }
 
 async function toggleQuestionVisibility(q) {
@@ -153,16 +187,31 @@ async function toggleQuestionVisibility(q) {
       q.visibility = "public";
       actionMessage.value = "题目已发布。";
     }
-  } catch (error) { errorMessage.value = getErrorMessage(error, "操作失败"); }
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "操作失败");
+  }
 }
 
-function openCreateEditor() { editingQuestion.value = null; showEditor.value = true; }
-function openEditEditor(q) { editingQuestion.value = q; showEditor.value = true; }
-function closeEditor() { showEditor.value = false; }
+function openCreateEditor() {
+  editingQuestion.value = null;
+  showEditor.value = true;
+}
+function openEditEditor(q) {
+  editingQuestion.value = q;
+  showEditor.value = true;
+}
+function closeEditor() {
+  showEditor.value = false;
+}
 
-function onQuestionSaved() { fetchQuestions(); }
+function onQuestionSaved() {
+  fetchQuestions();
+}
 
-onMounted(() => { fetchMeta(); fetchQuestions(); });
+onMounted(() => {
+  fetchMeta();
+  fetchQuestions();
+});
 </script>
 
 <template>
@@ -173,11 +222,17 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
         <p v-if="total">共 {{ total }} 道题</p>
       </div>
       <div class="heading-actions">
-        <button class="ghost-button" type="button" aria-label="刷新题目列表" :disabled="loading" @click="fetchQuestions">
-          <RefreshCw :size="15" :stroke-width="2.5" style="margin-right:3px" />刷新
+        <button
+          class="ghost-button"
+          type="button"
+          aria-label="刷新题目列表"
+          :disabled="loading"
+          @click="fetchQuestions"
+        >
+          <RefreshCw :size="15" :stroke-width="2.5" style="margin-right: 3px" />刷新
         </button>
         <button v-if="props.courseId" class="primary-button" type="button" @click="openCreateEditor">
-          <Plus :size="16" :stroke-width="2.5" style="margin-right:4px" />新增题目
+          <Plus :size="16" :stroke-width="2.5" style="margin-right: 4px" />新增题目
         </button>
       </div>
     </div>
@@ -186,7 +241,14 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
     <div class="filter-bar">
       <div class="input-with-icon filter-input-wrapper">
         <Search class="input-icon" :size="17" />
-        <input v-model="keyword" class="text-input has-left-icon" type="search" placeholder="搜索关键词..." aria-label="搜索题目关键词" @input="onKeywordInput" />
+        <input
+          v-model="keyword"
+          class="text-input has-left-icon"
+          type="search"
+          placeholder="搜索关键词..."
+          aria-label="搜索题目关键词"
+          @input="onKeywordInput"
+        />
       </div>
       <select v-model="typeFilter" class="filter-select" aria-label="按题型筛选题目" @change="onFilterChange">
         <option value="">全部题型</option>
@@ -213,9 +275,7 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     <p v-if="actionMessage" class="success-message">{{ actionMessage }}</p>
 
-    <div v-if="!loading && questions.length === 0 && !errorMessage" class="empty-state">
-      还没有匹配的题目。
-    </div>
+    <div v-if="!loading && questions.length === 0 && !errorMessage" class="empty-state">还没有匹配的题目。</div>
 
     <article v-for="q in questions" :key="q.id" class="card question-card">
       <div class="meta-row">
@@ -228,31 +288,36 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
 
       <ul v-if="formatOptions(q.options).length" class="option-list">
         <li v-for="opt in formatOptions(q.options)" :key="opt.key">
-          <strong>{{ opt.key }}</strong><span>{{ opt.value }}</span>
+          <strong>{{ opt.key }}</strong
+          ><span>{{ opt.value }}</span>
         </li>
       </ul>
 
       <div v-if="isExpanded(q.id)" class="answer-panel">
-        <div class="answer-line"><span class="answer-label">正确答案</span><span class="answer-value correct-answer">{{ q.answer }}</span></div>
-        <div class="answer-line"><span class="answer-label">解析</span><span class="answer-value">{{ q.analysis || "暂无解析" }}</span></div>
+        <div class="answer-line">
+          <span class="answer-label">正确答案</span><span class="answer-value correct-answer">{{ q.answer }}</span>
+        </div>
+        <div class="answer-line">
+          <span class="answer-label">解析</span><span class="answer-value">{{ q.analysis || "暂无解析" }}</span>
+        </div>
       </div>
 
       <div class="button-row">
         <button class="ghost-button" type="button" @click="toggleAnswer(q.id)">
-          <EyeOff v-if="isExpanded(q.id)" :size="15" style="margin-right:3px" />
-          <Eye v-else :size="15" style="margin-right:3px" />
+          <EyeOff v-if="isExpanded(q.id)" :size="15" style="margin-right: 3px" />
+          <Eye v-else :size="15" style="margin-right: 3px" />
           {{ isExpanded(q.id) ? "收起" : "查看" }}
         </button>
         <button class="ghost-button" type="button" @click="openEditEditor(q)">
-          <Pencil :size="15" style="margin-right:3px" />编辑
+          <Pencil :size="15" style="margin-right: 3px" />编辑
         </button>
         <button class="ghost-button" type="button" @click="toggleQuestionVisibility(q)">
-          <Globe v-if="q.visibility === 'public'" :size="15" style="margin-right:3px" />
-          <Lock v-else :size="15" style="margin-right:3px" />
+          <Globe v-if="q.visibility === 'public'" :size="15" style="margin-right: 3px" />
+          <Lock v-else :size="15" style="margin-right: 3px" />
           {{ q.visibility === "public" ? "撤回" : "发布" }}
         </button>
         <button class="danger-button" type="button" @click="deleteQuestion(q)">
-          <Trash2 :size="15" style="margin-right:3px" />删除
+          <Trash2 :size="15" style="margin-right: 3px" />删除
         </button>
       </div>
     </article>
@@ -261,15 +326,20 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
 
     <div v-if="total > pageSize" class="pagination-bar">
       <button class="ghost-button" :disabled="page <= 1 || loading" @click="goPrevPage">
-        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right:2px" />上一页
+        <ChevronLeft :size="16" :stroke-width="2.5" style="margin-right: 2px" />上一页
       </button>
       <span class="page-info">{{ page }} / {{ totalPages }}</span>
       <button class="ghost-button" :disabled="!hasMore || loading" @click="goNextPage">
-        下一页<ChevronRight :size="16" :stroke-width="2.5" style="margin-left:2px" />
+        下一页<ChevronRight :size="16" :stroke-width="2.5" style="margin-left: 2px" />
       </button>
     </div>
 
-    <button v-if="hasMore && questions.length > 0" class="ghost-button full-button" :disabled="loading" @click="loadMore">
+    <button
+      v-if="hasMore && questions.length > 0"
+      class="ghost-button full-button"
+      :disabled="loading"
+      @click="loadMore"
+    >
       {{ loading ? "加载中..." : "加载更多" }}
     </button>
 
@@ -291,9 +361,22 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
   flex-shrink: 0;
 }
 
-.filter-input-wrapper { grid-column: 1 / -1; position: relative; }
-.input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-placeholder); z-index: 1; pointer-events: none; }
-.text-input.has-left-icon { padding-left: 40px; }
+.filter-input-wrapper {
+  grid-column: 1 / -1;
+  position: relative;
+}
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-placeholder);
+  z-index: 1;
+  pointer-events: none;
+}
+.text-input.has-left-icon {
+  padding-left: 40px;
+}
 .filter-warning {
   display: flex;
   align-items: center;
@@ -318,17 +401,55 @@ onMounted(() => { fetchMeta(); fetchQuestions(); });
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.meta-type { background: var(--primary-soft) !important; color: var(--primary-strong) !important; }
-.meta-public { background: var(--emerald-soft) !important; color: var(--emerald) !important; }
+.meta-type {
+  background: var(--primary-soft) !important;
+  color: var(--primary-strong) !important;
+}
+.meta-public {
+  background: var(--emerald-soft) !important;
+  color: var(--emerald) !important;
+}
 
-.button-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
-.answer-line { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2); align-items: baseline; }
-.answer-label { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.answer-value { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.55; }
-.correct-answer { color: var(--primary-strong); font-weight: 700; }
+.answer-line {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+.answer-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.answer-value {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.correct-answer {
+  color: var(--primary-strong);
+  font-weight: 700;
+}
 
-.ghost-button, .danger-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; }
+.ghost-button,
+.danger-button,
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
-@media (min-width: 640px) { .filter-input-wrapper { grid-column: auto; } }
+@media (min-width: 640px) {
+  .filter-input-wrapper {
+    grid-column: auto;
+  }
+}
 </style>

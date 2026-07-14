@@ -247,6 +247,23 @@ class TestPractice:
         assert data["is_correct"] is True
 
 
+    def test_submit_with_client_submission_id_is_idempotent(self, client, auth_headers, sample_questions):
+        client.post(self.QUESTIONS_BATCH, json=sample_questions, headers=auth_headers)
+        question = client.get("/questions/", headers=auth_headers).json()[0]
+        payload = {
+            "question_id": question["id"],
+            "user_answer": question["answer"],
+            "client_submission_id": "offline-retry-0001",
+        }
+
+        first = client.post(self.PRACTICE_SUBMIT, json=payload, headers=auth_headers)
+        second = client.post(self.PRACTICE_SUBMIT, json=payload, headers=auth_headers)
+
+        assert first.status_code == second.status_code == 200
+        assert first.json() == second.json()
+        assert client.get("/practice/stats", headers=auth_headers).json()["total_count"] == 1
+
+
 class TestPracticeWithCourses:
     """Tests for /practice/random?course_id= filtering."""
 

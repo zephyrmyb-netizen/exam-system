@@ -71,6 +71,14 @@ defineProps({
   }
 }
 /* A layout: visible progress, no decorative motion or oversized treatment. */
-.running-panel { border-radius: 6px; background: var(--surface); border-color: var(--primary-border); box-shadow: var(--shadow-xs); }
-.running-dot { border-radius: 2px; animation: none; }
+.running-panel {
+  border-radius: 6px;
+  background: var(--surface);
+  border-color: var(--primary-border);
+  box-shadow: var(--shadow-xs);
+}
+.running-dot {
+  border-radius: 2px;
+  animation: none;
+}
 </style>

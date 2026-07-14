@@ -16,19 +16,14 @@ const difficultyLabels = {
   <header class="practice-stem">
     <div class="practice-stem__meta">
       <span class="practice-stem__tag">{{ typeLabel(question.type) }}</span>
-      <span
-        v-if="question.difficulty && difficultyLabels[question.difficulty]"
-        class="practice-stem__difficulty"
-      >
+      <span v-if="question.difficulty && difficultyLabels[question.difficulty]" class="practice-stem__difficulty">
         <i aria-hidden="true"></i>
         {{ difficultyLabels[question.difficulty] }}
       </span>
       <span v-if="question.subject || question.chapter" class="practice-stem__context">
         {{ [question.subject, question.chapter].filter(Boolean).join(" · ") }}
       </span>
-      <span v-if="question.type === 'multiple_choice'" class="practice-stem__hint">
-        多选题，请选择所有正确选项
-      </span>
+      <span v-if="question.type === 'multiple_choice'" class="practice-stem__hint"> 多选题，请选择所有正确选项 </span>
     </div>
     <h2 class="practice-stem__title">{{ question.question }}</h2>
   </header>
