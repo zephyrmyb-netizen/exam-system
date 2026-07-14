@@ -10,7 +10,9 @@
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,json}\"",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:visual": "playwright test e2e/visual.spec.ts",
+    "test:visual:review": "playwright test e2e/reference-review.spec.ts"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-sc": "^5.2.10",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.1",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.6",

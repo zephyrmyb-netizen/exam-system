@@ -49,10 +49,14 @@ async function submit(): Promise<boolean> {
   if (store.submitting) return false;
   try {
     const result = await store.submitCurrentExam();
-    const acceptedResult = store.result;
-    if (!componentActive || !acceptedResult || acceptedResult.exam_id !== result.exam_id) return false;
-    if (acceptedResult.submission_id !== undefined && result.submission_id !== undefined
-      && acceptedResult.submission_id !== result.submission_id) return false;
+    // The store owns stale-session protection. Only the still-active component
+    // that owns this paper may hand the response to the result route.
+    if (!componentActive || store.currentExam?.id !== result.exam_id) return false;
+    // A successful current-session response is also the result-page payload.
+    // Keep that hand-off resilient if a Pinia plugin or an async session
+    // cleanup has not yet reflected the store assignment when navigation
+    // begins. The active component and matching paper above make this safe.
+    if (!store.result) store.result = result;
     router.replace({ name: "exam-result", params: { examId: result.exam_id } });
     return true;
   } catch {
