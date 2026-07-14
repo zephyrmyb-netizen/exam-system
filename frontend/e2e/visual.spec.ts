@@ -17,6 +17,13 @@ test.describe("390x844 reference UI baselines", () => {
   }
 });
 
+test("home shell semantics remain available to visual review", async ({ mockedPage }) => {
+  await prepareSurface(mockedPage, "home");
+
+  await expect(mockedPage.locator("[data-testid='app-shell'][data-layout='tabbed']")).toBeVisible();
+  await expect(mockedPage.locator("[data-testid='bottom-tab-home']")).toBeVisible();
+});
+
 test.describe("responsive overflow and safe bottom content", () => {
   for (const viewport of [{ width: 320, height: 720 }, { width: 420, height: 900 }]) {
     for (const surface of surfaces) {
