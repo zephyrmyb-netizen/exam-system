@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ImportPreview from "../ImportPreview.vue";
+import type { ImportTiming } from "../../../types";
 
 const previewData = {
   suggested_course_name: "图片题库",
@@ -11,7 +12,8 @@ const previewData = {
   total_parsed: 0,
   total_valid: 0,
   total_invalid: 0,
-  timing: null,
+  is_complete: true,
+  timing: null as ImportTiming | null,
 };
 
 function mountPreview(data = previewData) {
@@ -68,6 +70,30 @@ describe("ImportPreview warnings and empty state", () => {
     });
 
     expect(wrapper.get(".primary-button").attributes("disabled")).toBeUndefined();
+  });
+
+  it("blocks confirmation for a partial parse even when some questions are available", () => {
+    const wrapper = mountPreview({
+      ...previewData,
+      questions: [{ type: "fill_blank", question: "Only one recovered question", answer: "answer" }] as unknown as never[],
+      total_valid: 1,
+      is_complete: false,
+      timing: {
+        extract_ms: 1,
+        chunk_ms: 1,
+        ai_ms: 1,
+        total_ms: 1,
+        chunks: 3,
+        ai_chunks: [1, 1, 1],
+        completed_chunks: 2,
+        failed_chunks: 1,
+        batches: 1,
+        is_complete: false,
+      },
+    });
+
+    expect(wrapper.find(".incomplete-import").text()).toContain("2 / 3");
+    expect(wrapper.get(".primary-button").attributes("disabled")).toBeDefined();
   });
 
   it("shows the source file, target course, and skipped fragment count", () => {

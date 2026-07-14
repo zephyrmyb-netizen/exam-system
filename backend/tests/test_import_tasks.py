@@ -66,6 +66,31 @@ def test_import_task_persists_preview_after_background_parse(client, auth_header
     assert data["questions"][0]["question"] == "模块化导入测试题？"
 
 
+def test_import_task_marks_partial_preview_and_rejects_confirmation(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        import_task_service.imports_service,
+        "preview_import_from_file_content",
+        lambda _text, _images: (
+            parsed_question(),
+            ["第 2 部分解析失败: timeout"],
+            {"chunks": 3, "completed_chunks": 2, "failed_chunks": 1, "is_complete": False, "ai_ms": 1},
+        ),
+    )
+    task_id = create_task(client, auth_headers)
+
+    response = client.get(f"/imports/tasks/{task_id}", headers=auth_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "partial"
+    assert data["progress_current"] == 2
+    assert data["progress_total"] == 3
+    assert "不能确认导入" in data["error_message"]
+
+    confirm = client.post(f"/imports/tasks/{task_id}/confirm", headers=auth_headers, json={"course_name": "不完整题库"})
+    assert confirm.status_code == 409
+    assert client.get("/questions/", headers=auth_headers).json() == []
+
+
 def test_import_task_is_invisible_to_other_users(client, auth_headers, auth_headers_other, monkeypatch):
     install_parser_stub(monkeypatch)
     task_id = create_task(client, auth_headers)

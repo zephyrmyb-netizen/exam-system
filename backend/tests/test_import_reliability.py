@@ -1,8 +1,5 @@
 """Regression coverage for resilient long-document AI imports."""
 
-import pytest
-from fastapi import HTTPException
-
 from backend.imports.image_extractor import ImagePayload
 
 
@@ -71,24 +68,29 @@ def test_incomplete_numbered_chunk_is_retried_in_smaller_batches(monkeypatch):
     assert any("自动拆分重试" in warning for warning in warnings)
 
 
-def test_numbered_document_over_chunk_limit_is_not_silently_imported(monkeypatch):
-    """A configured safety limit must fail clearly instead of importing only the first pages."""
+def test_numbered_document_over_batch_size_processes_every_chunk(monkeypatch):
+    """A per-batch limit must not reject or drop later document chunks."""
     from backend.imports import import_orchestrator
 
     monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "test-key")
-    monkeypatch.setattr(import_orchestrator, "MAX_CHUNKS", 1)
+    monkeypatch.setattr(import_orchestrator, "AI_BATCH_SIZE", 1)
     text = "\n".join(f"{index}. Simulated question {index}" for index in range(1, 13))
 
     def fake_parse(chunk: str, _index: int, expected_question_count: int = 0):
-        return [_question(f"question {index}") for index in range(1, expected_question_count + 1)], []
+        numbers = [int(match.group(1)) for match in __import__("re").finditer(r"(?m)^(\d+)\.", chunk)]
+        assert len(numbers) == expected_question_count
+        return [_question(f"question {number}") for number in numbers], []
 
     monkeypatch.setattr(import_orchestrator, "call_ai_parse_chunk", fake_parse)
 
-    with pytest.raises(HTTPException) as exc_info:
-        import_orchestrator.call_ai_parse(text)
+    questions, warnings, timing = import_orchestrator.call_ai_parse(text)
 
-    assert exc_info.value.status_code == 422
-    assert "超过安全处理上限" in exc_info.value.detail
+    assert len(questions) == 12
+    assert warnings == []
+    assert timing["chunks"] == 2
+    assert timing["batches"] == 2
+    assert timing["completed_chunks"] == 2
+    assert timing["is_complete"] is True
 
 
 def test_file_content_combines_chunked_text_and_image_questions(monkeypatch):

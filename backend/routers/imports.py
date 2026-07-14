@@ -138,6 +138,7 @@ async def preview_import(
         total_parsed=len(questions),
         total_valid=total_valid,
         total_invalid=total_invalid,
+        is_complete=bool(parse_timing.get("is_complete", True)),
         timing=imports_service.build_timing(
             total_start=total_start,
             extract_ms=extract_ms,

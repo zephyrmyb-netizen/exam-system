@@ -52,7 +52,8 @@ def _apply_env_values(values: dict[str, str | None], preserve_existing: bool | N
         "CHAT_UPSTREAM_TIMEOUT": "30",
         "IMPORT_UPSTREAM_TIMEOUT": "90",
         "IMPORT_CHUNK_SIZE": "5000",
-        "IMPORT_MAX_CHUNKS": "20",
+        "IMPORT_MAX_CHUNKS": "3",
+        "IMPORT_BATCH_SIZE": "3",
         "IMPORT_MAX_TOKENS": "6000",
         "IMPORT_RATE_LIMIT_PER_HOUR": "10",
         "REDIS_URL": "",
@@ -140,7 +141,11 @@ CHAT_UPSTREAM_TIMEOUT = float(os.getenv("CHAT_UPSTREAM_TIMEOUT", "90"))
 # sequential model calls. Keep these limits aligned with the frontend timeout.
 IMPORT_UPSTREAM_TIMEOUT = float(os.getenv("IMPORT_UPSTREAM_TIMEOUT", "90"))
 IMPORT_CHUNK_SIZE = int(os.getenv("IMPORT_CHUNK_SIZE", "2000"))
-IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "20"))
+# Kept as a fallback for older deployments.  It used to reject a document
+# outright once its *total* number of chunks exceeded this value; new code
+# treats the limit as the number of chunks in one sequential batch instead.
+IMPORT_MAX_CHUNKS = int(os.getenv("IMPORT_MAX_CHUNKS", "3"))
+IMPORT_BATCH_SIZE = int(os.getenv("IMPORT_BATCH_SIZE", str(IMPORT_MAX_CHUNKS)))
 IMPORT_MAX_TOKENS = int(os.getenv("IMPORT_MAX_TOKENS", "6000"))
 # Per-user limit for AI import calls (each call may cost several model requests).
 IMPORT_RATE_LIMIT_PER_HOUR = int(os.getenv("IMPORT_RATE_LIMIT_PER_HOUR", "10"))

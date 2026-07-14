@@ -89,6 +89,7 @@ const effectiveCourseName = computed(() => {
 const timing = computed(() => props.previewData?.timing || null);
 const skippedInvalidQuestionCount = computed(() => Number(props.previewData?.total_invalid || 0));
 const warningCount = computed(() => warnings.value.length);
+const isComplete = computed(() => props.previewData?.is_complete !== false);
 
 function formatTiming(ms) {
   const value = Number(ms || 0);
@@ -159,6 +160,10 @@ function findFirstInvalid() {
 }
 
 async function handleConfirm() {
+  if (!isComplete.value) {
+    confirmError.value = "解析结果尚不完整，请重新解析后再确认导入。";
+    return;
+  }
   if (questions.value.length === 0) {
     confirmError.value = "没有可导入的题目，请先解析或添加题目";
     return;
@@ -226,6 +231,10 @@ function handleRetry() {
       <div>
         <p v-for="(w, i) in warnings" :key="i" class="warn-line">{{ w }}</p>
       </div>
+    </div>
+    <div v-if="!isComplete" class="warnings-box incomplete-import" role="alert">
+      <AlertCircle :size="16" :stroke-width="2.5" color="var(--danger)" style="flex-shrink: 0" />
+      <p>仅完成 {{ timing?.completed_chunks ?? 0 }} / {{ timing?.chunks ?? 0 }} 个分块，当前预览不完整，不能确认导入。</p>
     </div>
 
     <!-- ── Summary bar ── -->
@@ -311,7 +320,7 @@ function handleRetry() {
       <button
         class="primary-button"
         type="button"
-        :disabled="confirming || questions.length === 0"
+        :disabled="confirming || questions.length === 0 || !isComplete"
         @click="handleConfirm"
       >
         <CheckCircle :size="16" :stroke-width="2.5" style="margin-right: 6px" />
