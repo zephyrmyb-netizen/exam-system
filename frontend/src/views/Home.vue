@@ -1,23 +1,44 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
-import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, MoreHorizontal, ScanLine, Target, TrendingUp } from "@lucide/vue";
+import {
+  ArrowRight,
+  BookOpen,
+  ClipboardList,
+  Eye,
+  FileText,
+  FileUp,
+  Globe,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Play,
+  ScanLine,
+  Target,
+  Trash2,
+  TrendingUp,
+} from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
-import { getErrorMessage } from "../api/request";
+import request, { getErrorMessage } from "../api/request";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { typeLabel } from "../utils/question";
 import { openGlobalSearch } from "../utils/globalSearch";
 
 const { replaceTo } = useAppNavigation();
+const confirmDialog = useConfirmDialog();
 const { recommendation, recommendationAvailable, fetchAll } = useStudyOverview();
 
 const courses = ref<Course[]>([]);
 const coursesLoading = ref(false);
 const coursesError = ref("");
+const openCourseMenuId = ref<number | null>(null);
+const publishLoading = ref<number | null>(null);
+const deleteLoading = ref<number | null>(null);
 
 const recommendationMode = computed(() =>
   recommendationAvailable.value === true ? recommendation.value?.recommended_modes?.[0] || "" : "",
@@ -134,6 +155,67 @@ function formatCourseDate(course: Course) {
   return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit" }).format(date);
 }
 
+function toggleCourseMenu(courseId: number) {
+  openCourseMenuId.value = openCourseMenuId.value === courseId ? null : courseId;
+}
+
+function closeCourseMenu() {
+  openCourseMenuId.value = null;
+}
+
+function startRecentCoursePractice(course: Course) {
+  if (!isPracticeReadyCourse(course)) return;
+  closeCourseMenu();
+  goTo({ name: "course-practice", params: { courseId: course.id }, query: { from: "home" } });
+}
+
+function viewRecentCourse(course: Course, edit = false) {
+  closeCourseMenu();
+  goTo({
+    name: "course-detail",
+    params: { courseId: course.id },
+    query: edit ? { from: "home", edit: "1" } : { from: "home" },
+  });
+}
+
+async function toggleRecentCoursePublish(course: Course) {
+  closeCourseMenu();
+  publishLoading.value = course.id;
+  coursesError.value = "";
+  try {
+    const endpoint = course.visibility === "public" ? "unpublish" : "publish";
+    const { data } = await request.post<Course>(`/courses/${course.id}/${endpoint}`);
+    course.visibility = data.visibility || (endpoint === "publish" ? "public" : "private");
+  } catch (error) {
+    coursesError.value = getErrorMessage(error, "操作失败，请稍后重试。");
+  } finally {
+    publishLoading.value = null;
+  }
+}
+
+async function deleteRecentCourse(course: Course) {
+  closeCourseMenu();
+  const confirmed = await confirmDialog.confirm({
+    title: "删除题库",
+    message: `确定删除「${getCourseDisplayName(course)}」吗？\n其中 ${course.question_count ?? 0} 道题会一起移除。`,
+    confirmText: "删除",
+    cancelText: "取消",
+    tone: "danger",
+  });
+  if (!confirmed) return;
+
+  deleteLoading.value = course.id;
+  coursesError.value = "";
+  try {
+    await request.delete(`/courses/${course.id}`);
+    courses.value = courses.value.filter((item) => item.id !== course.id);
+  } catch (error) {
+    coursesError.value = getErrorMessage(error, "删除失败，请稍后重试。");
+  } finally {
+    deleteLoading.value = null;
+  }
+}
+
 async function fetchRecentCourses() {
   coursesLoading.value = true;
   coursesError.value = "";
@@ -194,8 +276,17 @@ onMounted(() => {
     </div>
 
     <!-- Course list -->
-    <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
-      <div v-for="course in recentCourses" :key="course.id" class="course-item">
+    <div
+      v-if="recentCourses.length > 0"
+      class="course-list home-course-list fade-up d3"
+      :class="{ 'home-course-list--menu-open': openCourseMenuId !== null }"
+    >
+      <div
+        v-for="course in recentCourses"
+        :key="course.id"
+        class="course-item"
+        :class="{ 'home-course-item--menu-open': openCourseMenuId === course.id }"
+      >
         <button
           class="course-main"
           type="button"
@@ -221,10 +312,46 @@ onMounted(() => {
           data-home-course-more
           type="button"
           :aria-label="`管理题库：${getCourseDisplayName(course)}`"
-          @click.stop="replaceTo('/courses')"
+          :aria-expanded="openCourseMenuId === course.id"
+          @click.stop="toggleCourseMenu(course.id)"
         >
           <MoreHorizontal :size="18" :stroke-width="2.5" />
         </button>
+        <div v-if="openCourseMenuId === course.id" class="home-course-menu">
+          <button class="home-menu-option" type="button" @click.stop="startRecentCoursePractice(course)">
+            <Play :size="15" :stroke-width="2.5" />
+            开始练习
+          </button>
+          <button class="home-menu-option" type="button" @click.stop="viewRecentCourse(course, true)">
+            <Eye :size="15" :stroke-width="2.5" />
+            查看题目
+          </button>
+          <div class="home-menu-divider"></div>
+          <button class="home-menu-option" type="button" @click.stop="viewRecentCourse(course)">
+            <Pencil :size="15" :stroke-width="2.5" />
+            编辑
+          </button>
+          <button
+            class="home-menu-option"
+            type="button"
+            :disabled="publishLoading === course.id"
+            @click.stop="toggleRecentCoursePublish(course)"
+          >
+            <Globe v-if="course.visibility !== 'public'" :size="15" :stroke-width="2.5" />
+            <Lock v-else :size="15" :stroke-width="2.5" />
+            {{ course.visibility === "public" ? "撤回公开" : "发布到公共题库" }}
+          </button>
+          <div class="home-menu-divider"></div>
+          <button
+            class="home-menu-option home-menu-option--danger"
+            type="button"
+            :disabled="deleteLoading === course.id"
+            @click.stop="deleteRecentCourse(course)"
+          >
+            <Trash2 :size="15" :stroke-width="2.5" />
+            {{ deleteLoading === course.id ? "删除中..." : "删除" }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -422,6 +549,63 @@ onMounted(() => {
 .home-course-more:hover {
   background: var(--surface-soft);
   color: var(--text-main);
+}
+.home-course-list--menu-open {
+  overflow: visible !important;
+}
+.home-course-item--menu-open {
+  position: relative;
+  z-index: 90;
+}
+.home-course-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 10px;
+  z-index: 100;
+  display: grid;
+  gap: 2px;
+  min-width: 196px;
+  max-width: calc(100% - 20px);
+  padding: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.home-menu-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.home-menu-option:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text-main);
+}
+.home-menu-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.home-menu-option--danger {
+  color: var(--rose);
+}
+.home-menu-option--danger:hover:not(:disabled) {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+.home-menu-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--line-soft);
 }
 
 .course-progress {

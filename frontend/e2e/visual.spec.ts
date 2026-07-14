@@ -59,6 +59,12 @@ test("home recent courses expose a trailing management button", async ({ mockedP
   await expect(mockedPage.locator("[data-home-course-more]").first()).toBeVisible();
   expect(offset).toBeGreaterThanOrEqual(8);
   expect(offset).toBeLessThanOrEqual(16);
+
+  await mockedPage.locator("[data-home-course-more]").first().click();
+  const menuOptions = mockedPage.locator(".home-course-item--menu-open .home-course-menu .home-menu-option");
+  await expect(menuOptions).toHaveCount(5);
+  await expect(mockedPage.locator(".home-course-list")).toHaveClass(/home-course-list--menu-open/);
+  await expect(mockedPage.locator(".home-course-list")).toHaveCSS("overflow", "visible");
 });
 
 test("course menu remains fully visible above other course cards", async ({ mockedPage }) => {

@@ -75,6 +75,7 @@ async function fetchCourse() {
   try {
     const { data } = await request.get(`/courses/${courseId.value}`);
     course.value = data;
+    if (route.query.edit === "1") openEdit();
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "获取题库信息失败");
   } finally {
