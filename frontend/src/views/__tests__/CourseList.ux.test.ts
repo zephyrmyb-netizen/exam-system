@@ -135,6 +135,16 @@ describe("CourseList UX polish", () => {
     expect(title.attributes("title")).toBe(longName);
   });
 
+  it("uses one document icon for every course instead of course-name initials", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const icons = wrapper.findAll("[data-course-icon]");
+    expect(icons).toHaveLength(2);
+    expect(icons.every((icon) => icon.find("svg").exists())).toBe(true);
+    expect(icons.map((icon) => icon.text())).toEqual(["", ""]);
+  });
+
   it("opens a practice-mode sheet before entering course practice", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
