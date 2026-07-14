@@ -59,17 +59,18 @@ describe("CourseList UX polish", () => {
     });
   });
 
-  it("keeps practice in the course menu and disables it for empty courses", async () => {
+  it("uses the whole compact card as the primary practice action and disables menu practice for empty courses", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
     expect(wrapper.find("[data-reference-page='courses']").exists()).toBe(true);
     expect(wrapper.findComponent(FilterTabs).exists()).toBe(true);
     expect(wrapper.findComponent(FilterTabs).findAll('[role="tab"]')).toHaveLength(4);
-    const primaryPracticeActions = wrapper.findAll(".practice-action");
-    expect(primaryPracticeActions).toHaveLength(2);
-    expect(primaryPracticeActions[0].attributes("aria-label")).toBe("开始练习");
-    expect(primaryPracticeActions[1].attributes("disabled")).toBeDefined();
+    expect(wrapper.find(".practice-action").exists()).toBe(false);
+    await wrapper.findAll(".course-item")[0].trigger("click");
+    expect(wrapper.findComponent(BottomSheet).exists()).toBe(true);
+    wrapper.findComponent(BottomSheet).vm.$emit("update:open", false);
+    await flushPromises();
 
     await wrapper.findAll(".more-btn")[0].trigger("click");
     expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("开始练习");
@@ -181,7 +182,7 @@ describe("CourseList UX polish", () => {
       { index: 3, target: { name: "bookmarks", query: { course_id: 1, from: "courses" } } },
     ];
     for (const { index, target } of expectedTargets) {
-      await wrapper.findAll(".practice-action")[0].trigger("click");
+      await wrapper.findAll(".course-item")[0].trigger("click");
       await wrapper.findAll(".practice-sheet__option")[index].trigger("click");
       expect(mocks.replace).toHaveBeenLastCalledWith(target);
     }
@@ -251,12 +252,28 @@ describe("CourseList UX polish", () => {
     expect(wrapper.find("[data-testid='course-list-heading']").exists()).toBe(false);
   });
 
-  it("enters course detail with replace and a courses source", async () => {
+  it("keeps empty courses navigable to detail with replace and a courses source", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
-    await wrapper.get("[data-course-title]").trigger("click");
+    await wrapper.findAll("[data-course-title]")[1].trigger("click");
 
-    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/1", query: { from: "courses" } });
+    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/2", query: { from: "courses" } });
+  });
+
+  it("matches the homepage course-card information hierarchy", async () => {
+    mocks.requestGet.mockResolvedValue({
+      data: [course({ id: 1, question_count: 46, practice_count: 19, last_practiced_at: "2026-07-14" })],
+    });
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    const row = wrapper.get(".course-row");
+    expect(row.find(".course-stat").exists()).toBe(false);
+    expect(row.find(".practice-action").exists()).toBe(false);
+    expect(row.get(".course-subline").text()).toContain("46");
+    expect(row.get(".course-subline").text()).toContain("19");
+    expect(row.get(".course-subline").text()).toContain("07/14");
+    expect(row.find(".course-info .course-progress").exists()).toBe(true);
   });
 
   it("keeps an API error separate from the empty-library state", async () => {

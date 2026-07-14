@@ -225,6 +225,14 @@ function goToPractice(course: Course) {
   practiceSheetCourse.value = course;
 }
 
+function activateCourse(course: Course) {
+  if (isPracticeReadyCourse(course)) {
+    goToPractice(course);
+    return;
+  }
+  replaceWithSource(`/courses/${course.id}`, "courses");
+}
+
 function closePracticeSheet() {
   practiceSheetCourse.value = null;
 }
@@ -262,12 +270,12 @@ function courseCoverage(course: Course) {
   return Math.min(100, Math.round(((course.practice_count || 0) / course.question_count) * 100));
 }
 
-function formatLastPracticed(course: Course) {
-  if (!course.last_practiced_at) return "尚未练习";
-  return `最近练习 ${new Intl.DateTimeFormat("zh-CN", {
-    month: "numeric",
-    day: "numeric",
-  }).format(new Date(course.last_practiced_at))}`;
+function formatCourseDate(course: Course) {
+  const raw = course.last_practiced_at || course.created_at;
+  if (!raw) return "--";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "--";
+  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
 }
 
 onMounted(fetchCourses);
@@ -348,8 +356,9 @@ onMounted(fetchCourses);
           class="course-item"
           role="button"
           tabindex="0"
-          @click="replaceWithSource(`/courses/${course.id}`, 'courses')"
-          @keydown.enter="replaceWithSource(`/courses/${course.id}`, 'courses')"
+          :aria-label="isPracticeReadyCourse(course) ? `选择练习方式：${getCourseDisplayName(course)}` : `查看题库：${getCourseDisplayName(course)}`"
+          @click="activateCourse(course)"
+          @keydown.enter="activateCourse(course)"
         >
           <span class="course-icon" data-course-icon aria-hidden="true">
             <FileText :size="22" :stroke-width="2.25" />
@@ -358,22 +367,13 @@ onMounted(fetchCourses);
             <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{
               getCourseDisplayName(course)
             }}</strong>
-            <span class="course-subline">{{ course.subject || "未分类" }} · {{ formatLastPracticed(course) }}</span>
+            <span class="course-subline">
+              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 · {{ formatCourseDate(course) }}
+            </span>
+            <span class="course-progress" aria-label="练习覆盖进度">
+              <i :style="{ width: `${courseCoverage(course)}%` }"></i>
+            </span>
           </div>
-          <span class="course-stat"
-            ><strong>{{ course.question_count ?? 0 }}</strong
-            ><small>题</small></span
-          >
-          <button
-            class="practice-action"
-            type="button"
-            aria-label="开始练习"
-            :disabled="!isPracticeReadyCourse(course)"
-            @click.stop="goToPractice(course)"
-          >
-            <Play :size="15" :stroke-width="2.5" />
-            练习
-          </button>
           <button
             class="more-btn"
             type="button"
@@ -431,9 +431,6 @@ onMounted(fetchCourses);
             <Trash2 :size="15" :stroke-width="2.5" />
             删除
           </button>
-        </div>
-        <div class="course-row__progress" aria-label="练习覆盖进度">
-          <i :style="{ width: `${courseCoverage(course)}%` }"></i>
         </div>
       </div>
     </div>
@@ -1225,6 +1222,66 @@ onMounted(fetchCourses);
     bottom: 8px;
     min-width: 188px;
   }
+}
+
+/* Match the compact recent-course cards used on the homepage. */
+.library-page .course-row {
+  overflow: visible;
+  border-radius: 16px;
+}
+.library-page .course-row .course-item,
+.library-page .course-row .course-item:hover {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 32px;
+  gap: 10px;
+  min-height: 76px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: transparent;
+}
+.library-page .course-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.library-page .course-info {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.library-page .course-info strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+.library-page .course-subline {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.library-page .course-progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+}
+.library-page .course-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+.library-page .more-btn {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: transparent;
 }
 @media (max-width: 400px) {
   .library-head {
