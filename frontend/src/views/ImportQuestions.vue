@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ArrowRight, BookOpen, CheckCircle, ChevronDown, CloudUpload, FileUp, Layers, Sparkles } from "@lucide/vue";
+import { ArrowRight, BookOpen, CheckCircle, ChevronDown, CloudUpload, FileUp, Layers, Sparkles, X } from "@lucide/vue";
 
 import { confirmImport, confirmImportTask, extractFileText } from "../api/imports";
 import { getErrorMessage } from "../api/request";
@@ -32,6 +32,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const PARSING_RECOVERY_HINT = "AI 正在解析，请稍候，通常需要 30 秒左右";
 
 const selectedFile = ref(null);
+const fileInput = ref(null);
 const derivedCourseName = ref("");
 const selectedCourseId = ref(0);
 // JSON 是备用入口。首次进入时保持收起，避免把文件导入主流程挤到首屏外。
@@ -174,6 +175,26 @@ function onFileChange(event) {
   selectFile(input.files?.[0] || null, input);
   // Native iOS/WebView file pickers can leave the hidden control focused and zoom the whole page.
   input.blur();
+}
+
+function openFilePicker() {
+  fileInput.value?.click();
+}
+
+function clearSelectedFile() {
+  selectedFile.value = null;
+  derivedCourseName.value = "";
+  fileError.value = "";
+  fileMessage.value = "";
+  extractedText.value = "";
+  importResult.value = null;
+  aiTask.reset();
+  if (fileInput.value) fileInput.value.value = "";
+}
+
+function replaceSelectedFile() {
+  clearSelectedFile();
+  openFilePicker();
 }
 
 function onDragEnter() {
@@ -348,10 +369,9 @@ onMounted(() => {
       </section>
 
       <template v-else>
-        <label
-          class="hero-drop-zone"
+        <section
+          class="hero-drop-zone import-file-card"
           :class="{ 'is-dragging': isDragging, 'has-file': hasActiveFile }"
-          for="import-file-input"
           @dragenter.prevent="onDragEnter"
           @dragover.prevent="onDragEnter"
           @dragleave.prevent="onDragLeave"
@@ -359,6 +379,7 @@ onMounted(() => {
         >
           <input
             id="import-file-input"
+            ref="fileInput"
             class="file-input-native"
             type="file"
             :accept="ACCEPTED_FILE_TYPES"
@@ -369,14 +390,28 @@ onMounted(() => {
             "
             @change="onFileChange"
           />
-          <span class="hero-drop-icon" aria-hidden="true"><CloudUpload :size="30" :stroke-width="1.8" /></span>
-          <span v-if="!hasActiveFile" class="hero-drop-text">点击或拖拽上传文件</span>
-          <span v-else class="hero-drop-text hero-drop-selected truncate-file-name" :title="activeFileName">
-            <CheckCircle :size="15" :stroke-width="2.5" />
-            {{ activeFileDisplay }}
-          </span>
-          <span id="import-file-hint" class="hero-drop-hint">AI 自动解析题干、选项和答案</span>
-        </label>
+
+          <template v-if="!hasActiveFile">
+            <span class="hero-drop-icon" aria-hidden="true"><CloudUpload :size="24" :stroke-width="2" /></span>
+            <span class="hero-drop-text">选择题目文件</span>
+            <span id="import-file-hint" class="hero-drop-hint">支持拖拽，AI 自动识别题干、选项和答案</span>
+            <button class="import-file-card__trigger" type="button" @click="openFilePicker">选择文件</button>
+          </template>
+
+          <template v-else>
+            <span class="hero-drop-icon" aria-hidden="true"><CheckCircle :size="22" :stroke-width="2.2" /></span>
+            <div class="import-file-card__summary">
+              <span class="hero-drop-text hero-drop-selected truncate-file-name" :title="activeFileName">
+                {{ activeFileName }}
+              </span>
+              <span id="import-file-hint" class="hero-drop-hint">{{ activeFileKind }} · {{ activeFileSize || "文件已就绪" }}</span>
+            </div>
+            <div class="import-file-card__actions">
+              <button type="button" @click="replaceSelectedFile">更换</button>
+              <button type="button" aria-label="移除已选文件" @click="clearSelectedFile"><X :size="16" :stroke-width="2.5" /></button>
+            </div>
+          </template>
+        </section>
 
         <div class="import-format-tags" aria-label="支持的导入格式">
           <span class="format-tag format-tag--word">Word</span>
@@ -390,6 +425,10 @@ onMounted(() => {
         </p>
 
         <div v-if="hasActiveFile" class="opt-panel">
+          <div class="import-target-card__head">
+            <strong>导入到题库</strong>
+            <span>可新建，或追加到已有题库</span>
+          </div>
           <label class="opt-row">
             <span class="opt-label">推荐题库名称</span>
             <input v-model="derivedCourseName" class="opt-input" type="text" placeholder="自动从文件名生成" />
@@ -1201,5 +1240,212 @@ onMounted(() => {
   .hero-drop-zone.is-dragging {
     transform: none;
   }
+}
+
+/* Rebuilt file-import surface: native picker stays invisible and never owns the layout. */
+.import-page {
+  gap: 10px;
+  padding-top: 4px;
+}
+.import-page__head h2 {
+  font-size: 22px;
+}
+.import-page__head p {
+  font-size: 13px;
+}
+.import-page .import-file-card {
+  display: grid;
+  position: relative;
+  min-height: 118px !important;
+  padding: 14px;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 18px !important;
+  background: var(--glass-card) !important;
+  box-shadow: var(--shadow-card), var(--glass-inner-highlight) !important;
+}
+.import-file-card:not(.has-file) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 3px;
+  align-items: center;
+  text-align: left;
+}
+.import-file-card:not(.has-file) .hero-drop-icon {
+  grid-row: 1 / span 2;
+}
+.import-file-card:not(.has-file) .hero-drop-text {
+  grid-column: 2;
+  grid-row: 1;
+}
+.import-file-card:not(.has-file) .hero-drop-hint {
+  grid-column: 2;
+  grid-row: 2;
+}
+.import-file-card .file-input-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.import-file-card .hero-drop-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.import-file-card .hero-drop-text {
+  color: var(--text-main);
+  font-size: 14px;
+}
+.import-file-card .hero-drop-hint {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.import-file-card__trigger {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.import-page .import-file-card.has-file {
+  grid-template-areas: none !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  min-height: 78px !important;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+.import-file-card.has-file .hero-drop-icon,
+.import-file-card.has-file .import-file-card__summary,
+.import-file-card.has-file .import-file-card__actions {
+  grid-area: auto;
+}
+.import-file-card__summary {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.import-file-card.has-file .hero-drop-selected {
+  display: block;
+  min-width: 0;
+  color: var(--text-main);
+  font-size: 14px;
+}
+.import-file-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.import-file-card__actions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+.import-file-card__actions button:first-child {
+  padding-inline: 10px;
+}
+.import-file-card__actions button:last-child {
+  width: 34px;
+}
+.import-page .import-format-tags {
+  gap: 5px;
+  padding: 0 2px;
+}
+.import-page .format-tag {
+  min-height: 25px;
+  padding-inline: 8px;
+  font-size: 10px;
+}
+.import-page .import-file-limits {
+  margin: -2px 2px 0;
+  font-size: 10px;
+}
+.import-page .opt-panel {
+  gap: 10px;
+  padding: 13px;
+  border-radius: 16px;
+}
+.import-target-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.import-target-card__head strong {
+  color: var(--text-main);
+  font-size: 14px;
+}
+.import-target-card__head span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.import-page .opt-input {
+  min-height: 42px;
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+.import-page .hero-cta {
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  box-shadow: none;
+  font-size: 15px;
+}
+.import-page .target-hint {
+  margin: 0 2px;
+  text-align: left;
+  font-size: 12px;
+}
+.import-page .adv-summary {
+  min-height: 48px;
+  justify-content: flex-start;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+.import-page .adv-summary .adv-chevron {
+  margin-left: auto;
+}
+.import-page .import-guide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 !important;
+  padding: 5px 8px !important;
+}
+.import-page .import-guide li {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 3px;
+  padding: 7px 4px !important;
+  text-align: center;
+}
+.import-page .import-guide li + li {
+  border-top: 0;
+  border-left: 1px solid var(--line-soft);
+}
+.import-page .import-guide p small {
+  display: none;
+}
+.import-page .import-guide p strong {
+  font-size: 10px;
 }
 </style>

@@ -170,9 +170,9 @@ describe("ImportQuestions file import behavior", () => {
     expect(wrapper.find("input[type='file']").attributes("accept")).toBe(ACCEPTED_IMPORT_FILE_TYPES);
     expect(wrapper.get(".import-page__head h2").text()).toBe("AI 导入");
     expect(wrapper.get(".import-page__head p").text()).toBe("智能解析 · 一键导入题目");
-    expect(wrapper.get(".hero-drop-text").text()).toContain("点击或拖拽上传文件");
-    expect(wrapper.get(".hero-drop-hint").text()).toContain("AI 自动解析题干、选项和答案");
-    expect(wrapper.get(".hero-drop-zone").attributes("for")).toBe("import-file-input");
+    expect(wrapper.get(".hero-drop-text").text()).toContain("选择题目文件");
+    expect(wrapper.get(".hero-drop-hint").text()).toContain("支持拖拽，AI 自动识别题干、选项和答案");
+    expect(wrapper.get(".import-file-card").find(".import-file-card__trigger").attributes("type")).toBe("button");
     expect(wrapper.get(".import-file-limits").text()).toContain("单个文件最大 10MB");
     expect(wrapper.findAll(".format-tag").map((tag) => tag.text())).toEqual(["Word", "PPT", "PDF", "图片", "文本"]);
     expect(wrapper.get("details.adv-section").attributes("open")).toBeUndefined();
