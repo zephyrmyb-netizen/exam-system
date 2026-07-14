@@ -369,6 +369,7 @@ class PreviewImportResponse(BaseModel):
     total_invalid: int = 0
     is_complete: bool = True
     timing: ImportTiming | None = None
+    debug_runtime: dict[str, Any] | None = None
 
 
 class ConfirmImportRequest(BaseModel):
@@ -400,6 +401,7 @@ class ImportTaskOut(BaseModel):
     total_valid: int = 0
     total_invalid: int = 0
     timing: ImportTiming | None = None
+    debug_runtime: dict[str, Any] | None = None
     error_message: str = ""
     created_at: str | None = None
     started_at: str | None = None

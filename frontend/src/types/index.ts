@@ -256,6 +256,17 @@ export interface ImportPreviewResponse {
   total_invalid: number;
   is_complete?: boolean;
   timing: ImportTiming | null;
+  debug_runtime?: ImportRuntimeDebug | null;
+}
+
+export interface ImportRuntimeDebug {
+  git_commit: string;
+  parser_module: string;
+  parser_function: string;
+  validator_module: string;
+  parse_method: string;
+  processed_chunks: number;
+  total_chunks: number;
 }
 
 export interface ConfirmImportRequest {
@@ -286,6 +297,7 @@ export interface ImportTaskResponse {
   total_valid: number;
   total_invalid: number;
   timing: ImportTiming | null;
+  debug_runtime?: ImportRuntimeDebug | null;
   error_message: string;
   created_at: string | null;
   started_at: string | null;

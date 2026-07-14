@@ -169,6 +169,7 @@ export const useAiImportTaskStore = defineStore("aiImportTask", {
           total_invalid: task.total_invalid,
           is_complete: task.status !== "partial",
           timing: task.timing,
+          debug_runtime: task.debug_runtime,
         };
         this.status = "success";
         this.stage = "complete";

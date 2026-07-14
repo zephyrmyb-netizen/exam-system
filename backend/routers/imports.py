@@ -144,6 +144,7 @@ async def preview_import(
             extract_ms=extract_ms,
             parse_timing=parse_timing,
         ),
+        debug_runtime=imports_service.runtime_debug(parse_timing),
     )
 
 
