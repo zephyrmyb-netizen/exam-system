@@ -28,7 +28,6 @@ const accuracyDisplay = computed(() => {
 });
 
 const statCards = computed(() => [
-  { label: "今日练习", value: stats.value.todayCount, tone: "primary" as const },
   { label: "总题数", value: stats.value.totalCount },
   { label: "正确率", value: accuracyDisplay.value },
   {
@@ -320,7 +319,7 @@ onMounted(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.quick {
+.home-page .quick {
   min-height: 116px;
   padding: var(--space-3) 8px;
   border-radius: 8px;
@@ -375,7 +374,7 @@ onMounted(() => {
 
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
@@ -661,24 +660,35 @@ onMounted(() => {
 .quick-grid {
   position: relative;
   z-index: 1;
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 !important;
   margin: 4px 0 0;
-}
-.quick {
-  min-height: 136px;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 9px;
-  padding: 18px 16px;
+  padding: 8px 2px;
   border-radius: var(--radius-lg);
 }
-.quick-label,
-.quick-desc {
-  text-align: left;
-  white-space: normal;
+.quick {
+  min-height: 76px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 4px;
+  padding: 4px 2px !important;
+  border-radius: 0 !important;
+}
+.home-page .quick:nth-child(odd),
+.home-page .quick:nth-child(n + 3) {
+  border: 0 !important;
+}
+.quick-ico {
+  width: 36px;
+  height: 36px;
+}
+.quick-label {
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
 }
 .quick-desc {
-  line-height: 1.35;
+  display: none;
 }
 .overview-surface {
   min-height: 92px;

@@ -46,14 +46,14 @@ const accuracyDisplay = computed(() => {
 const appVersion = computed(() => releaseNotes[0]?.version || "v1.0.0");
 
 const mineStatItems = computed(() => [
-  { label: "累计题数", value: stats.value.totalCount, tone: "primary" as const },
+  { label: "今日练习", value: stats.value.todayCount, tone: "primary" as const, dataKey: "today" },
+  { label: "累计题数", value: stats.value.totalCount },
   { label: "正确率", value: accuracyDisplay.value },
   {
     label: "连续打卡",
     value: streakAvailable.value === true ? `${streak.value.current_streak}天` : null,
     dataKey: "streak",
   },
-  { label: "徽章", value: null, dataKey: "badges" },
 ]);
 
 const isDarkMode = computed(() => theme.mode === "dark");
@@ -133,7 +133,7 @@ onMounted(() => fetchAll());
       type="button"
       @click="goTo({ name: 'study-overview', query: { from: 'mine' } })"
     >
-      <StatGrid class="stat-grid-4" label="我的学习统计" :items="mineStatItems" />
+      <StatGrid class="stat-grid-4" label="学习预览" :items="mineStatItems" />
     </button>
 
     <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>

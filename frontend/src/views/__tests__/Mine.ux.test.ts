@@ -54,11 +54,11 @@ describe("Mine UX polish", () => {
     expect(wrapper.findComponent(StatGrid).exists()).toBe(true);
     expect(wrapper.findAll(".stat-grid__item")).toHaveLength(4);
     expect(wrapper.get("[data-stat-streak]").text()).toContain("连续打卡");
-    expect(wrapper.get("[data-stat-badges]").text()).toContain("徽章");
+    expect(wrapper.get("[data-stat-today]").text()).toContain("今日练习");
     expect(wrapper.find(".profile-card--centered").exists()).toBe(true);
     expect(wrapper.text()).toContain("Student");
     expect(wrapper.get("[data-stat-streak]").text()).toContain("5");
-    expect(wrapper.get("[data-stat-badges]").text()).toContain("--");
+    expect(wrapper.get("[data-stat-today]").text()).toContain("2");
   });
 
   it("uses the real empty account state without inventing profile data", () => {
@@ -68,7 +68,7 @@ describe("Mine UX polish", () => {
     expect(wrapper.get(".profile-name").text()).toBe("未登录");
     expect(wrapper.get(".avatar").text()).toBe("未");
     expect(wrapper.get(".profile-tag").text()).toContain("未登录");
-    expect(wrapper.get("[data-stat-badges]").text()).toContain("--");
+    expect(wrapper.get("[data-stat-today]").text()).toContain("2");
   });
 
   it("shows an unavailable streak placeholder after only the streak request fails", () => {
