@@ -262,4 +262,18 @@ describe("Home UX polish", () => {
       query: { from: "home" },
     });
   });
+
+  it("keeps a trailing management button for each recent course", async () => {
+    courses.value = [course(1, "机器学习")];
+
+    const wrapper = mount(Home);
+    await flushPromises();
+
+    const moreButton = wrapper.get("[data-home-course-more]");
+    expect(moreButton.find("svg").exists()).toBe(true);
+    expect(moreButton.attributes("aria-label")).toContain("机器学习");
+
+    await moreButton.trigger("click");
+    expect(replace).toHaveBeenCalledWith("/courses");
+  });
 });

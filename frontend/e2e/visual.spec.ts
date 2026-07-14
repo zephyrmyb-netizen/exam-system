@@ -47,6 +47,20 @@ test("course management buttons stay fixed to the trailing edge", async ({ mocke
   }
 });
 
+test("home recent courses expose a trailing management button", async ({ mockedPage }) => {
+  await prepareSurface(mockedPage, "home");
+
+  const offset = await mockedPage.locator(".home-course-list .course-item").first().evaluate((row) => {
+    const rowRect = row.getBoundingClientRect();
+    const buttonRect = row.querySelector<HTMLElement>("[data-home-course-more]")?.getBoundingClientRect();
+    return buttonRect ? rowRect.right - buttonRect.right : Number.POSITIVE_INFINITY;
+  });
+
+  await expect(mockedPage.locator("[data-home-course-more]").first()).toBeVisible();
+  expect(offset).toBeGreaterThanOrEqual(8);
+  expect(offset).toBeLessThanOrEqual(16);
+});
+
 test("course menu remains fully visible above other course cards", async ({ mockedPage }) => {
   await prepareSurface(mockedPage, "course-list");
   await mockedPage.locator(".course-row .more-btn").first().click();
