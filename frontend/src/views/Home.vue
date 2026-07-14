@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
-import { ArrowRight, BookOpen, ClipboardList, FileUp, Mic, Search, Target, TrendingUp } from "@lucide/vue";
+import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, Mic, Search, Target, TrendingUp } from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
@@ -248,8 +248,8 @@ onMounted(() => {
     <div v-if="recentCourses.length > 0" class="course-list home-course-list fade-up d3">
       <div v-for="course in recentCourses" :key="course.id" class="course-item">
         <button class="course-main" type="button" @click="goTo(`/courses/${course.id}`)">
-          <span class="course-icon">
-            <BookOpen :size="18" :stroke-width="2.2" />
+          <span class="course-icon" data-home-course-icon aria-hidden="true">
+            <FileText :size="20" :stroke-width="2.25" />
           </span>
           <div class="course-info">
             <strong>{{ getCourseDisplayName(course) }}</strong>
@@ -464,6 +464,10 @@ onMounted(() => {
 
 .course-item {
   border-radius: 8px;
+}
+
+.home-course-list .course-icon {
+  background: var(--primary);
 }
 
 .course-main {

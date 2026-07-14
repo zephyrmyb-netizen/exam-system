@@ -244,6 +244,18 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).not.toContain("题库一");
   });
 
+  it("uses the same document icon as the course list for recent courses", async () => {
+    courses.value = [course(1, "机器学习")];
+
+    const wrapper = mount(Home);
+    await flushPromises();
+
+    const icons = wrapper.findAll("[data-home-course-icon]");
+    expect(icons).toHaveLength(1);
+    expect(icons[0].find("svg").exists()).toBe(true);
+    expect(icons[0].text()).toBe("");
+  });
+
   it("does not break when stats are loading or failed", () => {
     loading.value = true;
     const loadingWrapper = mount(Home);
