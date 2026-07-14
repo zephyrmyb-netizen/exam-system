@@ -32,6 +32,157 @@ def test_docx_extraction_preserves_paragraph_table_order(tmp_path):
     assert text.index("1. First question") < text.index("A. First option") < text.index("Answer: A")
 
 
+def test_rule_parser_keeps_subquestions_and_steps_inside_their_top_level_question(monkeypatch):
+    """Only continuous ``number + punctuation`` lines start a new question."""
+    from backend.imports import import_orchestrator
+
+    text = """一、单项选择题
+1. First question
+A. Alpha
+B. Beta
+答案：A
+2. Second question
+A. Alpha
+B. Beta
+答案：B
+二、多项选择题
+3. Third question
+A. Alpha
+B. Beta
+C. Gamma
+答案：A、C
+三、判断题
+4. A true false question
+答案：正确
+四、名词解释
+5. Define a term
+答案：A definition
+五、简答与计算题
+6. Solve the following
+（1）show the calculation
+① first answer step
+答案：A complete answer
+六、讨论题
+7. Discuss the result
+答案：A discussion answer"""
+
+    monkeypatch.setattr(
+        import_orchestrator,
+        "call_ai_parse",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("regular document must not call AI")),
+    )
+
+    questions, warnings, timing = import_orchestrator.preview_import_from_text(text)
+
+    assert warnings == []
+    assert timing["rule_based"] is True
+    assert timing["is_complete"] is True
+    assert [question["line_number"] for question in questions] == list(range(1, 8))
+    assert [question["type"] for question in questions] == [
+        "single_choice",
+        "single_choice",
+        "multiple_choice",
+        "true_false",
+        "short_answer",
+        "short_answer",
+        "short_answer",
+    ]
+    assert "（1）show the calculation" in questions[5]["question"]
+    assert "① first answer step" in questions[5]["question"]
+
+
+def test_rule_parser_handles_a_94_question_six_section_bank_without_ai(monkeypatch):
+    """The known 38/8/30/9/6/3 structure must remain 94 main questions."""
+    from collections import Counter
+    from backend.imports import import_orchestrator
+
+    sections = [
+        ("一、单项选择题", 38, "choice"),
+        ("二、多项选择题", 8, "choice"),
+        ("三、判断题", 30, "boolean"),
+        ("四、名词解释", 9, "short"),
+        ("五、简答与计算题", 6, "short"),
+        ("六、讨论题", 3, "short"),
+    ]
+    lines: list[str] = []
+    number = 1
+    for heading, count, kind in sections:
+        lines.append(heading)
+        for _ in range(count):
+            lines.append(f"{number}. Simulated question {number}")
+            if kind == "choice":
+                lines.extend(["A. First option", "B. Second option", "答案：A"])
+            elif kind == "boolean":
+                lines.append("答案：正确")
+            else:
+                lines.extend(["（1）subquestion stays in this item", "① answer step stays in this item", "答案：完整答案"])
+            number += 1
+
+    monkeypatch.setattr(
+        import_orchestrator,
+        "call_ai_parse",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("regular 94-question bank must not call AI")),
+    )
+    questions, warnings, timing = import_orchestrator.preview_import_from_text("\n".join(lines))
+
+    assert warnings == []
+    assert timing["is_complete"] is True
+    assert [question["line_number"] for question in questions] == list(range(1, 95))
+    assert Counter(question["type"] for question in questions) == {
+        "single_choice": 38,
+        "multiple_choice": 8,
+        "true_false": 30,
+        "short_answer": 18,
+    }
+
+
+def test_rule_parser_marks_non_continuous_numbering_partial_without_ai_fallback():
+    from backend.imports import import_orchestrator
+
+    text = """一、判断题
+1. First statement
+答案：正确
+3. Missing-number statement
+答案：错误"""
+
+    questions, warnings, timing = import_orchestrator.parse_rule_based_question_document(text)
+
+    assert [question["line_number"] for question in questions] == [1]
+    assert timing["is_complete"] is False
+    assert any("题号 3" in warning for warning in warnings)
+
+
+def test_nested_ai_response_questions_are_accepted():
+    from backend.imports import import_orchestrator
+
+    assert import_orchestrator.question_items_from_parsed_json({"data": {"questions": [_question("nested")]}}) == [
+        _question("nested")
+    ]
+
+
+def test_rule_parser_does_not_duplicate_embedded_images(monkeypatch):
+    from backend.imports import import_orchestrator
+
+    text = """一、判断题
+1. 如下图所示，判断结论是否正确。
+答案：正确"""
+    monkeypatch.setattr(
+        import_orchestrator,
+        "call_ai_parse_multimodal",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("must not create detached image questions")),
+    )
+
+    questions, warnings, timing = import_orchestrator.preview_import_from_file_content(
+        text,
+        [ImagePayload(data=b"image", mime_type="image/png", source="diagram")],
+    )
+
+    assert len(questions) == 1
+    assert timing["is_complete"] is False
+    assert timing["failed_chunks"] == 1
+    assert any("题图" in warning for warning in warnings)
+
+
 def test_chunk_document_text_splits_one_large_numbered_paragraph(monkeypatch):
     """A Word document can store many numbered questions in one paragraph."""
     from backend.imports import import_orchestrator
