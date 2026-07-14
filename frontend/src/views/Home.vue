@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
-import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, Mic, Search, Target, TrendingUp } from "@lucide/vue";
+import { ArrowRight, BookOpen, ClipboardList, FileText, FileUp, ScanLine, Target, TrendingUp } from "@lucide/vue";
 
 import { getMyCourses } from "../api/courses";
 import { getErrorMessage } from "../api/request";
@@ -11,6 +11,7 @@ import { useAppNavigation } from "../composables/useAppNavigation";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { typeLabel } from "../utils/question";
+import { openGlobalSearch } from "../utils/globalSearch";
 
 const { replaceTo } = useAppNavigation();
 const { stats, streak, recommendation, streakAvailable, recommendationAvailable, loading, errorMessage, fetchAll } =
@@ -174,10 +175,11 @@ onMounted(() => {
 <template>
   <section class="home-page" data-reference-page="home">
     <header class="home-hero fade-up">
-      <button class="home-search-entry" data-home-search type="button" @click="replaceTo('/courses')">
-        <Search :size="15" :stroke-width="2.4" />
-        <span>搜索题库、课程、题目</span>
-        <Mic class="home-search-entry__mic" :size="17" :stroke-width="2.2" aria-hidden="true" />
+      <button class="home-search-entry" data-home-search type="button" @click="openGlobalSearch">
+        <span class="home-search-entry__scan" aria-hidden="true">
+          <ScanLine :size="22" :stroke-width="2.25" />
+        </span>
+        <span>搜索题库、文档、作者</span>
       </button>
     </header>
 
@@ -272,27 +274,30 @@ onMounted(() => {
 .home-hero {
   display: grid;
   margin: -16px -16px 0;
-  padding: 14px 18px;
-  border-radius: 0 0 28px 28px;
-  background: linear-gradient(145deg, #10b981, #0f9d7a 60%, #0d9488);
+  padding: 12px 18px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(135deg, #1f8df4, #218bf2) !important;
   color: #fff;
-  box-shadow: var(--shadow-primary);
+  box-shadow: none !important;
 }
 
 .home-search-entry {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 52px;
+  padding: 0 12px;
   margin-top: 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  color: var(--text-placeholder);
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: var(--shadow-xs);
+  border: 0 !important;
+  border-radius: var(--radius-full);
+  background: #ffffff !important;
+  color: #64748b;
+  font-size: 18px;
+  font-weight: 650;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   cursor: pointer;
   transition: border-color var(--ease-out);
 }
@@ -582,19 +587,19 @@ onMounted(() => {
   }
 }
 
-.home-hero {
-  padding-inline: 20px;
-  border-radius: 0 0 24px 24px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
 .home-search-entry {
-  border-color: rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #64748b;
 }
 .home-search-entry span {
-  color: rgba(255, 255, 255, 0.9);
+  color: inherit;
+}
+.home-search-entry__scan {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 28px;
+  border-right: 1px solid #e2e8f0;
+  color: #218bf2;
 }
 .quick {
   border-color: var(--glass-border);
@@ -626,12 +631,12 @@ onMounted(() => {
   border-radius: 12px;
 }
 
-/* Keep the mobile reference hierarchy compact: the shortcut cards bridge the hero and stats. */
+/* Keep the home header compact: search is the only content in this band. */
 .home-hero {
-  min-height: 140px;
-  gap: 8px;
-  padding: 14px 20px 20px;
-  box-shadow: none;
+  min-height: 0 !important;
+  gap: 0;
+  padding: 12px 18px !important;
+  box-shadow: none !important;
 }
 .home-hero h1 {
   margin-top: 2px;
@@ -639,20 +644,24 @@ onMounted(() => {
   line-height: 1.22;
 }
 .home-search-entry {
-  min-height: 40px;
+  min-height: 52px !important;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.96);
-  color: var(--text-placeholder);
+  background: #ffffff !important;
+  color: #64748b !important;
 }
 .home-search-entry span,
 .home-search-entry :deep(svg) {
-  color: var(--text-placeholder);
+  color: inherit !important;
+}
+.home-search-entry__scan,
+.home-search-entry__scan :deep(svg) {
+  color: #218bf2 !important;
 }
 .quick-grid {
   position: relative;
   z-index: 1;
   gap: 16px;
-  margin: -18px 0 0;
+  margin: 12px 0 0;
 }
 .quick {
   min-height: 136px;

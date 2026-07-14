@@ -95,7 +95,7 @@ function goQuestion(question: Question) {
       <section class="global-search-panel">
         <div class="global-search-input">
           <Search :size="18" :stroke-width="2.4" />
-          <input ref="inputEl" v-model="keyword" type="search" placeholder="搜索题库、课程、题目" />
+          <input ref="inputEl" v-model="keyword" type="search" placeholder="搜索题库、文档、作者" />
           <button type="button" aria-label="关闭搜索" @click="close">
             <X :size="18" :stroke-width="2.4" />
           </button>
