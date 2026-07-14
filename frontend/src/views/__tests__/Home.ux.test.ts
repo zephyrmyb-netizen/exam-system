@@ -7,6 +7,9 @@ import type { Course, TodayRecommendation } from "../../types";
 import StatGrid from "../../components/ui/StatGrid.vue";
 
 const replace = vi.fn();
+const searchMocks = vi.hoisted(() => ({
+  openGlobalSearch: vi.fn(),
+}));
 const courses = ref<Course[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
@@ -52,6 +55,10 @@ vi.mock("../../api/courses", () => ({
   getMyCourses: () => Promise.resolve(courses.value),
 }));
 
+vi.mock("../../utils/globalSearch", () => ({
+  openGlobalSearch: searchMocks.openGlobalSearch,
+}));
+
 function course(id: number, name: string): Course {
   return {
     id,
@@ -69,6 +76,7 @@ function course(id: number, name: string): Course {
 describe("Home UX polish", () => {
   beforeEach(() => {
     replace.mockClear();
+    searchMocks.openGlobalSearch.mockClear();
     courses.value = [];
     loading.value = false;
     errorMessage.value = "";
@@ -102,6 +110,16 @@ describe("Home UX polish", () => {
     expect(wrapper.find(".home-hero__top").exists()).toBe(false);
     expect(wrapper.find(".home-hero__avatar").exists()).toBe(false);
     expect(searchEntry.classes()).toContain("home-search-entry");
+    expect(searchEntry.text()).toContain("搜索题库、文档、作者");
+  });
+
+  it("opens global search from the home search entry instead of routing to courses", async () => {
+    const wrapper = mount(Home);
+
+    await wrapper.get("[data-home-search]").trigger("click");
+
+    expect(searchMocks.openGlobalSearch).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("renders four same-size core entries below the compact header", () => {

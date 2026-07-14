@@ -12,6 +12,7 @@ import { useOfflineSync } from "../composables/useOfflineSync";
 import { useAiImportTask } from "../stores/aiImportTask";
 import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
+import { GLOBAL_SEARCH_EVENT } from "../utils/globalSearch";
 
 const route = useRoute();
 const { replaceTo, returnToSource } = useAppNavigation();
@@ -107,6 +108,10 @@ function handleGlobalKeydown(event: KeyboardEvent) {
   }
 }
 
+function openSearch() {
+  searchRef.value?.open();
+}
+
 function handleViewportResize() {
   if (window.visualViewport) {
     const vv = window.visualViewport;
@@ -146,6 +151,7 @@ onMounted(() => {
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
   window.addEventListener("keydown", handleGlobalKeydown);
+  window.addEventListener(GLOBAL_SEARCH_EVENT, openSearch);
   window.addEventListener("focusin", handleFocusIn);
   window.addEventListener("focusout", handleFocusOut);
   window.addEventListener("online", syncPendingPracticeActions);
@@ -158,6 +164,7 @@ onUnmounted(() => {
   window.removeEventListener(getAuthEventName(), handleAuthChange);
   window.removeEventListener("storage", handleAuthChange);
   window.removeEventListener("keydown", handleGlobalKeydown);
+  window.removeEventListener(GLOBAL_SEARCH_EVENT, openSearch);
   window.removeEventListener("focusin", handleFocusIn);
   window.removeEventListener("focusout", handleFocusOut);
   window.removeEventListener("online", syncPendingPracticeActions);
