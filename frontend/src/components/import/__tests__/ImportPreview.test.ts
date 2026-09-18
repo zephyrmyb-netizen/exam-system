@@ -75,7 +75,9 @@ describe("ImportPreview warnings and empty state", () => {
   it("blocks confirmation for a partial parse even when some questions are available", () => {
     const wrapper = mountPreview({
       ...previewData,
-      questions: [{ type: "fill_blank", question: "Only one recovered question", answer: "answer" }] as unknown as never[],
+      questions: [
+        { type: "fill_blank", question: "Only one recovered question", answer: "answer" },
+      ] as unknown as never[],
       total_valid: 1,
       is_complete: false,
       timing: {

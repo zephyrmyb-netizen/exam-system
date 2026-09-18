@@ -1,14 +1,14 @@
-<script setup>
-import { computed } from "vue";
+<script setup lang="ts">
+import { computed, type PropType } from "vue";
 import { CheckCircle, XCircle } from "@lucide/vue";
 import { normalizeMultipleChoiceKeys, TRUE_FALSE_FALSE, TRUE_FALSE_TRUE } from "../../utils/question";
 
 const props = defineProps({
   questionType: { type: String, required: true },
-  options: { type: Array, default: () => [] },
+  options: { type: Array as PropType<Record<string, any>[]>, default: () => [] },
   selectedAnswer: { type: String, default: "" },
-  selectedAnswers: { type: Array, default: () => [] },
-  result: { type: Object, default: null },
+  selectedAnswers: { type: Array as PropType<string[]>, default: () => [] },
+  result: { type: Object as PropType<Record<string, any> | null>, default: null },
   correctAnswerDisplay: { type: String, default: "" },
 });
 
@@ -16,11 +16,11 @@ const emit = defineEmits(["pick-single", "toggle-multiple"]);
 
 const correctAnswerKeys = computed(() => new Set(normalizeMultipleChoiceKeys(props.correctAnswerDisplay)));
 
-function isSelected(key) {
+function isSelected(key: string) {
   return props.questionType === "multiple_choice" ? props.selectedAnswers.includes(key) : props.selectedAnswer === key;
 }
 
-function getOptionState(key) {
+function getOptionState(key: string) {
   if (!props.result) return "";
   if (props.questionType === "multiple_choice") {
     if (correctAnswerKeys.value.has(String(key).toUpperCase())) return "is-correct";
@@ -32,7 +32,7 @@ function getOptionState(key) {
   return "";
 }
 
-function pickOption(key) {
+function pickOption(key: string) {
   if (props.result) return;
   if (props.questionType === "multiple_choice") {
     emit("toggle-multiple", key);

@@ -19,6 +19,8 @@ const title = ref("");
 const description = ref("");
 const timeLimit = ref(60);
 const totalScore = ref(100);
+const startAt = ref("");
+const endAt = ref("");
 const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
@@ -77,6 +79,8 @@ async function save(publish = false) {
       time_limit: timeLimit.value,
       total_score: totalScore.value,
       question_ids: Array.from(selectedIds.value),
+      start_at: startAt.value ? new Date(startAt.value).toISOString() : null,
+      end_at: endAt.value ? new Date(endAt.value).toISOString() : null,
     });
     if (publish) await publishExam(exam.id);
     router.replace({ name: "exam-detail", params: { examId: exam.id } });
@@ -96,7 +100,7 @@ watch(selectedCourseId, loadQuestions);
     <div class="create-hero">
       <p>创建考试</p>
       <h1>从题库选择题目组卷</h1>
-      <span>适合老师把已有题库整理成一次正式考试。</span>
+      <span>从你的题库中选择题目，任何登录账号都能创建并发布考试。</span>
     </div>
 
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
@@ -127,6 +131,16 @@ watch(selectedCourseId, loadQuestions);
           <input v-model.number="totalScore" type="number" min="1" />
         </label>
       </div>
+      <div class="form-grid schedule-grid">
+        <label>
+          <span>开始时间（留空即发布后可参加）</span>
+          <input v-model="startAt" data-testid="exam-create-start-at" type="datetime-local" />
+        </label>
+        <label>
+          <span>截止时间（留空则不设截止）</span>
+          <input v-model="endAt" data-testid="exam-create-end-at" type="datetime-local" />
+        </label>
+      </div>
     </form>
 
     <div class="question-picker">
@@ -140,6 +154,7 @@ watch(selectedCourseId, loadQuestions);
         type="button"
         class="question-row"
         :class="{ selected: selectedIds.has(question.id) }"
+        :data-testid="`exam-create-question-${question.id}`"
         @click="toggleQuestion(question.id)"
       >
         <span><Check v-if="selectedIds.has(question.id)" :size="16" /></span>
@@ -149,8 +164,16 @@ watch(selectedCourseId, loadQuestions);
     </div>
 
     <div class="sticky-actions">
-      <button type="button" :disabled="!canSubmit || saving" @click="save(false)">保存草稿</button>
-      <button class="primary" type="button" :disabled="!canSubmit || saving" @click="save(true)">
+      <button data-testid="exam-create-draft" type="button" :disabled="!canSubmit || saving" @click="save(false)">
+        保存草稿
+      </button>
+      <button
+        data-testid="exam-create-publish"
+        class="primary"
+        type="button"
+        :disabled="!canSubmit || saving"
+        @click="save(true)"
+      >
         <Send :size="17" />
         创建并发布
       </button>
@@ -221,6 +244,9 @@ watch(selectedCourseId, loadQuestions);
   display: grid;
   grid-template-columns: 1fr 96px 96px;
   gap: var(--space-2);
+}
+.schedule-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .question-picker {
   display: grid;

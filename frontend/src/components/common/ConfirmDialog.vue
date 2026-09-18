@@ -1,14 +1,42 @@
-<script setup>
-import { computed, onMounted, onUnmounted } from "vue";
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { AlertTriangle, CheckCircle, X } from "@lucide/vue";
 import { useConfirmDialog } from "../../stores/confirmDialog";
 
 const { visible, options, accept, cancel } = useConfirmDialog();
 
 const icon = computed(() => (options.value.tone === "danger" ? AlertTriangle : CheckCircle));
+const card = ref<HTMLElement | null>(null);
+let previousFocus: HTMLElement | null = null;
+let previousOverflow = "";
 
-function handleKeydown(event) {
+watch(visible, async (open) => {
+  if (open) {
+    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    await nextTick();
+    card.value?.querySelector<HTMLButtonElement>(".confirm-cancel")?.focus();
+  } else {
+    document.body.style.overflow = previousOverflow;
+    previousFocus?.focus();
+  }
+});
+
+function handleKeydown(event: KeyboardEvent) {
   if (!visible.value) return;
+  if (event.key === "Tab") {
+    const buttons = card.value?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+    const first = buttons?.[0];
+    const last = buttons?.[buttons.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first?.focus();
+    }
+  }
   if (event.key === "Escape") {
     event.preventDefault();
     cancel();
@@ -16,13 +44,17 @@ function handleKeydown(event) {
 }
 
 onMounted(() => window.addEventListener("keydown", handleKeydown));
-onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown);
+  if (visible.value) document.body.style.overflow = previousOverflow;
+});
 </script>
 
 <template>
   <transition name="confirm-fade">
     <div v-if="visible" class="confirm-overlay" role="presentation" @click.self="cancel">
       <section
+        ref="card"
         class="confirm-card"
         :class="`confirm-card--${options.tone}`"
         role="dialog"

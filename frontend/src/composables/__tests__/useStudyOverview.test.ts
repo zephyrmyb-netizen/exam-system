@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useStudyOverview } from "../useStudyOverview";
+import { resetStudyOverviewCache, useStudyOverview } from "../useStudyOverview";
 
 const mocks = vi.hoisted(() => ({
   getPracticeStats: vi.fn(),
@@ -9,11 +9,13 @@ const mocks = vi.hoisted(() => ({
   getDailyActivity: vi.fn(),
   getStreak: vi.fn(),
   getTagAccuracy: vi.fn(),
-  getTeacherCourseAnalytics: vi.fn(),
+  getOwnerCourseAnalytics: vi.fn(),
   getTodayRecommendation: vi.fn(),
   getTypeDistribution: vi.fn(),
   getToken: vi.fn(),
   requestGet: vi.fn(),
+  fetchCourses: vi.fn(),
+  sharedCourses: { value: [] as Array<{ id: number }> },
 }));
 
 vi.mock("../../api/practice", () => ({
@@ -26,7 +28,7 @@ vi.mock("../../api/analytics", () => ({
   getDailyActivity: mocks.getDailyActivity,
   getStreak: mocks.getStreak,
   getTagAccuracy: mocks.getTagAccuracy,
-  getTeacherCourseAnalytics: mocks.getTeacherCourseAnalytics,
+  getOwnerCourseAnalytics: mocks.getOwnerCourseAnalytics,
   getTodayRecommendation: mocks.getTodayRecommendation,
   getTypeDistribution: mocks.getTypeDistribution,
 }));
@@ -35,6 +37,13 @@ vi.mock("../../api/request", () => ({
   default: { get: mocks.requestGet },
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
   getToken: mocks.getToken,
+}));
+
+vi.mock("../useMyCourses", () => ({
+  useMyCourses: () => ({
+    courses: mocks.sharedCourses,
+    fetchCourses: mocks.fetchCourses,
+  }),
 }));
 
 function deferred<T>() {
@@ -66,6 +75,8 @@ describe("useStudyOverview result availability", () => {
       recent_count_7d: 5,
     });
     mocks.requestGet.mockResolvedValue({ data: [] });
+    mocks.fetchCourses.mockResolvedValue(undefined);
+    mocks.sharedCourses.value = [];
     mocks.getTodayReview.mockResolvedValue({ due_count: 0, wrong_count: 0, recommended_modes: [] });
     mocks.getWeakTypes.mockResolvedValue([]);
     mocks.getDailyActivity.mockResolvedValue([]);
@@ -73,7 +84,8 @@ describe("useStudyOverview result availability", () => {
     mocks.getTagAccuracy.mockResolvedValue([]);
     mocks.getStreak.mockResolvedValue({ current_streak: 0, longest_streak: 0, last_practiced_date: null });
     mocks.getTodayRecommendation.mockResolvedValue(recommendation);
-    mocks.getTeacherCourseAnalytics.mockResolvedValue([]);
+    mocks.getOwnerCourseAnalytics.mockResolvedValue([]);
+    resetStudyOverviewCache();
   });
 
   it("tracks successful zero streak and recommendation independently from their values", async () => {
@@ -114,6 +126,56 @@ describe("useStudyOverview result availability", () => {
     expect(overview.recommendationAvailable.value).toBe(true);
     expect(overview.recommendation.value).toBeNull();
     expect(overview.errorMessage.value).not.toBe("");
+  });
+
+  it("reuses a fresh overview snapshot when the user returns to the mine tab", async () => {
+    mocks.getToken.mockReturnValue("cached-account");
+    const overview = useStudyOverview();
+
+    await overview.fetchAll();
+    await overview.fetchAll();
+
+    expect(mocks.getPracticeStats).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchCourses).toHaveBeenCalledTimes(1);
+    expect(mocks.getStreak).toHaveBeenCalledTimes(1);
+    expect(overview.loading.value).toBe(false);
+  });
+
+  it("reuses the shared course snapshot instead of issuing another courses request", async () => {
+    mocks.sharedCourses.value = [{ id: 1 }, { id: 2 }];
+    const overview = useStudyOverview();
+
+    await overview.fetchAll();
+
+    expect(mocks.fetchCourses).toHaveBeenCalledTimes(1);
+    expect(mocks.requestGet).not.toHaveBeenCalled();
+    expect(overview.stats.value.coursesCount).toBe(2);
+  });
+
+  it("keeps existing statistics usable while a stale overview refreshes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-16T00:00:00.000Z"));
+    const refreshedStats = deferred<{ today_count: number; total_count: number }>();
+    mocks.getPracticeStats
+      .mockResolvedValueOnce({ today_count: 3, total_count: 10 })
+      .mockImplementationOnce(() => refreshedStats.promise);
+    const overview = useStudyOverview();
+
+    await overview.fetchAll();
+    vi.setSystemTime(new Date("2026-07-16T00:00:31.000Z"));
+    const refreshRequest = overview.fetchAll();
+
+    expect(overview.stats.value.totalCount).toBe(10);
+    expect(overview.loading.value).toBe(false);
+    expect(overview.isInitialLoading.value).toBe(false);
+    expect(overview.isRefreshing.value).toBe(true);
+
+    refreshedStats.resolve({ today_count: 4, total_count: 11 });
+    await refreshRequest;
+
+    expect(overview.stats.value.totalCount).toBe(11);
+    expect(overview.isRefreshing.value).toBe(false);
+    vi.useRealTimers();
   });
 
   it("starts a fresh request for a new auth context and ignores the prior delayed response", async () => {

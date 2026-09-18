@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { BookMarked, CheckCircle, ChevronLeft, XCircle } from "@lucide/vue";
 

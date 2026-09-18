@@ -1,9 +1,12 @@
 <script setup lang="ts">
+defineOptions({ name: "Home" });
+
 import { computed, onMounted, ref } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
   BookOpen,
   ClipboardList,
+  Copy,
   Eye,
   FileText,
   FileUp,
@@ -18,9 +21,9 @@ import {
   TrendingUp,
 } from "@lucide/vue";
 
-import { getMyCourses } from "../api/courses";
 import request, { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import { useMyCourses } from "../composables/useMyCourses";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
@@ -29,9 +32,13 @@ import { openGlobalSearch } from "../utils/globalSearch";
 const { replaceTo } = useAppNavigation();
 const confirmDialog = useConfirmDialog();
 
-const courses = ref<Course[]>([]);
-const coursesLoading = ref(false);
-const coursesError = ref("");
+const {
+  courses,
+  loading: coursesLoading,
+  hasLoaded: coursesLoaded,
+  errorMessage: coursesError,
+  fetchCourses: fetchRecentCourses,
+} = useMyCourses();
 const openCourseMenuId = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const deleteLoading = ref<number | null>(null);
@@ -72,10 +79,10 @@ const coreActions = [
     to: "/exams",
   },
   {
-    label: "学习概览",
-    desc: "查看学习数据",
+    label: "学习小组",
+    desc: "邀请码加入，共享题库与考试",
     icon: TrendingUp,
-    to: { name: "study-overview", query: { from: "home" } },
+    to: { name: "study-groups", query: { from: "home" } },
   },
 ];
 
@@ -101,8 +108,7 @@ function closeCourseMenu() {
 
 function startRecentCoursePractice(course: Course) {
   if (!isPracticeReadyCourse(course)) return;
-  closeCourseMenu();
-  goTo({ name: "course-practice", params: { courseId: course.id }, query: { from: "home" } });
+  viewRecentCourse(course);
 }
 
 function viewRecentCourse(course: Course, edit = false) {
@@ -129,6 +135,26 @@ async function toggleRecentCoursePublish(course: Course) {
   }
 }
 
+async function copyRecentCourseShareLink(course: Course) {
+  closeCourseMenu();
+  coursesError.value = "";
+  let link = `${window.location.origin}/courses/${course.id}`;
+  try {
+    if (course.visibility === "private") {
+      let token = course.share_token;
+      if (!token) {
+        const { data } = await request.post<{ token: string }>(`/courses/${course.id}/share-link`);
+        token = data.token;
+        course.share_token = token;
+      }
+      link = `${window.location.origin}/shared-courses/${token}`;
+    }
+    await navigator.clipboard.writeText(link);
+  } catch {
+    window.prompt("\u8bf7\u590d\u5236\u9898\u5e93\u5206\u4eab\u94fe\u63a5", link);
+  }
+}
+
 async function deleteRecentCourse(course: Course) {
   closeCourseMenu();
   const confirmed = await confirmDialog.confirm({
@@ -152,26 +178,27 @@ async function deleteRecentCourse(course: Course) {
   }
 }
 
-async function fetchRecentCourses() {
-  coursesLoading.value = true;
-  coursesError.value = "";
-
-  try {
-    courses.value = await getMyCourses();
-  } catch (error) {
-    coursesError.value = getErrorMessage(error, "题库加载失败，请稍后重试。");
-  } finally {
-    coursesLoading.value = false;
-  }
-}
-
 onMounted(() => {
-  fetchRecentCourses();
+  void fetchRecentCourses();
 });
 </script>
 
 <template>
   <section class="home-page" data-reference-page="home">
+    <div class="home-welcome">
+      <div>
+        <p>把每一天，变成一点进步</p>
+        <h1>今天，继续学习</h1>
+      </div>
+      <button
+        type="button"
+        class="home-progress"
+        aria-label="查看学习数据"
+        @click="goTo({ name: 'study-overview', query: { from: 'home' } })"
+      >
+        <TrendingUp :size="22" />
+      </button>
+    </div>
     <header class="home-hero fade-up">
       <button class="home-search-entry" data-home-search type="button" @click="openGlobalSearch">
         <span class="home-search-entry__scan" aria-hidden="true">
@@ -196,7 +223,14 @@ onMounted(() => {
       <button class="section-more" type="button" @click="replaceTo('/courses')">查看全部</button>
     </div>
 
-    <p v-if="coursesLoading" class="status-banner status-banner--info">正在加载题库...</p>
+    <div
+      v-if="coursesLoading && !coursesLoaded"
+      class="course-loading-skeleton"
+      aria-busy="true"
+      aria-label="正在加载题库"
+    >
+      <span v-for="index in 2" :key="index" class="course-loading-skeleton__row" />
+    </div>
     <p v-if="coursesError" class="status-banner status-banner--error">{{ coursesError }}</p>
 
     <!-- Empty state -->
@@ -225,8 +259,8 @@ onMounted(() => {
         <button
           class="course-main"
           type="button"
-          :aria-label="`开始练习：${getCourseDisplayName(course)}`"
-          @click="goTo({ name: 'course-practice', params: { courseId: course.id }, query: { from: 'home' } })"
+          :aria-label="`查看题库：${getCourseDisplayName(course)}`"
+          @click="viewRecentCourse(course)"
         >
           <span class="course-icon" data-home-course-icon aria-hidden="true">
             <FileText :size="20" :stroke-width="2.25" />
@@ -238,6 +272,15 @@ onMounted(() => {
               {{ formatCourseDate(course) }}
             </span>
           </div>
+        </button>
+        <button
+          class="home-course-share"
+          data-testid="home-course-share"
+          type="button"
+          :aria-label="`\u5206\u4eab${getCourseDisplayName(course)}`"
+          @click.stop="copyRecentCourseShareLink(course)"
+        >
+          <Copy :size="16" :stroke-width="2.5" />
         </button>
         <button
           class="home-course-more"
@@ -294,184 +337,224 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 0 !important;
+  gap: 0;
 }
-
+.home-welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0 22px;
+}
+.home-welcome p {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+.home-welcome h1 {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 30px);
+  letter-spacing: -0.04em;
+  font-weight: 700;
+}
+.home-progress {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  color: var(--primary);
+  background: var(--surface);
+}
 .home-hero {
   display: grid;
   margin: 0;
-  padding: 8px 0 4px;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: var(--text-primary);
-  box-shadow: none !important;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
-
 .home-search-entry {
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 46px;
-  padding: 0 11px;
-  margin-top: 0;
-  border: 1px solid #e3eaf2 !important;
-  border-radius: var(--radius-full);
-  background: #ffffff !important;
-  color: #64748b;
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(71, 85, 105, 0.08) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  cursor: pointer;
-  transition: border-color var(--ease-out);
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-md);
+  text-align: left;
 }
-
-.home-search-entry__mic {
-  margin-left: auto;
-  color: var(--primary-strong);
+.home-search-entry__scan {
+  display: grid;
+  place-items: center;
+  color: var(--primary);
 }
-
-.home-search-entry:hover {
-  border-color: var(--primary-border);
-}
-
-.home-search-entry :deep(svg) {
-  color: var(--text-placeholder);
-}
-
 .quick-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 16px 0 12px;
+  padding: 12px 4px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
 }
-
-.home-page .quick {
-  min-height: 116px;
-  padding: var(--space-3) 8px;
-  border-radius: 8px;
-  font-size: var(--text-sm);
+.quick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 68px;
+  padding: 4px 2px;
+  gap: 7px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-main);
 }
-
-.quick-ico {
-  background: var(--primary);
+.quick:hover {
+  transform: none;
+  background: var(--surface-soft);
   box-shadow: none;
 }
-
-.quick-label {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  text-align: center;
+.quick-ico {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--primary);
+  background: var(--primary-soft);
 }
-
-.quick-desc {
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  text-align: center;
+.quick:nth-child(2) .quick-ico {
+  color: var(--violet);
+  background: var(--violet-soft);
+}
+.quick:nth-child(3) .quick-ico {
+  color: var(--amber-strong);
+  background: var(--amber-soft);
+}
+.quick:nth-child(4) .quick-ico {
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+.quick-label {
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
 }
-
-.overview-surface {
-  min-height: 92px;
-  margin-bottom: var(--space-5);
-  padding: var(--space-3);
+.quick-desc {
+  display: none;
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 12px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.section-more {
+  min-height: 44px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+.home-course-list {
+  display: grid;
+  gap: 10px;
+  overflow: visible;
+}
+.course-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-xs);
 }
-
-.overview-state {
-  display: grid;
-  min-height: 68px;
-  margin: 0;
-  place-items: center;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  text-align: center;
+.course-item:hover {
+  transform: none;
+  box-shadow: var(--shadow-xs);
 }
-
-.overview-state--error {
-  color: var(--rose);
-}
-
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.overview-grid :deep(.stat-grid__item) {
-  min-height: 64px;
-  padding: 6px 4px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  box-shadow: none;
-}
-
-.overview-grid :deep(.stat-grid__value) {
-  font-size: var(--text-lg);
-}
-
-/* ── Course list layout ── */
-.course-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.course-item {
-  display: flex;
-  align-items: center;
-  border-radius: 8px;
-}
-
-.home-course-list .course-icon {
-  background: var(--primary);
-}
-
 .course-main {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
   flex: 1;
-  width: auto;
   min-width: 0;
-  min-height: 44px;
-  background: transparent;
-  border: none;
-  padding: 10px 12px;
-  text-align: left;
-  cursor: pointer;
-  color: inherit;
-}
-.home-course-more {
-  display: grid;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  margin-right: 10px;
-  padding: 0;
-  place-items: center;
+  min-height: 84px;
+  padding: 14px 12px;
   border: 0;
-  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.course-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.course-info {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 5px;
+}
+.course-info strong {
+  font-size: var(--text-md);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.course-info span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.home-course-more,
+.home-course-share {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 44px;
+  border: 0;
+  padding: 0;
+  border-radius: 12px;
   background: transparent;
   color: var(--text-muted);
-  cursor: pointer;
 }
-.home-course-more:hover {
+.home-course-more {
+  margin-right: 10px;
+}
+.home-course-share {
+  color: var(--primary);
+}
+.home-course-more:hover,
+.home-course-share:hover {
   background: var(--surface-soft);
-  color: var(--text-main);
-}
-.home-course-list--menu-open {
-  overflow: visible !important;
 }
 .home-course-item--menu-open {
-  position: relative;
   z-index: 90;
 }
 .home-course-menu {
@@ -485,309 +568,85 @@ onMounted(() => {
   max-width: calc(100% - 20px);
   padding: 6px;
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
+  border-radius: 18px;
+  background: var(--glass-nav);
+  backdrop-filter: blur(var(--glass-overlay-blur));
+  -webkit-backdrop-filter: blur(var(--glass-overlay-blur));
+  box-shadow: var(--shadow-elevated);
 }
 .home-menu-option {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   min-height: 44px;
   padding: 0 12px;
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-main);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 500;
   text-align: left;
-  cursor: pointer;
 }
 .home-menu-option:hover:not(:disabled) {
   background: var(--surface-soft);
-  color: var(--text-main);
-}
-.home-menu-option:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 .home-menu-option--danger {
   color: var(--rose);
 }
-.home-menu-option--danger:hover:not(:disabled) {
-  background: var(--rose-soft);
-  color: var(--rose);
-}
 .home-menu-divider {
   height: 1px;
-  margin: 4px 8px;
+  margin: 3px 8px;
   background: var(--line-soft);
 }
-
-
-/* ── Empty state ── */
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
   padding: 32px 16px;
   text-align: center;
   color: var(--text-muted);
 }
-
-.empty-state :deep(svg) {
-  color: var(--text-muted);
-  opacity: 0.5;
-}
-
 .empty-state strong {
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  font-weight: 800;
   color: var(--text-main);
 }
-
 .empty-state p {
   margin: 0;
   font-size: var(--text-sm);
-  color: var(--text-muted);
 }
-
 .empty-actions {
   display: flex;
   gap: 8px;
-  margin-top: 4px;
 }
-
 .empty-btn {
   min-height: 44px;
   padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
   border: 1px solid var(--line-soft);
+  border-radius: 14px;
   background: var(--surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background var(--ease-out),
-    border-color var(--ease-out);
+  color: var(--text-main);
 }
-
 .empty-btn--primary {
   background: var(--primary);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: none;
-  transition: background var(--ease-out);
+  color: #fff;
 }
-
-.empty-btn--primary:hover {
-  background: var(--primary-strong);
-}
-
-@media (max-width: 420px) {
-  .overview-grid {
-    gap: 0;
-  }
-  .overview-grid :deep(.stat-grid__value) {
-    font-size: var(--text-base);
-  }
-  .course-item {
-    gap: 8px;
-  }
-}
-
-.home-search-entry {
-  color: #64748b;
-}
-.home-search-entry span {
-  color: inherit;
-}
-.home-search-entry__scan {
+.course-loading-skeleton {
   display: grid;
-  place-items: center;
-  min-width: 38px;
-  height: 24px;
-  border-right: 1px solid #e2e8f0;
-  color: #218bf2;
-}
-.quick {
-  border-color: var(--glass-border);
-  background: var(--glass-card);
-  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
-}
-.quick:nth-child(2) .quick-ico {
-  color: #2563eb;
-  background: #eff6ff;
-}
-.quick:nth-child(3) .quick-ico {
-  color: #d97706;
-  background: #fffbeb;
-}
-.quick:nth-child(4) .quick-ico {
-  color: #dc2626;
-  background: #fef2f2;
-}
-.overview-surface,
-.home-course-list .course-item,
-.home-recommendation {
-  border-color: var(--glass-border);
-  background: var(--glass-card);
-  box-shadow: var(--shadow-card), var(--glass-inner-highlight);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-}
-.home-recommendation {
-  border-radius: 12px;
-}
-
-/* Keep the home header compact: search is the only content in this band. */
-.home-hero {
-  min-height: 0 !important;
-  gap: 0;
-  padding: 8px 0 4px !important;
-  box-shadow: none !important;
-}
-.home-hero h1 {
-  margin-top: 2px;
-  font-size: 22px;
-  line-height: 1.22;
-}
-.home-search-entry {
-  min-height: 46px !important;
-  border-radius: var(--radius-full);
-  background: #ffffff !important;
-  color: #64748b !important;
-}
-.home-search-entry span,
-.home-search-entry :deep(svg) {
-  color: inherit !important;
-}
-.home-search-entry__scan,
-.home-search-entry__scan :deep(svg) {
-  color: #218bf2 !important;
-}
-.quick-grid {
-  position: relative;
-  z-index: 1;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0 !important;
-  margin: 4px 0 0;
-  padding: 8px 2px;
-  border-radius: var(--radius-lg);
-}
-.quick {
-  min-height: 76px !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 4px;
-  padding: 4px 2px !important;
-  border-radius: 0 !important;
-}
-.home-page .quick:nth-child(odd),
-.home-page .quick:nth-child(n + 3) {
-  border: 0 !important;
-}
-.quick-ico {
-  width: 36px;
-  height: 36px;
-}
-.quick-label {
-  font-size: 11px;
-  text-align: center;
-  white-space: nowrap;
-}
-.quick-desc {
-  display: none;
-}
-.overview-surface {
-  min-height: 92px;
-  margin: 10px 0 2px;
-  padding: 10px 8px;
-  border-radius: var(--radius-lg);
-}
-.home-page .section-head,
-.home-course-list,
-.home-page > .status-banner,
-.home-page > .empty-state {
-  margin-inline: 0;
-}
-.home-page .section-head {
-  margin-block: 8px 6px;
-}
-.home-course-list {
-  margin-top: 0;
-}
-.home-recommendation {
-  margin: 16px 0;
-  width: 100%;
-}
-
-/* 首页统一使用圆角方形的内容与图标底座；搜索和进度条保留胶囊形。 */
-.home-page .quick-grid,
-.home-page .home-course-list .course-item,
-.home-page .home-recommendation {
-  border-radius: 16px !important;
-}
-.home-page .quick-ico,
-.home-page .course-icon {
-  border-radius: 12px !important;
-}
-.home-page .course-action,
-.home-page .home-recommendation__tag {
-  border-radius: 10px;
-}
-
-/* Keep the homepage dense enough for the first screen without losing touch targets. */
-.home-page .quick-grid {
-  padding: 6px 2px;
-}
-.home-page .quick {
-  min-height: 68px !important;
-  gap: 3px;
-}
-.home-page .quick-ico {
-  width: 32px;
-  height: 32px;
-}
-.home-page .quick-ico :deep(svg) {
-  width: 17px;
-  height: 17px;
-}
-.home-page .home-course-list {
-  gap: 8px;
-}
-.home-page .home-course-list .course-item {
-  padding: 0;
-}
-.home-page .home-course-list .course-main {
   gap: 10px;
-  min-height: 76px;
-  padding: 8px 12px;
 }
-.home-page .home-course-list .course-icon {
-  width: 40px;
-  height: 40px;
+.course-loading-skeleton__row {
+  min-height: 84px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
-.home-page .home-course-list .course-icon :deep(svg) {
-  width: 19px;
-  height: 19px;
-}
-.home-page .home-course-list .course-info {
-  gap: 1px;
-}
-.home-page .home-course-list .course-info strong {
-  font-size: 15px;
-}
-.home-page .home-recommendation {
-  gap: 9px;
-  margin: 10px 0 12px;
-  padding: 11px 13px;
-}
-.home-page .home-recommendation__spark {
-  font-size: 20px;
+@media (min-width: 600px) {
+  .quick-label {
+    font-size: var(--text-sm);
+  }
+  .quick-desc {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
 }
 </style>

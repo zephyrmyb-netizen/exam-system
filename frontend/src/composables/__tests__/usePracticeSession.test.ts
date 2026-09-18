@@ -135,6 +135,29 @@ describe("usePracticeSession", () => {
     expect(getRandomPracticeQuestion).toHaveBeenCalledTimes(requestsAtCompletion);
   });
 
+  it("prepares every seeded question so the answer card can jump to any session order", async () => {
+    const { usePracticeSession } = await import("../usePracticeSession");
+    const session = usePracticeSession({
+      courseId: 9,
+      initialQuestions: [makeQuestion(11), makeQuestion(12), makeQuestion(13)],
+    });
+
+    session.startSession();
+    await flushPromises();
+
+    expect(session.sessionQuestions.value.map((item) => item.sessionOrder)).toEqual([1, 2, 3]);
+    expect(session.question.value?.id).toBe(11);
+    expect(getRandomPracticeQuestion).not.toHaveBeenCalled();
+
+    expect(session.jumpToSessionQuestion(2)).toBe(true);
+    expect(session.currentSessionQuestionIndex.value).toBe(2);
+    expect(session.question.value?.id).toBe(13);
+
+    session.setSingleAnswer("A");
+    await flushPromises();
+    expect(session.sessionQuestions.value[2]?.answer).toBe("A");
+  });
+
   it("cancels the pending correct-answer advance when the user ends a session", async () => {
     const { usePracticeSession } = await import("../usePracticeSession");
     const session = usePracticeSession({ courseId: 9 });

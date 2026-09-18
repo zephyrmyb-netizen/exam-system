@@ -1,7 +1,8 @@
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { computed, reactive, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
+import { readFileSync } from "node:fs";
 
 import AppLayout from "../AppLayout.vue";
 
@@ -18,6 +19,7 @@ const router = {
   push: vi.fn(),
   replace: vi.fn(),
 };
+const fetchProfile = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("vue-router", () => ({
   useRoute: () => route,
@@ -26,11 +28,11 @@ vi.mock("vue-router", () => ({
 
 vi.mock("../../api/request", () => ({
   getAuthEventName: () => "auth-change",
-  getToken: () => "token",
+  getToken: () => "",
 }));
 
 vi.mock("../../stores/auth", () => ({
-  useAuth: () => ({ fetchProfile: vi.fn().mockResolvedValue(undefined), user: ref(null) }),
+  useAuth: () => ({ fetchProfile, user: ref(null) }),
 }));
 
 vi.mock("../../stores/theme", () => ({
@@ -61,6 +63,20 @@ describe("AppLayout immersive routes", () => {
     offlineIsOnline.value = true;
     offlinePendingCount.value = 0;
     vi.clearAllMocks();
+  });
+
+  it("does not repeat the router's session check when the protected layout mounts", () => {
+    mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+
+    expect(fetchProfile).not.toHaveBeenCalled();
   });
 
   it("keeps the course tab focused on its page content with bottom navigation", () => {
@@ -96,6 +112,15 @@ describe("AppLayout immersive routes", () => {
 
     expect(wrapper.get("[data-testid='app-shell']").attributes("data-layout")).toBe("tabbed");
     expect(wrapper.get("[data-testid='bottom-tab-home']").attributes("data-nav-key")).toBe("home");
+  });
+
+  it("keeps primary tab components alive without the full-page fade transition", () => {
+    const source = readFileSync("src/layouts/AppLayout.vue", "utf8");
+
+    expect(source).toContain('<KeepAlive :include="persistentTabComponentNames"');
+    expect(source).toContain(':name="routeTransitionName"');
+    expect(source).toContain('const routeTransitionName = computed(() => (route.meta?.keepAlive ? "" : "page"));');
+    expect(source).not.toContain('<transition name="page" mode="out-in">');
   });
 
   it("lets the import page own its heading while keeping bottom navigation", () => {
@@ -161,6 +186,30 @@ describe("AppLayout immersive routes", () => {
 
     expect(router.replace).not.toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("sends a signed-out user directly to login without preserving the protected page", async () => {
+    route.name = "mine";
+    route.path = "/mine";
+    route.fullPath = "/mine";
+    route.meta = { navKey: "mine" };
+
+    const wrapper = mount(AppLayout, {
+      global: {
+        stubs: {
+          RouterView: { template: "<div />" },
+          ConfirmDialog: true,
+          GlobalSearch: true,
+        },
+      },
+    });
+    router.replace.mockClear();
+
+    window.dispatchEvent(new CustomEvent("auth-change"));
+    await flushPromises();
+
+    expect(router.replace).toHaveBeenCalledWith({ name: "login" });
+    wrapper.unmount();
   });
 
   it("returns a source-aware detail page with replace", async () => {

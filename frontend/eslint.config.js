@@ -30,6 +30,7 @@ export default [
         Event: "readonly",
         File: "readonly",
         FormData: "readonly",
+        HTMLButtonElement: "readonly",
         HTMLInputElement: "readonly",
         HTMLSelectElement: "readonly",
         HTMLTextAreaElement: "readonly",

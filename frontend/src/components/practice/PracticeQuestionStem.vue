@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { typeLabel } from "../../utils/question";
 
 defineProps({
   question: { type: Object, required: true },
 });
 
-const difficultyLabels = {
+const difficultyLabels: Record<string, string> = {
   easy: "简单",
   normal: "中等",
   hard: "困难",

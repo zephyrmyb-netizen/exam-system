@@ -1,7 +1,18 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowRight, AlertTriangle, CheckCircle, Library, RefreshCw, Sparkles } from "@lucide/vue";
+import {
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Library,
+  RefreshCw,
+  Sparkles,
+} from "@lucide/vue";
+import PracticeAnswerSheet from "../components/practice/PracticeAnswerSheet.vue";
 import PracticeActionBar from "../components/practice/PracticeActionBar.vue";
 import PracticeChoiceOptions from "../components/practice/PracticeChoiceOptions.vue";
 import PracticeQuestionStem from "../components/practice/PracticeQuestionStem.vue";
@@ -19,11 +30,13 @@ const props = defineProps({
   totalQuestions: { type: Number, default: 0 },
   mode: { type: String, default: "normal" },
   modeParam: { type: String, default: "" },
+  initialQuestions: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(["end-practice"]);
 const router = useRouter();
 const showSummary = ref(false);
+const showAnswerSheet = ref(false);
 const practiceSurface = (ref < HTMLElement) | (null > null);
 
 const {
@@ -39,9 +52,12 @@ const {
   handleTextKeydown,
   hasAnswerSelected,
   isTextQuestion,
+  isSeededSession,
   loading,
   phase,
   question,
+  sessionQuestions,
+  currentSessionQuestionIndex,
   result,
   selectedAnswer,
   selectedAnswers,
@@ -53,8 +69,10 @@ const {
   submitting,
   textAnswer,
   toggleMultipleAnswer,
+  toggleCurrentQuestionMark,
   updateTextAnswer,
   validationMessage,
+  jumpToSessionQuestion,
 } = usePracticeSession(props);
 
 // 全局右滑手势：仅在结果出现后（答错时显示解析，或答对短暂停留期）触发跳下一题。
@@ -113,8 +131,53 @@ const isCourseEmpty = computed(
     sessionStats.value.answeredCount === 0,
 );
 
+const isCurrentQuestionMarked = computed(
+  () => sessionQuestions.value[currentSessionQuestionIndex.value]?.marked ?? false,
+);
+const answerCardTotal = computed(() => sessionQuestions.value.length || props.totalQuestions);
+const answerCardAnsweredCount = computed(
+  () => sessionQuestions.value.filter((item) => item.answer.trim().length > 0).length,
+);
+const canGoPreviousQuestion = computed(() => currentSessionQuestionIndex.value > 0);
+const canGoNextQuestion = computed(() => {
+  const nextIndex = currentSessionQuestionIndex.value + 1;
+  if (nextIndex < sessionQuestions.value.length) return true;
+  return !!result.value && !loading.value && !submitting.value && !sessionComplete.value;
+});
+const currentSessionOrder = computed(
+  () => sessionQuestions.value[currentSessionQuestionIndex.value]?.sessionOrder ?? 0,
+);
+const nextButtonLabel = computed(() => {
+  const isLastSeededQuestion =
+    isSeededSession.value && currentSessionQuestionIndex.value === sessionQuestions.value.length - 1;
+  return isLastSeededQuestion ? "完成练习" : "下一题";
+});
+
+function openAnswerSheet() {
+  showAnswerSheet.value = true;
+}
+
+function jumpFromAnswerSheet(index) {
+  if (jumpToSessionQuestion(index)) showAnswerSheet.value = false;
+}
+
+function goPreviousQuestion() {
+  if (canGoPreviousQuestion.value) jumpToSessionQuestion(currentSessionQuestionIndex.value - 1);
+}
+
+function goNextQuestion() {
+  if (!canGoNextQuestion.value) return;
+  const nextIndex = currentSessionQuestionIndex.value + 1;
+  if (nextIndex < sessionQuestions.value.length) {
+    jumpToSessionQuestion(nextIndex);
+    return;
+  }
+  void fetchRandomQuestion();
+}
+
 function goBack() {
   cancelPendingAdvance?.();
+  showAnswerSheet.value = false;
   if (props.courseId) {
     router.replace(`/courses/${props.courseId}`);
   } else if (props.mode === "wrong_review" || props.mode === "due_review") {
@@ -126,6 +189,7 @@ function goBack() {
 
 function endPractice() {
   cancelPendingAdvance?.();
+  showAnswerSheet.value = false;
   if (sessionStats.value.startedAt && sessionStats.value.durationSeconds === null) {
     sessionStats.value.durationSeconds = Math.max(
       0,
@@ -180,8 +244,12 @@ watch(sessionComplete, (complete) => {
       :answered-count="sessionStats.answeredCount"
       :accuracy="accuracy"
       :total-questions="props.totalQuestions"
+      :session-order="isSeededSession ? currentSessionOrder : 0"
+      :session-total="isSeededSession ? sessionQuestions.length : 0"
+      :marked="isCurrentQuestionMarked"
       @back="goBack"
       @end="endPractice"
+      @toggle-mark="toggleCurrentQuestionMark"
     />
 
     <div v-if="!props.courseId && !canStartWithoutCourse && !question && !loading" class="state-block">
@@ -304,6 +372,39 @@ watch(sessionComplete, (complete) => {
       />
     </div>
 
+    <nav v-if="question" class="practice-bottom-toolbar" aria-label="练习题目导航">
+      <button
+        class="practice-bottom-toolbar__button"
+        type="button"
+        :disabled="!canGoPreviousQuestion"
+        @click="goPreviousQuestion"
+      >
+        <ChevronLeft :size="18" :stroke-width="2.5" />
+        <span>上一题</span>
+      </button>
+      <button class="practice-bottom-toolbar__card" type="button" aria-label="答题卡" @click="openAnswerSheet">
+        <LayoutGrid :size="18" :stroke-width="2.4" />
+        <span>答题卡 {{ answerCardAnsweredCount }}/{{ answerCardTotal }}</span>
+      </button>
+      <button
+        class="practice-bottom-toolbar__button practice-bottom-toolbar__button--next"
+        type="button"
+        :disabled="!canGoNextQuestion"
+        @click="goNextQuestion"
+      >
+        <span>{{ nextButtonLabel }}</span>
+        <ChevronRight :size="18" :stroke-width="2.5" />
+      </button>
+    </nav>
+
+    <PracticeAnswerSheet
+      v-model="showAnswerSheet"
+      :items="sessionQuestions"
+      :current-index="currentSessionQuestionIndex"
+      :total-questions="answerCardTotal"
+      @jump="jumpFromAnswerSheet"
+    />
+
     <PracticeSummaryModal
       :show="showSummary"
       :answered-count="sessionStats.answeredCount"
@@ -334,12 +435,12 @@ watch(sessionComplete, (complete) => {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
   background: radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.09), transparent 34%), var(--page-bg);
 }
 
 .practice-page--with-action {
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
 .practice-content {
@@ -413,6 +514,57 @@ watch(sessionComplete, (complete) => {
   display: grid;
   gap: 8px;
   min-width: 0;
+}
+
+.practice-bottom-toolbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 45;
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) minmax(136px, 1.45fr) minmax(70px, 1fr);
+  gap: 8px;
+  width: min(100%, var(--shell-max));
+  min-height: 68px;
+  margin: 0 auto;
+  padding: 8px 16px max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--glass-border);
+  background: var(--glass-header);
+  box-shadow:
+    0 -8px 24px rgba(31, 41, 55, 0.08),
+    var(--glass-inner-highlight);
+  backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--glass-header-blur)) saturate(170%);
+}
+
+.practice-bottom-toolbar__button,
+.practice-bottom-toolbar__card {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.practice-bottom-toolbar__button:disabled {
+  opacity: 0.42;
+}
+
+.practice-bottom-toolbar__card {
+  border-color: var(--line-accent);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  box-shadow: var(--shadow-xs);
 }
 
 .state-block {
@@ -537,11 +689,11 @@ watch(sessionComplete, (complete) => {
 @media (max-width: 420px) {
   .practice-page {
     gap: 10px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
   }
 
   .practice-page--with-action {
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
   }
 
   .practice-card-shell {
@@ -552,6 +704,18 @@ watch(sessionComplete, (complete) => {
   .practice-answer-section,
   .practice-message-stack {
     gap: 6px;
+  }
+
+  .practice-bottom-toolbar {
+    grid-template-columns: minmax(66px, 1fr) minmax(128px, 1.42fr) minmax(66px, 1fr);
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .practice-bottom-toolbar__button,
+  .practice-bottom-toolbar__card {
+    padding-inline: 6px;
+    font-size: 12px;
   }
 }
 </style>

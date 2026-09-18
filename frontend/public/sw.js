@@ -1,4 +1,4 @@
-const CACHE_NAME = "xuexibao-shell-v3";
+const CACHE_NAME = "xuexibao-shell-v7";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/icon.svg"];
 const API_PREFIXES = [
   "/auth", "/courses", "/practice", "/questions", "/wrongbook", "/imports",
@@ -47,19 +47,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // JavaScript and CSS must be network-first. A cache-first strategy here can
-  // keep an old Vue module alive indefinitely, especially when a phone moves
-  // between the production build and the Vite development server.
+  // Vite gives production JavaScript and CSS files content hashes. Once a
+  // version is cached, it is safe to use immediately; a new build changes the
+  // filename and the updated service worker uses a fresh cache namespace.
   if (["script", "style"].includes(request.destination)) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request)),
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (response.ok) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+        }
+        return response;
+      })),
     );
     return;
   }

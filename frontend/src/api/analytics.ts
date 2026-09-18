@@ -1,5 +1,6 @@
 import type {
   CourseAnalytics,
+  ExamAnalytics,
   DailyActivity,
   ScoreBucket,
   Streak,
@@ -29,10 +30,14 @@ export function getTodayRecommendation(): Promise<TodayRecommendation> {
   return request.get("/recommendations/today").then(({ data }) => data);
 }
 
-export function getTeacherCourseAnalytics(): Promise<CourseAnalytics[]> {
-  return request.get("/analytics/teacher/courses").then(({ data }) => data);
+export function getOwnerCourseAnalytics(): Promise<CourseAnalytics[]> {
+  return request.get("/analytics/owner/courses").then(({ data }) => data);
 }
 
-export function getExamScoreDistribution(examId: number): Promise<ScoreBucket[]> {
-  return request.get(`/analytics/teacher/exam-scores/${examId}`).then(({ data }) => data);
+export function getOwnerExamScoreDistribution(examId: number): Promise<ScoreBucket[]> {
+  return request.get(`/analytics/owner/exam-scores/${examId}`).then(({ data }) => data);
+}
+
+export function getOwnerExamAnalytics(examId: number): Promise<ExamAnalytics> {
+  return request.get(`/analytics/owner/exams/${examId}`).then(({ data }) => data as ExamAnalytics);
 }

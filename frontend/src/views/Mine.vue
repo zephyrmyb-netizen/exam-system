@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ name: "Mine" });
+
 import { computed, onMounted } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import {
@@ -10,8 +12,10 @@ import {
   LogOut,
   MessageCircle,
   Megaphone,
-  Palette,
   Settings2,
+  ShieldCheck,
+  Target,
+  Users,
 } from "@lucide/vue";
 
 import StatGrid from "../components/ui/StatGrid.vue";
@@ -22,11 +26,14 @@ import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
 
 const { replaceTo } = useAppNavigation();
-const { user, logout } = useAuth();
+const { user, logout, clearGuestData } = useAuth();
 const theme = useThemeStore();
-const { stats, streak, streakAvailable, loading, errorMessage, fetchAll } = useStudyOverview();
+const { stats, streak, streakAvailable, errorMessage, fetchAll } = useStudyOverview();
 
 const usernameText = computed(() => user.value?.username || "未登录");
+const isGuest = computed(() => Boolean(user.value?.is_guest));
+const isAdmin = computed(() => user.value?.role === "admin");
+const profileName = computed(() => user.value?.display_name || usernameText.value);
 const avatarChar = computed(() => usernameText.value.slice(0, 1).toUpperCase());
 const accuracyDisplay = computed(() => {
   const rate = stats.value.accuracyRate;
@@ -93,6 +100,12 @@ function handleLogout() {
   replaceTo({ name: "login" });
 }
 
+function handleClearGuestData() {
+  if (!window.confirm("Clear this guest's beta data and sign out? This cannot be undone.")) return;
+  void clearGuestData();
+  replaceTo({ name: "login" });
+}
+
 onMounted(() => fetchAll());
 </script>
 
@@ -105,7 +118,7 @@ onMounted(() => fetchAll());
           <div class="avatar">{{ avatarChar }}</div>
         </div>
         <div class="profile-info">
-          <h3 class="profile-name">{{ usernameText }}</h3>
+          <h3 class="profile-name">{{ profileName }}</h3>
           <span class="profile-id">UID: {{ user?.id ?? "--" }}</span>
         </div>
       </div>
@@ -124,7 +137,6 @@ onMounted(() => fetchAll());
       <StatGrid class="stat-grid-4" label="学习预览" :items="mineStatItems" />
     </button>
 
-    <p v-if="loading" class="status-banner status-banner--info">学习数据更新中...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <nav class="mine-quick-grid fade-up d3">
@@ -141,7 +153,12 @@ onMounted(() => fetchAll());
       <h3 class="section-title">设置与服务</h3>
     </div>
     <div class="menu-list fade-up d4">
-      <button class="menu-item" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
+      <button
+        class="menu-item"
+        data-testid="mine-announcements"
+        type="button"
+        @click="goTo({ name: 'announcements', query: { from: 'mine' } })"
+      >
         <span class="mi-ico mi-ico--primary"><Megaphone :size="16" :stroke-width="2.2" /></span>
         <span class="mi-label">更新公告</span>
         <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
@@ -154,13 +171,39 @@ onMounted(() => fetchAll());
         <span class="theme-switch" :class="{ 'is-active': isDarkMode }" aria-hidden="true"><i></i></span>
       </button>
       <button class="menu-item" type="button" @click="goTo({ name: 'study-overview', query: { from: 'mine' } })">
-        <span class="mi-ico mi-ico--neutral"><Palette :size="16" :stroke-width="2.2" /></span>
-        <span class="mi-label">学习概览</span>
+        <span class="mi-ico mi-ico--neutral"><Target :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">学习计划与数据</span>
         <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
       </button>
-      <button class="menu-item" type="button" @click="goTo({ name: 'announcements', query: { from: 'mine' } })">
+      <button class="menu-item" type="button" @click="goTo({ name: 'study-groups', query: { from: 'mine' } })">
+        <span class="mi-ico mi-ico--neutral"><Users :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">学习小组</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
+      <button
+        v-if="isAdmin"
+        class="menu-item"
+        data-testid="mine-admin-dashboard"
+        type="button"
+        @click="goTo({ name: 'admin-dashboard', query: { from: 'mine' } })"
+      >
+        <span class="mi-ico mi-ico--primary"><ShieldCheck :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">管理后台</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
+      <button
+        class="menu-item"
+        data-testid="mine-help-feedback"
+        type="button"
+        @click="goTo({ name: 'help-feedback', query: { from: 'mine' } })"
+      >
         <span class="mi-ico mi-ico--neutral"><CircleHelp :size="16" :stroke-width="2.2" /></span>
         <span class="mi-label">帮助与反馈</span>
+        <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
+      </button>
+      <button v-if="isGuest" class="menu-item" type="button" @click="handleClearGuestData">
+        <span class="mi-ico mi-ico--danger"><LogOut :size="16" :stroke-width="2.2" /></span>
+        <span class="mi-label">清除测试数据并退出</span>
         <span class="mi-arrow"><ChevronRight :size="16" :stroke-width="2.2" /></span>
       </button>
       <button class="menu-item" type="button" @click="handleLogout">

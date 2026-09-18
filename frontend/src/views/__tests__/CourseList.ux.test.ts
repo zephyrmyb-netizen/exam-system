@@ -1,10 +1,11 @@
 import { mount, flushPromises } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import CourseList from "../CourseList.vue";
 import type { Course } from "../../types";
-import BottomSheet from "../../components/ui/BottomSheet.vue";
 import FilterTabs from "../../components/ui/FilterTabs.vue";
+import { resetMyCoursesCache } from "../../composables/useMyCourses";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("vue-router", () => ({
 vi.mock("../../api/request", () => ({
   default: { get: mocks.requestGet, post: mocks.requestPost, patch: mocks.requestPatch, delete: mocks.requestDelete },
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
+  getToken: () => "course-list-test-token",
 }));
 
 vi.mock("../../stores/confirmDialog", () => ({
@@ -45,6 +47,7 @@ function course(overrides: Partial<Course>): Course {
 
 describe("CourseList UX polish", () => {
   beforeEach(() => {
+    resetMyCoursesCache();
     mocks.replace.mockClear();
     mocks.requestPost.mockReset();
     mocks.requestPatch.mockReset();
@@ -59,7 +62,17 @@ describe("CourseList UX polish", () => {
     });
   });
 
-  it("uses the whole compact card as the primary practice action and disables menu practice for empty courses", async () => {
+  it("uses a neutral placeholder instead of a loading sentence while courses are pending", async () => {
+    mocks.requestGet.mockReturnValue(new Promise(() => undefined));
+
+    const wrapper = mount(CourseList);
+    await nextTick();
+
+    expect(wrapper.find(".status-banner--info").exists()).toBe(false);
+    expect(wrapper.find(".course-loading-skeleton").exists()).toBe(true);
+  });
+
+  it("uses the whole compact card as the primary detail action and disables menu practice for empty courses", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -68,12 +81,16 @@ describe("CourseList UX polish", () => {
     expect(wrapper.findComponent(FilterTabs).findAll('[role="tab"]')).toHaveLength(4);
     expect(wrapper.find(".practice-action").exists()).toBe(false);
     await wrapper.findAll(".course-item")[0].trigger("click");
-    expect(wrapper.findComponent(BottomSheet).exists()).toBe(true);
-    wrapper.findComponent(BottomSheet).vm.$emit("update:open", false);
-    await flushPromises();
+    expect(mocks.replace).toHaveBeenCalledWith({ path: "/courses/1", query: { from: "courses" } });
 
     await wrapper.findAll(".more-btn")[0].trigger("click");
     expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("开始练习");
+    await wrapper.findAll(".course-menu .menu-option")[0].trigger("click");
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "course-practice",
+      params: { courseId: 1 },
+      query: { mode: "normal", autostart: "1", from: "courses" },
+    });
 
     await wrapper.findAll(".more-btn")[1].trigger("click");
     expect(wrapper.findAll(".course-menu .menu-option")[0].text()).toContain("暂无题目");
@@ -86,9 +103,32 @@ describe("CourseList UX polish", () => {
     await wrapper.findAll(".more-btn")[0].trigger("click");
 
     const options = wrapper.findAll(".course-menu .menu-option");
-    expect(options).toHaveLength(5);
+    expect(options).toHaveLength(6);
     expect(options[0].text()).toContain("开始练习");
     expect(options[1].text()).not.toBe("");
+  });
+
+  it("shows a share action in the list menu and creates a tokenized private link", async () => {
+    const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
+    vi.stubGlobal("navigator", { clipboard });
+    mocks.requestPost.mockResolvedValue({ data: { token: "course-share-token" } });
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    await wrapper.findAll(".more-btn")[0].trigger("click");
+    await wrapper.get('[data-testid="course-share"]').trigger("click");
+    await flushPromises();
+
+    expect(mocks.requestPost).toHaveBeenCalledWith("/courses/1/share-link");
+    expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringMatching(/\/shared-courses\/course-share-token$/));
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps a visible share button on every course row", async () => {
+    const wrapper = mount(CourseList);
+    await flushPromises();
+
+    expect(wrapper.findAll('[data-testid="course-share-quick"]')).toHaveLength(2);
   });
 
   it("filters private and public courses without changing the API shape", async () => {
@@ -146,46 +186,16 @@ describe("CourseList UX polish", () => {
     expect(icons.map((icon) => icon.text())).toEqual(["", ""]);
   });
 
-  it("opens a practice-mode sheet before entering course practice", async () => {
+  it("starts practice directly from the menu action", async () => {
     const wrapper = mount(CourseList);
     await flushPromises();
     await wrapper.findAll(".more-btn")[0].trigger("click");
     await wrapper.findAll(".course-menu .menu-option")[0].trigger("click");
-    expect(wrapper.findComponent(BottomSheet).exists()).toBe(true);
-    expect(wrapper.find(".practice-sheet").exists()).toBe(true);
-    expect(wrapper.findAll(".practice-sheet__option")).toHaveLength(4);
-    await wrapper.findAll(".practice-sheet__option")[0].trigger("click");
-
-    expect(mocks.replace).toHaveBeenCalledWith({
+    expect(mocks.replace).toHaveBeenLastCalledWith({
       name: "course-practice",
       params: { courseId: 1 },
-      query: { mode: "sequential", autostart: "1", from: "courses" },
+      query: { mode: "normal", autostart: "1", from: "courses" },
     });
-
-    const expectedTargets = [
-      {
-        index: 1,
-        target: {
-          name: "course-practice",
-          params: { courseId: 1 },
-          query: { mode: "random", autostart: "1", from: "courses" },
-        },
-      },
-      {
-        index: 2,
-        target: {
-          name: "course-practice",
-          params: { courseId: 1 },
-          query: { mode: "wrong", autostart: "1", from: "courses" },
-        },
-      },
-      { index: 3, target: { name: "bookmarks", query: { course_id: 1, from: "courses" } } },
-    ];
-    for (const { index, target } of expectedTargets) {
-      await wrapper.findAll(".course-item")[0].trigger("click");
-      await wrapper.findAll(".practice-sheet__option")[index].trigger("click");
-      expect(mocks.replace).toHaveBeenLastCalledWith(target);
-    }
   });
 
   it("keeps create, edit, publish and delete management requests intact", async () => {
@@ -208,7 +218,7 @@ describe("CourseList UX polish", () => {
       .findAll(".course-row")
       .find((row) => row.get("[data-course-title]").attributes("title") === "Course one");
     await originalRow?.get(".more-btn").trigger("click");
-    await originalRow?.findAll(".course-menu .menu-option")[2].trigger("click");
+    await originalRow?.findAll(".course-menu .menu-option")[3].trigger("click");
     await wrapper.get('.modal-card input[placeholder="如：Java 期末复习"]').setValue("改名题库");
     await wrapper.findAll(".modal-actions button").at(-1)?.trigger("click");
     await flushPromises();
@@ -218,13 +228,13 @@ describe("CourseList UX polish", () => {
       .findAll(".course-row")
       .find((row) => row.get("[data-course-title]").attributes("title") === "改名题库");
     await editedRow?.get(".more-btn").trigger("click");
-    await editedRow?.findAll(".course-menu .menu-option")[3].trigger("click");
+    await editedRow?.findAll(".course-menu .menu-option")[4].trigger("click");
     await flushPromises();
     expect(mocks.requestPost).toHaveBeenCalledWith("/courses/1/publish");
 
     mocks.confirm.mockResolvedValue(true);
     await editedRow?.get(".more-btn").trigger("click");
-    await editedRow?.findAll(".course-menu .menu-option")[4].trigger("click");
+    await editedRow?.findAll(".course-menu .menu-option")[5].trigger("click");
     await flushPromises();
     expect(mocks.confirm).toHaveBeenCalled();
     expect(mocks.requestDelete).toHaveBeenCalledWith("/courses/1");

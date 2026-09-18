@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { getPracticeHistory } from "../api/practice";
 import { getErrorMessage } from "../api/request";
 import { Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight, History, Play } from "@lucide/vue";
 
-const records = ref([]);
+const records = ref<any[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
 const page = ref(1);
@@ -15,7 +15,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize))
 const hasMore = computed(() => page.value < totalPages.value);
 const isEmpty = computed(() => !loading.value && records.value.length === 0 && !errorMessage.value);
 
-function formatTime(iso) {
+function formatTime(iso: string) {
   if (!iso) return "";
   try {
     const d = new Date(iso);
@@ -30,7 +30,7 @@ function formatTime(iso) {
   }
 }
 
-async function fetchPage(p) {
+async function fetchPage(p: number) {
   page.value = p;
   loading.value = true;
   errorMessage.value = "";

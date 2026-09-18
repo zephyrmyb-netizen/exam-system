@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { releaseNotes } from "../data/releaseNotes";
 
@@ -6,7 +6,7 @@ import { releaseNotes } from "../data/releaseNotes";
  * Parse a version string like "v1.2.1" or "v2" into a numeric array
  * for comparison.  "v2" → [2]; "v1.11.3" → [1, 11, 3].
  */
-function parseVersion(v) {
+function parseVersion(v: string) {
   if (!v || typeof v !== "string") return [];
   return v.replace(/^v/i, "").split(".").map(Number);
 }
@@ -15,7 +15,7 @@ function parseVersion(v) {
  * Compare two version strings. Returns negative if a<b, positive if a>b, 0 if equal.
  * Major versions (v2) rank higher than any v1.x.x.
  */
-function versionCompare(a, b) {
+function versionCompare(a: string, b: string) {
   const pa = parseVersion(a);
   const pb = parseVersion(b);
   const len = Math.max(pa.length, pb.length);
@@ -37,8 +37,8 @@ const sorted = computed(() =>
   }),
 );
 
-function typeColor(type) {
-  const map = {
+function typeColor(type: string) {
+  const map: Record<string, string> = {
     修复: "var(--rose)",
     新增: "var(--primary)",
     优化: "var(--teal)",
@@ -47,8 +47,8 @@ function typeColor(type) {
   return map[type] || "var(--text-muted)";
 }
 
-function typeBg(type) {
-  const map = {
+function typeBg(type: string) {
+  const map: Record<string, string> = {
     修复: "var(--rose-soft)",
     新增: "var(--primary-soft)",
     优化: "var(--teal-soft)",

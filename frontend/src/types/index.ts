@@ -65,6 +65,7 @@ export interface Course {
   question_count: number;
   practice_count?: number;
   last_practiced_at?: string | null;
+  share_token?: string | null;
 }
 
 export interface CourseCreate {
@@ -281,7 +282,8 @@ export interface ConfirmImportResponse {
   course_name: string;
 }
 
-export type ImportTaskStatus = "queued" | "extracting" | "parsing" | "ready" | "partial" | "importing" | "imported" | "failed";
+export type ImportTaskStatus =
+  "queued" | "extracting" | "parsing" | "ready" | "partial" | "importing" | "imported" | "failed";
 
 export interface ImportTaskResponse {
   id: string;
@@ -316,11 +318,13 @@ export interface FileExtractResponse {
 export interface User {
   id: number;
   username: string;
+  display_name?: string;
+  is_guest?: boolean;
   role: RoleName;
   permissions?: string[];
 }
 
-export type RoleName = "student" | "teacher" | "admin";
+export type RoleName = "student" | "admin";
 
 export interface Exam {
   id: number;
@@ -333,6 +337,10 @@ export interface Exam {
   is_shuffle: boolean;
   is_blind: boolean;
   status: "draft" | "published";
+  share_code?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  availability?: "draft" | "scheduled" | "active" | "closed";
   question_count: number;
   created_at: string | null;
 }
@@ -360,6 +368,8 @@ export interface ExamCreate {
   is_shuffle?: boolean;
   is_blind?: boolean;
   question_ids?: number[];
+  start_at?: string | null;
+  end_at?: string | null;
 }
 
 export interface ExamAttempt {
@@ -384,6 +394,7 @@ export interface ExamResult {
   wrong_count: number;
   accuracy_rate: number;
   submitted_at: string | null;
+  question_results?: Record<string, { correct?: boolean; answer?: string }>;
 }
 
 export interface ExamLeaderboardEntry {
@@ -399,6 +410,20 @@ export interface ExamLeaderboard {
   exam_id: number;
   entries: ExamLeaderboardEntry[];
   total: number;
+}
+
+export interface ExamAnalytics {
+  exam_id: number;
+  participant_count: number;
+  average_score: number;
+  average_accuracy_rate: number;
+  question_stats: Array<{
+    question_id: number;
+    order_index: number;
+    attempt_count: number;
+    correct_count: number;
+    accuracy_rate: number;
+  }>;
 }
 
 export interface LoginRequest {

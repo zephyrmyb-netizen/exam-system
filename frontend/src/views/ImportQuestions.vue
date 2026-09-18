@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: "ImportQuestions" });
+
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ArrowRight, BookOpen, CheckCircle, ChevronDown, CloudUpload, FileUp, Layers, Sparkles, X } from "@lucide/vue";
@@ -405,11 +407,15 @@ onMounted(() => {
               <span class="hero-drop-text hero-drop-selected truncate-file-name" :title="activeFileName">
                 {{ activeFileName }}
               </span>
-              <span id="import-file-hint" class="hero-drop-hint">{{ activeFileKind }} · {{ activeFileSize || "文件已就绪" }}</span>
+              <span id="import-file-hint" class="hero-drop-hint"
+                >{{ activeFileKind }} · {{ activeFileSize || "文件已就绪" }}</span
+              >
             </div>
             <div class="import-file-card__actions">
               <button type="button" @click="replaceSelectedFile">更换</button>
-              <button type="button" aria-label="移除已选文件" @click="clearSelectedFile"><X :size="16" :stroke-width="2.5" /></button>
+              <button type="button" aria-label="移除已选文件" @click="clearSelectedFile">
+                <X :size="16" :stroke-width="2.5" />
+              </button>
             </div>
           </template>
         </section>

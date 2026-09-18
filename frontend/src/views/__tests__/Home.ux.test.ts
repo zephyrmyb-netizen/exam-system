@@ -1,9 +1,10 @@
 import { mount, flushPromises } from "@vue/test-utils";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Home from "../Home.vue";
 import type { Course } from "../../types";
+import { resetMyCoursesCache } from "../../composables/useMyCourses";
 
 const replace = vi.fn();
 const searchMocks = vi.hoisted(() => ({
@@ -13,6 +14,9 @@ const courseActionMocks = vi.hoisted(() => ({
   requestPost: vi.fn(),
   requestDelete: vi.fn(),
   confirm: vi.fn(),
+}));
+const courseApiMocks = vi.hoisted(() => ({
+  getMyCourses: vi.fn(),
 }));
 const courses = ref<Course[]>([]);
 const loading = ref(false);
@@ -46,12 +50,13 @@ vi.mock("../../composables/useStudyOverview", () => ({
 }));
 
 vi.mock("../../api/courses", () => ({
-  getMyCourses: () => Promise.resolve(courses.value),
+  getMyCourses: courseApiMocks.getMyCourses,
 }));
 
 vi.mock("../../api/request", () => ({
   default: { post: courseActionMocks.requestPost, delete: courseActionMocks.requestDelete },
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
+  getToken: () => "home-test-token",
 }));
 
 vi.mock("../../stores/confirmDialog", () => ({
@@ -84,7 +89,9 @@ describe("Home UX polish", () => {
     courseActionMocks.requestDelete.mockReset();
     courseActionMocks.confirm.mockReset();
     courseActionMocks.confirm.mockResolvedValue(false);
+    resetMyCoursesCache();
     courses.value = [];
+    courseApiMocks.getMyCourses.mockReset().mockImplementation(() => Promise.resolve(courses.value));
     loading.value = false;
     errorMessage.value = "";
     stats.value = {
@@ -127,7 +134,7 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).toContain("AI 导入");
     expect(wrapper.text()).toContain("开始练习");
     expect(wrapper.text()).toContain("正式考试");
-    expect(wrapper.text()).toContain("学习概览");
+    expect(wrapper.text()).toContain("学习小组");
     expect(wrapper.findAll(".quick")).toHaveLength(4);
     expect(wrapper.find(".quick-grid").attributes("aria-label")).toBe("快捷操作");
     expect(wrapper.find(".home-hero").exists()).toBe(true);
@@ -144,18 +151,18 @@ describe("Home UX polish", () => {
         .element.compareDocumentPosition(wrapper.get("[data-testid='home-recent']").element),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
-      Array.from(children).some((child) => child.textContent?.includes("学习概览") && child.tagName === "DIV"),
+      Array.from(children).some((child) => child.textContent?.includes("学习小组") && child.tagName === "DIV"),
     ).toBe(false);
     expect(wrapper.find("[data-home-recommendation]").exists()).toBe(false);
   });
 
-  it("enters study overview with replace and an explicit home source", async () => {
+  it("enters study groups with replace and an explicit home source", async () => {
     const wrapper = mount(Home);
-    const overviewButton = wrapper.findAll("button").find((button) => button.text().includes("学习概览"));
+    const overviewButton = wrapper.findAll("button").find((button) => button.text().includes("学习小组"));
 
     await overviewButton?.trigger("click");
 
-    expect(replace).toHaveBeenCalledWith({ name: "study-overview", query: { from: "home" } });
+    expect(replace).toHaveBeenCalledWith({ name: "study-groups", query: { from: "home" } });
   });
 
   it("shows at most three recent courses", async () => {
@@ -170,6 +177,16 @@ describe("Home UX polish", () => {
     expect(wrapper.text()).not.toContain("题库一");
   });
 
+  it("does not show a loading sentence while the recent-course request is pending", async () => {
+    courseApiMocks.getMyCourses.mockReturnValue(new Promise(() => undefined));
+
+    const wrapper = mount(Home);
+    await nextTick();
+
+    expect(wrapper.find(".status-banner--info").exists()).toBe(false);
+    expect(wrapper.find(".course-loading-skeleton").exists()).toBe(true);
+  });
+
   it("uses the same document icon as the course list for recent courses", async () => {
     courses.value = [course(1, "机器学习")];
 
@@ -182,19 +199,19 @@ describe("Home UX polish", () => {
     expect(icons[0].text()).toBe("");
   });
 
-  it("starts practice when a recent course card is clicked", async () => {
+  it("opens the same course detail page from a recent course card", async () => {
     courses.value = [course(1, "很长的移动端复习题库名称")];
 
     const wrapper = mount(Home);
     await flushPromises();
 
-    const courseCard = wrapper.find('button[aria-label="开始练习：很长的移动端复习题库名称"]');
+    const courseCard = wrapper.find('button[aria-label="查看题库：很长的移动端复习题库名称"]');
     expect(courseCard.exists()).toBe(true);
     expect(courseCard.text()).not.toContain("开始练习");
 
     await courseCard.trigger("click");
     expect(replace).toHaveBeenCalledWith({
-      name: "course-practice",
+      name: "course-detail",
       params: { courseId: 1 },
       query: { from: "home" },
     });
