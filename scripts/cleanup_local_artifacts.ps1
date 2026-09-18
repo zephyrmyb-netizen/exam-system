@@ -67,6 +67,21 @@ foreach ($cacheDir in $pycacheDirs) {
 # These are local SQLite backups that accumulate quickly and are not version-controlled.
 Remove-ByPattern -Base $backend -Filter "*.backup-*.db"
 
+# Clean beta backups under data/beta/backups, keep only the latest 5 per prefix
+# (xuexibao-main-*.db and xuexibao-beta-*.db) to avoid unbounded accumulation.
+$betaBackups = Join-Path $root "data\beta\backups"
+if (Test-Path -LiteralPath $betaBackups) {
+  foreach ($prefix in @("xuexibao-main-", "xuexibao-beta-")) {
+    Get-ChildItem -LiteralPath $betaBackups -Filter "$prefix*.db" -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -Skip 5 |
+      ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Force
+        Write-Host "[removed] $($_.FullName)"
+      }
+  }
+}
+
 if ($IncludeDuplicateVenv) {
   $preferredVenv = Join-Path $backend ".venv"
   $duplicateVenv = Join-Path $backend "venv"
