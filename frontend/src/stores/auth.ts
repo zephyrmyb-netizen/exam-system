@@ -21,24 +21,6 @@ export interface AuthReturn {
   resetFeedback: () => void;
 }
 
-const ROLE_PERMISSIONS: Record<string, Set<string>> = {
-  student: new Set([
-    "course:read",
-    "course:create",
-    "exam:create",
-    "exam:publish",
-    "exam:take",
-    "exam:view_result",
-    "exam:view_leaderboard",
-    "practice:random",
-    "practice:submit",
-    "wrongbook:read",
-    "chat:use",
-    "import:use",
-  ]),
-  admin: new Set(["*"]),
-};
-
 function normalizeToken(data: TokenResponse | Record<string, unknown> | undefined): string {
   if (!data) return "";
   return (
@@ -69,12 +51,12 @@ export const useAuthStore = defineStore("auth", {
     role: (state) => state.user?.role || "student",
     permissions: (state) => state.user?.permissions || [],
     can: (state) => {
+      // Single source of truth: the permission list from /auth/me, derived by
+      // the backend PermissionService. The old local ROLE_PERMISSIONS fallback
+      // was removed so the client and require_permission can never disagree.
       return (permission: string): boolean => {
         const explicit = state.user?.permissions || [];
-        if (explicit.includes(permission) || explicit.includes("*")) return true;
-        const role = state.user?.role || "student";
-        const rolePerms = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.student;
-        return rolePerms.has("*") || rolePerms.has(permission);
+        return explicit.includes(permission) || explicit.includes("*");
       };
     },
   },

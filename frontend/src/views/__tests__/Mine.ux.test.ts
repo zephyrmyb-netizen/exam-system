@@ -9,10 +9,11 @@ const replace = vi.fn();
 const logout = vi.fn();
 const clearGuestData = vi.fn();
 const setMode = vi.fn();
-const user = ref<{ id: number; username: string; role: string; is_guest?: boolean } | null>({
+const user = ref<{ id: number; username: string; role: string; is_guest?: boolean; permissions?: string[] } | null>({
   id: 7,
   username: "Student",
   role: "student",
+  permissions: [],
 });
 const stats = ref({ todayCount: 2, totalCount: 42, accuracyRate: 0.75, recentCount7d: 9, wrongCount: 5 });
 const streak = ref({ current_streak: 5, longest_streak: 11, last_practiced_date: "2026-07-14" });
@@ -20,7 +21,14 @@ const streakAvailable = ref<boolean | null>(true);
 const overviewLoading = ref(false);
 
 vi.mock("vue-router", () => ({ useRouter: () => ({ replace }), useRoute: () => ({ query: {} }) }));
-vi.mock("../../stores/auth", () => ({ useAuth: () => ({ user, logout, clearGuestData }) }));
+vi.mock("../../stores/auth", () => ({
+  useAuth: () => ({
+    user,
+    logout,
+    clearGuestData,
+    can: (permission: string) => (user.value?.permissions || []).includes(permission),
+  }),
+}));
 vi.mock("../../stores/theme", () => ({ useThemeStore: () => ({ mode: "light", setMode }) }));
 vi.mock("../../composables/useStudyOverview", () => ({
   useStudyOverview: () => ({
@@ -39,7 +47,7 @@ describe("Mine UX polish", () => {
     logout.mockClear();
     clearGuestData.mockReset().mockResolvedValue(true);
     setMode.mockClear();
-    user.value = { id: 7, username: "Student", role: "student" };
+    user.value = { id: 7, username: "Student", role: "student", permissions: [] };
     stats.value = { todayCount: 2, totalCount: 42, accuracyRate: 0.75, recentCount7d: 9, wrongCount: 5 };
     streak.value = { current_streak: 5, longest_streak: 11, last_practiced_date: "2026-07-14" };
     streakAvailable.value = true;
@@ -119,7 +127,7 @@ describe("Mine UX polish", () => {
     const studentWrapper = mount(Mine);
     expect(studentWrapper.find('[data-testid="mine-admin-dashboard"]').exists()).toBe(false);
 
-    user.value = { id: 1, username: "Admin", role: "admin" };
+    user.value = { id: 1, username: "Admin", role: "admin", permissions: ["stats:view_global", "user:manage"] };
     const adminWrapper = mount(Mine);
     await adminWrapper.get('[data-testid="mine-admin-dashboard"]').trigger("click");
 

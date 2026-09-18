@@ -26,13 +26,15 @@ import { useAuth } from "../stores/auth";
 import { useThemeStore } from "../stores/theme";
 
 const { replaceTo } = useAppNavigation();
-const { user, logout, clearGuestData } = useAuth();
+const { user, logout, clearGuestData, can } = useAuth();
 const theme = useThemeStore();
 const { stats, streak, streakAvailable, errorMessage, fetchAll } = useStudyOverview();
 
 const usernameText = computed(() => user.value?.username || "未登录");
 const isGuest = computed(() => Boolean(user.value?.is_guest));
-const isAdmin = computed(() => user.value?.role === "admin");
+// Permission-based (not role-name) so the entry matches the router guard for
+// admin-dashboard, which gates on the same backend permission.
+const isAdmin = computed(() => can("stats:view_global"));
 const profileName = computed(() => user.value?.display_name || usernameText.value);
 const avatarChar = computed(() => usernameText.value.slice(0, 1).toUpperCase());
 const accuracyDisplay = computed(() => {
