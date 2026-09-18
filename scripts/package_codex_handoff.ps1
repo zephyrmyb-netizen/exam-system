@@ -43,8 +43,7 @@ $AllowlistedDirectories = @(
     "backend",
     "exam-platform-ui",
     "frontend",
-    "scripts",
-    "docs/superpowers"
+    "scripts"
 )
 
 $ForbiddenSegments = @(
