@@ -50,15 +50,18 @@ def test_admin_lists_users(db_session):
     assert student.username in names
 
 
-def test_admin_updates_user_role(db_session):
+def test_admin_updates_user_role_without_allowing_teacher(db_session):
     admin = _make_user(db_session, "admin_role_user", "admin")
     target = _make_user(db_session, "target_user")
     client = TestClient(_make_app(db_session, admin))
 
-    response = client.patch(f"/admin/users/{target.id}/role", json={"role": "teacher"})
+    response = client.patch(f"/admin/users/{target.id}/role", json={"role": "admin"})
 
     assert response.status_code == 200
-    assert response.json()["role"] == "teacher"
+    assert response.json()["role"] == "admin"
+
+    rejected = client.patch(f"/admin/users/{target.id}/role", json={"role": "teacher"})
+    assert rejected.status_code == 422
 
 
 def test_student_cannot_access_admin_users(db_session):
@@ -94,3 +97,40 @@ def test_admin_stats_returns_global_counts(db_session):
     assert data["user_count"] >= 1
     assert data["course_count"] == 1
     assert data["question_count"] == 1
+
+
+def test_admin_manages_feedback_lifecycle(db_session):
+    admin = _make_user(db_session, "feedback_admin", "admin")
+    submitter = _make_user(db_session, "feedback_submitter")
+    entry = models.FeedbackEntry(
+        user_id=submitter.id,
+        category="bug",
+        content="The feedback page cannot submit.",
+        contact="tester@example.com",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    db_session.add(entry)
+    db_session.commit()
+    client = TestClient(_make_app(db_session, admin))
+
+    listed = client.get("/admin/feedback", params={"status": "new"})
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 1
+    assert listed.json()["items"][0]["username"] == "feedback_submitter"
+
+    updated = client.patch(
+        f"/admin/feedback/{entry.id}",
+        json={"status": "resolved", "admin_reply": "Fixed in the latest beta build."},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "resolved"
+    assert updated.json()["admin_reply"] == "Fixed in the latest beta build."
+
+
+def test_student_cannot_manage_feedback(db_session):
+    student = _make_user(db_session, "feedback_student")
+    client = TestClient(_make_app(db_session, student))
+
+    response = client.get("/admin/feedback")
+    assert response.status_code == 403

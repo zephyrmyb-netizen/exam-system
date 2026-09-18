@@ -1,4 +1,4 @@
-"""Analytics API: student and owner views."""
+"""Analytics API: personal and owner views."""
 
 from typing import Annotated
 
@@ -40,18 +40,27 @@ def streak(
     return service.get_streak(user_id=current_user.id)
 
 
-@router.get("/teacher/courses", response_model=list[schemas.CourseAnalyticsOut])
-def teacher_courses(
+@router.get("/owner/courses", response_model=list[schemas.CourseAnalyticsOut])
+def owner_courses(
     service: AnalyticsServiceDep,
     current_user: models.User = Depends(require_permission("course:read")),
 ):
     return service.get_course_stats_for_owner(owner_id=current_user.id)
 
 
-@router.get("/teacher/exam-scores/{exam_id}", response_model=list[schemas.ScoreBucketOut])
-def teacher_exam_scores(
+@router.get("/owner/exam-scores/{exam_id}", response_model=list[schemas.ScoreBucketOut])
+def owner_exam_scores(
     exam_id: int,
     service: AnalyticsServiceDep,
     current_user: models.User = Depends(require_permission("exam:view_leaderboard")),
 ):
     return service.get_score_distribution(exam_id=exam_id)
+
+
+@router.get("/owner/exams/{exam_id}", response_model=schemas.ExamAnalyticsOut)
+def owner_exam_analysis(
+    exam_id: int,
+    service: AnalyticsServiceDep,
+    current_user: CurrentUser,
+):
+    return service.get_exam_analysis(exam_id=exam_id, owner_id=current_user.id)

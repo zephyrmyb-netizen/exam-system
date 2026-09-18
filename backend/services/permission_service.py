@@ -29,23 +29,12 @@ _STUDENT_PERMISSIONS = {
     "chat:use",
     "import:use",
     "bookmark:manage",
-    "exam:view_leaderboard",
-}
-
-_TEACHER_PERMISSIONS = _STUDENT_PERMISSIONS | {
-    "course:edit",
-    "course:delete",
-    "course:publish",
     "exam:create",
-    "exam:edit",
     "exam:publish",
-    "exam:delete",
-    "exam:view_result",
     "exam:view_leaderboard",
-    "collaboration:invite",
 }
 
-_ADMIN_PERMISSIONS = _TEACHER_PERMISSIONS | {
+_ADMIN_PERMISSIONS = _STUDENT_PERMISSIONS | {
     "user:manage",
     "announcement:manage",
     "stats:view_global",
@@ -53,7 +42,6 @@ _ADMIN_PERMISSIONS = _TEACHER_PERMISSIONS | {
 
 ROLE_PERMISSIONS: dict[str, set[str]] = {
     "student": _STUDENT_PERMISSIONS,
-    "teacher": _TEACHER_PERMISSIONS,
     "admin": _ADMIN_PERMISSIONS,
 }
 

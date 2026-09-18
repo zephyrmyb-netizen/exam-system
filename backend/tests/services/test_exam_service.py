@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
@@ -99,3 +99,20 @@ def test_student_cannot_start_draft_exam(db_session):
         service.start_attempt(exam.id, user.id)
 
     assert exc.value.status_code == 404
+
+
+def test_exam_schedule_requires_deadline_after_opening(db_session):
+    user = _make_user(db_session, "schedule_validation")
+    course = _make_course(db_session, user.id)
+    now = datetime.now(UTC)
+
+    with pytest.raises(HTTPException) as exc:
+        ExamService(db_session).create_exam(
+            schemas.ExamCreate(
+                title="Invalid schedule", course_id=course.id,
+                start_at=now, end_at=now - timedelta(minutes=1),
+            ),
+            creator_id=user.id,
+        )
+
+    assert exc.value.status_code == 400

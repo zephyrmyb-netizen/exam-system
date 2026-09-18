@@ -468,6 +468,8 @@ def parse_rule_based_question_document(
     current_number: int | None = None
     current_section = ""
     current_section_type: str | None = None
+    current_section_at_start = ""
+    current_section_type_at_start: str | None = None
     expected_number = 1
     saw_top_level = False
     sequence_error = False

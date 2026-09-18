@@ -3,6 +3,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -54,14 +55,15 @@ def create_user(db: Session, user_in: schemas.UserCreate, password_hash: str) ->
 
 def _add_question_visibility_filter(query, user_id: int | None):
     """Filter questions so the caller can see them."""
-    from sqlalchemy import or_
-
     if user_id is not None:
         return query.filter(
             or_(
                 models.Question.visibility == "public",
                 models.Question.owner_id == user_id,
                 models.Question.owner_id.is_(None),
+                models.Question.course_id.in_(
+                    select(models.Collaboration.course_id).where(models.Collaboration.user_id == user_id)
+                ),
             )
         )
     return query.filter(models.Question.visibility == "public")
@@ -69,13 +71,14 @@ def _add_question_visibility_filter(query, user_id: int | None):
 
 def _add_bank_visibility_filter(query, user_id: int | None):
     """Filter question banks so the caller can see them."""
-    from sqlalchemy import or_
-
     if user_id is not None:
         return query.filter(
             or_(
                 models.QuestionBank.visibility == "public",
                 models.QuestionBank.owner_id == user_id,
+                models.QuestionBank.id.in_(
+                    select(models.Collaboration.course_id).where(models.Collaboration.user_id == user_id)
+                ),
             )
         )
     return query.filter(models.QuestionBank.visibility == "public")

@@ -35,18 +35,12 @@ def test_student_can_practice_and_create_course(db_session):
     assert service.can(user, "course:create") is True
 
 
-def test_student_cannot_create_exam(db_session):
-    user = _make_user(db_session, "student_no_exam")
-    service = PermissionService(db_session)
-
-    assert service.can(user, "exam:create") is False
-
-
-def test_teacher_can_create_exam(db_session):
-    user = _make_user(db_session, "teacher_user", "teacher")
+def test_student_can_create_and_publish_exam(db_session):
+    user = _make_user(db_session, "student_exam")
     service = PermissionService(db_session)
 
     assert service.can(user, "exam:create") is True
+    assert service.can(user, "exam:publish") is True
 
 
 def test_admin_can_manage_users(db_session):

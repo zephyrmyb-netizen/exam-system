@@ -172,3 +172,41 @@ class TestAuth:
             },
         )
         assert resp.status_code == 401
+
+    def test_guest_trial_is_testing_only(self, client):
+        assert client.post("/auth/guest", json={"nickname": "visitor"}).status_code == 404
+
+    def test_guest_trial_generates_a_name_when_no_nickname_is_sent(self, client, monkeypatch):
+        from backend.routers import auth
+
+        monkeypatch.setattr(auth, "APP_ENV", "testing")
+
+        response = client.post("/auth/guest", json={})
+
+        assert response.status_code == 201
+        profile = client.get("/auth/me", headers={"Authorization": f"Bearer {response.json()['access_token']}"})
+        assert profile.status_code == 200
+        assert profile.json()["is_guest"] is True
+        assert profile.json()["display_name"].startswith("游客")
+
+    def test_guest_trial_is_isolated_and_can_clear_own_data(self, client, monkeypatch):
+        from backend.routers import auth
+
+        monkeypatch.setattr(auth, "APP_ENV", "testing")
+
+        first = client.post("/auth/guest", json={"nickname": "first visitor"})
+        second = client.post("/auth/guest", json={"nickname": "second visitor"})
+        assert first.status_code == 201
+        assert second.status_code == 201
+
+        first_headers = {"Authorization": f"Bearer {first.json()['access_token']}"}
+        second_headers = {"Authorization": f"Bearer {second.json()['access_token']}"}
+        first_profile = client.get("/auth/me", headers=first_headers)
+        second_profile = client.get("/auth/me", headers=second_headers)
+        assert first_profile.json()["is_guest"] is True
+        assert first_profile.json()["display_name"] == "first visitor"
+        assert first_profile.json()["id"] != second_profile.json()["id"]
+
+        assert client.delete("/auth/guest/me", headers=first_headers).status_code == 204
+        assert client.get("/auth/me", headers=first_headers).status_code == 401
+        assert client.get("/auth/me", headers=second_headers).status_code == 200

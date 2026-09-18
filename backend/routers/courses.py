@@ -1,38 +1,22 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, models, schemas
+from ..api.deps import require_permission
 from ..database import get_db
+from ..services.course_service import get_accessible_course, get_owned_course
 
 router = APIRouter(prefix="/courses", tags=["courses"])
-
-
-def _get_accessible_course(db: Session, course_id: int, user_id: int):
-    """Return a course if it exists and the user has access (own private or any public)."""
-    bank = crud.get_question_bank_by_id(db, course_id)
-    if not bank:
-        raise HTTPException(status_code=404, detail="课程不存在")
-    if bank.visibility == "private" and bank.owner_id != user_id:
-        raise HTTPException(status_code=404, detail="课程不存在")
-    return bank
-
-
-def _get_owned_course(db: Session, course_id: int, user_id: int):
-    """Return a course if it exists and the current user owns it."""
-    bank = crud.get_question_bank_by_id(db, course_id)
-    if not bank:
-        raise HTTPException(status_code=404, detail="课程不存在")
-    if bank.owner_id != user_id:
-        raise HTTPException(status_code=403, detail="只能操作自己的课程")
-    return bank
 
 
 @router.post("/", status_code=201)
 def create_course(
     body: schemas.CourseCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(auth_module.get_current_user),
+    current_user=Depends(require_permission("course:create")),
 ):
     bank = crud.create_question_bank(db, body, current_user.id)
     return bank
@@ -75,6 +59,7 @@ def list_my_courses(
     items = []
     for b in banks:
         d = schemas.CourseOut.model_validate(b).model_dump()
+        d["share_token"] = b.share_token
         stats = stats_map.get(b.id, {})
         d["practice_count"] = stats.get("practice_count", 0)
         d["last_practiced_at"] = stats.get("last_practiced_at")
@@ -86,14 +71,97 @@ def list_my_courses(
 
 
 # ── Course detail ───────────────────────────────────────────────────────────
+def _get_shared_course(db: Session, token: str) -> models.QuestionBank:
+    bank = db.query(models.QuestionBank).filter(models.QuestionBank.share_token == token).first()
+    if not bank:
+        raise HTTPException(status_code=404, detail="分享链接无效或已失效")
+    return bank
+
+
+@router.post("/{course_id}/share-link")
+def create_private_share_link(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Create a non-guessable link without changing a private course's visibility."""
+    bank = get_owned_course(db, course_id, current_user.id)
+    if not bank.share_token:
+        bank.share_token = secrets.token_urlsafe(32)
+        db.commit()
+    return {"token": bank.share_token}
+
+
+@router.get("/share/{token}")
+def get_shared_course(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Show only metadata before copying a shared private course."""
+    bank = _get_shared_course(db, token)
+    return schemas.CourseShareOut(
+        name=bank.name,
+        description=bank.description or "",
+        subject=bank.subject or "",
+        question_count=len(bank.questions),
+    ).model_dump()
+
+
+@router.post("/share/{token}/copy", status_code=201)
+def copy_shared_course(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_module.get_current_user),
+):
+    """Create an independent private copy of every question in a shared course."""
+    source = _get_shared_course(db, token)
+    if source.owner_id == current_user.id:
+        raise HTTPException(status_code=400, detail="这是你自己的题库，无需复制")
+
+    copied = models.QuestionBank(
+        owner_id=current_user.id,
+        name=f"{source.name}（副本）",
+        description=source.description or "",
+        subject=source.subject or "",
+        visibility="private",
+    )
+    db.add(copied)
+    db.flush()
+    for question in source.questions:
+        db.add(
+            models.Question(
+                owner_id=current_user.id,
+                course_id=copied.id,
+                visibility="private",
+                source="import",
+                subject=question.subject,
+                chapter=question.chapter,
+                type=question.type,
+                question=question.question,
+                options=question.options,
+                answer=question.answer,
+                analysis=question.analysis or "",
+                image_urls=question.image_urls or "[]",
+                difficulty=question.difficulty or "normal",
+            )
+        )
+    db.commit()
+    db.refresh(copied)
+    return schemas.CourseOut.model_validate(copied).model_dump()
+
+
 @router.get("/{course_id}")
 def get_course(
     course_id: int,
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
-    bank = _get_accessible_course(db, course_id, current_user.id)
-    return schemas.CourseOut.model_validate(bank).model_dump()
+    bank = get_accessible_course(db, course_id, current_user.id)
+    data = schemas.CourseOut.model_validate(bank).model_dump()
+    if bank.owner_id == current_user.id:
+        data["share_token"] = bank.share_token
+    return data
 
 
 # ── Questions under a course ────────────────────────────────────────────────
@@ -106,6 +174,7 @@ def list_course_questions(
     subject: str = Query("", description="科目筛选"),
     chapter: str = Query("", description="章节筛选"),
     type: str = Query("", alias="type", description="题目类型筛选"),
+    order: str = Query("desc", pattern="^(asc|desc)$", description="题目顺序"),
     db: Session = Depends(get_db),
     current_user=Depends(auth_module.get_current_user),
 ):
@@ -114,7 +183,7 @@ def list_course_questions(
     The user must have access to the course (own private or any public).
     Only questions visible to the user (own private + public) are returned.
     """
-    _get_accessible_course(db, course_id, current_user.id)
+    get_accessible_course(db, course_id, current_user.id)
 
     questions, total = crud.get_questions(
         db,
@@ -126,6 +195,7 @@ def list_course_questions(
         chapter=chapter,
         q_type=type,
         course_id=course_id,
+        sort_ascending=order == "asc",
     )
     items = [schemas.QuestionOut.model_validate(q).model_dump() for q in questions]
 
@@ -144,7 +214,7 @@ def random_question_in_course(
     current_user=Depends(auth_module.get_current_user),
 ):
     """Get a random question from a specific course (must have access)."""
-    _get_accessible_course(db, course_id, current_user.id)
+    get_accessible_course(db, course_id, current_user.id)
 
     question = crud.get_random_question_in_course(
         db,
@@ -166,7 +236,7 @@ def publish_course(
     current_user=Depends(auth_module.get_current_user),
 ):
     """Publish an entire course and all its questions. Only the owner can do this."""
-    bank = _get_owned_course(db, course_id, current_user.id)
+    bank = get_owned_course(db, course_id, current_user.id)
     if bank.visibility == "public":
         raise HTTPException(status_code=400, detail="该课程已发布")
     crud.update_question_bank_visibility(db, course_id, "public")
@@ -189,7 +259,7 @@ def unpublish_course(
     current_user=Depends(auth_module.get_current_user),
 ):
     """Unpublish an entire course and all its questions. Only the owner can do this."""
-    bank = _get_owned_course(db, course_id, current_user.id)
+    bank = get_owned_course(db, course_id, current_user.id)
     if bank.visibility == "private":
         raise HTTPException(status_code=400, detail="该课程已为私有")
     crud.update_question_bank_visibility(db, course_id, "private")
@@ -213,7 +283,7 @@ def update_course(
     current_user=Depends(auth_module.get_current_user),
 ):
     """Edit a course's name, description, or subject. Only the owner can do this."""
-    _get_owned_course(db, course_id, current_user.id)
+    get_owned_course(db, course_id, current_user.id)
     try:
         bank = crud.update_question_bank(db, course_id, body)
     except ValueError as e:

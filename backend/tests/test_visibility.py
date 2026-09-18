@@ -346,8 +346,8 @@ class TestImportDefaultsPrivate:
             }
         )
 
-        with patch("backend.routers.imports.OPENAI_API_KEY", "test-key"):
-            with patch("backend.routers.imports.OpenAI") as mock_openai:
+        with patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "test-key"):
+            with patch("backend.imports.import_orchestrator.OpenAI") as mock_openai:
                 mock_openai.return_value.chat.completions.create.return_value = mock_response
                 resp = client.post(
                     "/imports/file/auto",

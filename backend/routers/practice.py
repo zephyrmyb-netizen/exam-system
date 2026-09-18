@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from .. import auth as auth_module
 from .. import crud, models, schemas
 from ..database import get_db
-from ..routers.courses import _get_accessible_course
+from ..services.course_service import get_accessible_course
 
 router = APIRouter(prefix="/practice", tags=["practice"])
 
@@ -36,7 +36,7 @@ def random_question(
 ):
     excluded = _parse_exclude_ids(exclude_ids)
     if course_id > 0:
-        _get_accessible_course(db, course_id, current_user.id)
+        get_accessible_course(db, course_id, current_user.id)
         question = crud.get_random_question_in_course(
             db,
             course_id,
@@ -212,7 +212,7 @@ def review_wrong_question(
     current_user=Depends(auth_module.get_current_user),
 ):
     if course_id > 0:
-        _get_accessible_course(db, course_id, current_user.id)
+        get_accessible_course(db, course_id, current_user.id)
 
     question = crud.get_random_wrong_question(
         db,
@@ -243,7 +243,7 @@ def review_due(
     current_user=Depends(auth_module.get_current_user),
 ):
     if course_id > 0:
-        _get_accessible_course(db, course_id, current_user.id)
+        get_accessible_course(db, course_id, current_user.id)
 
     reviews = crud.get_due_reviews(
         db,

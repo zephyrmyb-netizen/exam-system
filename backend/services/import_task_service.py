@@ -23,8 +23,17 @@ from sqlalchemy.orm import Session
 from .. import schemas
 from ..crud import derive_course_name_from_filename
 from ..database import SessionLocal
+from ..imports.import_orchestrator import (
+    build_timing,
+    cleanup_temp_file,
+    elapsed_ms,
+    extract_images_from_file,
+    extract_text_or_raise,
+    preview_import_from_file_content,
+    runtime_debug,
+    save_upload_to_temp,
+)
 from ..models import ImportTask
-from . import imports_service
 
 TASK_UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "import_tasks"
 RECOVERABLE_STATUSES = ("queued", "extracting", "parsing")
@@ -71,7 +80,7 @@ def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
         total_valid=task.total_valid,
         total_invalid=task.total_invalid,
         timing=schemas.ImportTiming.model_validate(timing_data) if timing_data else None,
-        debug_runtime=imports_service.runtime_debug(timing_data) if timing_data else None,
+        debug_runtime=runtime_debug(timing_data) if timing_data else None,
         error_message=task.error_message or "",
         created_at=task.created_at.isoformat() if task.created_at else None,
         started_at=task.started_at.isoformat() if task.started_at else None,
@@ -82,13 +91,13 @@ def task_to_schema(task: ImportTask) -> schemas.ImportTaskOut:
 async def save_upload_for_task(file: UploadFile) -> tuple[str, str]:
     """Persist a validated upload until the worker has consumed it."""
 
-    saved = await imports_service.save_upload_to_temp(file)
+    saved = await save_upload_to_temp(file)
     TASK_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     target = TASK_UPLOAD_DIR / f"{uuid4().hex}{saved.ext}"
     try:
         shutil.move(saved.path, target)
     except Exception:
-        imports_service.cleanup_temp_file(saved.path)
+        cleanup_temp_file(saved.path)
         raise
     return saved.filename, str(target)
 
@@ -149,7 +158,7 @@ def _persist_parse_checkpoint(
     extract_ms: int,
 ) -> None:
     """Persist each parsed chunk so progress survives navigation and polling."""
-    timing = imports_service.build_timing(
+    timing = build_timing(
         total_start=total_start,
         extract_ms=extract_ms,
         parse_timing=parse_timing,
@@ -213,6 +222,110 @@ def recover_pending_tasks(
     return recovered
 
 
+def confirm_task(
+    db: Session,
+    *,
+    task_id: str,
+    owner_id: int,
+    questions: list[schemas.ImportedQuestion] | None,
+    course_id: int | None,
+    course_name: str | None,
+) -> schemas.ConfirmImportResponse:
+    """Confirm and persist a parsed task's questions into a course.
+
+    Encapsulates the state machine (ready -> importing -> imported),
+    transactional write with compensating rollback on failure, and
+    idempotent re-confirmation of already-imported tasks.
+    """
+
+    # Late import to keep this module free of orchestrator coupling at
+    # import time (the orchestrator imports heavy AI dependencies).
+    from ..imports.import_orchestrator import (
+        persist_imported_questions,
+        resolve_target_course,
+        validate_imported_questions,
+    )
+
+    def _recovery_fetch() -> ImportTask | None:
+        # After db.rollback() the previously loaded task is detached.
+        # Re-query without raising so we can write the compensating status;
+        # if the row was concurrently deleted, there is nothing to recover.
+        return (
+            db.query(ImportTask)
+            .filter(ImportTask.id == task_id, ImportTask.owner_id == owner_id)
+            .first()
+        )
+
+    task = get_owned_task(db, task_id=task_id, owner_id=owner_id)
+
+    if task.status == "imported":
+        return schemas.ConfirmImportResponse(
+            imported_count=task.total_valid,
+            course_id=task.course_id,
+            course_name=task.course_name or "未分类题库",
+            warnings=["该导入任务已确认，无需重复导入。"],
+        )
+    if task.status != "ready":
+        raise HTTPException(status_code=409, detail="导入任务尚未解析完成，请稍后再试。")
+
+    # `questions` may be None (use the stored preview as-is) or a user-edited
+    # subset of the stored preview. Either way, validate_imported_questions
+    # expects ImportedQuestion instances (it calls .model_dump() on each).
+    stored_preview = task_to_schema(task).questions
+    source_questions = questions or stored_preview
+    if not source_questions:
+        raise HTTPException(status_code=422, detail="没有待导入的题目")
+
+    validated_items, errors = validate_imported_questions(source_questions)
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail=f"部分题目校验不通过，未导入任何题目：{'；'.join(errors)}",
+        )
+
+    try:
+        task.status = "importing"
+        task.error_message = ""
+        db.flush()
+        bank = resolve_target_course(
+            db,
+            owner_id,
+            course_id=course_id or task.course_id or 0,
+            course_name=course_name or task.course_name or "",
+            filename=task.source_filename,
+            commit=False,
+        )
+        imported = persist_imported_questions(
+            db,
+            user_id=owner_id,
+            course_id=bank.id,
+            questions=validated_items,
+            commit=False,
+        )
+        task.status = "imported"
+        task.course_id = bank.id
+        task.course_name = bank.name
+        task.total_valid = imported
+        task.finished_at = task.finished_at or _now()
+        db.add(task)
+        db.commit()
+    except Exception:
+        db.rollback()
+        refreshed = _recovery_fetch()
+        if refreshed is not None:
+            refreshed.status = "ready"
+            refreshed.error_message = "导入写入失败，请检查题库后重试。"
+            db.add(refreshed)
+            db.commit()
+        raise
+
+    return schemas.ConfirmImportResponse(
+        imported_count=imported,
+        course_id=bank.id,
+        course_name=bank.name,
+    )
+
+
 def process_task(
     task_id: str,
     sync_ai_overrides: Callable[[], None] | None = None,
@@ -238,10 +351,10 @@ def process_task(
 
         stage = "extract_text"
         extract_start = __import__("time").perf_counter()
-        text, extract_warnings = imports_service.extract_text_or_raise(task.file_path)
+        text, extract_warnings = extract_text_or_raise(task.file_path)
         stage = "extract_images"
-        images, image_warnings = imports_service.extract_images_from_file(task.file_path)
-        extract_ms = imports_service.elapsed_ms(extract_start)
+        images, image_warnings = extract_images_from_file(task.file_path)
+        extract_ms = elapsed_ms(extract_start)
 
         task.status = "parsing"
         task.progress_current = 0
@@ -264,7 +377,7 @@ def process_task(
                 extract_ms=extract_ms,
             )
 
-        questions, ai_warnings, parse_timing = imports_service.preview_import_from_file_content(
+        questions, ai_warnings, parse_timing = preview_import_from_file_content(
             text,
             images,
             on_text_progress=persist_progress,
@@ -274,7 +387,7 @@ def process_task(
             return
 
         stage = "save_preview"
-        timing = imports_service.build_timing(
+        timing = build_timing(
             total_start=total_start,
             extract_ms=extract_ms,
             parse_timing=parse_timing,
@@ -307,7 +420,7 @@ def process_task(
             _mark_failed(db, task, "AI 解析失败，请稍后重试。")
     finally:
         if task is not None and task.file_path:
-            imports_service.cleanup_temp_file(task.file_path)
+            cleanup_temp_file(task.file_path)
             task.file_path = None
             _save(db, task)
         db.close()

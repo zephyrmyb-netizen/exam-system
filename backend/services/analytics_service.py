@@ -1,5 +1,6 @@
 """Data analytics aggregation for Phase 4."""
 
+import json
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -155,6 +156,51 @@ class AnalyticsService:
                     bucket["count"] += 1
                     break
         return [{"label": bucket["label"], "count": bucket["count"]} for bucket in buckets]
+
+    def get_exam_analysis(self, *, exam_id: int, owner_id: int) -> dict:
+        exam = self.db.query(models.Exam).filter(models.Exam.id == exam_id).first()
+        if exam is None or exam.creator_id != owner_id:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Exam analytics not found")
+        submissions = (
+            self.db.query(models.ExamSubmission)
+            .filter(models.ExamSubmission.exam_id == exam_id, models.ExamSubmission.submitted_at.isnot(None))
+            .all()
+        )
+        question_stats = {
+            item.question_id: {"question_id": item.question_id, "order_index": item.order_index, "attempt_count": 0, "correct_count": 0}
+            for item in exam.questions
+        }
+        for submission in submissions:
+            try:
+                answers = json.loads(submission.answers or "{}")
+            except (TypeError, ValueError):
+                answers = {}
+            for item in exam.questions:
+                question = item.question
+                if question is None:
+                    continue
+                stats = question_stats[item.question_id]
+                stats["attempt_count"] += 1
+                from ..utils import normalize_answer
+
+                if normalize_answer(answers.get(str(question.id), ""), question.type) == normalize_answer(question.answer, question.type):
+                    stats["correct_count"] += 1
+        total = len(submissions)
+        average_score = round(sum(int(item.score or 0) for item in submissions) / total, 2) if total else 0.0
+        question_rows = []
+        for stats in question_stats.values():
+            attempts = stats["attempt_count"]
+            stats["accuracy_rate"] = round(stats["correct_count"] / attempts * 100, 2) if attempts else 0.0
+            question_rows.append(stats)
+        return {
+            "exam_id": exam_id,
+            "participant_count": total,
+            "average_score": average_score,
+            "average_accuracy_rate": round(sum(item["accuracy_rate"] for item in question_rows) / len(question_rows), 2) if question_rows else 0.0,
+            "question_stats": sorted(question_rows, key=lambda item: item["accuracy_rate"]),
+        }
 
     def _to_local_date(self, value: datetime) -> date:
         if value.tzinfo is None:

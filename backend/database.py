@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from .config import DATABASE_URL
@@ -38,19 +38,6 @@ if _is_sqlite:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-
-def ensure_runtime_schema() -> None:
-    """Apply safe additive SQLite compatibility columns at application start."""
-    if not _is_sqlite:
-        return
-    inspector = inspect(engine)
-    if "questions" not in inspector.get_table_names():
-        return
-    columns = {column["name"] for column in inspector.get_columns("questions")}
-    if "image_urls" not in columns:
-        with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE questions ADD COLUMN image_urls TEXT NOT NULL DEFAULT '[]'"))
 
 
 def get_db():

@@ -4,6 +4,7 @@ from docx import Document
 from sqlalchemy.orm import sessionmaker
 
 from backend import models
+from backend.imports.import_orchestrator import persist_imported_questions
 from backend.services import import_task_service
 
 
@@ -38,7 +39,7 @@ def create_task_owner(db_session) -> int:
 
 def install_parser_stub(monkeypatch):
     monkeypatch.setattr(
-        import_task_service.imports_service,
+        import_task_service,
         "preview_import_from_file_content",
         lambda _text, _images, **_kwargs: (parsed_question(), [], {"chunks": 1, "ai_ms": 1}),
     )
@@ -68,7 +69,7 @@ def test_import_task_persists_preview_after_background_parse(client, auth_header
 
 def test_import_task_marks_partial_preview_and_rejects_confirmation(client, auth_headers, monkeypatch):
     monkeypatch.setattr(
-        import_task_service.imports_service,
+        import_task_service,
         "preview_import_from_file_content",
         lambda _text, _images, **_kwargs: (
             parsed_question(),
@@ -195,7 +196,7 @@ def test_persist_imported_questions_can_join_callers_transaction(db_session):
     db_session.add(bank)
     db_session.commit()
 
-    imported = import_task_service.imports_service.persist_imported_questions(
+    imported = persist_imported_questions(
         db_session,
         user_id=owner_id,
         course_id=bank.id,
@@ -216,7 +217,7 @@ def test_persist_imported_questions_keeps_rule_bound_question_images(db_session)
     db_session.commit()
     question = parsed_question()[0] | {"image_urls": ["data:image/png;base64,aW1hZ2U="]}
 
-    import_task_service.imports_service.persist_imported_questions(
+    persist_imported_questions(
         db_session,
         user_id=owner_id,
         course_id=bank.id,

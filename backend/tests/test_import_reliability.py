@@ -15,6 +15,7 @@ def _question(text: str) -> dict:
 def test_docx_extraction_preserves_paragraph_table_order(tmp_path):
     """Table questions must remain between the surrounding Word paragraphs."""
     from docx import Document
+
     from backend.imports import import_orchestrator
 
     document = Document()
@@ -94,6 +95,7 @@ C. Gamma
 def test_rule_parser_handles_a_94_question_six_section_bank_without_ai(monkeypatch):
     """The known 38/8/30/9/6/3 structure must remain 94 main questions."""
     from collections import Counter
+
     from backend.imports import import_orchestrator
 
     sections = [
@@ -241,6 +243,7 @@ def test_docx_body_image_marker_is_bound_to_current_question(tmp_path):
 
     from docx import Document
     from PIL import Image
+
     from backend.imports import import_orchestrator
     from backend.imports.image_extractor import extract_images_from_docx
 
@@ -382,6 +385,7 @@ def test_long_document_reports_persistable_progress_after_each_chunk(monkeypatch
 def test_transient_chunk_failure_retries_without_restarting_document(monkeypatch):
     """A temporary upstream timeout should retry only the affected chunk."""
     from fastapi import HTTPException
+
     from backend.imports import import_orchestrator
 
     attempts = 0
