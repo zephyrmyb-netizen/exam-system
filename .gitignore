@@ -47,9 +47,6 @@ artifacts/
 Thumbs.db
 .DS_Store
 
-# Compiled Python (any location)
-*.pyc
-
 # Python tool caches
 .mypy_cache/
 .ruff_cache/
@@ -59,11 +56,13 @@ Thumbs.db
 coverage/
 htmlcov/
 
-# Local env overrides (not committed)
-.env.local
-.env.*.local
-
 # Local scratch files
 prompt.docx
 /*.docx
 .worktrees/
+
+# Local beta-test runtime state and backups (never commit test users or Tunnel state)
+/data/beta/
+
+# Backend runtime logs (including rotated files)
+/backend/logs/

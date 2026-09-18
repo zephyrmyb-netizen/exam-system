@@ -18,7 +18,7 @@ services:
     env_file:
       - backend/.env
     volumes:
-      - backend_data:/app/backend
+      - backend_uploads:/app/backend/uploads
     restart: unless-stopped
 
   frontend:
@@ -54,5 +54,5 @@ services:
 #    restart: unless-stopped
 
 volumes:
-  backend_data:
+  backend_uploads:
 #  pg_data:

@@ -1,9 +1,9 @@
-﻿# 学习宝
+# 学习宝
 
 > [!IMPORTANT]
 > **项目所有者、Codex、DeepSeek、GLM 及其他执行窗口，在开始任何操作前，必须先阅读 [README-开始工作前必读.md](./README-开始工作前必读.md)。**
 
-基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、AI 对话、Word/PDF/PPT/图片预览导入等功能。
+基于 Vue 3 + FastAPI 的全栈刷题复习系统，支持课程管理、我的题库、公共题库、随机刷题、错题本、间隔复习、学习小组、课程分享、考试与成绩分析、帮助反馈、AI 对话、Word/PDF/PPT/图片预览导入等功能。
 
 ## 题库逻辑
 
@@ -44,22 +44,24 @@ xuexibao/
 │   ├── config.py        # 环境配置（含生产环境安全校验）
 │   ├── models.py        # SQLAlchemy 数据模型
 │   ├── schemas.py       # Pydantic 校验模型
-│   ├── crud.py          # 数据库操作（聚合导出）
-│   ├── auth.py          # JWT 认证
-│   ├── utils.py         # 答案归一化、填空/简答判分规则
-│   ├── ratelimit.py     # 限流（Redis / 内存双后端）
-│   ├── routers/         # API 路由
-│   ├── services/        # 业务服务（导入、AI 客户端）
+│   ├── crud_common.py   # 通用数据库操作
+│   ├── routers/         # API 路由（auth、courses、practice、exams、imports、feedback、study_groups…）
+│   ├── services/        # 业务服务（导入、AI 客户端、课程、考试…）
+│   ├── repositories/    # 数据访问层
 │   ├── migrations/      # Alembic 数据库迁移
 │   └── tests/           # pytest 测试
-├── docs/                # 文档
-│   └── acceptance-checklist.md  # 验收清单
+├── docs/                # 文档（验收清单、毕业论文材料、运维日志、beta 指南）
 ├── scripts/             # 工具脚本
+│   ├── start-beta.ps1   # Beta 一键启动（构建前端 + 后端 + 网关 + 隧道）
+│   ├── stop-beta.ps1    # 停止 Beta 全部服务
+│   ├── beta_gateway.py  # 8080 网关（伺服 dist、代理 /api）
 │   ├── security_check.py        # 安全检查
 │   └── smoke_test.ps1           # 冒烟测试
 ├── frontend/            # Vue 3 前端（TypeScript）
 │   └── src/
 │       ├── views/       # 页面组件
+│       ├── components/  # 可复用组件（按业务域分组）
+│       ├── layouts/     # 页面布局（AppLayout / AuthLayout）
 │       ├── api/         # API 请求封装（TS）
 │       ├── composables/ # 可组合逻辑
 │       ├── stores/      # 全局状态
@@ -74,13 +76,25 @@ xuexibao/
 
 | 层级   | 技术                                         |
 | ------ | -------------------------------------------- |
-| 前端   | Vue 3 + Vite + Vue Router + Axios + TypeScript + Vue I18n |
-| 测试   | pytest（后端 300+）/ Vitest（前端）           |
+| 前端   | Vue 3 + Vite + Vue Router + Pinia + Tailwind CSS 4 + Axios + TypeScript + Vue I18n |
+| 测试   | pytest（后端 300+）/ Vitest（前端）/ Playwright（E2E 与视觉回归） |
 | 后端   | Python 3.11+ / FastAPI + SQLAlchemy + Alembic |
 | 数据库 | 开发：SQLite / 生产：推荐 PostgreSQL         |
 | 认证   | HttpOnly Cookie（浏览器）+ JWT Bearer（兼容客户端） |
 | 限流   | 内存（开发）/ Redis（生产，可选）             |
 | 部署   | Docker + docker-compose                      |
+
+## 课程作业与毕业论文材料
+
+用于课程答辩、毕业论文和项目交接的材料统一放在 [docs/thesis/](./docs/thesis/README.md)：
+
+- [系统架构与核心流程](./docs/thesis/01-system-architecture.md)
+- [数据库设计](./docs/thesis/02-database-design.md)
+- [测试方法与当前证据](./docs/thesis/03-testing-and-evaluation.md)
+- [论文写作提纲](./docs/thesis/04-thesis-outline.md)
+- [可维护性审计与重构路线](./docs/thesis/05-maintainability-roadmap.md)
+
+这些文档描述当前仓库的真实实现与验证结果；引用测试数量或功能状态前，应重新执行对应验收命令。
 
 ## 快速启动
 
@@ -144,6 +158,20 @@ npm.cmd run dev -- --host 0.0.0.0
 > **Windows PowerShell 提示**：如果 `npm` 提示执行策略错误，请使用 `npm.cmd` 代替 `npm`，避免 npm.ps1 的执行策略问题。
 
 浏览器打开 http://127.0.0.1:5173
+
+### 方式三：Beta 模式（日常自用 / 微信访问）
+
+```powershell
+.\scripts\start-beta.ps1
+```
+
+脚本会自动构建前端、启动后端（8000）和 Beta 网关（8080，伺服 `frontend/dist` 并把 `/api` 反向代理到后端），并启动 cloudflared 隧道：
+
+- 本地访问：http://127.0.0.1:8080
+- 外网访问：cloudflared 隧道域名（微信内置浏览器可直接打开）
+- 停止全部服务：`.\scripts\stop-beta.ps1`
+
+> Beta 构建固定使用 `VITE_API_BASE_URL=/api` 和 `VITE_APP_ENV=beta`，与网关的 `/api` 代理配套。手动执行 `npm run build` 时漏设这两个变量，会导致登录请求打到错误路径而收不到 token。详见 [docs/beta-testing.md](docs/beta-testing.md)。
 
 ## 环境变量
 
@@ -212,6 +240,14 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 - **删除课程**：课程所有者可删除课程及其下所有题目
 - **手动添加题目**：进入课程后可以逐道添加题目（支持单选题、多选题、判断题、填空题、简答题）
 - **批量导入**：通过 JSON 数组或 Word/PPT 文件批量导入
+
+### 学习小组、课程分享与考试
+
+- **学习小组**：创建小组、邀请成员、共享课程，小组内可发起小组考试
+- **课程分享链接**：生成只读分享链接（share token），无需登录即可浏览课程内容
+- **考试**：从课程抽题组卷、定时开考、自动判分，支持考试分享链接
+- **成绩分析**：按题型/知识点统计正确率，定位薄弱项
+- **帮助反馈**：用户提交问题反馈，管理员在后台跟进处理
 
 ### Word/PDF/PPT/图片预览导入流程
 
@@ -413,8 +449,6 @@ backend\.venv\Scripts\python.exe -m alembic -c backend\alembic.ini revision --au
 backend\.venv\Scripts\python.exe -m alembic -c backend\alembic.ini upgrade head
 ```
 
-> 旧的 `backend/migrate_sqlite.py` 脚本保留作为 SQLite 专用兼容入口。
-
 ### 限流配置
 
 AI 对话（`/chat`）和 AI 导入（`/imports/file/*`）均受每用户每小时频次限制。
@@ -578,7 +612,7 @@ backend\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0
 为了避免一次改动范围过大，后续每个 DeepSeek 窗口只做一个小功能或一个小修复。推荐这样拆：
 
 - `后端接口`：只改 `backend/routers/*`、对应 `schemas.py` 和必要测试。
-- `后端数据库`：只改 `backend/models.py`、`backend/migrate_sqlite.py`、迁移文档和测试。
+- `后端数据库`：只改 `backend/models.py`、`backend/migrations/`（Alembic 迁移）和必要测试。
 - `后端导入`：只改 `backend/routers/imports.py`、导入相关 schema、导入测试。
 - `前端页面`：只改一个页面，例如 `frontend/src/views/Practice.vue` 或 `frontend/src/views/ImportQuestions.vue`。
 - `前端接口状态`：只改 `frontend/src/api/*`、`frontend/src/stores/*`。
