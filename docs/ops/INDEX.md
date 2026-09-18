@@ -6,7 +6,6 @@
 
 - [2026-09-09 现有功能清理与优化](./active/2026-09-09-project-optimization.md)：Codex，执行中。
 - [2026-09-16 风险处理与安卓端预留](./active/2026-09-16-risk-cleanup-android-readiness.md)：WorkBuddy (GLM)，风险已处理完毕，留档待归档。
-- [2026-09-17 课程设计与毕业论文交付整理](./active/2026-09-17-thesis-delivery-cleanup.md)：Codex，执行中。
 
 | 任务 | 窗口 | 留档 | 状态 |
 | --- | --- | --- | --- |

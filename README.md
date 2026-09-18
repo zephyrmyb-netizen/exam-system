@@ -62,7 +62,7 @@ xuexibao/
 │   ├── repositories/    # 数据访问层
 │   ├── migrations/      # Alembic 数据库迁移
 │   └── tests/           # pytest 测试
-├── docs/                # 文档（验收清单、毕业论文材料、运维日志、beta 指南）
+├── docs/                # 文档（验收清单、运维日志、beta 指南）
 ├── scripts/             # 工具脚本
 │   ├── start-beta.ps1   # Beta 一键启动（构建前端 + 后端 + 网关 + 隧道）
 │   ├── stop-beta.ps1    # 停止 Beta 全部服务

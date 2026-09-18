@@ -67,5 +67,6 @@ prompt.docx
 # Backend runtime logs (including rotated files)
 /backend/logs/
 
-# Thesis materials (private, keep local only)
+# Private local-only materials (not for the public repo)
 /docs/thesis/
+/docs/ops/active/2026-09-17-thesis-delivery-cleanup.md
