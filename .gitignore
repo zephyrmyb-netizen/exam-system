@@ -1,4 +1,4 @@
-﻿# Environment files (explicit — avoid ambiguity with .env.example)
+# Environment files (explicit — avoid ambiguity with .env.example)
 .env
 .env.local
 .env.*.local
@@ -66,3 +66,6 @@ prompt.docx
 
 # Backend runtime logs (including rotated files)
 /backend/logs/
+
+# Thesis materials (private, keep local only)
+/docs/thesis/

@@ -211,5 +211,4 @@ AI 解析错误不会直接入库，用户对导入内容有完全控制权。�
 | API 文档（Swagger 自动生成，与代码实时同步） | 启动后端后访问 http://127.0.0.1:8000/docs |
 | 运维规范（维护规则 / 验收命令 / 公开前检查） | [docs/ops/maintenance.md](docs/ops/maintenance.md) |
 | Beta 测试环境说明 | [docs/beta-testing.md](docs/beta-testing.md) |
-| 课程作业与毕业论文材料 | [docs/thesis/](docs/thesis/README.md) |
 | 验收清单 | [docs/acceptance-checklist.md](docs/acceptance-checklist.md) |
