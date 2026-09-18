@@ -36,8 +36,15 @@ class User(Base):
 
     @property
     def permissions(self) -> list[str]:
-        """Schema-friendly placeholder; populated by permission-aware endpoints later."""
-        return []
+        """Effective permission list for this user's role.
+
+        Single source of truth is PermissionService.ROLE_PERMISSIONS, so the
+        /auth/me payload and `require_permission` guards can never disagree.
+        Imported lazily because permission_service imports this module.
+        """
+        from .services.permission_service import ROLE_PERMISSIONS
+
+        return sorted(ROLE_PERMISSIONS.get(self.role, ROLE_PERMISSIONS["student"]))
 
 
 class QuestionBank(Base):

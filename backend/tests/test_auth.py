@@ -1,5 +1,7 @@
 """Tests for auth endpoints: register, login, me."""
 
+from backend.services.permission_service import ROLE_PERMISSIONS
+
 
 class TestAuth:
     def test_register_success(self, client):
@@ -125,7 +127,9 @@ class TestAuth:
         assert resp.status_code == 200
         assert resp.json()["username"] == "testuser"
         assert resp.json()["role"] == "student"
-        assert resp.json()["permissions"] == []
+        # /auth/me is the single source of truth for frontend permission
+        # gating, so it must mirror the backend PermissionService exactly.
+        assert resp.json()["permissions"] == sorted(ROLE_PERMISSIONS["student"])
 
     def test_me_unauthorized(self, client):
         resp = client.get("/auth/me")
