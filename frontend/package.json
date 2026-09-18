@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:visual": "playwright test e2e/visual.spec.ts",
+    "test:visual:ci": "playwright test e2e/visual.spec.ts --grep-invert \"@pixel-baseline\"",
     "test:visual:review": "playwright test e2e/reference-review.spec.ts"
   },
   "dependencies": {

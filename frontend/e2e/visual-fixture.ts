@@ -180,6 +180,13 @@ async function handleApi(route: Route): Promise<void> {
     await json(route, courses[0]);
     return;
   }
+  // The redesigned course-practice page loads the full question list up front
+  // (GET /courses/{id}/questions?order=asc) to build its seeded practice
+  // session, instead of pulling questions one by one from /practice/random.
+  if (path === "/courses/9/questions") {
+    await json(route, [practiceQuestion]);
+    return;
+  }
   if (path === "/practice/stats") {
     await json(route, {
       today_count: 12,
@@ -208,11 +215,16 @@ async function handleApi(route: Route): Promise<void> {
     return;
   }
   if (path === "/practice/submit" && method === "POST") {
+    // The client trusts the server's verdict, so the mock must judge the
+    // submitted answer: picking the correct option shows the auto-advance
+    // panel, picking anything else shows the wrong-answer analysis.
+    const body = request.postDataJSON() as { user_answer?: string } | null;
+    const isCorrect = String(body?.user_answer ?? "") === practiceQuestion.answer;
     await json(route, {
-      is_correct: true,
-      correct_answer: "A",
+      is_correct: isCorrect,
+      correct_answer: practiceQuestion.answer,
       analysis: practiceQuestion.analysis,
-      wrongbook_recorded: false,
+      wrongbook_recorded: !isCorrect,
     });
     return;
   }

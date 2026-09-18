@@ -1,10 +1,18 @@
 import { expect, prepareSurface, surfaces, test, type SurfaceName } from "./visual-fixture";
 
+// Two kinds of checks live in this spec:
+// - Structural assertions (overflow, menu geometry, shell semantics) are
+//   platform-independent and run in CI.
+// - `@pixel-baseline` screenshot comparisons are only meaningful on the OS and
+//   browser that generated the baselines (Chinese text renders differently on
+//   every platform), so they run locally via `npm run test:visual` and are
+//   excluded from CI via `--grep-invert` (see test:visual:ci).
+
 function dynamicMasks(page: Parameters<typeof prepareSurface>[0], surface: SurfaceName) {
   return surface === "exam-take" ? [page.locator("[data-exam-countdown]")] : [];
 }
 
-test.describe("390x844 reference UI baselines", () => {
+test.describe("390x844 reference UI baselines @pixel-baseline", () => {
   for (const surface of surfaces) {
     test(surface.name, async ({ mockedPage }) => {
       await prepareSurface(mockedPage, surface.name);
@@ -75,7 +83,7 @@ test("course menu remains fully visible above other course cards", async ({ mock
   await expect(courseList).toHaveClass(/course-list--menu-open/);
   await expect(courseList).toHaveCSS("overflow", "visible");
   const options = mockedPage.locator(".course-row--menu-open .course-menu .menu-option");
-  await expect(options).toHaveCount(5);
+  await expect(options).toHaveCount(6);
 
   const details = await options.evaluateAll((items) =>
     items.map((item) => {
@@ -134,7 +142,7 @@ test.describe("responsive overflow and safe bottom content", () => {
   }
 });
 
-test.describe("dark mode smoke baselines", () => {
+test.describe("dark mode smoke baselines @pixel-baseline", () => {
   for (const [surface, path] of [
     ["home", "/"],
     ["course-list", "/courses"],
