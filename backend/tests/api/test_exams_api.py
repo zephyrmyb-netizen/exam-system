@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -22,7 +22,7 @@ def _make_app(db_session, current_user=None) -> FastAPI:
     return app
 
 
-def _make_user(db_session, username="exam_api_user", role_name=None):
+def _make_user(db_session, username="exam_api_user", role_name=None, is_guest=False):
     role_id = None
     if role_name:
         role = models.Role(name=role_name)
@@ -30,7 +30,7 @@ def _make_user(db_session, username="exam_api_user", role_name=None):
         db_session.commit()
         db_session.refresh(role)
         role_id = role.id
-    user = models.User(username=username, password_hash="x", role_id=role_id)
+    user = models.User(username=username, password_hash="x", role_id=role_id, is_guest=1 if is_guest else 0)
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
@@ -61,8 +61,8 @@ def _make_question(db_session, owner_id, course_id):
     return question
 
 
-def test_exam_api_create_publish_take_submit_flow(db_session):
-    user = _make_user(db_session, role_name="teacher")
+def test_guest_can_create_publish_take_and_submit_exam(db_session):
+    user = _make_user(db_session, is_guest=True)
     course = _make_course(db_session, user.id)
     question = _make_question(db_session, user.id, course.id)
     client = TestClient(_make_app(db_session, user))
@@ -89,7 +89,7 @@ def test_exam_api_create_publish_take_submit_flow(db_session):
 
 
 def test_exam_api_lists_only_published_exams(db_session):
-    user = _make_user(db_session, role_name="teacher")
+    user = _make_user(db_session)
     course = _make_course(db_session, user.id)
     client = TestClient(_make_app(db_session, user))
 
@@ -106,7 +106,7 @@ def test_exam_api_lists_only_published_exams(db_session):
 
 
 def test_exam_api_detail_returns_published_questions(db_session):
-    user = _make_user(db_session, username="exam_detail_teacher", role_name="teacher")
+    user = _make_user(db_session, username="exam_detail_owner")
     course = _make_course(db_session, user.id)
     question = _make_question(db_session, user.id, course.id)
     client = TestClient(_make_app(db_session, user))
@@ -126,12 +126,12 @@ def test_exam_api_detail_returns_published_questions(db_session):
 
 
 def test_exam_api_detail_hides_draft_from_other_users(db_session):
-    teacher = _make_user(db_session, username="exam_draft_teacher", role_name="teacher")
+    owner = _make_user(db_session, username="exam_draft_owner")
     student = _make_user(db_session, username="exam_draft_student")
-    course = _make_course(db_session, teacher.id)
-    question = _make_question(db_session, teacher.id, course.id)
-    teacher_client = TestClient(_make_app(db_session, teacher))
-    exam_id = teacher_client.post(
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    owner_client = TestClient(_make_app(db_session, owner))
+    exam_id = owner_client.post(
         "/exams/",
         json={"title": "Draft Detail", "course_id": course.id, "question_ids": [question.id]},
     ).json()["id"]
@@ -143,17 +143,17 @@ def test_exam_api_detail_hides_draft_from_other_users(db_session):
 
 
 def test_exam_api_leaderboard_returns_submitted_scores_sorted(db_session):
-    teacher = _make_user(db_session, username="leaderboard_teacher", role_name="teacher")
+    owner = _make_user(db_session, username="leaderboard_owner")
     student_a = _make_user(db_session, username="leaderboard_student_a")
     student_b = _make_user(db_session, username="leaderboard_student_b")
-    course = _make_course(db_session, teacher.id)
-    question = _make_question(db_session, teacher.id, course.id)
-    teacher_client = TestClient(_make_app(db_session, teacher))
-    exam_id = teacher_client.post(
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    owner_client = TestClient(_make_app(db_session, owner))
+    exam_id = owner_client.post(
         "/exams/",
         json={"title": "Leaderboard Exam", "course_id": course.id, "question_ids": [question.id], "total_score": 10},
     ).json()["id"]
-    teacher_client.post(f"/exams/{exam_id}/publish")
+    owner_client.post(f"/exams/{exam_id}/publish")
 
     student_a_client = TestClient(_make_app(db_session, student_a))
     student_b_client = TestClient(_make_app(db_session, student_b))
@@ -175,12 +175,12 @@ def test_exam_api_leaderboard_returns_submitted_scores_sorted(db_session):
 
 
 def test_exam_api_leaderboard_hides_draft_from_other_users(db_session):
-    teacher = _make_user(db_session, username="leaderboard_draft_teacher", role_name="teacher")
+    owner = _make_user(db_session, username="leaderboard_draft_owner")
     student = _make_user(db_session, username="leaderboard_draft_student")
-    course = _make_course(db_session, teacher.id)
-    question = _make_question(db_session, teacher.id, course.id)
-    teacher_client = TestClient(_make_app(db_session, teacher))
-    exam_id = teacher_client.post(
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    owner_client = TestClient(_make_app(db_session, owner))
+    exam_id = owner_client.post(
         "/exams/",
         json={"title": "Draft Leaderboard", "course_id": course.id, "question_ids": [question.id]},
     ).json()["id"]
@@ -189,3 +189,87 @@ def test_exam_api_leaderboard_hides_draft_from_other_users(db_session):
     response = student_client.get(f"/exams/{exam_id}/leaderboard")
 
     assert response.status_code == 404
+
+
+def test_user_cannot_publish_someone_elses_exam(db_session):
+    owner = _make_user(db_session, username="publish_owner")
+    other_user = _make_user(db_session, username="publish_other")
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    owner_client = TestClient(_make_app(db_session, owner))
+    exam_id = owner_client.post(
+        "/exams/",
+        json={"title": "Private draft", "course_id": course.id, "question_ids": [question.id]},
+    ).json()["id"]
+
+    other_client = TestClient(_make_app(db_session, other_user))
+    response = other_client.post(f"/exams/{exam_id}/publish")
+
+    assert response.status_code == 403
+
+
+def test_published_exam_share_code_resolves_to_the_real_exam(db_session):
+    owner = _make_user(db_session, username="share_code_owner")
+    visitor = _make_user(db_session, username="share_code_visitor")
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    owner_client = TestClient(_make_app(db_session, owner))
+    created = owner_client.post(
+        "/exams/", json={"title": "Shared", "course_id": course.id, "question_ids": [question.id]}
+    ).json()
+    owner_client.post(f"/exams/{created['id']}/publish")
+
+    response = TestClient(_make_app(db_session, visitor)).get(f"/exams/share/{created['share_code'].lower()}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == created["id"]
+    assert response.json()["share_code"] == created["share_code"]
+
+
+def test_exam_schedule_blocks_new_attempts_before_opening_and_after_deadline(db_session):
+    owner = _make_user(db_session, username="schedule_owner")
+    course = _make_course(db_session, owner.id)
+    question = _make_question(db_session, owner.id, course.id)
+    client = TestClient(_make_app(db_session, owner))
+    now = datetime.now(UTC)
+    future = client.post(
+        "/exams/",
+        json={
+            "title": "Future", "course_id": course.id, "question_ids": [question.id],
+            "start_at": (now + timedelta(hours=1)).isoformat(),
+        },
+    ).json()
+    client.post(f"/exams/{future['id']}/publish")
+    assert client.post(f"/exams/{future['id']}/start").status_code == 403
+
+    closed = client.post(
+        "/exams/",
+        json={
+            "title": "Closed", "course_id": course.id, "question_ids": [question.id],
+            "end_at": (now - timedelta(minutes=1)).isoformat(),
+        },
+    ).json()
+    client.post(f"/exams/{closed['id']}/publish")
+    closed_response = client.post(f"/exams/{closed['id']}/start")
+    assert closed_response.status_code == 403
+    assert closed_response.json()["detail"] == "Exam is closed"
+
+
+def test_exam_submission_can_add_only_wrong_answers_to_wrongbook(db_session):
+    user = _make_user(db_session, username="exam_wrongbook_user")
+    course = _make_course(db_session, user.id)
+    question = _make_question(db_session, user.id, course.id)
+    client = TestClient(_make_app(db_session, user))
+    exam_id = client.post(
+        "/exams/", json={"title": "Wrongbook", "course_id": course.id, "question_ids": [question.id]}
+    ).json()["id"]
+    client.post(f"/exams/{exam_id}/publish")
+    client.post(f"/exams/{exam_id}/start")
+    client.post(f"/exams/{exam_id}/submit", json={"answers": {str(question.id): "A"}})
+
+    response = client.post(f"/exams/{exam_id}/wrongbook")
+
+    assert response.status_code == 200
+    assert response.json()["added_count"] == 1
+    record = db_session.query(models.WrongRecord).filter_by(user_id=user.id, question_id=question.id).one()
+    assert record.last_wrong_answer == "A"

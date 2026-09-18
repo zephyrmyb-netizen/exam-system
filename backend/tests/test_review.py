@@ -1,11 +1,6 @@
 """Tests for UserQuestionReview model and migration."""
 
-import subprocess
-import sys
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
-
-import pytest
 
 from backend import models
 
@@ -146,43 +141,3 @@ class TestUserQuestionReviewModel:
 
         assert review.question_id is None
         assert review.id is not None
-
-
-class TestMigrationIdempotent:
-    """Test running migrate_sqlite.py multiple times on the real DB."""
-
-    @pytest.mark.skipif(
-        not (Path(__file__).resolve().parent.parent / "xuexibao.db").exists(),
-        reason="Real database not found — skip integration migration test",
-    )
-    def test_migration_idempotent(self):
-        """Run migrate_sqlite.py twice; second run must not error."""
-        project_root = Path(__file__).resolve().parent.parent
-        migrate_script = project_root / "migrate_sqlite.py"
-
-        # Run once
-        result1 = subprocess.run(
-            [sys.executable, str(migrate_script)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            cwd=str(project_root.parent),
-        )
-        output1 = (result1.stdout or "") + (result1.stderr or "")
-
-        # Run twice
-        result2 = subprocess.run(
-            [sys.executable, str(migrate_script)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            cwd=str(project_root.parent),
-        )
-        output2 = (result2.stdout or "") + (result2.stderr or "")
-
-        # Second run must not fail
-        assert result2.returncode == 0, f"Second run failed (exit={result2.returncode}):\n{output2}"
-        assert "[DONE]" in output1
-        assert "[DONE]" in output2

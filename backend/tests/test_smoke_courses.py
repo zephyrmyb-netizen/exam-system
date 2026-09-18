@@ -226,6 +226,19 @@ class TestCourseQuestions:
         assert data["total"] == 4
         assert len(data["items"]) == 2
 
+    def test_course_questions_can_return_stable_ascending_session_order(self, client, auth_headers, sample_questions):
+        resp = client.post("/courses/", json={"name": "Session order"}, headers=auth_headers)
+        cid = resp.json()["id"]
+        client.post("/questions/batch", json=sample_questions, headers=auth_headers, params={"course_id": cid})
+
+        questions = client.get(
+            f"/courses/{cid}/questions",
+            headers=auth_headers,
+            params={"order": "asc"},
+        ).json()
+
+        assert [question["id"] for question in questions] == sorted(question["id"] for question in questions)
+
 
 class TestCoursePractice:
     def test_random_from_course(self, client, auth_headers, sample_questions):

@@ -1,12 +1,27 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
-from ..config import ACCESS_TOKEN_EXPIRE_MINUTES, INVITE_CODE, IS_PRODUCTION
+from ..config import ACCESS_TOKEN_EXPIRE_MINUTES, APP_ENV, INVITE_CODE, IS_PRODUCTION
 from ..database import get_db
+from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _set_access_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=auth_module.ACCESS_TOKEN_COOKIE,
+        value=token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        path="/",
+    )
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -42,15 +57,7 @@ def login(body: schemas.LoginRequest, response: Response, db: Session = Depends(
             raise HTTPException(status_code=401, detail="用户名或密码错误")
 
         token = auth_module.create_access_token(data={"sub": str(user.id)})
-        response.set_cookie(
-            key=auth_module.ACCESS_TOKEN_COOKIE,
-            value=token,
-            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            httponly=True,
-            secure=IS_PRODUCTION,
-            samesite="lax",
-            path="/",
-        )
+        _set_access_cookie(response, token)
         return schemas.TokenResponse(access_token=token, token=token)
     except HTTPException:
         raise
@@ -60,6 +67,40 @@ def login(body: schemas.LoginRequest, response: Response, db: Session = Depends(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response):
+    response.delete_cookie(key=auth_module.ACCESS_TOKEN_COOKIE, path="/", secure=IS_PRODUCTION, samesite="lax")
+
+
+@router.post("/guest", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
+def guest_login(body: schemas.GuestLoginRequest, response: Response, db: Session = Depends(get_db)):
+    """Create an isolated disposable user for the local beta environment only."""
+    if APP_ENV != "testing":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    nickname = body.nickname.strip() or f"游客{secrets.randbelow(9000) + 1000}"
+
+    username = f"guest_{secrets.token_urlsafe(12).replace('-', '').replace('_', '')[:16]}"
+    guest = User(
+        username=username,
+        password_hash=auth_module.get_password_hash(secrets.token_urlsafe(32)),
+        display_name=nickname,
+        is_guest=1,
+    )
+    db.add(guest)
+    db.commit()
+    db.refresh(guest)
+
+    token = auth_module.create_access_token(data={"sub": str(guest.id)})
+    _set_access_cookie(response, token)
+    return schemas.TokenResponse(access_token=token, token=token)
+
+
+@router.delete("/guest/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_guest_account(response: Response, current_user=Depends(auth_module.get_current_user), db: Session = Depends(get_db)):
+    """Delete only the current disposable guest and its cascaded beta data."""
+    if APP_ENV != "testing" or not bool(current_user.is_guest):
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(current_user)
+    db.commit()
     response.delete_cookie(key=auth_module.ACCESS_TOKEN_COOKIE, path="/", secure=IS_PRODUCTION, samesite="lax")
 
 

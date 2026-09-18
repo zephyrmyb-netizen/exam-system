@@ -12,13 +12,7 @@ _proj_root = Path(__file__).resolve().parent.parent.parent
 if str(_proj_root) not in sys.path:
     sys.path.insert(0, str(_proj_root))
 
-# Load .env before importing backend.config (which reads os.environ).
-from dotenv import load_dotenv
-
-env_path = Path(__file__).resolve().parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path, encoding="utf-8-sig")
-
+# backend.config owns environment loading for both CLI and application.
 from backend import models  # noqa: F401 — ensure all models are imported
 from backend.config import DATABASE_URL
 from backend.database import Base

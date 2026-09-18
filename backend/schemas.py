@@ -59,6 +59,8 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
+    display_name: str = ""
+    is_guest: bool = False
     role: str = "student"
     permissions: list[str] = []
 
@@ -70,10 +72,54 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GuestLoginRequest(BaseModel):
+    nickname: str = Field("", max_length=24)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token: str  # duplicate for frontend compatibility
     token_type: str = "bearer"
+
+
+# -- Help and feedback ------------------------------------------------------
+
+
+class FeedbackCreate(BaseModel):
+    category: str = Field("suggestion", max_length=32)
+    content: str = Field(..., min_length=5, max_length=2000)
+    contact: str = Field("", max_length=120)
+
+    @field_validator("category")
+    @classmethod
+    def category_must_be_supported(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"bug", "suggestion", "question", "other", "diagnostic"}:
+            raise ValueError("反馈类型仅支持 bug / suggestion / question / other")
+        return normalized
+
+    @field_validator("content")
+    @classmethod
+    def content_must_remain_meaningful_after_trimming(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 5:
+            raise ValueError("反馈内容至少需要 5 个字符")
+        return normalized
+
+    @field_validator("contact")
+    @classmethod
+    def trim_contact(cls, value: str) -> str:
+        return value.strip()
+
+
+class FeedbackOut(BaseModel):
+    id: int
+    category: str
+    content: str
+    contact: str
+    created_at: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # -- Question Bank / Course --------------------------------------------------
@@ -97,6 +143,7 @@ class CourseOut(BaseModel):
     question_count: int = 0
     practice_count: int = 0
     last_practiced_at: str | None = None
+    share_token: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -141,6 +188,25 @@ class CourseOut(BaseModel):
         if isinstance(v, datetime):
             return v.isoformat()
         return v
+
+
+class PublicCourseActionOut(BaseModel):
+    course_id: int
+    favorited: bool | None = None
+    copied_course_id: int | None = None
+    message: str = ""
+
+
+class CourseReportCreate(BaseModel):
+    reason: str = Field("other", max_length=80)
+    detail: str = Field("", max_length=1000)
+
+
+class CourseShareOut(BaseModel):
+    name: str
+    description: str = ""
+    subject: str = ""
+    question_count: int = 0
 
 
 class CourseUpdate(BaseModel):
@@ -588,6 +654,8 @@ class ExamCreate(BaseModel):
     is_shuffle: bool = False
     is_blind: bool = True
     question_ids: list[int] = []
+    start_at: datetime | None = None
+    end_at: datetime | None = None
 
 
 class ExamOut(BaseModel):
@@ -601,6 +669,10 @@ class ExamOut(BaseModel):
     is_shuffle: bool = False
     is_blind: bool = True
     status: str = "draft"
+    share_code: str | None = None
+    start_at: str | None = None
+    end_at: str | None = None
+    availability: str = "draft"
     question_count: int = 0
     created_at: str | None = None
 
@@ -641,6 +713,12 @@ class ExamResultOut(BaseModel):
     wrong_count: int = 0
     accuracy_rate: float = 0.0
     submitted_at: str | None = None
+    question_results: dict[str, dict[str, object]] = {}
+
+
+class ExamWrongbookOut(BaseModel):
+    exam_id: int
+    added_count: int = 0
 
 
 class ExamLeaderboardEntry(BaseModel):
@@ -656,6 +734,22 @@ class ExamLeaderboardOut(BaseModel):
     exam_id: int
     entries: list[ExamLeaderboardEntry] = []
     total: int = 0
+
+
+class ExamQuestionAnalyticsOut(BaseModel):
+    question_id: int
+    order_index: int
+    attempt_count: int = 0
+    correct_count: int = 0
+    accuracy_rate: float = 0.0
+
+
+class ExamAnalyticsOut(BaseModel):
+    exam_id: int
+    participant_count: int = 0
+    average_score: float = 0.0
+    average_accuracy_rate: float = 0.0
+    question_stats: list[ExamQuestionAnalyticsOut] = []
 
 
 class ExamListOut(BaseModel):
@@ -688,9 +782,40 @@ class AdminRoleUpdate(BaseModel):
     @classmethod
     def _check_role(cls, v: str) -> str:
         v = v.strip()
-        if v not in {"student", "teacher", "admin"}:
-            raise ValueError("角色仅支持 student / teacher / admin")
+        if v not in {"student", "admin"}:
+            raise ValueError("角色仅支持 student / admin")
         return v
+
+
+class AdminFeedbackOut(BaseModel):
+    id: int
+    user_id: int
+    username: str
+    display_name: str = ""
+    category: str
+    content: str
+    contact: str = ""
+    status: str = "new"
+    admin_reply: str = ""
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class AdminFeedbackListOut(BaseModel):
+    items: list[AdminFeedbackOut] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+
+
+class AdminFeedbackUpdate(BaseModel):
+    status: str = Field(..., pattern=r"^(new|in_progress|resolved)$")
+    admin_reply: str = Field("", max_length=2000)
+
+    @field_validator("admin_reply")
+    @classmethod
+    def _trim_reply(cls, value: str) -> str:
+        return value.strip()
 
 
 class AdminStatsOut(BaseModel):
@@ -711,6 +836,41 @@ class WeakTypeOut(BaseModel):
     total_attempts: int = 0
     wrong_attempts: int = 0
     error_rate: float = 0.0  # 0.0–1.0
+
+
+class StudyPlanUpsert(BaseModel):
+    title: str = Field("每日学习计划", min_length=1, max_length=200)
+    daily_target: int = Field(10, ge=1, le=500)
+    deadline: datetime | None = None
+
+
+class StudyGroupCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+
+class StudyGroupOut(BaseModel):
+    id: int
+    name: str
+    invite_code: str
+    owner_id: int
+    member_count: int = 0
+
+
+class StudyGroupResourcesOut(BaseModel):
+    group_id: int
+    courses: list[dict[str, object]] = []
+    exams: list[dict[str, object]] = []
+
+
+class StudyPlanOut(BaseModel):
+    id: int
+    title: str
+    daily_target: int
+    deadline: str | None = None
+    today_completed: int = 0
+    today_remaining: int = 0
+    completion_rate: float = 0.0
+    current_streak: int = 0
 
 
 class TodayReviewOut(BaseModel):

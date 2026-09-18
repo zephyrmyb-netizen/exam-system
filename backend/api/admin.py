@@ -1,5 +1,6 @@
-"""Minimal admin API for Phase 3 role and platform statistics management."""
+"""Admin API for role, platform statistics, and feedback management."""
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,6 +19,22 @@ StatsUser = Annotated[models.User, Depends(require_permission("stats:view_global
 
 def _admin_user_out(user: models.User) -> schemas.AdminUserOut:
     return schemas.AdminUserOut(id=user.id, username=user.username, role=user.role)
+
+
+def _admin_feedback_out(entry: models.FeedbackEntry) -> schemas.AdminFeedbackOut:
+    return schemas.AdminFeedbackOut(
+        id=entry.id,
+        user_id=entry.user_id,
+        username=entry.user.username,
+        display_name=entry.user.display_name or "",
+        category=entry.category,
+        content=entry.content,
+        contact=entry.contact or "",
+        status=entry.status,
+        admin_reply=entry.admin_reply or "",
+        created_at=entry.created_at.isoformat() if entry.created_at else None,
+        updated_at=entry.updated_at.isoformat() if entry.updated_at else None,
+    )
 
 
 @router.get("/users", response_model=schemas.AdminUserListOut)
@@ -49,7 +66,7 @@ def update_user_role(
     db: Session = Depends(get_db),
 ):
     role_name = body.role.strip()
-    if role_name not in {"student", "teacher", "admin"}:
+    if role_name not in {"student", "admin"}:
         raise HTTPException(status_code=400, detail="不支持的角色")
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -82,3 +99,48 @@ def get_admin_stats(
         exam_count=db.query(models.Exam).count(),
         submission_count=db.query(models.ExamSubmission).count(),
     )
+
+
+@router.get("/feedback", response_model=schemas.AdminFeedbackListOut)
+def list_feedback(
+    current_user: StatsUser,
+    status_filter: str | None = Query(None, alias="status"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    if status_filter is not None and status_filter not in {"new", "in_progress", "resolved"}:
+        raise HTTPException(status_code=422, detail="Unsupported feedback status")
+    query = db.query(models.FeedbackEntry).options(joinedload(models.FeedbackEntry.user))
+    if status_filter is not None:
+        query = query.filter(models.FeedbackEntry.status == status_filter)
+    entries, total = apply_pagination(query.order_by(models.FeedbackEntry.created_at.desc()), page, page_size)
+    return schemas.AdminFeedbackListOut(
+        items=[_admin_feedback_out(entry) for entry in entries],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.patch("/feedback/{feedback_id}", response_model=schemas.AdminFeedbackOut)
+def update_feedback(
+    feedback_id: int,
+    body: schemas.AdminFeedbackUpdate,
+    current_user: StatsUser,
+    db: Session = Depends(get_db),
+):
+    entry = (
+        db.query(models.FeedbackEntry)
+        .options(joinedload(models.FeedbackEntry.user))
+        .filter(models.FeedbackEntry.id == feedback_id)
+        .first()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    entry.status = body.status
+    entry.admin_reply = body.admin_reply
+    entry.updated_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(entry)
+    return _admin_feedback_out(entry)

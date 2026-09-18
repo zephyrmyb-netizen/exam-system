@@ -1,4 +1,4 @@
-﻿"""Tests for imports endpoints: file upload, size limits, AI auto import."""
+"""Tests for imports endpoints: file upload, size limits, AI auto import."""
 
 import io
 import json
@@ -114,7 +114,7 @@ class TestFileImport:
         resp = client.post(self.FILE_UPLOAD, files={"file": ("test.docx", b"x", "application/octet-stream")})
         assert resp.status_code == 401
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "")
     def test_auto_no_openai_key(self, client, auth_headers):
         """Without OPENAI_API_KEY set, /file/auto should return 400 with clear message."""
         content = _make_docx_bytes("Test question content.")
@@ -282,7 +282,7 @@ class TestFileAutoCourseName:
         """Return a mock OpenAI response that returns a valid questions JSON."""
         import json
 
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mock_client = mock.start()
         instance = mock_client.return_value
         instance.chat.completions.create.return_value.choices = [
@@ -307,7 +307,7 @@ class TestFileAutoCourseName:
     def _make_docx(self):
         return _make_docx_bytes("Some content.")
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_auto_course_name_creates_new(self, client, auth_headers):
         """course_name=Java复习题 should create that bank."""
         mock = self._mock_openai_response()
@@ -332,7 +332,7 @@ class TestFileAutoCourseName:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_auto_course_id_overrides_course_name(self, client, auth_headers):
         """course_id > 0 should take priority even when course_name is given."""
         # Create a course first
@@ -360,7 +360,7 @@ class TestFileAutoCourseName:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_auto_derives_from_filename_when_no_course_name(self, client, auth_headers):
         """With no course_name, should derive from filename."""
         mock = self._mock_openai_response()
@@ -383,7 +383,7 @@ class TestFileAutoCourseName:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_auto_user_isolation_same_name(self, client, auth_headers):
         """Different users with same course_name should get separate banks."""
         alice = auth_headers
@@ -494,7 +494,7 @@ class TestPreviewImport:
 
     def _mock_openai_raw_response(self, raw_content):
         """Return a mock OpenAI response with exact raw content."""
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mc = mock.start()
         inst = mc.return_value
         inst.chat.completions.create.return_value.choices = [
@@ -505,7 +505,7 @@ class TestPreviewImport:
     def _make_docx(self, text="Content."):
         return _make_docx_bytes(text)
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_returns_questions_no_db_write(self, client, auth_headers):
         """Preview should return parsed questions and NOT create any DB records."""
         mock = self._mock_openai_response()
@@ -531,7 +531,7 @@ class TestPreviewImport:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_returns_validation_warnings(self, client, auth_headers):
         """Preview should flag invalid questions without crashing."""
         data = [
@@ -553,7 +553,7 @@ class TestPreviewImport:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_accepts_markdown_fenced_json(self, client, auth_headers):
         """Providers may wrap JSON in markdown; preview should still parse it."""
         raw = """以下是解析结果：
@@ -575,7 +575,7 @@ class TestPreviewImport:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_accepts_json_embedded_in_text(self, client, auth_headers):
         """Providers may add prose before JSON; preview should extract the object."""
         raw = '解析完成：{"questions":[{"type":"fill_blank","question":"Embedded Q?","answer":"B"}]} 请核对。'
@@ -592,7 +592,7 @@ class TestPreviewImport:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_no_questions_returns_clear_error(self, client, auth_headers):
         """When AI returns no questions, preview should fail with a clear message."""
         mock = self._mock_openai_response([])
@@ -607,7 +607,7 @@ class TestPreviewImport:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "")
     def test_preview_no_openai_key(self, client, auth_headers):
         """Without key, preview returns 400."""
         resp = client.post(
@@ -618,10 +618,10 @@ class TestPreviewImport:
         assert resp.status_code == 400
         assert "OPENAI_API_KEY" in resp.json()["detail"]
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_ai_unexpected_failure_is_not_reported_as_file_extract_failure(self, client, auth_headers):
         """Unexpected AI client errors should point to AI parsing, not document extraction."""
-        mock = patch("backend.routers.imports.imports_service.preview_import_from_text")
+        mock = patch("backend.routers.imports.preview_import_from_file_content")
         mc = mock.start()
         mc.side_effect = RuntimeError("upstream exploded")
         try:
@@ -747,7 +747,7 @@ class TestEnhancedTextExtraction:
 
     def test_validator_rejects_bad_question(self):
         """Test _validate_question_item directly."""
-        from backend.routers.imports import _validate_question_item
+        from backend.imports.import_orchestrator import validate_question_item as _validate_question_item
 
         # Missing question
         result, err = _validate_question_item({"type": "fill_blank", "answer": "A"})
@@ -755,7 +755,7 @@ class TestEnhancedTextExtraction:
         assert err is not None
 
     def test_validator_accepts_good_question(self):
-        from backend.routers.imports import _validate_question_item
+        from backend.imports.import_orchestrator import validate_question_item as _validate_question_item
 
         result, err = _validate_question_item(
             {"type": "single_choice", "question": "Q?", "options": {"A": "a", "B": "b"}, "answer": "A"}
@@ -765,7 +765,7 @@ class TestEnhancedTextExtraction:
         assert result["type"] == "single_choice"
 
     def test_validator_rejects_choice_without_options(self):
-        from backend.routers.imports import _validate_question_item
+        from backend.imports.import_orchestrator import validate_question_item as _validate_question_item
 
         result, err = _validate_question_item({"type": "single_choice", "question": "Q?", "answer": "A"})
         assert result is None
@@ -797,12 +797,12 @@ class TestAutoImportAIFailure:
 
     FILE_AUTO = "/imports/file/auto"
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_ai_empty_questions_returns_400_no_questions_created(self, client, auth_headers):
         """When AI returns zero questions, endpoint returns 400 and no questions in DB."""
         import json
 
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
@@ -824,10 +824,10 @@ class TestAutoImportAIFailure:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_ai_bad_json_returns_400_no_questions_created(self, client, auth_headers):
         """When AI returns malformed JSON, endpoint returns 400 and no questions."""
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
@@ -848,12 +848,12 @@ class TestAutoImportAIFailure:
         finally:
             mock.stop()
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_ai_plain_text_response_is_repaired_to_json(self, client, auth_headers):
         """When the first AI response is plain text, retry once to convert it to JSON."""
         import json
 
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
@@ -911,10 +911,10 @@ class TestAutoImportAIFailure:
     # Import rate limiting — security tests
     # ═══════════════════════════════════════════════════════════════════════════════
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_ai_upstream_error_returns_safe_detail(self, client, auth_headers):
         """Unexpected upstream errors should not leak provider internals or API keys."""
-        mock = patch("backend.routers.imports.OpenAI")
+        mock = patch("backend.imports.import_orchestrator.OpenAI")
         mc = mock.start()
         try:
             inst = mc.return_value
@@ -993,6 +993,7 @@ class TestLongDocumentAIImport:
 
     def test_ai_parse_marks_a_failed_chunk_as_partial_without_dropping_later_chunks(self, monkeypatch):
         from fastapi import HTTPException
+
         from backend.imports import import_orchestrator
 
         monkeypatch.setattr(import_orchestrator, "OPENAI_API_KEY", "sk-test")
@@ -1033,7 +1034,7 @@ class TestImportRateLimit:
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
         monkeypatch.setattr(
-            "backend.services.imports_service._build_import_client",
+            "backend.imports.import_orchestrator._build_import_client",
             lambda: _mock_import_ai_response(),
         )
 
@@ -1063,7 +1064,7 @@ class TestImportRateLimit:
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
         monkeypatch.setattr(
-            "backend.services.imports_service._build_import_client",
+            "backend.imports.import_orchestrator._build_import_client",
             lambda: _mock_import_ai_response(),
         )
 
@@ -1091,7 +1092,7 @@ class TestImportRateLimit:
         app.dependency_overrides[rl_dep] = lambda: real_limiter
 
         monkeypatch.setattr(
-            "backend.services.imports_service._build_import_client",
+            "backend.imports.import_orchestrator._build_import_client",
             lambda: _mock_import_ai_response(),
         )
 

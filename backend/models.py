@@ -1,4 +1,5 @@
 import json
+import secrets
 from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -13,6 +14,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    display_name = Column(String(100), nullable=False, default="")
+    is_guest = Column(Integer, nullable=False, default=0, index=True)
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True, index=True)
 
     role_ref = relationship("Role", back_populates="users")
@@ -21,6 +24,7 @@ class User(Base):
     practice_records = relationship("PracticeRecord", cascade="all, delete-orphan")
     question_reviews = relationship("UserQuestionReview", back_populates="user", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", cascade="all, delete-orphan")
+    feedback_entries = relationship("FeedbackEntry", back_populates="user", cascade="all, delete-orphan")
     study_goals = relationship("StudyGoal", cascade="all, delete-orphan")
 
     @property
@@ -47,10 +51,41 @@ class QuestionBank(Base):
     description = Column(Text, nullable=True, default="")
     subject = Column(String(200), nullable=True, default="")
     visibility = Column(String(20), nullable=False, default="private", index=True)  # public / private
+    share_token = Column(String(64), nullable=True, unique=True, index=True, default=lambda: secrets.token_urlsafe(32))
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     owner = relationship("User", back_populates="question_banks")
     questions = relationship("Question", back_populates="course", cascade="all, delete-orphan")
+
+
+class CourseFavorite(Base):
+    """A user's saved public question bank."""
+
+    __tablename__ = "course_favorites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (UniqueConstraint("course_id", "user_id", name="uq_course_favorite_user"),)
+
+
+class CourseReport(Base):
+    """A report about a public question bank, reviewable by administrators."""
+
+    __tablename__ = "course_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="CASCADE"), nullable=False, index=True)
+    reporter_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reason = Column(String(80), nullable=False, default="other")
+    detail = Column(Text, nullable=False, default="")
+    status = Column(String(20), nullable=False, default="new", index=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    course = relationship("QuestionBank")
+    reporter = relationship("User")
 
 
 
@@ -197,6 +232,9 @@ class Exam(Base):
     is_shuffle = Column(Integer, nullable=False, default=0)
     is_blind = Column(Integer, nullable=False, default=1)
     status = Column(String(20), nullable=False, default="draft", index=True)
+    share_code = Column(String(16), nullable=True, unique=True, index=True)
+    start_at = Column(DateTime, nullable=True, index=True)
+    end_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     course = relationship("QuestionBank")
@@ -257,6 +295,40 @@ class Collaboration(Base):
     inviter = relationship("User", foreign_keys=[invited_by])
 
 
+class StudyGroup(Base):
+    __tablename__ = "study_groups"
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    invite_code = Column(String(16), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+
+class StudyGroupMember(Base):
+    __tablename__ = "study_group_members"
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    joined_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    __table_args__ = (UniqueConstraint("group_id", "user_id", name="uq_study_group_member"),)
+
+
+class StudyGroupCourse(Base):
+    __tablename__ = "study_group_courses"
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    course_id = Column(Integer, ForeignKey("question_banks.id", ondelete="CASCADE"), nullable=False, index=True)
+    __table_args__ = (UniqueConstraint("group_id", "course_id", name="uq_study_group_course"),)
+
+
+class StudyGroupExam(Base):
+    __tablename__ = "study_group_exams"
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("study_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    exam_id = Column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
+    __table_args__ = (UniqueConstraint("group_id", "exam_id", name="uq_study_group_exam"),)
+
+
 class Tag(Base):
     """Knowledge-point tag with optional hierarchy."""
 
@@ -301,6 +373,24 @@ class Bookmark(Base):
 
     user = relationship("User", back_populates="bookmarks")
     question = relationship("Question")
+
+
+class FeedbackEntry(Base):
+    """A help or product-feedback message submitted by an authenticated user."""
+
+    __tablename__ = "feedback_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    category = Column(String(32), nullable=False, default="suggestion")
+    content = Column(Text, nullable=False)
+    contact = Column(String(120), nullable=False, default="")
+    status = Column(String(20), nullable=False, default="new", index=True)
+    admin_reply = Column(Text, nullable=False, default="")
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    user = relationship("User", back_populates="feedback_entries")
 
 
 class StudyGoal(Base):

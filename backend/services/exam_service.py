@@ -1,11 +1,13 @@
 """Formal exam business service."""
 
 import json
+import secrets
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .. import models, schemas
+from .. import crud_wrongbook, models, schemas
 from ..repositories.course_repo import CourseRepository
 from ..repositories.exam_repo import ExamRepository
 from ..utils import normalize_answer
@@ -46,7 +48,9 @@ class ExamService:
             if missing:
                 raise HTTPException(status_code=400, detail=f"以下题目不在该课程中：{missing}")
 
-        return self.exam_repo.create_exam(data, creator_id=creator_id)
+        self._validate_schedule(data.start_at, data.end_at)
+        # Draft codes cannot resolve; the code becomes usable only after publish.
+        return self.exam_repo.create_exam(data, creator_id=creator_id, share_code=self._new_share_code())
 
     def publish_exam(self, exam_id: int, user_id: int) -> models.Exam:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)
@@ -54,6 +58,10 @@ class ExamService:
             raise HTTPException(status_code=404, detail="考试不存在")
         if exam.creator_id != user_id:
             raise HTTPException(status_code=403, detail="只有创建者可以发布此考试")
+        self._validate_schedule(exam.start_at, exam.end_at)
+        if not exam.share_code:
+            exam.share_code = self._new_share_code()
+            self.db.commit()
         return self.exam_repo.update_status(exam_id, "published")
 
     def list_published(
@@ -86,10 +94,57 @@ class ExamService:
         if exam is None or exam.status != "published":
             raise HTTPException(status_code=404, detail="考试不存在")
 
+        availability = self.availability(exam)
+        if availability == "scheduled":
+            raise HTTPException(status_code=403, detail="Exam has not opened yet")
+        if availability == "closed":
+            raise HTTPException(status_code=403, detail="Exam is closed")
+
         existing = self.exam_repo.get_active_submission(exam_id=exam_id, user_id=user_id)
         if existing is not None:
             return existing
         return self.exam_repo.create_submission(exam_id=exam_id, user_id=user_id)
+
+    def get_shared_detail(self, share_code: str) -> models.Exam:
+        exam = (
+            self.db.query(models.Exam)
+            .filter(models.Exam.share_code == share_code.upper(), models.Exam.status == "published")
+            .first()
+        )
+        if exam is None:
+            raise HTTPException(status_code=404, detail="Shared exam not found")
+        return self.exam_repo.get_by_id_with_questions(exam.id) or exam
+
+    def availability(self, exam: models.Exam, now: datetime | None = None) -> str:
+        if exam.status != "published":
+            return "draft"
+        current = now or datetime.now(UTC)
+        start_at = self._as_utc(exam.start_at)
+        end_at = self._as_utc(exam.end_at)
+        if start_at and current < start_at:
+            return "scheduled"
+        if end_at and current >= end_at:
+            return "closed"
+        return "active"
+
+    def _new_share_code(self) -> str:
+        for _ in range(20):
+            code = secrets.token_hex(4).upper()
+            if not self.db.query(models.Exam.id).filter(models.Exam.share_code == code).first():
+                return code
+        raise HTTPException(status_code=503, detail="Could not allocate a share code")
+
+    @staticmethod
+    def _as_utc(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+    def _validate_schedule(self, start_at: datetime | None, end_at: datetime | None) -> None:
+        start = self._as_utc(start_at)
+        end = self._as_utc(end_at)
+        if start and end and end <= start:
+            raise HTTPException(status_code=400, detail="End time must be later than start time")
 
     def submit_exam(
         self,
@@ -120,13 +175,16 @@ class ExamService:
             submission = self.exam_repo.create_submission(exam_id=exam_id, user_id=user_id)
 
         correct_count = 0
+        question_results: dict[str, dict[str, object]] = {}
         total_questions = len(exam.questions)
         per_question_score = self._score_per_question(exam)
 
         for exam_question in exam.questions:
             question = exam_question.question
             user_answer = data.answers.get(str(question.id), "")
-            if self._is_correct(question, user_answer):
+            is_correct = self._is_correct(question, user_answer)
+            question_results[str(question.id)] = {"correct": is_correct, "answer": user_answer}
+            if is_correct:
                 correct_count += 1
 
         wrong_count = max(total_questions - correct_count, 0)
@@ -148,6 +206,7 @@ class ExamService:
             wrong_count=wrong_count,
             accuracy_rate=accuracy_rate,
             submitted_at=submitted.submitted_at.isoformat() if submitted.submitted_at else None,
+            question_results=question_results,
         )
 
     def _result_from_submission(
@@ -169,11 +228,14 @@ class ExamService:
             ) from exc
 
         correct_count = 0
+        question_results: dict[str, dict[str, object]] = {}
         total_questions = len(exam.questions)
         for exam_question in exam.questions:
             question = exam_question.question
             user_answer = answers.get(str(question.id), "")
-            if self._is_correct(question, user_answer):
+            is_correct = self._is_correct(question, user_answer)
+            question_results[str(question.id)] = {"correct": is_correct, "answer": user_answer}
+            if is_correct:
                 correct_count += 1
 
         wrong_count = max(total_questions - correct_count, 0)
@@ -187,7 +249,39 @@ class ExamService:
             wrong_count=wrong_count,
             accuracy_rate=accuracy_rate,
             submitted_at=submission.submitted_at.isoformat() if submission.submitted_at else None,
+            question_results=question_results,
         )
+
+    def add_submission_wrong_answers_to_wrongbook(self, exam_id: int, user_id: int) -> int:
+        exam = self.exam_repo.get_by_id_with_questions(exam_id)
+        if exam is None or exam.status != "published":
+            raise HTTPException(status_code=404, detail="Exam not found")
+        submission = (
+            self.db.query(models.ExamSubmission)
+            .filter(
+                models.ExamSubmission.exam_id == exam_id,
+                models.ExamSubmission.user_id == user_id,
+                models.ExamSubmission.submitted_at.isnot(None),
+            )
+            .order_by(models.ExamSubmission.submitted_at.desc())
+            .first()
+        )
+        if submission is None:
+            raise HTTPException(status_code=400, detail="Submit the exam before adding wrong answers")
+        try:
+            answers = json.loads(submission.answers) if submission.answers else {}
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=500, detail="Saved answer data is invalid") from exc
+
+        added_count = 0
+        for exam_question in exam.questions:
+            question = exam_question.question
+            user_answer = answers.get(str(question.id), "")
+            if not self._is_correct(question, user_answer):
+                crud_wrongbook.upsert_wrong_record(self.db, user_id, question.id, user_answer)
+                added_count += 1
+        self.db.commit()
+        return added_count
 
     def get_leaderboard(self, exam_id: int, user_id: int) -> schemas.ExamLeaderboardOut:
         exam = self.exam_repo.get_by_id_with_questions(exam_id)

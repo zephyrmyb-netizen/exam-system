@@ -11,6 +11,16 @@ from .. import models, schemas
 from ..repositories.course_repo import CourseRepository
 
 
+def get_accessible_course(db: Session, course_id: int, user_id: int) -> models.QuestionBank:
+    """Return a course if it exists and the user has access (own private or any public)."""
+    return CourseService(db).get_accessible_course(course_id, user_id)
+
+
+def get_owned_course(db: Session, course_id: int, user_id: int) -> models.QuestionBank:
+    """Return a course if it exists and the current user owns it."""
+    return CourseService(db).get_owned_course(course_id, user_id)
+
+
 class CourseService:
     def __init__(self, db: Session, repo: CourseRepository | None = None):
         self.db = db
@@ -20,7 +30,12 @@ class CourseService:
         bank = self.repo.get_by_id(course_id)
         if not bank:
             raise HTTPException(status_code=404, detail="课程不存在")
-        if bank.visibility == "private" and bank.owner_id != user_id:
+        collaboration = (
+            self.db.query(models.Collaboration.id)
+            .filter(models.Collaboration.course_id == course_id, models.Collaboration.user_id == user_id)
+            .first()
+        )
+        if bank.visibility == "private" and bank.owner_id != user_id and collaboration is None:
             raise HTTPException(status_code=404, detail="课程不存在")
         return bank
 

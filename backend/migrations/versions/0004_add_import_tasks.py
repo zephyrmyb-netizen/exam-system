@@ -17,6 +17,11 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    if "import_tasks" in sa.inspect(op.get_bind()).get_table_names():
+        # Older SQLite deployments created this model at application startup
+        # before Alembic tracked it.  Preserve that data and advance history.
+        return
+
     op.create_table(
         "import_tasks",
         sa.Column("id", sa.String(length=36), nullable=False),

@@ -12,7 +12,7 @@ from .base import BaseRepository
 class ExamRepository(BaseRepository[models.Exam]):
     model = models.Exam
 
-    def create_exam(self, data: schemas.ExamCreate, *, creator_id: int) -> models.Exam:
+    def create_exam(self, data: schemas.ExamCreate, *, creator_id: int, share_code: str | None = None) -> models.Exam:
         exam = models.Exam(
             title=data.title.strip(),
             description=data.description,
@@ -23,6 +23,9 @@ class ExamRepository(BaseRepository[models.Exam]):
             is_shuffle=1 if data.is_shuffle else 0,
             is_blind=1 if data.is_blind else 0,
             status="draft",
+            share_code=share_code,
+            start_at=data.start_at,
+            end_at=data.end_at,
             created_at=datetime.now(UTC),
         )
         self.db.add(exam)

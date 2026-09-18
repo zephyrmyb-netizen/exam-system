@@ -17,6 +17,7 @@ def get_questions(
     chapter: str = "",
     q_type: str = "",
     course_id: int | None = None,
+    sort_ascending: bool = False,
 ) -> tuple[list[models.Question], int]:
     query = _add_question_visibility_filter(db.query(models.Question), user_id)
 
@@ -32,7 +33,7 @@ def get_questions(
     if course_id is not None:
         query = query.filter(models.Question.course_id == course_id)
 
-    query = query.order_by(models.Question.id.desc())
+    query = query.order_by(models.Question.id.asc() if sort_ascending else models.Question.id.desc())
     return apply_pagination(query, page, page_size)
 
 

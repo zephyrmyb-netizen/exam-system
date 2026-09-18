@@ -23,9 +23,9 @@ class TestImportTransactionSafety:
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "not valid json at all {{{"
 
-        with patch("backend.routers.imports.OPENAI_API_KEY", "fake-key"):
-            with patch("backend.routers.imports.OPENAI_BASE_URL", "http://localhost"):
-                with patch("backend.routers.imports.OpenAI") as mock_openai:
+        with patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "fake-key"):
+            with patch("backend.imports.import_orchestrator.OPENAI_BASE_URL", "http://localhost"):
+                with patch("backend.imports.import_orchestrator.OpenAI") as mock_openai:
                     mock_openai.return_value.chat.completions.create.return_value = mock_response
                     # This should fail — AI can't parse it
                     resp = client.post(

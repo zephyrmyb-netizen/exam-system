@@ -17,10 +17,23 @@ from .config import (
     IMPORT_TASK_RECOVERY_LIMIT,
     IS_PRODUCTION,
 )
-from .database import Base, engine, ensure_runtime_schema
+from .database import Base, engine
 from .logging_config import configure_logging
 from .middleware import RequestIDMiddleware
-from .routers import auth, chat, courses, health, imports, library, practice, questions, wrongbook
+from .routers import (
+    auth,
+    chat,
+    courses,
+    feedback,
+    health,
+    imports,
+    library,
+    practice,
+    questions,
+    study_groups,
+    study_plans,
+    wrongbook,
+)
 from .services import import_task_service
 
 configure_logging()
@@ -29,18 +42,22 @@ logger = structlog.get_logger("xuexibao")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    ensure_runtime_schema()
+    if not IS_PRODUCTION:
+        Base.metadata.create_all(bind=engine)
     if IMPORT_TASK_RECOVERY_ENABLED:
         def schedule_import_task(task_id: str) -> None:
             create_task(to_thread(import_task_service.process_task, task_id))
 
-        recovered = import_task_service.recover_pending_tasks(
-            schedule=schedule_import_task,
-            limit=IMPORT_TASK_RECOVERY_LIMIT,
-        )
-        if recovered:
-            logger.info("recovered_import_tasks", count=len(recovered))
+        try:
+            recovered = import_task_service.recover_pending_tasks(
+                schedule=schedule_import_task,
+                limit=IMPORT_TASK_RECOVERY_LIMIT,
+            )
+            if recovered:
+                logger.info("recovered_import_tasks", count=len(recovered))
+        except Exception as exc:
+            # 启动期恢复失败不应阻断服务启动，仅记录错误
+            logger.error("import_task_recovery_failed", error=str(exc))
     yield
 
 
@@ -100,6 +117,9 @@ app.include_router(imports.router)
 app.include_router(courses.router)
 app.include_router(library.router)
 app.include_router(chat.router)
+app.include_router(feedback.router)
+app.include_router(study_plans.router)
+app.include_router(study_groups.router)
 app.include_router(exams.router)
 app.include_router(admin.router)
 app.include_router(tags.router)

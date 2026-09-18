@@ -183,10 +183,10 @@ class TestMultimodalImport:
         assert resp.status_code != 401
         assert "PPT" in resp.json()["detail"]
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_pptx_with_embedded_image_uses_multimodal_ai(self, client, auth_headers, monkeypatch):
         mock_client = _mock_import_ai_response("Image question")
-        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+        monkeypatch.setattr("backend.imports.import_orchestrator._build_import_client", lambda: mock_client)
 
         content = _make_pptx_bytes("Context text", _make_png_bytes())
         resp = client.post(
@@ -205,10 +205,10 @@ class TestMultimodalImport:
         assert isinstance(content_parts, list)
         assert any(part.get("type") == "image_url" for part in content_parts)
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_direct_png_uses_image_ai_and_filename_course_name(self, client, auth_headers, monkeypatch):
         mock_client = _mock_import_ai_response("Direct image question")
-        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+        monkeypatch.setattr("backend.imports.import_orchestrator._build_import_client", lambda: mock_client)
 
         resp = client.post(
             self.PREVIEW_URL,
@@ -221,10 +221,10 @@ class TestMultimodalImport:
         assert data["suggested_course_name"] == "network-quiz"
         assert data["questions"][0]["question"] == "Direct image question"
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_direct_jpeg_uses_image_ai(self, client, auth_headers, monkeypatch):
         mock_client = _mock_import_ai_response("JPEG image question")
-        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+        monkeypatch.setattr("backend.imports.import_orchestrator._build_import_client", lambda: mock_client)
 
         resp = client.post(
             self.PREVIEW_URL,
@@ -235,10 +235,10 @@ class TestMultimodalImport:
         assert resp.status_code == 200
         assert resp.json()["questions"][0]["question"] == "JPEG image question"
 
-    @patch("backend.routers.imports.OPENAI_API_KEY", "sk-test")
+    @patch("backend.imports.import_orchestrator.OPENAI_API_KEY", "sk-test")
     def test_preview_direct_webp_uses_image_ai(self, client, auth_headers, monkeypatch):
         mock_client = _mock_import_ai_response("WEBP image question")
-        monkeypatch.setattr("backend.services.imports_service._build_import_client", lambda: mock_client)
+        monkeypatch.setattr("backend.imports.import_orchestrator._build_import_client", lambda: mock_client)
 
         resp = client.post(
             self.PREVIEW_URL,
