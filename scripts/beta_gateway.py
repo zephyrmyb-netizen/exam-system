@@ -109,7 +109,13 @@ class BetaGatewayHandler(BaseHTTPRequestHandler):
         }
         headers["Host"] = f"{self.backend_host}:{self.backend_port}"
         headers["X-Forwarded-Proto"] = "https" if self.headers.get("X-Forwarded-Proto") == "https" else "http"
-        headers["X-Forwarded-For"] = self.client_address[0]
+        # Chain the upstream X-Forwarded-For (e.g. the Cloudflare edge's client
+        # IP) instead of overwriting it with the direct peer address, so the
+        # backend sees the real client for auth rate limiting.
+        incoming_forwarded = self.headers.get("X-Forwarded-For")
+        headers["X-Forwarded-For"] = (
+            f"{incoming_forwarded}, {self.client_address[0]}" if incoming_forwarded else self.client_address[0]
+        )
         if body:
             headers["Content-Length"] = str(len(body))
         try:

@@ -153,6 +153,9 @@ IMPORT_TASK_RECOVERY_ENABLED = os.getenv("IMPORT_TASK_RECOVERY_ENABLED", "1").lo
 IMPORT_TASK_RECOVERY_LIMIT = int(os.getenv("IMPORT_TASK_RECOVERY_LIMIT", "2"))
 
 # ── Rate limiting backend ───────────────────────────────────────────────────
+# Per-IP limit for unauthenticated auth attempts (login/register/guest),
+# enforced before credentials are checked to blunt credential stuffing.
+AUTH_RATE_LIMIT_PER_MINUTE = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "10"))
 # When set, rate limits are enforced via Redis (accurate across workers and
 # instances). When empty, an in-memory limiter is used (single-worker only).
 REDIS_URL = os.getenv("REDIS_URL", "").strip()

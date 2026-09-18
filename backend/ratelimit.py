@@ -31,10 +31,11 @@ logger = logging.getLogger("xuexibao.ratelimit")
 
 
 class RateLimiter(Protocol):
-    def check(self, *, key: str, limit: int, window_s: int = 3600) -> None:
+    def check(self, *, key: str, limit: int, window_s: int = 3600, message: str | None = None) -> None:
         """Raise HTTPException(429) if ``key`` has hit ``limit`` in the window.
 
-        Otherwise record this call against the key.
+        Otherwise record this call against the key. ``message`` overrides the
+        default 429 detail (use it when the window is not hourly).
         """
         ...
 
@@ -54,7 +55,7 @@ class MemoryRateLimiter:
         self._prune_every = 64
         self._calls_since_prune = 0
 
-    def check(self, *, key: str, limit: int, window_s: int = 3600) -> None:
+    def check(self, *, key: str, limit: int, window_s: int = 3600, message: str | None = None) -> None:
         now = time.time()
         cutoff = now - window_s
         with self._lock:
@@ -64,7 +65,7 @@ class MemoryRateLimiter:
                 self._store[key] = calls
                 raise HTTPException(
                     status_code=429,
-                    detail=f"请求过于频繁，每小时最多 {limit} 次，请稍后再试。",
+                    detail=message or f"请求过于频繁，每小时最多 {limit} 次，请稍后再试。",
                 )
             calls.append(now)
             self._store[key] = calls
@@ -99,7 +100,7 @@ class RedisRateLimiter:
         except Exception as exc:  # pragma: no cover - environment dependent
             logger.warning("Redis connection failed (%s); rate limiting will be inaccurate.", exc)
 
-    def check(self, *, key: str, limit: int, window_s: int = 3600) -> None:
+    def check(self, *, key: str, limit: int, window_s: int = 3600, message: str | None = None) -> None:
         redis_key = f"{self._KEY_PREFIX}{key}"
         try:
             count = self._redis.incr(redis_key)
@@ -108,7 +109,7 @@ class RedisRateLimiter:
             if count > limit:
                 raise HTTPException(
                     status_code=429,
-                    detail=f"请求过于频繁，每小时最多 {limit} 次，请稍后再试。",
+                    detail=message or f"请求过于频繁，每小时最多 {limit} 次，请稍后再试。",
                 )
         except HTTPException:
             raise

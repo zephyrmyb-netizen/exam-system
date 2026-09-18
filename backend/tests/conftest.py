@@ -82,15 +82,17 @@ def _default_noop_rate_limiter():
     Individual tests that need real rate-limit enforcement can override
     these dependency overrides in their own fixtures.
     """
+    from backend.routers.auth import rate_limiter as auth_rl
     from backend.routers.chat import rate_limiter as chat_rl
     from backend.routers.imports import rate_limiter as import_rl
 
     class _NoLimitLimiter:
-        def check(self, *, key, limit, window_s=3600):
+        def check(self, *, key, limit, window_s=3600, message=None):
             pass
 
     noop = _NoLimitLimiter()
 
+    app.dependency_overrides[auth_rl] = lambda: noop
     app.dependency_overrides[chat_rl] = lambda: noop
     app.dependency_overrides[import_rl] = lambda: noop
     from backend.ratelimit import reset_limiter_for_tests

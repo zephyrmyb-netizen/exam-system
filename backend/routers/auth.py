@@ -1,15 +1,54 @@
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from .. import auth as auth_module
 from .. import crud, schemas
-from ..config import ACCESS_TOKEN_EXPIRE_MINUTES, APP_ENV, INVITE_CODE, IS_PRODUCTION
+from ..config import ACCESS_TOKEN_EXPIRE_MINUTES, APP_ENV, AUTH_RATE_LIMIT_PER_MINUTE, INVITE_CODE, IS_PRODUCTION
 from ..database import get_db
 from ..models import User
+from ..ratelimit import RateLimiter, get_limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def rate_limiter() -> RateLimiter:
+    """FastAPI dependency returning the active rate limiter.
+
+    Override in tests via ``app.dependency_overrides[rate_limiter]``.
+    """
+    return get_limiter()
+
+
+def _client_ip(request: Request) -> str:
+    """Best-effort client IP for pre-auth rate limiting.
+
+    Order: CF-Connecting-IP (set by the Cloudflare tunnel edge), then the
+    leftmost X-Forwarded-For entry (nginx / beta gateway), then the socket
+    address for direct access.
+    """
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip:
+        return cf_ip
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def enforce_auth_limit(request: Request, limiter: RateLimiter = Depends(rate_limiter)) -> None:
+    """Per-IP limit on unauthenticated auth attempts (anti credential-stuffing).
+
+    Applies to login/register/guest before any credential or DB work, and is
+    shared with the nginx edge limit so both deployment paths are covered.
+    """
+    limiter.check(
+        key=f"auth:ip:{_client_ip(request)}",
+        limit=AUTH_RATE_LIMIT_PER_MINUTE,
+        window_s=60,
+        message=f"尝试过于频繁，每分钟最多 {AUTH_RATE_LIMIT_PER_MINUTE} 次，请稍后再试。",
+    )
 
 
 def _set_access_cookie(response: Response, token: str) -> None:
@@ -25,7 +64,7 @@ def _set_access_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(body: schemas.UserCreate, db: Session = Depends(get_db)):
+def register(body: schemas.UserCreate, db: Session = Depends(get_db), _ratelimit=Depends(enforce_auth_limit)):
     try:
         invite_code = body.invite_code
         if not invite_code:
@@ -50,7 +89,7 @@ def register(body: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
-def login(body: schemas.LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(body: schemas.LoginRequest, response: Response, db: Session = Depends(get_db), _ratelimit=Depends(enforce_auth_limit)):
     try:
         user = crud.get_user_by_username(db, body.username)
         if not user or not auth_module.verify_password(body.password, user.password_hash):
@@ -71,7 +110,12 @@ def logout(response: Response):
 
 
 @router.post("/guest", response_model=schemas.TokenResponse, status_code=status.HTTP_201_CREATED)
-def guest_login(body: schemas.GuestLoginRequest, response: Response, db: Session = Depends(get_db)):
+def guest_login(
+    body: schemas.GuestLoginRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+    _ratelimit=Depends(enforce_auth_limit),
+):
     """Create an isolated disposable user for the local beta environment only."""
     if APP_ENV != "testing":
         raise HTTPException(status_code=404, detail="Not found")
