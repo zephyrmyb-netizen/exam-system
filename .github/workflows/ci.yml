@@ -71,3 +71,62 @@ jobs:
       - name: Run visual regression tests
         working-directory: frontend
         run: npm run test:visual
+
+  migrations:
+    name: Migrations (upgrade + drift check)
+    runs-on: ubuntu-latest
+    env:
+      SKIP_DOTENV: "1"
+      DATABASE_URL: "sqlite:///./ci-migrations.db"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run all migrations on a fresh database
+        run: python -m alembic -c backend/alembic.ini upgrade head
+
+      - name: Check for model/migration drift
+        run: python -m alembic -c backend/alembic.ini check
+
+  docker:
+    name: Docker (image build + container smoke tests)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t xuexibao-backend -f Dockerfile.backend .
+
+      - name: Build frontend image
+        run: docker build -t xuexibao-frontend -f Dockerfile.frontend .
+
+      - name: Validate nginx config inside the frontend image
+        run: docker run --rm --add-host backend:127.0.0.1 --entrypoint nginx xuexibao-frontend -t
+
+      - name: Smoke test backend container (migrations + /health)
+        run: |
+          docker run -d --name backend-smoke -p 18000:8000 \
+            -e SKIP_DOTENV=1 \
+            -e DATABASE_URL=sqlite:////tmp/ci-smoke.db \
+            xuexibao-backend
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18000/health >/dev/null; then
+              echo "Backend container is healthy."
+              docker rm -f backend-smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend container failed to become healthy. Logs:"
+          docker logs backend-smoke
+          docker rm -f backend-smoke
+          exit 1
