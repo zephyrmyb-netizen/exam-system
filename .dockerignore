@@ -1,18 +1,60 @@
+# Version control
 .git
 .gitignore
-.pytest_cache
-.mypy_cache
-.ruff_cache
+.github
+
+# Python caches
 __pycache__
 *.pyc
 *.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+backend/.venv
+.venv
+
+# Database files (use external volumes in production)
 *.db
 *.sqlite
+*.sqlite3
+
+# Logs
 *.log
+logs
+
+# Environment files (use env vars in production)
 .env
 backend/.env
-backend/.venv
+
+# Frontend build & deps
 frontend/node_modules
 frontend/dist
+frontend/.vite
+
+# Test artifacts (不应进生产镜像)
+frontend/test-results
+frontend/screenshots
+frontend/playwright-report
+backend/tests
+backend/.pytest_cache
+
+# Uploads (mount as volume in production)
 uploads
-docs/superpowers
+backend/uploads
+
+# IDE & editor configs
+.idea
+.vscode
+*.swp
+
+# Docs & design assets (不需要在运行时镜像里)
+docs
+exam-platform-ui
+*.md
+
+# OS-specific files
+.DS_Store
+Thumbs.db
