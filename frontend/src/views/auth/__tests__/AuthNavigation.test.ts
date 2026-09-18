@@ -52,6 +52,19 @@ describe("authentication navigation", () => {
     expect(mocks.replace).toHaveBeenCalledWith("/courses/7");
   });
 
+  it("stays on the login page when the credentials are rejected", async () => {
+    mocks.login.mockResolvedValueOnce(false);
+    const wrapper = mount(LoginView, { global: { stubs: { RouterLink: true } } });
+
+    await wrapper.get("#login-username").setValue("student");
+    await wrapper.get("#login-password").setValue("wrong");
+    await wrapper.get("form").trigger("submit");
+    await flushPromises();
+
+    expect(mocks.login).toHaveBeenCalledWith("student", "wrong");
+    expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
   it("replaces to login after registration", async () => {
     const wrapper = mount(RegisterView, { global: { stubs: { RouterLink: true } } });
 

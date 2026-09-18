@@ -155,3 +155,80 @@ describe("guest authentication", () => {
     await expect(deletion).resolves.toBe(true);
   });
 });
+
+describe("credential login", () => {
+  const profile = {
+    data: {
+      id: 7,
+      username: "student",
+      display_name: "学生",
+      is_guest: false,
+      role: "student",
+      permissions: [],
+    },
+  };
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    mocks.post.mockReset();
+    mocks.get.mockReset();
+    mocks.setToken.mockReset();
+    mocks.clearToken.mockReset();
+    mocks.getToken.mockReset().mockReturnValue("");
+  });
+
+  it("logs in with trimmed credentials, stores the token and loads the profile", async () => {
+    mocks.post.mockResolvedValue({ data: { access_token: "user-token" } });
+    mocks.get.mockResolvedValue(profile);
+    const store = useAuthStore();
+
+    await expect(store.login("  student  ", "secret")).resolves.toBe(true);
+
+    expect(mocks.post).toHaveBeenCalledWith("/auth/login", { username: "student", password: "secret" });
+    expect(mocks.setToken).toHaveBeenCalledWith("user-token");
+    expect(store.user?.username).toBe("student");
+    expect(store.authMessage).toBe("登录成功。");
+  });
+
+  it("does not store anything and reports an error when the response has no token", async () => {
+    mocks.post.mockResolvedValue({ data: { detail: "ok" } });
+    const store = useAuthStore();
+
+    await expect(store.login("student", "secret")).resolves.toBe(false);
+
+    expect(mocks.setToken).not.toHaveBeenCalled();
+    expect(mocks.get).not.toHaveBeenCalled();
+    expect(store.authError).toBeTruthy();
+  });
+
+  it("rejects a wrong password without storing a token", async () => {
+    mocks.post.mockRejectedValue({ response: { status: 401, data: { detail: "用户名或密码错误" } } });
+    const store = useAuthStore();
+
+    await expect(store.login("student", "wrong")).resolves.toBe(false);
+
+    expect(mocks.setToken).not.toHaveBeenCalled();
+    expect(store.authError).toBeTruthy();
+    expect(store.user).toBeNull();
+  });
+
+  it("validates empty input before any request", async () => {
+    const store = useAuthStore();
+
+    await expect(store.login("   ", "")).resolves.toBe(false);
+
+    expect(mocks.post).not.toHaveBeenCalled();
+    expect(store.authError).toBe("请填写用户名和密码。");
+  });
+
+  it("does not report a logged-in user when the profile fails right after a token", async () => {
+    mocks.post.mockResolvedValue({ data: { token: "user-token" } });
+    mocks.get.mockRejectedValue({ response: { status: 401 } });
+    const store = useAuthStore();
+
+    await expect(store.login("student", "secret")).resolves.toBe(false);
+
+    expect(mocks.setToken).toHaveBeenCalledWith("user-token");
+    expect(store.user).toBeNull();
+  });
+});
