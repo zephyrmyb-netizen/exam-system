@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import request, { getErrorMessage } from "../../api/request";
 import { typeOptions } from "../../utils/question";
@@ -26,7 +26,7 @@ const form = reactive({
 
 const saving = ref(false);
 const errorMessage = ref("");
-const validationErrors = ref([]);
+const validationErrors = ref<string[]>([]);
 
 // Text answer hints
 const answerHint = computed(() => {
@@ -64,7 +64,7 @@ function addOption() {
   form.options.push("");
 }
 
-function removeOption(index) {
+function removeOption(index: number) {
   if (form.options.length <= 2) return;
   form.options.splice(index, 1);
 }
@@ -94,7 +94,7 @@ async function submit() {
   errorMessage.value = "";
 
   // Build payload
-  const payload = {
+  const payload: Record<string, any> = {
     type: form.type,
     subject: form.subject.trim(),
     chapter: form.chapter.trim(),
@@ -106,7 +106,7 @@ async function submit() {
 
   // Build options for choices
   if (form.type === "single_choice" || form.type === "multiple_choice") {
-    const opts = {};
+    const opts: Record<string, string> = {};
     form.options.forEach((val, i) => {
       if (val.trim()) {
         opts[String.fromCharCode(65 + i)] = val.trim();

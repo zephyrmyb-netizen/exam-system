@@ -2,9 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 import { BookMarked, BookOpen, GraduationCap, Layers, Library, ListChecks, Play, RefreshCw, Upload } from "@lucide/vue";
 
-import request, { getErrorMessage } from "../api/request";
+import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { getPracticeStats, getTodayReview, getWeakTypes } from "../api/practice";
+import { getMyCourses } from "../api/courses";
 import PracticeModeCard from "../components/practice/PracticeModeCard.vue";
 import PracticeOverviewCard from "../components/practice/PracticeOverviewCard.vue";
 import type { Course, WeakType } from "../types";
@@ -135,8 +136,7 @@ async function fetchRecentCourses() {
   coursesLoading.value = true;
   coursesError.value = "";
   try {
-    const { data } = await request.get<Course[] | { items: Course[] }>("/courses/mine");
-    const items = Array.isArray(data) ? data : data.items || [];
+    const items = await getMyCourses();
     recentCourses.value = items.filter(isPracticeReadyCourse).slice(0, 3);
   } catch (error) {
     recentCourses.value = [];

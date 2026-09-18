@@ -27,6 +27,15 @@ interface SessionStats {
   durationSeconds: number | null;
 }
 
+export interface PracticeSessionQuestion {
+  question: Question;
+  /** The only question number shown while this practice session is active. */
+  sessionOrder: number;
+  answer: string;
+  result: SubmitResponse | null;
+  marked: boolean;
+}
+
 const CORRECT_AUTO_NEXT_DELAY_MS = 650;
 const MAX_DUPLICATE_FETCH_ATTEMPTS = 8;
 
@@ -34,6 +43,11 @@ export interface UsePracticeSessionProps {
   courseId?: number | null;
   mode?: string;
   modeParam?: string;
+  /**
+   * A complete, already ordered course question list.  Normal course practice
+   * supplies this so the answer card can navigate to every question at once.
+   */
+  initialQuestions?: Question[];
 }
 
 export interface UsePracticeSessionReturn {
@@ -49,23 +63,29 @@ export interface UsePracticeSessionReturn {
   handleTextKeydown: (event: KeyboardEvent) => void;
   hasAnswerSelected: ComputedRef<boolean>;
   isTextQuestion: ComputedRef<boolean>;
+  isSeededSession: ComputedRef<boolean>;
   loading: Ref<boolean>;
   phase: Ref<PracticeSessionPhase>;
   question: Ref<Question | null>;
+  sessionQuestions: Ref<PracticeSessionQuestion[]>;
+  currentSessionQuestionIndex: Ref<number>;
   result: Ref<SubmitResponse | null>;
   selectedAnswer: Ref<string>;
   selectedAnswers: Ref<string[]>;
   sessionComplete: Ref<boolean>;
   sessionStats: Ref<SessionStats>;
   setSingleAnswer: (value: string) => void;
+  jumpToSessionQuestion: (index: number) => boolean;
   startSession: () => void;
   streakText: ComputedRef<string>;
   submitAnswer: () => Promise<void>;
   submitting: Ref<boolean>;
   textAnswer: Ref<string>;
   toggleMultipleAnswer: (key: string) => void;
+  toggleCurrentQuestionMark: () => void;
   updateTextAnswer: (value: string) => void;
   validationMessage: Ref<string>;
+  viewingHistory: Ref<boolean>;
 }
 
 function createSessionStats(): SessionStats {
@@ -105,8 +125,12 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   const validationMessage = ref("");
   const sessionComplete = ref(false);
   const sessionStats = ref<SessionStats>(createSessionStats());
+  const sessionQuestions = ref<PracticeSessionQuestion[]>([]);
+  const currentSessionQuestionIndex = ref(-1);
+  const viewingHistory = ref(false);
   const phase = ref<PracticeSessionPhase>("idle");
   const answeredQuestionIds = new Set<number>();
+  const seededQuestions = props.initialQuestions ?? [];
   const actor = createActor(practiceSessionMachine);
   const subscription = actor.subscribe((snapshot) => {
     phase.value = snapshot.value as PracticeSessionPhase;
@@ -153,6 +177,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   });
 
   const isTextQuestion = computed(() => isTextQuestionType(question.value?.type ?? ""));
+  const isSeededSession = computed(() => seededQuestions.length > 0);
   const currentAnswer = computed(() => {
     if (!question.value) return "";
     if (question.value.type === "multiple_choice") return [...selectedAnswers.value].sort().join(",");
@@ -184,6 +209,42 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     result.value = null;
     validationMessage.value = "";
     activeSubmissionId = "";
+  }
+
+  function createSeededSessionQuestions(questions: Question[]): PracticeSessionQuestion[] {
+    const questionIds = new Set<number>();
+    return questions.reduce<PracticeSessionQuestion[]>((items, item) => {
+      if (questionIds.has(item.id)) return items;
+      questionIds.add(item.id);
+      items.push({
+        question: item,
+        sessionOrder: items.length + 1,
+        answer: "",
+        result: null,
+        marked: false,
+      });
+      return items;
+    }, []);
+  }
+
+  function updateCurrentSessionQuestion(partial: Partial<PracticeSessionQuestion>): void {
+    const index = currentSessionQuestionIndex.value;
+    const item = sessionQuestions.value[index];
+    if (!item) return;
+    sessionQuestions.value[index] = { ...item, ...partial };
+  }
+
+  function restoreAnswerState(answer: string, targetQuestion: Question): void {
+    selectedAnswer.value = "";
+    selectedAnswers.value = [];
+    textAnswer.value = "";
+    if (targetQuestion.type === "multiple_choice") {
+      selectedAnswers.value = answer.split(/[,，\s]+/).filter(Boolean);
+    } else if (isTextQuestionType(targetQuestion.type)) {
+      textAnswer.value = answer;
+    } else {
+      selectedAnswer.value = answer;
+    }
   }
 
   function createSubmissionId(): string {
@@ -223,12 +284,43 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     if (phase.value !== "completed") actor.send({ type: "NO_MORE_QUESTIONS" });
   }
 
+  function showSessionQuestion(index: number, allowSessionRestart = false): boolean {
+    const item = sessionQuestions.value[index];
+    if (!item || loading.value || submitting.value) return false;
+    if (phase.value !== "answering" && !enterLoading(allowSessionRestart)) return false;
+
+    clearCorrectAutoNextTimer();
+    question.value = item.question;
+    restoreAnswerState(item.answer, item.question);
+    result.value = item.result;
+    validationMessage.value = "";
+    errorMessage.value = "";
+    currentSessionQuestionIndex.value = index;
+    viewingHistory.value = false;
+    sessionComplete.value = false;
+    if (phase.value !== "answering") actor.send({ type: "QUESTION_READY" });
+    return true;
+  }
+
+  function advanceSeededSession(): void {
+    const nextIndex = currentSessionQuestionIndex.value + 1;
+    if (nextIndex >= sessionQuestions.value.length) {
+      completeSession();
+      return;
+    }
+    showSessionQuestion(nextIndex, true);
+  }
+
   function getElapsedSeconds(): number | null {
     if (!sessionStats.value.startedAt) return null;
     return Math.max(0, Math.round((Date.now() - sessionStats.value.startedAt.getTime()) / 1000));
   }
 
   async function fetchRandomQuestion(allowSessionRestart = false): Promise<void> {
+    if (isSeededSession.value) {
+      advanceSeededSession();
+      return;
+    }
     if (loading.value || !enterLoading(allowSessionRestart)) return;
 
     clearCorrectAutoNextTimer();
@@ -267,6 +359,15 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       }
 
       question.value = data;
+      sessionQuestions.value.push({
+        question: data,
+        sessionOrder: sessionQuestions.value.length + 1,
+        answer: "",
+        result: null,
+        marked: false,
+      });
+      currentSessionQuestionIndex.value = sessionQuestions.value.length - 1;
+      viewingHistory.value = false;
       sessionComplete.value = false;
       actor.send({ type: "QUESTION_READY" });
     } catch (error: unknown) {
@@ -287,6 +388,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   function setSingleAnswer(value: string): void {
     if (phase.value !== "answering" || result.value || submitting.value) return;
     selectedAnswer.value = value;
+    updateCurrentSessionQuestion({ answer: value });
     validationMessage.value = "";
     void submitAnswer();
   }
@@ -296,12 +398,14 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     selectedAnswers.value = selectedAnswers.value.includes(key)
       ? selectedAnswers.value.filter((item) => item !== key)
       : [...selectedAnswers.value, key];
+    updateCurrentSessionQuestion({ answer: selectedAnswers.value.slice().sort().join(",") });
     validationMessage.value = "";
   }
 
   function updateTextAnswer(value: string): void {
     if (phase.value !== "answering") return;
     textAnswer.value = value;
+    updateCurrentSessionQuestion({ answer: value.trim() });
     validationMessage.value = "";
   }
 
@@ -328,6 +432,7 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
       if (question.value?.id !== questionId) return;
 
       result.value = data;
+      updateCurrentSessionQuestion({ answer: currentAnswer.value, result: data });
       sessionStats.value.answeredCount += 1;
       answeredQuestionIds.add(questionId);
 
@@ -362,13 +467,31 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
   function startSession(): void {
     cancelPendingAdvance();
     answeredQuestionIds.clear();
+    sessionQuestions.value = createSeededSessionQuestions(seededQuestions);
+    currentSessionQuestionIndex.value = -1;
+    viewingHistory.value = false;
     sessionComplete.value = false;
     sessionStats.value = { ...createSessionStats(), startedAt: new Date() };
     resetAnswerState();
     if (phase.value !== "idle" && phase.value !== "completed") {
       question.value = null;
     }
+    if (sessionQuestions.value.length) {
+      showSessionQuestion(0, true);
+      return;
+    }
     void fetchRandomQuestion(true);
+  }
+
+  function jumpToSessionQuestion(index: number): boolean {
+    cancelPendingAdvance();
+    return showSessionQuestion(index, true);
+  }
+
+  function toggleCurrentQuestionMark(): void {
+    const item = sessionQuestions.value[currentSessionQuestionIndex.value];
+    if (!item) return;
+    updateCurrentSessionQuestion({ marked: !item.marked });
   }
 
   return {
@@ -384,22 +507,28 @@ export function usePracticeSession(props: UsePracticeSessionProps = {}): UsePrac
     handleTextKeydown,
     hasAnswerSelected,
     isTextQuestion,
+    isSeededSession,
     loading,
     phase,
     question,
+    sessionQuestions,
+    currentSessionQuestionIndex,
     result,
     selectedAnswer,
     selectedAnswers,
     sessionComplete,
     sessionStats,
     setSingleAnswer,
+    jumpToSessionQuestion,
     startSession,
     streakText,
     submitAnswer,
     submitting,
     textAnswer,
     toggleMultipleAnswer,
+    toggleCurrentQuestionMark,
     updateTextAnswer,
     validationMessage,
+    viewingHistory,
   };
 }

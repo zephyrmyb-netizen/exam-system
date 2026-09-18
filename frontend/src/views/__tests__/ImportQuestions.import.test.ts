@@ -95,7 +95,6 @@ function mountPage() {
           template: "<div class='task-monitor'><slot />{{ title }} {{ detail }}</div>",
           props: ["title", "detail"],
         },
-        ImportCapabilityStrip: true,
         ImportPreview: {
           template: `
             <div class="preview-stub" :data-confirming="String(confirming)">

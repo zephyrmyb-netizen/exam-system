@@ -1,4 +1,4 @@
-import type { Course, CourseUpdate } from "@/types";
+import type { Course, CourseUpdate, Question } from "@/types";
 import request from "./request.ts";
 
 export function getMyCourses(): Promise<Course[]> {
@@ -7,6 +7,18 @@ export function getMyCourses(): Promise<Course[]> {
 
 export function getCourse(id: number): Promise<Course> {
   return request.get(`/courses/${id}`).then(({ data }) => data as Course);
+}
+
+/**
+ * Fetch the complete course list before a normal practice session starts.
+ * The returned order becomes that session's stable 1..N order; the UI never
+ * exposes database IDs or source-document labels as question numbers.
+ */
+export function getCoursePracticeQuestions(id: number): Promise<Question[]> {
+  return request.get(`/courses/${id}/questions`, { params: { order: "asc" } }).then(({ data }) => {
+    if (Array.isArray(data)) return data as Question[];
+    return Array.isArray(data?.items) ? (data.items as Question[]) : [];
+  });
 }
 
 export function createCourse(name: string, description?: string): Promise<Course> {

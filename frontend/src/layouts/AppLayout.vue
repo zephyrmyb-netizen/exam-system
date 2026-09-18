@@ -34,13 +34,16 @@ let successTimer: ReturnType<typeof setTimeout> | null = null;
 
 const keyboardActive = ref(false);
 const inputFocusActive = ref(false);
+const isBetaBuild = import.meta.env.VITE_APP_ENV === "beta";
 const immersiveRouteNames = new Set(["course-practice", "practice-wrong", "practice-due", "exam-take", "exam-result"]);
+const persistentTabComponentNames = ["Home", "CourseList", "ImportQuestions", "Mine"];
 
 const showAiBanner = computed(() => aiStatus.value === "running" && route.path !== "/import");
 const showOfflineSyncBanner = computed(() => !isOnline.value || pendingCount.value > 0);
 
 const isImmersiveRoute = computed(() => immersiveRouteNames.has(route.name as string));
 const showBottomNav = computed(() => !keyboardActive.value && !inputFocusActive.value && !isImmersiveRoute.value);
+const routeTransitionName = computed(() => (route.meta?.keepAlive ? "" : "page"));
 
 watch(aiStatus, (val) => {
   if (val === "success") {
@@ -63,7 +66,13 @@ const navItems = [
   { key: "mine", label: "我的", icon: User, to: "/mine" },
 ];
 
-const sourceAwareRoutes = new Set(["study-overview", "announcements", "practice-history"]);
+const sourceAwareRoutes = new Set([
+  "study-overview",
+  "study-groups",
+  "announcements",
+  "practice-history",
+  "help-feedback",
+]);
 
 const activeNavKey = computed(() => {
   const nav = route.meta?.navKey;
@@ -85,9 +94,17 @@ function goBack() {
   returnToSource(typeof parent === "string" ? { name: parent, params: { ...route.params } } : { name: "home" });
 }
 
-function handleAuthChange() {
-  if (!getToken() && !user.value && route.name !== "login" && route.name !== "register") {
-    replaceTo({ name: "login", query: { redirect: route.fullPath } });
+let refreshingAuth = false;
+async function handleAuthChange() {
+  if (refreshingAuth || (user.value && getToken()) || route.name === "login" || route.name === "register") return;
+  // localStorage 变化不能直接代表 HttpOnly Cookie 会话已失效。
+  // 先向后端确认一次，避免有效用户被错误踢到登录页。
+  refreshingAuth = true;
+  try {
+    await fetchProfile({ silent: true });
+    if (!user.value && !getToken()) replaceTo({ name: "login" });
+  } finally {
+    refreshingAuth = false;
   }
 }
 
@@ -144,9 +161,10 @@ async function syncPendingPracticeActions() {
 }
 
 onMounted(() => {
-  void fetchProfile().then(() => {
-    if (user.value) void resumeAiImportTask();
-  });
+  // The router validates the session before this protected layout mounts.
+  // Repeating /auth/me here made every public beta visit wait on the Tunnel
+  // twice, especially noticeable on mobile networks.
+  if (user.value) void resumeAiImportTask();
   void refreshPendingCount();
   window.addEventListener(getAuthEventName(), handleAuthChange);
   window.addEventListener("storage", handleAuthChange);
@@ -199,6 +217,10 @@ onUnmounted(() => {
       </div>
     </header>
 
+    <div v-if="isBetaBuild && !isImmersiveRoute" class="beta-build-badge" data-testid="beta-build-badge" role="status">
+      Beta 测试版
+    </div>
+
     <div
       v-if="showAiBanner"
       class="ai-task-banner"
@@ -231,8 +253,10 @@ onUnmounted(() => {
 
     <main class="app-main">
       <router-view v-slot="{ Component }">
-        <transition name="page" mode="out-in">
-          <component :is="Component" />
+        <transition :name="routeTransitionName" mode="out-in">
+          <KeepAlive :include="persistentTabComponentNames" :max="4">
+            <component :is="Component" />
+          </KeepAlive>
         </transition>
       </router-view>
     </main>
@@ -247,6 +271,7 @@ onUnmounted(() => {
         :data-testid="`bottom-tab-${item.key}`"
         :data-nav-key="item.key"
         :aria-label="item.label"
+        :aria-current="activeNavKey === item.key ? 'page' : undefined"
         @click.stop.prevent="handleTabClick(item)"
       >
         <span class="nav-icon" aria-hidden="true">
@@ -269,7 +294,8 @@ onUnmounted(() => {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(100px + var(--safe-area-bottom));
+  padding: max(16px, var(--safe-area-top)) max(16px, var(--safe-area-right)) var(--nav-bottom-clearance)
+    max(16px, var(--safe-area-left));
   margin: 0 auto;
   background: var(--page-bg);
 }
@@ -307,7 +333,7 @@ onUnmounted(() => {
   position: relative;
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4) var(--space-2);
+  padding: 0 0 var(--space-5);
   overflow: hidden;
 }
 
@@ -316,13 +342,13 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   width: fit-content;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 10px;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--text-main);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .header-row {
@@ -335,8 +361,8 @@ onUnmounted(() => {
 .theme-toggle {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border: 1px solid var(--line-soft);
   border-radius: 50%;
@@ -382,7 +408,7 @@ onUnmounted(() => {
 .ai-banner-text {
   flex: 1;
   font-size: var(--text-sm);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--primary-strong);
   line-height: 1.35;
 }
@@ -412,7 +438,7 @@ onUnmounted(() => {
   background: rgba(15, 23, 42, 0.92);
   color: #fff;
   font-size: var(--text-xs);
-  font-weight: 800;
+  font-weight: 600;
   transform: translateX(-50%);
   box-shadow: var(--shadow-modal);
 }
@@ -438,6 +464,19 @@ onUnmounted(() => {
   flex: 0 0 auto;
   border-radius: 50%;
   background: currentColor;
+}
+
+.beta-build-badge {
+  align-self: flex-end;
+  margin: max(8px, env(safe-area-inset-top)) 12px 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line-accent);
+  border-radius: var(--radius-full);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .bottom-nav {
@@ -474,7 +513,7 @@ onUnmounted(() => {
   color: var(--text-muted);
   font: inherit;
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -483,9 +522,9 @@ onUnmounted(() => {
 
 .nav-button.active {
   color: var(--primary-strong);
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--primary-soft);
   box-shadow:
-    inset 0 0 0 1px rgba(16, 185, 129, 0.15),
+    inset 0 0 0 1px var(--primary-border),
     var(--glass-inner-highlight);
 }
 .nav-icon {
@@ -500,9 +539,19 @@ onUnmounted(() => {
   line-height: 1;
 }
 
+.app-header h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+.page-intro {
+  min-width: 0;
+}
 @media (min-width: 760px) {
   .app-shell {
-    box-shadow: var(--shell-shadow);
+    padding-inline: 28px;
   }
 }
 </style>

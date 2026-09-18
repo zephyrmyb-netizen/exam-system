@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { ShieldCheck, Users } from "@lucide/vue";
+import { MessageSquareText, ShieldCheck, Users } from "@lucide/vue";
 
 import { getAdminStats, type AdminStats } from "@/api/admin";
 import { getErrorMessage } from "@/api/request";
@@ -63,6 +63,10 @@ onMounted(fetchStats);
     <RouterLink replace class="admin-link" :to="{ name: 'admin-users' }">
       <Users :size="18" />
       用户角色管理
+    </RouterLink>
+    <RouterLink replace class="admin-link admin-link--secondary" :to="{ name: 'admin-feedback' }">
+      <MessageSquareText :size="18" />
+      反馈处理
     </RouterLink>
   </section>
 </template>
@@ -129,5 +133,10 @@ onMounted(fetchStats);
   color: #fff;
   font-weight: 900;
   text-decoration: none;
+}
+.admin-link--secondary {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
 }
 </style>

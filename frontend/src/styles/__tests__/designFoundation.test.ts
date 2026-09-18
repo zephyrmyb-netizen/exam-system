@@ -43,36 +43,34 @@ describe("design foundation", () => {
     expect(existsSync(`${frontendRoot}/src/styles/liquid-glass.css`)).toBe(false);
   });
 
-  it("locks the mobile app viewport to device width after native picker returns", () => {
+  it("uses safe areas without disabling accessibility zoom", () => {
     const indexHtml = readFrontendFile("index.html");
     const baseCss = readFrontendFile("src/styles/base.css");
 
     expect(indexHtml).toMatch(
-      /<meta\s+name="viewport"\s+content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"\s*\/>/,
+      /<meta\s+name="viewport"\s+content="width=device-width, initial-scale=1, viewport-fit=cover"\s*\/>/,
     );
     expect(baseCss).toMatch(/html\s*\{[^}]*-webkit-text-size-adjust:\s*100%[^}]*text-size-adjust:\s*100%/s);
   });
 
-  it("self-hosts Noto Sans SC Variable and carries its license", () => {
+  it("uses the installed system font stack without bundling Noto on the first screen", () => {
     const packageJson = JSON.parse(readFrontendFile("package.json"));
     const mainSource = readFrontendFile("src/main.ts");
     const baseCss = readFrontendFile("src/styles/base.css");
-    const fontReadme = readFrontendFile("public/fonts/README.md");
-    const fontLicense = readFrontendFile("public/fonts/OFL-NotoSansSC.txt");
 
-    expect(packageJson.dependencies["@fontsource-variable/noto-sans-sc"]).toBe("^5.2.10");
-    expect(mainSource).toContain("@fontsource-variable/noto-sans-sc/wght.css");
-    expect(baseCss).toContain('"Noto Sans SC Variable"');
+    expect(packageJson.dependencies["@fontsource-variable/noto-sans-sc"]).toBeUndefined();
+    expect(mainSource).not.toContain("@fontsource-variable/noto-sans-sc/wght.css");
     expect(baseCss).toContain('"PingFang SC"');
     expect(baseCss).toContain('"Microsoft YaHei"');
     expect(`${mainSource}\n${baseCss}`).not.toMatch(/fonts\.(?:googleapis|gstatic)\.com|@import\s+url\(https?:\/\//i);
-    expect(existsSync(`${frontendRoot}/public/fonts/OFL-NotoSansSC.txt`)).toBe(true);
-    expect(existsSync(`${frontendRoot}/public/fonts/README.md`)).toBe(true);
-    expect(fontReadme).toContain("@fontsource-variable/noto-sans-sc");
-    expect(fontReadme).toContain("5.2.10");
-    expect(fontReadme).toContain("https://fontsource.org/fonts/noto-sans-sc");
-    expect(fontReadme).toContain("https://www.npmjs.com/package/@fontsource-variable/noto-sans-sc");
-    expect(fontLicense).toContain("SIL OPEN FONT LICENSE Version 1.1");
-    expect(fontLicense).toContain("Google Inc.");
+  });
+
+  it("prefers installed Chinese system fonts", () => {
+    const baseCss = readFrontendFile("src/styles/base.css");
+    const fontStack = baseCss.match(/--font-sans:\s*([\s\S]*?);/)?.[1] || "";
+
+    expect(fontStack).not.toBe("");
+    expect(fontStack.indexOf('"PingFang SC"')).toBeLessThan(fontStack.indexOf("system-ui"));
+    expect(fontStack.indexOf('"Microsoft YaHei"')).toBeLessThan(fontStack.indexOf("system-ui"));
   });
 });

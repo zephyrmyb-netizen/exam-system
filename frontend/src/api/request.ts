@@ -3,8 +3,9 @@ import axios, { type AxiosError } from "axios";
 const TOKEN_KEY = "xuexibao_token";
 const AUTH_EVENT = "xuexibao-auth-change";
 let memoryToken = "";
-const persistToken = !import.meta.env.PROD;
-const useCookieCredentials = import.meta.env.PROD;
+// 统一发送 HttpOnly 会话 Cookie。即使前端 token 被微信 WebView 清除，
+// 同源或已配置 CORS 的请求也能通过后端 Cookie 恢复登录态。
+const useCookieCredentials = true;
 
 type LocationLike = Pick<Location, "hostname" | "port" | "protocol">;
 
@@ -32,36 +33,35 @@ function emitAuthChange(detail: Record<string, string>): void {
   window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail }));
 }
 
-export function getToken(): string {
+// Browser sessions persist only in the server's HttpOnly cookie. Keep a
+// short-lived in-memory token for existing API consumers, never a readable backup.
+function clearLegacyCredentials(): void {
   try {
-    return (persistToken ? window.localStorage.getItem(TOKEN_KEY) : "") || memoryToken || "";
+    window.localStorage.removeItem(TOKEN_KEY);
   } catch {
-    return memoryToken || "";
+    // Storage may be disabled in embedded browsers.
   }
+  try {
+    document.cookie = `${TOKEN_KEY}=; max-age=0; path=/; samesite=lax`;
+  } catch {
+    // The server session does not depend on JavaScript cookies.
+  }
+}
+
+clearLegacyCredentials();
+
+export function getToken(): string {
+  return memoryToken;
 }
 
 export function setToken(token: string): void {
   memoryToken = token || "";
-  try {
-    if (token && persistToken) {
-      window.localStorage.setItem(TOKEN_KEY, token);
-    } else if (persistToken) {
-      window.localStorage.removeItem(TOKEN_KEY);
-    }
-  } catch {
-    // Some embedded mobile WebViews may disable localStorage; keep memory token.
-  }
-  emitAuthChange({ token: token || "" });
+  clearLegacyCredentials();
+  emitAuthChange({ token: memoryToken });
 }
 
 export function clearToken(): void {
-  memoryToken = "";
-  try {
-    if (persistToken) window.localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // localStorage unavailable; memory token is already cleared.
-  }
-  emitAuthChange({ token: "" });
+  setToken("");
 }
 
 export function getAuthEventName(): string {

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "lint": "eslint \"src/**/*.{ts,vue}\"",
+    "format": "prettier --write \"src/**/*.{ts,vue,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,vue,css,json}\"",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
@@ -15,7 +16,6 @@
     "test:visual:review": "playwright test e2e/reference-review.spec.ts"
   },
   "dependencies": {
-    "@fontsource-variable/noto-sans-sc": "^5.2.10",
     "@lucide/vue": "^1.21.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",

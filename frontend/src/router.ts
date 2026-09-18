@@ -1,33 +1,39 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import { getToken } from "./api/request";
-import AppLayout from "./layouts/AppLayout.vue";
 import AuthLayout from "./layouts/AuthLayout.vue";
 import { useAuthStore } from "./stores/auth";
+import LoginView from "./views/auth/LoginView.vue";
 
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
-    component: AppLayout,
+    component: () => import("./layouts/AppLayout.vue"),
     meta: { requiresAuth: true },
     children: [
       {
         path: "",
         name: "home",
         component: () => import("./views/Home.vue"),
-        meta: { title: "首页", description: "快速进入题库、AI 导入和练习流程。", navKey: "home" },
+        meta: { title: "首页", description: "快速进入题库、AI 导入和练习流程。", navKey: "home", keepAlive: true },
       },
       { path: "questions", redirect: "/courses" },
       {
         path: "courses",
         name: "courses",
         component: () => import("./views/CourseList.vue"),
-        meta: { title: "我的题库", description: "选择题库开始练习。", navKey: "list" },
+        meta: { title: "我的题库", description: "选择题库开始练习。", navKey: "list", keepAlive: true },
       },
       {
         path: "courses/:courseId",
         name: "course-detail",
         component: () => import("./views/CourseDetail.vue"),
         meta: { title: "题库题目", navKey: "list", parent: "courses" },
+      },
+      {
+        path: "shared-courses/:token",
+        name: "shared-course",
+        component: () => import("./views/SharedCourse.vue"),
+        meta: { title: "分享题库", navKey: "list", parent: "courses" },
       },
       {
         path: "courses/:courseId/practice",
@@ -46,7 +52,12 @@ const routes: RouteRecordRaw[] = [
         path: "import",
         name: "import",
         component: () => import("./views/ImportQuestions.vue"),
-        meta: { title: "AI 导入", description: "上传资料或粘贴 JSON，把题目整理进题库。", navKey: "import" },
+        meta: {
+          title: "AI 导入",
+          description: "上传资料或粘贴 JSON，把题目整理进题库。",
+          navKey: "import",
+          keepAlive: true,
+        },
       },
       {
         path: "practice",
@@ -87,7 +98,6 @@ const routes: RouteRecordRaw[] = [
           description: "从题库选择题目组卷。",
           navKey: "home",
           parent: "exams",
-          requiresPermission: "exam:create",
         },
       },
       {
@@ -98,8 +108,19 @@ const routes: RouteRecordRaw[] = [
           title: "考试排行榜",
           navKey: "home",
           parent: "exam-detail",
-          requiresPermission: "exam:view_leaderboard",
         },
+      },
+      {
+        path: "exams/:examId/analytics",
+        name: "exam-analytics",
+        component: () => import("./views/exam/ExamAnalytics.vue"),
+        meta: { title: "考试分析", navKey: "home", parent: "exam-detail" },
+      },
+      {
+        path: "exams/share/:shareCode",
+        name: "exam-share-link",
+        component: () => import("./views/exam/ExamShareLink.vue"),
+        meta: { title: "打开分享考试", navKey: "home", parent: "exams" },
       },
       {
         path: "exams/:examId",
@@ -133,11 +154,17 @@ const routes: RouteRecordRaw[] = [
         meta: { title: "用户角色", navKey: "mine", parent: "admin-dashboard", requiresPermission: "user:manage" },
       },
       {
+        path: "admin/feedback",
+        name: "admin-feedback",
+        component: () => import("./views/admin/AdminFeedback.vue"),
+        meta: { title: "反馈处理", navKey: "mine", parent: "admin-dashboard", requiresPermission: "stats:view_global" },
+      },
+      {
         path: "mine",
         alias: "/profile",
         name: "mine",
         component: () => import("./views/Mine.vue"),
-        meta: { title: "我的", description: "查看账号信息和常用入口。", navKey: "mine" },
+        meta: { title: "我的", description: "查看账号信息和常用入口。", navKey: "mine", keepAlive: true },
       },
       {
         path: "wrongbook",
@@ -150,6 +177,12 @@ const routes: RouteRecordRaw[] = [
         name: "announcements",
         component: () => import("./views/Announcements.vue"),
         meta: { title: "更新公告", navKey: "mine", parent: "mine" },
+      },
+      {
+        path: "help-feedback",
+        name: "help-feedback",
+        component: () => import("./views/HelpFeedback.vue"),
+        meta: { title: "帮助与反馈", navKey: "mine", parent: "mine" },
       },
       {
         path: "bookmarks",
@@ -169,13 +202,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import("./views/StudyOverview.vue"),
         meta: { title: "学习概览", description: "学习数据和复习建议一览。", navKey: "mine", parent: "mine" },
       },
+      {
+        path: "study-groups",
+        name: "study-groups",
+        component: () => import("./views/StudyGroups.vue"),
+        meta: { title: "学习小组", description: "创建或加入小组，共享题库与考试。", navKey: "mine", parent: "mine" },
+      },
     ],
   },
   {
     path: "/login",
     component: AuthLayout,
     meta: { guest: true },
-    children: [{ path: "", name: "login", component: () => import("./views/auth/LoginView.vue") }],
+    children: [{ path: "", name: "login", component: LoginView }],
   },
   {
     path: "/register",
@@ -205,13 +244,18 @@ router.beforeEach(async (to) => {
   const token = getToken();
   const auth = useAuthStore();
 
-  if (to.matched.some((route) => route.meta.requiresAuth) && !token && !auth.user) {
-    await auth.fetchProfile();
-    if (!auth.user) return { name: "login", query: { redirect: to.fullPath } };
-  }
-
-  if (to.matched.some((route) => route.meta.guest) && !token && !auth.user) {
-    await auth.fetchProfile();
+  if (to.matched.some((route) => route.meta.requiresAuth)) {
+    if (!auth.user) {
+      // 前端 token 被微信 WebView 清掉时，后端 HttpOnly Cookie 仍可能有效。
+      // 因此首次进入受保护路由必须尝试一次 /auth/me，而不能以 token 是否可读
+      // 作为会话恢复的前置条件。
+      if (!auth.profileInitialized && !auth.explicitlyLoggedOut) {
+        await auth.fetchProfile({ silent: true });
+      }
+      if (!auth.user) {
+        return { name: "login", query: { redirect: to.fullPath } };
+      }
+    }
   }
 
   if (to.matched.some((route) => route.meta.guest) && (token || auth.user)) {

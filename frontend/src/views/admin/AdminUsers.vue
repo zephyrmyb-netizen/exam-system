@@ -47,9 +47,15 @@ onMounted(fetchUsers);
     <div class="section-heading row-heading">
       <div>
         <h2>用户角色</h2>
-        <p>调整学生、教师和管理员身份。</p>
+        <p>调整普通用户和管理员身份。</p>
       </div>
-      <button class="refresh-button" type="button" :disabled="loading" @click="fetchUsers">
+      <button
+        data-testid="admin-users-refresh"
+        class="refresh-button"
+        type="button"
+        :disabled="loading"
+        @click="fetchUsers"
+      >
         <RefreshCw :size="16" />
         刷新
       </button>
@@ -64,9 +70,8 @@ onMounted(fetchUsers);
         <strong>{{ user.username }}</strong>
         <span>ID {{ user.id }} · {{ user.role }}</span>
       </div>
-      <select :value="user.role" @change="onRoleChange(user, $event)">
+      <select :data-testid="`admin-user-role-${user.id}`" :value="user.role" @change="onRoleChange(user, $event)">
         <option value="student">student</option>
-        <option value="teacher">teacher</option>
         <option value="admin">admin</option>
       </select>
     </article>

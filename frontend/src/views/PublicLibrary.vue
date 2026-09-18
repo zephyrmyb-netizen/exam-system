@@ -1,22 +1,23 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import request, { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
-import { Globe, ChevronRight, Layers, BookOpen, Search } from "@lucide/vue";
+import { Globe, ChevronRight, Layers, BookOpen, Search, Copy, Flag, Heart } from "@lucide/vue";
 
 const { replaceWithSource } = useAppNavigation();
-const libraries = ref([]);
+const libraries = ref<any[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
 const searchKeyword = ref("");
+const actionMessage = ref("");
 
-let debounceTimer = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function fetchPublicCourses() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const params = {};
+    const params: Record<string, any> = {};
     if (searchKeyword.value.trim()) params.keyword = searchKeyword.value.trim();
     const { data } = await request.get("/library/public", { params });
     libraries.value = Array.isArray(data) ? data : data.items || [];
@@ -27,7 +28,7 @@ async function fetchPublicCourses() {
   }
 }
 
-function viewCourse(course) {
+function viewCourse(course: any) {
   replaceWithSource(
     {
       name: "course-detail",
@@ -36,6 +37,40 @@ function viewCourse(course) {
     },
     "public-library",
   );
+}
+
+async function copyCourse(course: any) {
+  actionMessage.value = "";
+  try {
+    const { data } = await request.post(`/library/public/${course.id}/copy`);
+    actionMessage.value = "题库已复制到我的题库。";
+    replaceWithSource({ name: "course-detail", params: { courseId: data.copied_course_id } }, "public-library");
+  } catch (error) {
+    actionMessage.value = getErrorMessage(error, "复制题库失败");
+  }
+}
+
+async function favoriteCourse(course: any) {
+  actionMessage.value = "";
+  try {
+    const { data } = await request.post(`/library/public/${course.id}/favorite`);
+    course.favorited = data.favorited;
+    actionMessage.value = data.favorited ? "已收藏题库。" : "已取消收藏。";
+  } catch (error) {
+    actionMessage.value = getErrorMessage(error, "收藏题库失败");
+  }
+}
+
+async function reportCourse(course: any) {
+  const detail = window.prompt("请简要说明举报原因（可留空）：") ?? null;
+  if (detail === null) return;
+  actionMessage.value = "";
+  try {
+    await request.post(`/library/public/${course.id}/report`, { reason: "user_report", detail });
+    actionMessage.value = "举报已提交，管理员会处理。";
+  } catch (error) {
+    actionMessage.value = getErrorMessage(error, "提交举报失败");
+  }
 }
 
 // Debounced search: 300ms after last keystroke
@@ -70,6 +105,7 @@ onUnmounted(() => {
 
     <p v-if="loading" class="info-message">加载中...</p>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-if="actionMessage" class="success-message" role="status">{{ actionMessage }}</p>
 
     <div v-if="!loading && libraries.length === 0 && !errorMessage" class="empty-state">
       <Globe :size="40" :stroke-width="1.5" color="var(--text-placeholder)" />
@@ -99,6 +135,17 @@ onUnmounted(() => {
           <p v-if="lib.description" class="public-desc">{{ lib.description }}</p>
         </div>
         <ChevronRight class="public-chevron" :size="18" :stroke-width="2.5" color="var(--text-placeholder)" />
+      </div>
+      <div class="public-actions" @click.stop>
+        <button type="button" :data-testid="`public-course-copy-${lib.id}`" @click="copyCourse(lib)">
+          <Copy :size="15" />复制
+        </button>
+        <button type="button" :data-testid="`public-course-favorite-${lib.id}`" @click="favoriteCourse(lib)">
+          <Heart :size="15" />{{ lib.favorited ? "已收藏" : "收藏" }}
+        </button>
+        <button type="button" :data-testid="`public-course-report-${lib.id}`" @click="reportCourse(lib)">
+          <Flag :size="15" />举报
+        </button>
       </div>
     </article>
   </section>
@@ -164,6 +211,26 @@ onUnmounted(() => {
   align-items: start;
   gap: var(--space-3);
   padding: var(--space-3);
+}
+.public-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 var(--space-3) var(--space-3);
+}
+.public-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-full);
+  padding: 0 11px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 800;
 }
 
 .public-icon {

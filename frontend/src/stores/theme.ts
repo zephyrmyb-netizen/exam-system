@@ -6,7 +6,7 @@ const STORAGE_KEY = "xuexibao-theme";
 
 export const useThemeStore = defineStore("theme", {
   state: () => ({
-    mode: "light" as ThemeMode,
+    mode: "system" as ThemeMode,
     systemDark: false,
     systemListenerBound: false,
   }),
@@ -15,8 +15,13 @@ export const useThemeStore = defineStore("theme", {
   },
   actions: {
     init(): void {
-      const saved = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-      const mode: ThemeMode = saved === "dark" || saved === "system" ? saved : "light";
+      let saved: string | null = null;
+      try {
+        saved = window.localStorage.getItem(STORAGE_KEY);
+      } catch {
+        /* Use system theme when storage is unavailable. */
+      }
+      const mode: ThemeMode = saved === "dark" || saved === "light" ? saved : "system";
       if (typeof window.matchMedia === "function") {
         const media = window.matchMedia("(prefers-color-scheme: dark)");
         this.systemDark = media.matches;
@@ -38,13 +43,18 @@ export const useThemeStore = defineStore("theme", {
     setMode(mode: ThemeMode): void {
       this.mode = mode;
       this.applyTheme();
-      window.localStorage.setItem(STORAGE_KEY, mode);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, mode);
+      } catch {
+        /* Theme remains usable in memory. */
+      }
     },
     toggle(): void {
       this.setMode(this.isDark ? "light" : "dark");
     },
     applyTheme(): void {
       document.documentElement.classList.toggle("dark", this.isDark);
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", this.isDark ? "#000000" : "#f2f2f7");
     },
   },
 });

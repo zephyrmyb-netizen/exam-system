@@ -3,7 +3,37 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { replace, get, route } = vi.hoisted(() => ({
   replace: vi.fn(),
-  get: vi.fn().mockResolvedValue({ data: { id: 7, name: "Physics", question_count: 12 } }),
+  get: vi.fn((url: string) =>
+    Promise.resolve(
+      url.endsWith("/questions")
+        ? {
+            data: [
+              { id: 1, type: "single_choice", question: "Question 1", options: {}, answer: "A" },
+              { id: 2, type: "single_choice", question: "Question 2", options: {}, answer: "A" },
+            ],
+          }
+        : url.startsWith("/wrongbook/")
+          ? {
+              data: [
+                {
+                  id: 1,
+                  question_id: 1,
+                  wrong_count: 1,
+                  last_wrong_answer: "B",
+                  question: {
+                    id: 1,
+                    course_id: 7,
+                    type: "single_choice",
+                    question: "Question",
+                    options: {},
+                    answer: "A",
+                  },
+                },
+              ],
+            }
+          : { data: { id: 7, name: "Physics", question_count: 12 } },
+    ),
+  ),
   route: {
     params: { courseId: "7" },
     query: {} as Record<string, string>,
@@ -26,8 +56,10 @@ vi.mock("../Practice.vue", () => ({
     props: {
       totalQuestions: { type: Number, default: 0 },
       mode: { type: String, default: "normal" },
+      initialQuestions: { type: Array, default: () => [] },
     },
-    template: '<div data-test="practice" :data-total="totalQuestions" :data-mode="mode" />',
+    template:
+      '<div data-test="practice" :data-total="totalQuestions" :data-mode="mode" :data-session-size="initialQuestions.length" />',
   },
 }));
 
@@ -40,54 +72,46 @@ describe("CoursePractice", () => {
     route.fullPath = "/courses/7/practice";
   });
 
-  it("keeps mode selection as state and starts practice with the selected mode", async () => {
-    const wrapper = mount(CoursePractice);
-    await vi.waitFor(() => expect(get).toHaveBeenCalled());
+  it("returns direct visits to the single course detail entry", async () => {
+    mount(CoursePractice);
+    await vi.waitFor(() => expect(replace).toHaveBeenCalled());
 
-    const modeButtons = wrapper.findAll(".mode-card");
-    await modeButtons[1].trigger("click");
-
-    expect(modeButtons[1].attributes("aria-pressed")).toBe("true");
-    expect(modeButtons[1].attributes("style")).toBeUndefined();
-
-    await wrapper.get(".start-btn").trigger("click");
-    expect(wrapper.find("[data-test=practice]").exists()).toBe(true);
+    expect(replace).toHaveBeenCalledWith({
+      name: "course-detail",
+      params: { courseId: "7" },
+      query: { from: "courses" },
+    });
   });
 
-  it("returns to the recorded source from mode selection", async () => {
-    route.query = { from: "home" };
-    const wrapper = mount(CoursePractice);
-    await vi.waitFor(() => expect(get).toHaveBeenCalled());
-
-    await wrapper.get("[data-practice-mode-back]").trigger("click");
-    expect(replace).toHaveBeenCalledWith({ name: "home" });
-  });
-
-  it("falls back to the course list when the mode page has no source", async () => {
-    const wrapper = mount(CoursePractice);
-    await vi.waitFor(() => expect(get).toHaveBeenCalled());
-
-    await wrapper.get("[data-practice-mode-back]").trigger("click");
-    expect(replace).toHaveBeenCalledWith({ name: "courses" });
-  });
-
-  it("passes the real course total to normal random practice", async () => {
+  it("prepares the complete ordered question set before opening practice", async () => {
     route.query = { autostart: "1" };
     const wrapper = mount(CoursePractice);
     await vi.waitFor(() => expect(wrapper.find("[data-test=practice]").exists()).toBe(true));
 
     const practice = wrapper.get("[data-test=practice]");
     expect(practice.attributes("data-mode")).toBe("normal");
-    expect(practice.attributes("data-total")).toBe("12");
+    expect(practice.attributes("data-total")).toBe("2");
+    expect(practice.attributes("data-session-size")).toBe("2");
+    expect(get).toHaveBeenCalledWith("/courses/7/questions", { params: { order: "asc" } });
   });
 
-  it("does not pass the course total to wrong-review autostart", async () => {
+  it("uses a complete shuffled session for random practice", async () => {
+    route.query = { mode: "random", autostart: "1" };
+    const wrapper = mount(CoursePractice);
+    await vi.waitFor(() => expect(wrapper.find("[data-test=practice]").exists()).toBe(true));
+
+    const practice = wrapper.get("[data-test=practice]");
+    expect(practice.attributes("data-mode")).toBe("random");
+    expect(practice.attributes("data-session-size")).toBe("2");
+  });
+
+  it("loads a course-filtered wrong-answer session", async () => {
     route.query = { mode: "wrong", autostart: "1" };
     const wrapper = mount(CoursePractice);
     await vi.waitFor(() => expect(wrapper.find("[data-test=practice]").exists()).toBe(true));
 
     const practice = wrapper.get("[data-test=practice]");
     expect(practice.attributes("data-mode")).toBe("wrong_review");
-    expect(practice.attributes("data-total")).toBe("0");
+    expect(practice.attributes("data-total")).toBe("1");
   });
 });

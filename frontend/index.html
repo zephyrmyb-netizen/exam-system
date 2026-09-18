@@ -4,34 +4,39 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#F6F8FC" />
+    <meta name="theme-color" content="#f2f2f7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="学习宝 - AI 导入题库、刷题复习和学习数据分析工具" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>学习宝</title>
     <script>
       (() => {
         const isVitePreview = location.port === "5173" || location.port === "5174";
-        const reloadKey = "xuexibao-dev-sw-cleanup";
-        if (!isVitePreview || !("serviceWorker" in navigator)) return;
-        if (!navigator.serviceWorker.controller) {
-          sessionStorage.removeItem(reloadKey);
-          return;
-        }
+        const isBetaHost = location.hostname === "beta.zephyrmyb.xyz";
+        const reloadKey = "xuexibao-shell-cleanup-v1";
+        if ((!isVitePreview && !isBetaHost) || !("serviceWorker" in navigator)) return;
         if (sessionStorage.getItem(reloadKey)) return;
-        sessionStorage.setItem(reloadKey, "1");
 
         Promise.all([
-          navigator.serviceWorker.getRegistrations().then((registrations) =>
-            Promise.all(registrations.map((registration) => registration.unregister())),
-          ),
+          navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+            await Promise.all(registrations.map((registration) => registration.unregister()));
+            return registrations.length > 0;
+          }),
           "caches" in window
-            ? caches.keys().then((keys) =>
-                Promise.all(keys.filter((key) => key.startsWith("xuexibao-shell-")).map((key) => caches.delete(key))),
-              )
-            : Promise.resolve(),
-        ]).finally(() => location.reload());
+            ? caches.keys().then(async (keys) => {
+                const shellKeys = keys.filter((key) => key.startsWith("xuexibao-shell-"));
+                await Promise.all(shellKeys.map((key) => caches.delete(key)));
+                return shellKeys.length > 0;
+              })
+            : Promise.resolve(false),
+        ]).then(([hadRegistration, hadShellCache]) => {
+          if (!hadRegistration && !hadShellCache) return;
+          sessionStorage.setItem(reloadKey, "1");
+          location.reload();
+        });
       })();
     </script>
   </head>

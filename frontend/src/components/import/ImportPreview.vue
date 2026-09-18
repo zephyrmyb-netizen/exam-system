@@ -91,6 +91,19 @@ const runtimeDebug = computed(() => props.previewData?.debug_runtime || null);
 const skippedInvalidQuestionCount = computed(() => Number(props.previewData?.total_invalid || 0));
 const warningCount = computed(() => warnings.value.length);
 const isComplete = computed(() => props.previewData?.is_complete !== false);
+const qualityReport = computed(() => {
+  const seen = new Set();
+  let duplicates = 0;
+  let missingAnswers = 0;
+  for (const question of questions.value) {
+    const key = `${question.type || ""}:${(question.question || "").trim().replace(/\s+/g, " ")}`;
+    if (key && seen.has(key)) duplicates += 1;
+    else if (key) seen.add(key);
+    if (!question.answer?.trim()) missingAnswers += 1;
+  }
+  const imageFailures = warnings.value.filter((warning) => /图片|image/i.test(String(warning))).length;
+  return { total: questions.value.length, duplicates, missingAnswers, imageFailures };
+});
 
 function formatTiming(ms) {
   const value = Number(ms || 0);
@@ -236,7 +249,10 @@ function handleRetry() {
     <div v-if="!isComplete" class="warnings-box incomplete-import" role="alert">
       <AlertCircle :size="16" :stroke-width="2.5" color="var(--danger)" style="flex-shrink: 0" />
       <div>
-        <p>已处理 {{ timing?.completed_chunks ?? 0 }} / {{ timing?.chunks ?? 0 }} 个分块，但当前预览不完整，不能确认导入。</p>
+        <p>
+          已处理 {{ timing?.completed_chunks ?? 0 }} /
+          {{ timing?.chunks ?? 0 }} 个分块，但当前预览不完整，不能确认导入。
+        </p>
         <p v-if="timing?.missing_question_numbers?.length" class="warn-line">
           缺失原始题号：{{ timing.missing_question_numbers.join("、") }}
         </p>
@@ -255,6 +271,14 @@ function handleRetry() {
         新增题目
       </button>
     </div>
+    <section class="quality-report" aria-label="导入质量报告" data-testid="import-quality-report">
+      <strong>导入质量报告</strong>
+      <span>识别题目 {{ qualityReport.total }}</span>
+      <span :class="{ issue: qualityReport.duplicates }">重复题 {{ qualityReport.duplicates }}</span>
+      <span :class="{ issue: qualityReport.missingAnswers }">缺答案 {{ qualityReport.missingAnswers }}</span>
+      <span :class="{ issue: qualityReport.imageFailures }">图片异常 {{ qualityReport.imageFailures }}</span>
+      <small>可编辑题目后再确认入库。</small>
+    </section>
 
     <div v-if="timing" class="timing-strip">
       <span>文字提取 {{ formatTiming(timing.extract_ms) }}</span>
@@ -282,6 +306,7 @@ function handleRetry() {
           <span class="q-index">{{ idx + 1 }}</span>
           <span class="q-type-tag">{{ typeLabel(q.type) }}</span>
           <span class="q-preview">{{ q.question?.slice(0, 60) }}{{ (q.question?.length || 0) > 60 ? "..." : "" }}</span>
+          <span v-if="q.line_number" class="q-source">原文第 {{ q.line_number }} 行</span>
         </div>
         <span v-if="q.image_urls?.length" class="q-image-count">含 {{ q.image_urls.length }} 张题图</span>
         <div class="q-item-actions">
@@ -407,6 +432,40 @@ function handleRetry() {
   border-radius: var(--radius-md);
   background: var(--amber-soft);
   border: 1px solid #fde68a;
+}
+.quality-report {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.quality-report strong {
+  color: var(--text-main);
+  margin-right: auto;
+  font-size: var(--text-sm);
+}
+.quality-report span {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+}
+.quality-report span.issue {
+  color: var(--state-error);
+  background: var(--state-error-soft);
+}
+.quality-report small {
+  flex-basis: 100%;
+}
+.q-source {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
 }
 .warn-line {
   margin: 0;

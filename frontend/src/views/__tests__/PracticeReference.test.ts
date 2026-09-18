@@ -48,9 +48,12 @@ function makeSession(overrides: Record<string, unknown> = {}) {
     handleTextKeydown: vi.fn(),
     hasAnswerSelected: computed(() => false),
     isTextQuestion: computed(() => false),
+    isSeededSession: computed(() => false),
     loading: ref(false),
     phase: ref("answering"),
     question,
+    sessionQuestions: ref([{ question: question.value, sessionOrder: 1, answer: "", result: null, marked: false }]),
+    currentSessionQuestionIndex: ref(0),
     result: ref(null),
     selectedAnswer: ref(""),
     selectedAnswers: ref([]),
@@ -69,8 +72,11 @@ function makeSession(overrides: Record<string, unknown> = {}) {
     submitting: ref(false),
     textAnswer: ref(""),
     toggleMultipleAnswer: vi.fn(),
+    toggleCurrentQuestionMark: vi.fn(),
     updateTextAnswer: vi.fn(),
     validationMessage: ref(""),
+    jumpToSessionQuestion: vi.fn(() => true),
+    viewingHistory: ref(false),
     ...overrides,
   };
 }
@@ -99,7 +105,20 @@ describe("Practice reference migration", () => {
     expect(wrapper.text()).not.toContain("2 分");
   });
 
-  it("does not invent a current question number or answer sheet for random practice", () => {
+  it("shows every prepared session question in the answer card and jumps to the selected one", async () => {
+    const firstQuestion = makeSession().question.value;
+    const secondQuestion = { ...firstQuestion, id: 43, question: "第二道题" };
+    const jumpToSessionQuestion = vi.fn(() => true);
+    sessionFactory.mockReturnValue(
+      makeSession({
+        isSeededSession: computed(() => true),
+        sessionQuestions: ref([
+          { question: firstQuestion, sessionOrder: 1, answer: "", result: null, marked: false },
+          { question: secondQuestion, sessionOrder: 2, answer: "", result: null, marked: false },
+        ]),
+        jumpToSessionQuestion,
+      }),
+    );
     const wrapper = mount(Practice, {
       props: {
         courseId: "7",
@@ -108,9 +127,11 @@ describe("Practice reference migration", () => {
       },
     });
 
-    expect(wrapper.text()).not.toContain("第 6 题");
-    expect(wrapper.find("[aria-label='答题卡']").exists()).toBe(false);
-    expect(wrapper.find(".answer-sheet").exists()).toBe(false);
+    await wrapper.get("[aria-label='答题卡']").trigger("click");
+    expect(wrapper.find("[data-practice-answer-card]").exists()).toBe(true);
+    expect(wrapper.findAll("[data-session-question]")).toHaveLength(2);
+    await wrapper.get("[data-session-question='1']").trigger("click");
+    expect(jumpToSessionQuestion).toHaveBeenCalledWith(1);
   });
 
   it("opens the real in-session completion summary and keeps review navigation source-aware", async () => {

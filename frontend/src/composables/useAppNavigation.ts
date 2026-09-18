@@ -1,7 +1,7 @@
 import { useRoute, useRouter, type RouteLocationRaw } from "vue-router";
 
-const NAVIGATION_SOURCES = new Set(["home", "mine", "courses", "public-library", "practice", "import"]);
-type NavigationSource = "home" | "mine" | "courses" | "public-library" | "practice" | "import";
+const NAVIGATION_SOURCES = new Set(["home", "mine", "courses", "public-library", "practice", "import", "study-groups"]);
+type NavigationSource = "home" | "mine" | "courses" | "public-library" | "practice" | "import" | "study-groups";
 
 function isNavigationSource(value: unknown): value is NavigationSource {
   return typeof value === "string" && NAVIGATION_SOURCES.has(value);

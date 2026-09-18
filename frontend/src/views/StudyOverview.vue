@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { BookMarked, BookOpen, Clock, RefreshCw, Target, TrendingUp, Zap } from "@lucide/vue";
 import ActivityTrendChart from "../components/charts/ActivityTrendChart.vue";
 import CourseAnalyticsChart from "../components/charts/CourseAnalyticsChart.vue";
@@ -9,6 +9,7 @@ import TypeAccuracyChart from "../components/charts/TypeAccuracyChart.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { typeLabel } from "../utils/question";
+import request, { getErrorMessage } from "../api/request";
 
 const { replaceTo } = useAppNavigation();
 const {
@@ -20,7 +21,6 @@ const {
   courseAnalytics,
   streak,
   recommendation,
-  loading,
   errorMessage,
   fetchAll,
 } = useStudyOverview();
@@ -44,15 +44,84 @@ const recommendedText = computed(() => {
   return modes.slice(0, 2).join(" / ");
 });
 
-onMounted(() => fetchAll());
+interface StudyPlan {
+  daily_target: number;
+  deadline: string | null;
+  today_completed: number;
+  today_remaining: number;
+  current_streak: number;
+}
+const plan = ref<StudyPlan | null>(null);
+const planSaving = ref(false);
+const planLoading = ref(false);
+const planMessage = ref("");
+const planTarget = ref(10);
+const planDeadline = ref("");
+const planError = ref("");
+async function loadPlan() {
+  planLoading.value = true;
+  try {
+    const { data } = await request.get<StudyPlan | null>("/study-plans/current");
+    plan.value = data;
+    if (data) {
+      planTarget.value = data.daily_target;
+      planDeadline.value = data.deadline ? data.deadline.slice(0, 10) : "";
+    }
+  } catch (error) {
+    planError.value = getErrorMessage(error, "加载学习计划失败");
+  } finally {
+    planLoading.value = false;
+  }
+}
+async function savePlan() {
+  if (planSaving.value) return;
+  planError.value = "";
+  planMessage.value = "";
+  if (!Number.isInteger(planTarget.value) || planTarget.value < 1 || planTarget.value > 500) {
+    planError.value = "每日题量请输入 1–500 的整数。";
+    return;
+  }
+  planSaving.value = true;
+  try {
+    const { data } = await request.put<StudyPlan>("/study-plans/current", {
+      title: "每日学习计划",
+      daily_target: planTarget.value,
+      deadline: planDeadline.value ? new Date(`${planDeadline.value}T23:59:59`).toISOString() : null,
+    });
+    plan.value = data;
+    planMessage.value = "学习计划已保存。";
+  } catch (error) {
+    planError.value = getErrorMessage(error, "保存学习计划失败");
+  } finally {
+    planSaving.value = false;
+  }
+}
+onMounted(() => {
+  void fetchAll();
+  void loadPlan();
+});
 </script>
 
 <template>
   <section class="overview-page">
-    <p v-if="loading" class="status-banner status-banner--info">正在更新学习数据...</p>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
 
     <p class="section-label">学习数据</p>
+    <form class="plan-card" data-testid="study-plan" @submit.prevent="savePlan">
+      <div>
+        <strong>学习计划</strong>
+        <p v-if="plan">
+          今日 {{ plan.today_completed }} / {{ plan.daily_target }} 题，待练 {{ plan.today_remaining }} 题 · 连续
+          {{ plan.current_streak }} 天
+        </p>
+        <p v-else>设置每日目标或考试截止日期。</p>
+      </div>
+      <label>每日题量<input v-model.number="planTarget" type="number" min="1" max="500" /></label
+      ><label>截止日<input v-model="planDeadline" type="date" /></label
+      ><button type="submit" :disabled="planSaving || planLoading">{{ planSaving ? "保存中…" : "保存计划" }}</button>
+      <p v-if="planError" class="error-message" role="alert">{{ planError }}</p>
+      <p v-if="planMessage" role="status">{{ planMessage }}</p>
+    </form>
     <div class="stat-grid">
       <div class="stat-card">
         <Zap :size="16" :stroke-width="2.5" class="stat-icon teal" />
@@ -162,6 +231,58 @@ onMounted(() => fetchAll());
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+.plan-card {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: end;
+  gap: 10px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.plan-card strong {
+  color: var(--text-main);
+}
+.plan-card p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.plan-card label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+.plan-card input {
+  min-height: 44px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0 8px;
+  background: var(--surface-soft);
+  font: inherit;
+}
+.plan-card button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+}
+@media (max-width: 620px) {
+  .plan-card {
+    grid-template-columns: 1fr 1fr;
+  }
+  .plan-card > div,
+  .plan-card p {
+    grid-column: 1/-1;
+  }
 }
 
 .stat-grid {

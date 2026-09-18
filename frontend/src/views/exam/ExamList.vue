@@ -1,24 +1,30 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ClipboardCheck, Plus, RefreshCw } from "@lucide/vue";
 
-import { useAuthStore } from "@/stores/auth";
 import { useExamStore } from "@/stores/exam";
 
 const router = useRouter();
-const auth = useAuthStore();
+const route = useRoute();
 const store = useExamStore();
-
-const canCreateExam = computed(() => auth.can("exam:create"));
+const shareGroupId = computed(() => Number(route.query?.share_group));
 
 function openExam(id: number) {
+  if (Number.isInteger(shareGroupId.value) && shareGroupId.value > 0) {
+    router.replace({
+      name: "exam-detail",
+      params: { examId: id },
+      query: { share_group: String(shareGroupId.value), from: "study-groups" },
+    });
+    return;
+  }
   router.replace({ name: "exam-detail", params: { examId: id } });
 }
 
 onMounted(() => {
   store.fetchExams();
-  if (canCreateExam.value) store.fetchMyExams();
+  store.fetchMyExams();
 });
 </script>
 
@@ -29,11 +35,16 @@ onMounted(() => {
       <h1>选择考试开始作答</h1>
       <span>发布后的考试会显示在这里，提交后可查看成绩。</span>
       <div class="hero-actions">
-        <button type="button" @click="store.fetchExams">
+        <button data-testid="exam-list-refresh" type="button" @click="store.fetchExams">
           <RefreshCw :size="16" />
           刷新
         </button>
-        <button v-if="canCreateExam" class="primary" type="button" @click="router.replace({ name: 'exam-create' })">
+        <button
+          data-testid="exam-list-create"
+          class="primary"
+          type="button"
+          @click="router.replace({ name: 'exam-create' })"
+        >
           <Plus :size="17" />
           创建考试
         </button>
@@ -46,31 +57,38 @@ onMounted(() => {
     <div v-if="!store.loading && !store.exams.length" class="empty-panel">
       <ClipboardCheck :size="42" color="var(--text-placeholder)" />
       <strong>暂无可参加考试</strong>
-      <span>老师发布考试后，会出现在这里。</span>
+      <span>任何登录用户发布考试后，都会出现在这里。</span>
     </div>
 
     <div class="exam-card-list">
-      <article v-for="exam in store.exams" :key="exam.id" class="exam-card" @click="openExam(exam.id)">
+      <button
+        v-for="exam in store.exams"
+        :key="exam.id"
+        class="exam-card"
+        type="button"
+        :data-testid="`exam-list-open-${exam.id}`"
+        @click="openExam(exam.id)"
+      >
         <div>
           <p>{{ exam.question_count }} 题 · {{ exam.total_score }} 分 · {{ exam.time_limit }} 分钟</p>
           <h2>{{ exam.title }}</h2>
           <span>{{ exam.description || "暂无考试说明" }}</span>
         </div>
-        <button type="button">开始</button>
-      </article>
+        <span class="exam-card__action">查看详情</span>
+      </button>
     </div>
 
-    <div v-if="canCreateExam && store.myExams.length" class="mine-exams">
+    <div v-if="store.myExams.length" class="mine-exams">
       <div class="section-title">
         <span>我创建的考试</span>
-        <button type="button" @click="store.fetchMyExams">刷新</button>
+        <button data-testid="exam-list-my-refresh" type="button" @click="store.fetchMyExams">刷新</button>
       </div>
       <article v-for="exam in store.myExams" :key="exam.id" class="mine-row">
         <div>
           <strong>{{ exam.title }}</strong>
           <span>{{ exam.status }} · {{ exam.question_count }} 题</span>
         </div>
-        <button type="button" @click="openExam(exam.id)">查看</button>
+        <button :data-testid="`exam-list-my-open-${exam.id}`" type="button" @click="openExam(exam.id)">查看</button>
       </article>
     </div>
   </section>
@@ -116,7 +134,7 @@ onMounted(() => {
   margin-top: var(--space-2);
 }
 .hero-actions button,
-.exam-card button,
+.exam-card__action,
 .mine-row button {
   display: inline-flex;
   align-items: center;
@@ -164,6 +182,9 @@ onMounted(() => {
   border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow-card);
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 .exam-card p,
@@ -185,7 +206,7 @@ onMounted(() => {
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
-.exam-card button,
+.exam-card__action,
 .mine-row button {
   border-color: var(--line-soft);
   background: var(--primary-soft);

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, CheckCircle2, ClipboardList, Clock3, RotateCcw, Trophy, XCircle } from "@lucide/vue";
 
 import type { ExamQuestion, ExamResult as ExamResultData } from "@/types";
 import { useExamStore } from "@/stores/exam";
+import { addExamWrongAnswersToWrongbook } from "@/api/exams";
+import { getErrorMessage } from "@/api/request";
 import { parseApiTimestamp } from "@/utils/date";
 
 type ExtendedResult = ExamResultData & {
@@ -51,6 +53,8 @@ const durationLabel = computed(() => {
   return `${Math.floor(seconds / 60)}分${seconds % 60}秒`;
 });
 const questionDetails = computed(() => store.currentExam?.questions || []);
+const addingWrongAnswers = ref(false);
+const wrongbookMessage = ref("");
 
 function questionTypeLabel(question: ExamQuestion) {
   const labels: Record<string, string> = {
@@ -85,6 +89,22 @@ function openLeaderboard() {
 
 function retakeExam() {
   router.replace({ name: "exam-take", params: { examId: examId.value } });
+}
+
+async function addWrongAnswersToWrongbook() {
+  if (!result.value || addingWrongAnswers.value) return;
+  addingWrongAnswers.value = true;
+  wrongbookMessage.value = "";
+  try {
+    const response = await addExamWrongAnswersToWrongbook(examId.value);
+    wrongbookMessage.value = response.added_count
+      ? `已加入 ${response.added_count} 道错题到错题本。`
+      : "本次没有错题需要加入。";
+  } catch (error) {
+    wrongbookMessage.value = getErrorMessage(error, "加入错题本失败");
+  } finally {
+    addingWrongAnswers.value = false;
+  }
 }
 </script>
 
@@ -163,6 +183,17 @@ function retakeExam() {
       </section>
 
       <div class="result-actions">
+        <p v-if="wrongbookMessage" class="wrongbook-message" role="status">{{ wrongbookMessage }}</p>
+        <button
+          v-if="(result.wrong_count || 0) > 0"
+          class="ghost-button"
+          type="button"
+          data-exam-result-action="wrongbook"
+          :disabled="addingWrongAnswers"
+          @click="addWrongAnswersToWrongbook"
+        >
+          {{ addingWrongAnswers ? "正在加入错题本…" : "将错题加入错题本" }}
+        </button>
         <button class="primary-button" type="button" data-exam-result-action="back" @click="backToExams">
           <ArrowLeft :size="18" /> 返回考试
         </button>
@@ -471,6 +502,13 @@ function retakeExam() {
   display: grid;
   gap: var(--space-3);
   padding-top: var(--space-3);
+}
+.wrongbook-message {
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: var(--text-sm);
+  font-weight: 750;
+  text-align: center;
 }
 
 .primary-button,

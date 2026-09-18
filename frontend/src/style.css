@@ -1,46 +1,7 @@
-/*
- * Legacy page and component rules retained while routes migrate to the
- * canonical tokens and neutral foundations in styles/base.css.
- */
-
+/* Shared page and control styles. Tokens live in styles/base.css; shell styles live in AppLayout.vue. */
 /* ═══════════════════════════════════════════════════════════
    Shell & Layout
    ═══════════════════════════════════════════════════════════ */
-
-.app-shell {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0;
-  padding: var(--space-4) var(--space-4) var(--nav-bottom-clearance);
-}
-
-.app-shell--immersive {
-  --practice-sticky-bottom: calc(12px + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 52px;
-  margin-bottom: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px);
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-}
 
 .page-intro {
   min-width: 0;
@@ -77,100 +38,8 @@
    Bottom Navigation — floating capsule
    ═══════════════════════════════════════════════════════════ */
 
-.bottom-nav {
-  position: fixed;
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
-  bottom: calc(var(--nav-safe-gap) + 10px);
-  z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  gap: 2px;
-  width: auto;
-  height: calc(var(--nav-height) - 8px);
-  padding: 4px 6px;
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  border-radius: var(--radius-2xl);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(20px);
-  transform: none;
-}
-
-.nav-button {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 4px 2px 4px;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  text-decoration: none;
-  transition: opacity var(--ease-press);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.nav-button.active {
-  color: var(--primary-strong);
-}
-
-.nav-button--ai {
-  margin-top: -18px;
-}
-
-.nav-icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  transition:
-    background-color var(--ease-feedback),
-    transform var(--ease-press);
-}
-
-.nav-icon svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.nav-button.active .nav-icon:not(.nav-icon--ai) {
+.nav-button.active .nav-icon {
   background: var(--primary-soft);
-}
-
-.nav-icon--ai {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
-  color: #ffffff;
-  background: var(--primary);
-  box-shadow: var(--shadow-primary);
-  transition:
-    background-color var(--ease-feedback),
-    transform var(--ease-press);
-}
-
-.nav-icon--ai svg {
-  width: 24px;
-  height: 24px;
-  stroke-width: 2.4;
-}
-
-.nav-button.active .nav-icon--ai {
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.38);
-}
-
-.nav-label {
-  line-height: 1.1;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -276,7 +145,6 @@
    Buttons (Legacy Global Classes)
    ═══════════════════════════════════════════════════════════ */
 
-.nav-button,
 .primary-button,
 .ghost-button,
 .danger-button,
@@ -334,16 +202,6 @@
 .danger-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(225, 29, 72, 0.1);
-}
-
-.ai-button {
-  background: var(--teal);
-  border-color: rgba(15, 118, 110, 0.7);
-  box-shadow: var(--shadow-teal);
-}
-
-.ai-button:hover:not(:disabled) {
-  box-shadow: 0 8px 22px rgba(13, 148, 136, 0.3);
 }
 
 .full-button {
@@ -1635,23 +1493,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 640px) {
-  .app-shell {
-    padding: var(--space-6) var(--space-6) calc(var(--nav-bottom-clearance) + var(--space-2));
-  }
-
-  .app-shell--immersive {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .app-header {
-    padding: var(--space-5) var(--space-6);
-    margin-bottom: var(--space-6);
-  }
-
-  .app-header h1 {
-    font-size: var(--text-2xl);
-  }
-
   .hero-card {
     padding: var(--space-8);
   }
@@ -1690,52 +1531,11 @@
   }
 }
 
-@media (min-width: 760px) {
-  .app-shell {
-    max-width: var(--shell-max);
-    margin: 0 auto;
-  }
-
-  .bottom-nav {
-    left: 50%;
-    right: auto;
-    width: min(calc(100% - 40px), calc(var(--shell-max) - 40px));
-    transform: translateX(-50%);
-  }
-}
-
-@media (max-width: 640px) {
-  :root {
-    --nav-safe-gap: max(56px, env(safe-area-inset-bottom, 56px));
-    --nav-bottom-clearance: calc(var(--nav-height) + var(--nav-safe-gap) + 76px);
-    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 20px);
-  }
-
-  .bottom-nav {
-    bottom: calc(var(--nav-safe-gap) + 12px);
-  }
-}
-
 /* ═══════════════════════════════════════════════════════════
    Responsive — Small mobile (≤ 420px)
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 420px) {
-  .app-shell {
-    padding: 10px 10px var(--nav-bottom-clearance);
-  }
-
-  .app-shell--immersive {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  :root {
-    --nav-safe-gap: max(60px, env(safe-area-inset-bottom, 60px));
-    --nav-bottom-clearance: calc(var(--nav-height) + var(--nav-safe-gap) + 84px);
-    --practice-sticky-bottom: calc(var(--nav-height) + var(--nav-safe-gap) + 22px);
-  }
-
-  .app-header,
   .hero-card,
   .profile-card,
   .card {
@@ -1748,30 +1548,6 @@
 
   .stat-value {
     font-size: 1.6rem;
-  }
-
-  .bottom-nav {
-    gap: 1px;
-  }
-
-  .nav-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .nav-icon svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .nav-icon--ai {
-    width: 46px;
-    height: 46px;
-  }
-
-  .nav-icon--ai svg {
-    width: 22px;
-    height: 22px;
   }
 
   .button-row {
@@ -2646,211 +2422,4 @@
 .q-tag-short {
   background: var(--rose-soft);
   color: var(--rose);
-}
-
-/* ── Ink Card ── */
-.ink-card {
-  padding: var(--space-4);
-  border-radius: var(--radius-xl);
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  box-shadow: var(--shadow-card);
-}
-.ink-card--accent {
-  border-top: 3px solid var(--primary);
-}
-
-/* Legacy dark-theme selector bridges. Canonical dark tokens live in base.css. */
-
-html.dark,
-html.dark body,
-html.dark #app {
-  background: var(--page-bg);
-  color: var(--text-main);
-}
-
-html.dark .app-header,
-html.dark .bottom-nav,
-html.dark .card,
-html.dark .surface-card,
-html.dark .shortcut-item,
-html.dark .profile-card,
-html.dark .question-card,
-html.dark .practice-card,
-html.dark .auth-card,
-html.dark .global-search-panel,
-html.dark .confirm-card {
-  border-color: var(--line-soft);
-  background: rgba(16, 24, 39, 0.88);
-  color: var(--text-main);
-  box-shadow: var(--shadow-card);
-}
-
-html.dark .bottom-nav,
-html.dark body .bottom-nav {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.24);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
-}
-
-html.dark .theme-toggle,
-html.dark .icon-button,
-html.dark .layout-back-button {
-  background: rgba(15, 23, 42, 0.86);
-  border-color: var(--line-soft);
-  color: var(--text-main);
-}
-
-html.dark .text-input,
-html.dark .large-textarea,
-html.dark .answer-textarea,
-html.dark .filter-input,
-html.dark .filter-select,
-html.dark .file-input,
-html.dark .text-output,
-html.dark .prompt-box,
-html.dark .chat-composer textarea,
-html.dark .global-search-input,
-html.dark .account-row {
-  background: rgba(15, 23, 42, 0.72);
-  border-color: var(--line-strong);
-  color: var(--text-main);
-}
-
-html.dark .status-banner--info,
-html.dark .info-message,
-html.dark .empty-state,
-html.dark .status-panel,
-html.dark .deleted-question-notice,
-html.dark .meta-row span,
-html.dark .stat-badge,
-html.dark .option-list li,
-html.dark .answer-panel,
-html.dark .wrongbook-status,
-html.dark .chat-page,
-html.dark .chat-topbar,
-html.dark .chat-bubble,
-html.dark .practice-stem,
-html.dark .practice-card-shell,
-html.dark .practice-result__item,
-html.dark .practice-result__analysis,
-html.dark .practice-result__wrongbook,
-html.dark .practice-swipe-hint,
-html.dark .home-entry,
-html.dark .stat-card,
-html.dark .shortcut-card--nested {
-  background: rgba(21, 32, 51, 0.82);
-  border-color: var(--line-soft);
-  color: var(--text-main);
-}
-
-html.dark .nav-button,
-html.dark .page-info,
-html.dark .stat-label,
-html.dark .account-label,
-html.dark .muted-text,
-html.dark .file-tip {
-  color: var(--text-muted);
-}
-
-html.dark .nav-button.active,
-html.dark .page-kicker,
-html.dark .hero-eyebrow,
-html.dark .chat-kicker {
-  color: #60a5fa;
-}
-
-html.dark .practice-result--correct {
-  background: rgba(5, 150, 105, 0.18);
-  border-color: var(--emerald-border);
-}
-
-html.dark .practice-result--wrong {
-  background: rgba(225, 29, 72, 0.17);
-  border-color: var(--rose-border);
-}
-
-html.dark .practice-result--correct .practice-result__icon,
-html.dark .practice-result--correct .practice-result__title,
-html.dark .practice-result__value--ok {
-  color: #34d399;
-}
-
-html.dark .practice-result--wrong .practice-result__icon,
-html.dark .practice-result--wrong .practice-result__title,
-html.dark .practice-result__value--bad {
-  color: #fb7185;
-}
-
-html.dark .practice-stem__tag {
-  background: rgba(15, 23, 42, 0.78);
-  border-color: var(--line-soft);
-  color: var(--text-secondary);
-}
-
-html.dark .practice-stem__hint,
-html.dark .practice-summary__icon--keep,
-html.dark .msg-warn {
-  background: rgba(217, 119, 6, 0.18);
-  color: #fbbf24;
-}
-
-/* Tailwind utility bridge for pages that still use hard-coded light classes. */
-html.dark .bg-white,
-html.dark .bg-slate-50,
-html.dark .bg-slate-100,
-html.dark .bg-blue-50,
-html.dark .from-blue-50,
-html.dark .to-white {
-  background-color: rgba(16, 24, 39, 0.88) !important;
-}
-
-html.dark .from-blue-50 {
-  --tw-gradient-from: rgba(30, 41, 59, 0.94) !important;
-}
-
-html.dark .to-white {
-  --tw-gradient-to: rgba(15, 23, 42, 0.92) !important;
-}
-
-html.dark .bg-white\/15,
-html.dark .bg-white\/12,
-html.dark .bg-white\/10 {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-html.dark .border-slate-100,
-html.dark .border-slate-200,
-html.dark .border-blue-100 {
-  border-color: var(--line-soft) !important;
-}
-
-html.dark .text-slate-950,
-html.dark .text-slate-900,
-html.dark .text-slate-800 {
-  color: var(--text-main) !important;
-}
-
-html.dark .text-slate-700,
-html.dark .text-slate-600 {
-  color: var(--text-secondary) !important;
-}
-
-html.dark .text-slate-500,
-html.dark .text-slate-400,
-html.dark .text-slate-300 {
-  color: var(--text-muted) !important;
-}
-
-html.dark .shadow-sm,
-html.dark .shadow-lg,
-html.dark .shadow-xl,
-html.dark .shadow-2xl {
-  box-shadow: var(--shadow-card) !important;
-}
-
-html.dark input,
-html.dark textarea,
-html.dark select {
-  color-scheme: dark;
 }

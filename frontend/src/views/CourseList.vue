@@ -1,47 +1,45 @@
 <script setup lang="ts">
+defineOptions({ name: "CourseList" });
+
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRoute } from "vue-router";
 import {
-  Bookmark,
+  Copy,
   Eye,
   FileText,
   Globe,
   GraduationCap,
-  ListOrdered,
   Lock,
   MoreHorizontal,
   Pencil,
   Play,
   Plus,
   Search,
-  Shuffle,
   Sparkles,
   Trash2,
   X,
-  XCircle,
 } from "@lucide/vue";
 
 import request, { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import { useMyCourses } from "../composables/useMyCourses";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
-import BottomSheet from "../components/ui/BottomSheet.vue";
 import Button from "../components/ui/button/Button.vue";
 import FilterTabs from "../components/ui/FilterTabs.vue";
 
 const { replaceWithSource } = useAppNavigation();
+const route = useRoute();
 const confirmDialog = useConfirmDialog();
 
-const courses = ref<Course[]>([]);
-const loading = ref(false);
-const errorMessage = ref("");
+const { courses, loading, hasLoaded, errorMessage, fetchCourses } = useMyCourses();
 const successMessage = ref("");
 const deleteLoading = ref<number | null>(null);
 const publishLoading = ref<number | null>(null);
 const searchText = ref("");
 const visibilityFilter = ref<"all" | "private" | "public" | "recent">("all");
 const openCourseMenuId = ref<number | null>(null);
-const practiceSheetCourse = ref<Course | null>(null);
 
 const visibilityFilters = [
   { value: "all", label: "全部" },
@@ -49,13 +47,6 @@ const visibilityFilters = [
   { value: "public", label: "公开" },
   { value: "recent", label: "最近练习" },
 ];
-
-const practiceModes = [
-  { key: "sequential", label: "顺序练习", desc: "按题目顺序逐题完成", icon: ListOrdered },
-  { key: "random", label: "随机练习", desc: "随机抽取题目进行练习", icon: Shuffle },
-  { key: "wrong", label: "错题强化", desc: "集中回顾易错题目", icon: XCircle },
-  { key: "bookmark", label: "收藏题目", desc: "查看你收藏的重点题目", icon: Bookmark },
-] as const;
 
 function flashSuccess(msg: string) {
   successMessage.value = msg;
@@ -157,20 +148,6 @@ async function handleSave() {
   }
 }
 
-async function fetchCourses() {
-  loading.value = true;
-  errorMessage.value = "";
-
-  try {
-    const { data } = await request.get<Course[] | { items: Course[] }>("/courses/mine");
-    courses.value = Array.isArray(data) ? data : data.items || [];
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error, "获取题库失败");
-  } finally {
-    loading.value = false;
-  }
-}
-
 async function deleteCourse(course: Course) {
   openCourseMenuId.value = null;
   const confirmed = await confirmDialog.confirm({
@@ -219,50 +196,56 @@ async function togglePublish(course: Course) {
   }
 }
 
+async function copyShareLink(course: Course) {
+  openCourseMenuId.value = null;
+  errorMessage.value = "";
+  let link = `${window.location.origin}/courses/${course.id}`;
+  try {
+    if (course.visibility === "private") {
+      let token = course.share_token;
+      if (!token) {
+        const { data } = await request.post<{ token: string }>(`/courses/${course.id}/share-link`);
+        token = data.token;
+        course.share_token = token;
+      }
+      link = `${window.location.origin}/shared-courses/${token}`;
+    }
+    await navigator.clipboard.writeText(link);
+    flashSuccess("\u9898\u5e93\u5206\u4eab\u94fe\u63a5\u5df2\u590d\u5236");
+  } catch {
+    window.prompt("\u8bf7\u590d\u5236\u9898\u5e93\u5206\u4eab\u94fe\u63a5", link);
+  }
+}
+
 function goToPractice(course: Course) {
   if (!isPracticeReadyCourse(course)) return;
   openCourseMenuId.value = null;
-  practiceSheetCourse.value = course;
+  replaceWithSource(
+    { name: "course-practice", params: { courseId: course.id }, query: { mode: "normal", autostart: "1" } },
+    "courses",
+  );
 }
 
-function activateCourse(course: Course) {
-  if (isPracticeReadyCourse(course)) {
-    goToPractice(course);
+function openCourseDetail(course: Course) {
+  const groupId = Number(route.query.share_group);
+  if (Number.isInteger(groupId) && groupId > 0) {
+    replaceWithSource(
+      { name: "course-detail", params: { courseId: course.id }, query: { share_group: String(groupId) } },
+      "study-groups",
+    );
     return;
   }
   replaceWithSource(`/courses/${course.id}`, "courses");
 }
 
-function closePracticeSheet() {
-  practiceSheetCourse.value = null;
-}
-
-function updatePracticeSheet(isOpen: boolean) {
-  if (!isOpen) closePracticeSheet();
+function activateCourse(course: Course) {
+  openCourseDetail(course);
 }
 
 function setVisibilityFilter(value: string) {
   if (value === "all" || value === "private" || value === "public" || value === "recent") {
     visibilityFilter.value = value;
   }
-}
-
-function startPractice(mode: string) {
-  const course = practiceSheetCourse.value;
-  if (!course) return;
-  practiceSheetCourse.value = null;
-  if (mode === "bookmark") {
-    replaceWithSource({ name: "bookmarks", query: { course_id: course.id } }, "courses");
-    return;
-  }
-  replaceWithSource(
-    {
-      name: "course-practice",
-      params: { courseId: course.id },
-      query: { mode, autostart: "1" },
-    },
-    "courses",
-  );
 }
 
 function formatCourseDate(course: Course) {
@@ -273,7 +256,9 @@ function formatCourseDate(course: Course) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
 }
 
-onMounted(fetchCourses);
+onMounted(() => {
+  void fetchCourses();
+});
 </script>
 
 <template>
@@ -288,7 +273,9 @@ onMounted(fetchCourses);
       </button>
     </header>
 
-    <p v-if="loading" class="status-banner status-banner--info">题库加载中...</p>
+    <div v-if="loading && !hasLoaded" class="course-loading-skeleton" aria-busy="true" aria-label="题库加载中">
+      <span v-for="index in 3" :key="index" class="course-loading-skeleton__row" />
+    </div>
     <p v-if="errorMessage" class="status-banner status-banner--error">{{ errorMessage }}</p>
     <p v-if="successMessage" class="status-banner status-banner--success">{{ successMessage }}</p>
 
@@ -350,16 +337,13 @@ onMounted(fetchCourses);
         v-for="(course, idx) in filteredCourses"
         :key="course.id"
         class="course-row fade-up"
-        :class="[
-          'd' + ((idx % 5) + 1),
-          { 'course-row--menu-open': openCourseMenuId === course.id },
-        ]"
+        :class="['d' + ((idx % 5) + 1), { 'course-row--menu-open': openCourseMenuId === course.id }]"
       >
         <div
           class="course-item"
           role="button"
           tabindex="0"
-          :aria-label="isPracticeReadyCourse(course) ? `选择练习方式：${getCourseDisplayName(course)}` : `查看题库：${getCourseDisplayName(course)}`"
+          :aria-label="`查看题库：${getCourseDisplayName(course)}`"
           @click="activateCourse(course)"
           @keydown.enter="activateCourse(course)"
         >
@@ -371,9 +355,19 @@ onMounted(fetchCourses);
               getCourseDisplayName(course)
             }}</strong>
             <span class="course-subline">
-              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 · {{ formatCourseDate(course) }}
+              {{ course.question_count ?? 0 }} 题 · 已练 {{ course.practice_count ?? 0 }} 次 ·
+              {{ formatCourseDate(course) }}
             </span>
           </div>
+          <button
+            class="course-share-quick"
+            data-testid="course-share-quick"
+            type="button"
+            :aria-label="`\u5206\u4eab${getCourseDisplayName(course)}`"
+            @click.stop="copyShareLink(course)"
+          >
+            <Copy :size="16" :stroke-width="2.5" />
+          </button>
           <button
             class="more-btn"
             type="button"
@@ -395,9 +389,19 @@ onMounted(fetchCourses);
             <Play :size="15" :stroke-width="2.5" />
             {{ isPracticeReadyCourse(course) ? "开始练习" : "暂无题目" }}
           </button>
-          <button class="menu-option" type="button" @click.stop="replaceWithSource(`/courses/${course.id}`, 'courses')">
+          <button class="menu-option" type="button" @click.stop="openCourseDetail(course)">
             <Eye :size="15" :stroke-width="2.5" />
             查看题目
+          </button>
+          <button
+            class="menu-option"
+            data-testid="course-share"
+            type="button"
+            :aria-label="`\u5206\u4eab${getCourseDisplayName(course)}`"
+            @click.stop="copyShareLink(course)"
+          >
+            <Copy :size="15" :stroke-width="2.5" />
+            {{ "\u5206\u4eab\u9898\u5e93" }}
           </button>
           <div class="menu-divider"></div>
           <button
@@ -477,31 +481,6 @@ onMounted(fetchCourses);
         </div>
       </div>
     </div>
-
-    <BottomSheet
-      :model-value="!!practiceSheetCourse"
-      :title="practiceSheetCourse ? getCourseDisplayName(practiceSheetCourse) : '选择练习方式'"
-      @update:model-value="updatePracticeSheet"
-      @close="closePracticeSheet"
-    >
-      <section v-if="practiceSheetCourse" class="practice-sheet">
-        <p class="practice-sheet__summary">开始练习 · {{ practiceSheetCourse.question_count ?? 0 }} 道题目</p>
-        <button
-          v-for="mode in practiceModes"
-          :key="mode.key"
-          class="practice-sheet__option"
-          type="button"
-          @click="startPractice(mode.key)"
-        >
-          <span class="practice-sheet__icon"><component :is="mode.icon" :size="19" :stroke-width="2.2" /></span>
-          <span
-            ><strong>{{ mode.label }}</strong
-            ><small>{{ mode.desc }}</small></span
-          >
-          <Play :size="17" :stroke-width="2.4" aria-hidden="true" />
-        </button>
-      </section>
-    </BottomSheet>
   </section>
 </template>
 
@@ -673,6 +652,24 @@ onMounted(fetchCourses);
 .more-btn:hover {
   background: var(--surface-strong);
   color: var(--text-main);
+}
+
+.course-share-quick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 36px;
+  padding: 0 9px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--primary-strong);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  cursor: pointer;
 }
 
 /* ── Dropdown menu (anchored below more-btn) ── */
@@ -862,63 +859,6 @@ onMounted(fetchCourses);
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
   margin-top: var(--space-2);
-}
-
-.practice-sheet {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-.practice-sheet__summary {
-  margin: 0 2px 4px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-.practice-sheet__option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  color: var(--text-main);
-  text-align: left;
-}
-.practice-sheet__option:active {
-  transform: scale(0.985);
-  border-color: var(--primary-border);
-  background: var(--primary-soft);
-}
-.practice-sheet__icon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-.practice-sheet__option strong,
-.practice-sheet__option small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.practice-sheet__option strong {
-  font-size: 14px;
-}
-.practice-sheet__option small {
-  margin-top: 3px;
-  color: var(--text-muted);
-  font-size: 11px;
-}
-.practice-sheet__option :deep(svg:last-child) {
-  color: var(--primary-strong);
 }
 
 /* ── Mobile compact (≤400px / 6.3 inch) ── */
@@ -1413,5 +1353,33 @@ onMounted(fetchCourses);
     right: 8px;
     max-width: calc(100% - 16px);
   }
+}
+.course-loading-skeleton {
+  display: grid;
+  gap: 8px;
+}
+.course-loading-skeleton__row {
+  display: block;
+  min-height: 76px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.42), rgba(255, 255, 255, 0.9), rgba(226, 232, 240, 0.42));
+}
+.library-page .course-row .course-item {
+  grid-template-columns: 40px minmax(0, 1fr) 36px 32px;
+}
+.library-page .course-share-quick {
+  grid-column: 3;
+  justify-self: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.library-page .more-btn {
+  grid-column: 4;
 }
 </style>

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import request, { getErrorMessage, getToken, resolveDefaultApiBaseUrl, setToken } from "../request.ts";
+import { describe, expect, it, vi } from "vitest";
+import request, { clearToken, getErrorMessage, getToken, resolveDefaultApiBaseUrl, setToken } from "../request.ts";
 
 function axiosLikeError(status: number) {
   return {
@@ -54,5 +54,19 @@ describe("request auth handling", () => {
     ).rejects.toMatchObject({ response: { status: 401 } });
 
     expect(getToken()).toBe("");
+  });
+
+  it("keeps credentials in memory without writing browser storage", () => {
+    const storageSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage unavailable");
+    });
+
+    setToken("cookie-backup");
+
+    expect(document.cookie).not.toContain("xuexibao_token=cookie-backup");
+    expect(window.localStorage.getItem("xuexibao_token")).toBeNull();
+    expect(getToken()).toBe("cookie-backup");
+    storageSpy.mockRestore();
+    clearToken();
   });
 });

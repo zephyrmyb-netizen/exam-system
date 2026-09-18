@@ -1,14 +1,37 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Clock, FileQuestion, Play, Trophy } from "@lucide/vue";
+import { ArrowLeft, Clock, Copy, FileQuestion, Play, Trophy, Users } from "@lucide/vue";
 
 import { useExamStore } from "@/stores/exam";
+import { useAuthStore } from "@/stores/auth";
+import { publishExam } from "@/api/exams";
+import request, { getErrorMessage } from "@/api/request";
 
 const route = useRoute();
 const router = useRouter();
 const store = useExamStore();
+const auth = useAuthStore();
 const examId = computed(() => Number(route.params.examId));
+const publishing = ref(false);
+const publishMessage = ref("");
+const shareMessage = ref("");
+const groupShareError = ref("");
+const canPublish = computed(
+  () => store.currentExam?.status === "draft" && store.currentExam.creator_id === auth.user?.id,
+);
+const canStart = computed(
+  () => store.currentExam?.availability !== "scheduled" && store.currentExam?.availability !== "closed",
+);
+const shareGroupId = computed(() => Number(route.query?.share_group));
+const isCreator = computed(() => store.currentExam?.creator_id === auth.user?.id);
+const canShareToGroup = computed(
+  () =>
+    isCreator.value &&
+    store.currentExam?.status === "published" &&
+    Number.isInteger(shareGroupId.value) &&
+    shareGroupId.value > 0,
+);
 
 function start() {
   router.replace({ name: "exam-take", params: { examId: examId.value } });
@@ -18,12 +41,62 @@ function openLeaderboard() {
   router.replace({ name: "exam-leaderboard", params: { examId: examId.value } });
 }
 
+function openAnalytics() {
+  router.replace({ name: "exam-analytics", params: { examId: examId.value } });
+}
+
 function goBack() {
+  if (route.query?.from === "study-groups") {
+    router.replace({ name: "study-groups" });
+    return;
+  }
   router.replace({ name: "exams" });
 }
 
 function retry() {
   store.loadExam(examId.value);
+}
+
+async function copyShareLink() {
+  const code = store.currentExam?.share_code;
+  const link = code
+    ? `${window.location.origin}/exams/share/${code}`
+    : `${window.location.origin}/exams/${examId.value}`;
+  shareMessage.value = "";
+  try {
+    await navigator.clipboard.writeText(link);
+    shareMessage.value = "考试链接已复制，登录后的用户可直接打开并参加。";
+  } catch {
+    window.prompt("请复制考试链接", link);
+  }
+}
+
+async function shareToGroup() {
+  if (!canShareToGroup.value) return;
+  shareMessage.value = "";
+  groupShareError.value = "";
+  try {
+    await request.post(`/study-groups/${shareGroupId.value}/exams/${examId.value}`);
+    shareMessage.value = "考试已共享到当前学习小组。";
+  } catch (error) {
+    groupShareError.value = getErrorMessage(error, "共享考试失败");
+  }
+}
+
+async function publish() {
+  if (!canPublish.value || publishing.value) return;
+  publishing.value = true;
+  publishMessage.value = "";
+  store.error = "";
+  try {
+    await publishExam(examId.value);
+    await store.loadExam(examId.value);
+    publishMessage.value = "考试已发布，其他登录用户现在可以参加。";
+  } catch (error) {
+    store.error = getErrorMessage(error, "发布考试失败");
+  } finally {
+    publishing.value = false;
+  }
 }
 
 onMounted(() => {
@@ -34,6 +107,9 @@ onMounted(() => {
 <template>
   <section class="exam-detail-page">
     <p v-if="store.loading" class="info-message">正在加载考试...</p>
+    <p v-if="publishMessage" class="success-message" role="status">{{ publishMessage }}</p>
+    <p v-if="shareMessage" class="success-message" role="status">{{ shareMessage }}</p>
+    <p v-if="groupShareError" class="error-message" role="alert">{{ groupShareError }}</p>
 
     <div v-else-if="store.error" class="empty-panel">
       <p class="error-message">{{ store.error }}</p>
@@ -65,13 +141,76 @@ onMounted(() => {
         </div>
       </div>
 
-      <button class="start-button" type="button" :disabled="!store.currentExam.questions.length" @click="start">
+      <p v-if="store.currentExam.availability === 'scheduled'" class="info-message" data-testid="exam-detail-schedule">
+        考试尚未开始，请在开始时间后进入。
+      </p>
+      <p v-else-if="store.currentExam.availability === 'closed'" class="error-message" data-testid="exam-detail-closed">
+        考试已截止，不能再开始答题。
+      </p>
+      <p v-if="store.currentExam.start_at || store.currentExam.end_at" class="schedule-summary">
+        {{ store.currentExam.start_at ? `开始：${store.currentExam.start_at}` : "发布后立即开始"
+        }}{{ store.currentExam.end_at ? ` · 截止：${store.currentExam.end_at}` : "" }}
+      </p>
+      <button
+        data-testid="exam-detail-start"
+        class="start-button"
+        type="button"
+        :disabled="!store.currentExam.questions.length || !canStart"
+        @click="start"
+      >
         <Play :size="18" />
         开始考试
       </button>
-      <button class="leaderboard-button" type="button" @click="openLeaderboard">
+      <button data-testid="exam-detail-leaderboard" class="leaderboard-button" type="button" @click="openLeaderboard">
         <Trophy :size="18" />
         查看排行榜
+      </button>
+      <button
+        v-if="store.currentExam.creator_id === auth.user?.id"
+        data-testid="exam-detail-analytics"
+        class="leaderboard-button"
+        type="button"
+        @click="openAnalytics"
+      >
+        <Trophy :size="18" />考试数据分析
+      </button>
+      <button
+        v-if="store.currentExam.status === 'published'"
+        data-testid="exam-detail-share"
+        class="leaderboard-button"
+        type="button"
+        @click="copyShareLink"
+      >
+        <Copy :size="18" />
+        复制考试链接
+      </button>
+      <button
+        v-if="canShareToGroup"
+        data-testid="exam-detail-share-group"
+        class="leaderboard-button"
+        type="button"
+        @click="shareToGroup"
+      >
+        <Users :size="18" />
+        共享到当前小组
+      </button>
+      <p
+        v-if="store.currentExam.status === 'published' && store.currentExam.share_code"
+        class="share-code"
+        data-testid="exam-detail-share-code"
+      >
+        邀请码：{{ store.currentExam.share_code }}
+      </p>
+      <button
+        v-if="canPublish"
+        data-testid="exam-detail-publish"
+        class="publish-button"
+        type="button"
+        :disabled="publishing"
+        @click="publish"
+      >
+        <Trophy :size="18" />
+        {{ publishing ? "正在发布..." : "发布考试" }}
       </button>
     </article>
   </section>
@@ -164,6 +303,23 @@ h1 {
   font-size: 28px;
   line-height: 1;
 }
+.schedule-summary {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.share-code {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  text-align: center;
+}
 .start-button {
   display: inline-flex;
   align-items: center;
@@ -192,5 +348,22 @@ h1 {
   font: inherit;
   font-size: var(--text-base);
   font-weight: 900;
+}
+.publish-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 900;
+}
+.publish-button:disabled {
+  opacity: 0.6;
 }
 </style>

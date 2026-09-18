@@ -1,6 +1,7 @@
 import { ref, type Ref } from "vue";
 
-import request, { getErrorMessage } from "../api/request";
+import { getMyCourses } from "../api/courses";
+import { getErrorMessage } from "../api/request";
 import type { Course } from "../types";
 
 export interface UseImportCoursesReturn {
@@ -19,8 +20,7 @@ export function useImportCourses(): UseImportCoursesReturn {
     coursesLoading.value = true;
     coursesError.value = "";
     try {
-      const { data } = await request.get<Course[] | { items: Course[] }>("/courses/mine");
-      courses.value = Array.isArray(data) ? data : (data as { items: Course[] }).items || [];
+      courses.value = await getMyCourses();
     } catch (error: unknown) {
       courses.value = [];
       coursesError.value = getErrorMessage(error, "获取题库列表失败");

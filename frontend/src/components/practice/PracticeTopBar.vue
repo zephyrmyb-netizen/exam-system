@@ -1,5 +1,5 @@
-<script setup>
-import { ChevronLeft, LogOut } from "@lucide/vue";
+<script setup lang="ts">
+import { ChevronLeft, Flag, LogOut } from "@lucide/vue";
 
 defineProps({
   courseName: { type: String, default: "" },
@@ -7,9 +7,12 @@ defineProps({
   answeredCount: { type: Number, default: 0 },
   accuracy: { type: Number, default: null },
   totalQuestions: { type: Number, default: 0 },
+  sessionOrder: { type: Number, default: 0 },
+  sessionTotal: { type: Number, default: 0 },
+  marked: { type: Boolean, default: false },
 });
 
-defineEmits(["back", "end"]);
+defineEmits(["back", "end", "toggle-mark"]);
 </script>
 
 <template>
@@ -21,13 +24,29 @@ defineEmits(["back", "end"]);
     <div class="practice-topbar__center">
       <span class="practice-topbar__title">{{ courseName || modeLabel || "练习" }}</span>
       <span class="practice-topbar__meta">
-        {{ totalQuestions ? `已答 ${answeredCount} / ${totalQuestions}` : `已答 ${answeredCount}` }} ·
+        {{
+          sessionTotal
+            ? `第 ${sessionOrder} / ${sessionTotal} 题 · 已答 ${answeredCount}`
+            : totalQuestions
+              ? `已答 ${answeredCount} / ${totalQuestions}`
+              : `已答 ${answeredCount}`
+        }}
+        ·
         {{ accuracy !== null ? `${accuracy}%` : "--" }}
       </span>
       <span v-if="totalQuestions" class="practice-topbar__track" aria-label="练习进度">
         <i :style="{ width: `${Math.min(100, Math.round((answeredCount / totalQuestions) * 100))}%` }"></i>
       </span>
     </div>
+
+    <button
+      class="practice-mark-button"
+      type="button"
+      :aria-label="marked ? '取消标记题目' : '标记题目'"
+      @click="$emit('toggle-mark')"
+    >
+      <Flag :size="16" :stroke-width="2.5" :fill="marked ? 'currentColor' : 'none'" />
+    </button>
 
     <button class="practice-end-button" type="button" aria-label="结束练习" @click="$emit('end')">
       <LogOut :size="16" :stroke-width="2.5" />
@@ -103,6 +122,7 @@ defineEmits(["back", "end"]);
 }
 
 .practice-icon-button,
+.practice-mark-button,
 .practice-end-button {
   display: inline-flex;
   align-items: center;
@@ -122,6 +142,7 @@ defineEmits(["back", "end"]);
 }
 
 .practice-icon-button:hover,
+.practice-mark-button:hover,
 .practice-end-button:hover {
   border-color: var(--line-accent);
   background: var(--surface-soft);
@@ -131,6 +152,16 @@ defineEmits(["back", "end"]);
   color: var(--primary-strong);
   border-color: var(--line-accent);
   background: var(--primary-soft);
+}
+
+.practice-mark-button {
+  color: var(--text-muted);
+}
+
+.practice-mark-button:hover {
+  color: var(--amber-strong, #b45309);
+  border-color: var(--amber, #f59e0b);
+  background: var(--amber-soft, #fff7ed);
 }
 
 .practice-end-button__label {

@@ -22,6 +22,10 @@ export function getExamDetail(id: number): Promise<ExamDetail> {
   return request.get(`/exams/${id}`).then(({ data }) => data as ExamDetail);
 }
 
+export function getExamDetailByShareCode(shareCode: string): Promise<ExamDetail> {
+  return request.get(`/exams/share/${encodeURIComponent(shareCode)}`).then(({ data }) => data as ExamDetail);
+}
+
 export function createExam(payload: ExamCreate): Promise<Exam> {
   return request.post("/exams/", payload).then(({ data }) => data as Exam);
 }
@@ -36,6 +40,10 @@ export function startExam(id: number): Promise<ExamAttempt> {
 
 export function submitExam(id: number, payload: ExamSubmissionCreate): Promise<ExamResult> {
   return request.post(`/exams/${id}/submit`, payload).then(({ data }) => data as ExamResult);
+}
+
+export function addExamWrongAnswersToWrongbook(id: number): Promise<{ exam_id: number; added_count: number }> {
+  return request.post(`/exams/${id}/wrongbook`).then(({ data }) => data as { exam_id: number; added_count: number });
 }
 
 export function getExamLeaderboard(id: number): Promise<ExamLeaderboard> {
