@@ -1,5 +1,7 @@
 # 考试学习平台 · Codex 前端交接文档
 
+> **已归档（2026-07-14）**：前端实现已完成并落地到 `frontend/src/`。本文档仅作历史参考，当前真实代码以 `frontend/src/` 为准。
+
 > 本文档供 Codex 实现当前 Vue 前端使用。`exam-platform-ui/` 是本轮视觉实现的唯一设计真相；真实路由和组件映射以 `IMPLEMENTATION_MAP.md` 为准。
 
 ---

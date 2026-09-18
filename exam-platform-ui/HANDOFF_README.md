@@ -1,5 +1,7 @@
 # 学习宝 Codex 源码交接说明
 
+> **已归档（2026-07-14）**：交接已完成，前端实现已落地到 `frontend/src/`。本文件仅作历史参考，不再代表当前状态。
+
 本交接包用于在独立 Codex 环境中继续实现学习宝。请先阅读根目录的 `SOURCE_REVISION.txt`、`SOURCE_TREE.txt` 和 `MANIFEST.sha256`，再按下列顺序获取上下文：
 
 1. `README-开始工作前必读.md`

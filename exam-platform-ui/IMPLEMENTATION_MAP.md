@@ -1,5 +1,7 @@
 # 参考界面到当前 Vue 项目的实现映射
 
+> **已归档（2026-07-14）**：视觉迁移已完成。本映射表仅作历史参考，当前真实实现以 `frontend/src/` 为准。
+
 `exam-platform-ui/` 是本轮前端视觉迁移的唯一设计真相。参考 HTML 只定义视觉、布局和交互意图；现有 Vue 代码、API、Pinia 状态和路由契约继续定义真实业务行为。
 
 固定实现栈：Vue 3、TypeScript、Vite、Pinia、Vue Router、Lucide Vue（`@lucide/vue`）。

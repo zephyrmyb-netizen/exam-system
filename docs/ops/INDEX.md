@@ -4,14 +4,19 @@
 
 ## 正在执行
 
+- [2026-09-09 现有功能清理与优化](./active/2026-09-09-project-optimization.md)：Codex，执行中。
+- [2026-09-16 风险处理与安卓端预留](./active/2026-09-16-risk-cleanup-android-readiness.md)：WorkBuddy (GLM)，风险已处理完毕，留档待归档。
+- [2026-09-17 课程设计与毕业论文交付整理](./active/2026-09-17-thesis-delivery-cleanup.md)：Codex，执行中。
+
 | 任务 | 窗口 | 留档 | 状态 |
 | --- | --- | --- | --- |
-| 2026-07-11 | Pencil Desktop 安装与 MCP 隔离验证 | GPT-5.6 Luna | [2026-07-11-pencil-mcp-install.md](./active/2026-07-11-pencil-mcp-install.md) | active |
+| 2026-07-11 | Pencil Desktop 安装与 MCP 隔离验证 | GPT-5.6 Luna | [2026-07-11-pencil-mcp-install.md](./active/2026-07-11-pencil-mcp-install.md) | blocked（commit 待完成，已停滞） |
 
 ## 已完成
 
 | 日期 | 任务 | 留档 |
 | --- | --- | --- |
+| 2026-07-10 | Figma 视觉设计尝试，因套餐与 MCP 配额限制阻断 | [2026-07-10-figma-visual-system-blocked.md](./archive/2026-07-10-figma-visual-system-blocked.md) |
 | 2026-07-14 | 学习宝参考 UI 高保真迁移与 Codex 交接包 | [2026-07-14-reference-ui-handoff-implementation.md](./archive/2026-07-14-reference-ui-handoff-implementation.md) |
 | 2026-07-13 | AI 长文档题目覆盖率与缺题重试修复 | [2026-07-13-ai-import-coverage-retry.md](./archive/2026-07-13-ai-import-coverage-retry.md) |
 | 2026-07-13 | AI 长文档与多模态导入可靠性修复 | [2026-07-13-ai-import-reliability.md](./archive/2026-07-13-ai-import-reliability.md) |
@@ -37,10 +42,6 @@
 | 2026-07-10 | 安装本地 Figma MCP 因远端仓库 DMCA takedown 阻断 | [2026-07-10-figma-local-mcp-install.md](./archive/2026-07-10-figma-local-mcp-install.md) |
 
 ## 使用方式
-
-已完成新增：
-
-2026-07-10 | Figma 视觉设计尝试，因套餐与 MCP 配额限制阻断 | [2026-07-10-figma-visual-system-blocked.md](./archive/2026-07-10-figma-visual-system-blocked.md)
 
 1. 开工时复制 [TEMPLATE.md](./TEMPLATE.md) 到 `active/`。
 2. 完成后补全验证、commit 和 push 结果。
