@@ -1,5 +1,7 @@
 # QA 验收报告
 
+> **注意**：本报告基于 2026-06-21 快照，数字已过时。截至 2026-07-16，后端测试为 429 passed, 1 skipped，CI 为 3 个 job（backend pytest + frontend build + security check）。本报告仅作历史参考。
+
 **测试日期**: 2026-06-21
 **测试环境**: Windows, Python 3.11, FastAPI uvicorn (localhost:8000), Vite (npm run build)
 **测试人**: Reasonix QA Agent
@@ -18,7 +20,7 @@ cd frontend && npm run build
 # 结果: 1873 modules, 2.64s, 0 errors
 
 # GitHub Actions CI
-# 状态: 26 jobs · 全绿色通过 (backend pytest + frontend build + security check)
+# 状态: 3 jobs · 全绿色通过 (backend pytest + frontend build + security check)
 ```
 
 ---
