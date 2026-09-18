@@ -1,38 +1,26 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { replace, get, route } = vi.hoisted(() => ({
+const { replace, getCourse, getCoursePracticeQuestions, getCourseWrongPracticeQuestions, route } = vi.hoisted(() => ({
   replace: vi.fn(),
-  get: vi.fn((url: string) =>
-    Promise.resolve(
-      url.endsWith("/questions")
-        ? {
-            data: [
-              { id: 1, type: "single_choice", question: "Question 1", options: {}, answer: "A" },
-              { id: 2, type: "single_choice", question: "Question 2", options: {}, answer: "A" },
-            ],
-          }
-        : url.startsWith("/wrongbook/")
-          ? {
-              data: [
-                {
-                  id: 1,
-                  question_id: 1,
-                  wrong_count: 1,
-                  last_wrong_answer: "B",
-                  question: {
-                    id: 1,
-                    course_id: 7,
-                    type: "single_choice",
-                    question: "Question",
-                    options: {},
-                    answer: "A",
-                  },
-                },
-              ],
-            }
-          : { data: { id: 7, name: "Physics", question_count: 12 } },
-    ),
+  getCourse: vi.fn(() => Promise.resolve({ id: 7, name: "Physics", question_count: 12 })),
+  getCoursePracticeQuestions: vi.fn(() =>
+    Promise.resolve([
+      { id: 1, type: "single_choice", question: "Question 1", options: {}, answer: "A" },
+      { id: 2, type: "single_choice", question: "Question 2", options: {}, answer: "A" },
+    ]),
+  ),
+  getCourseWrongPracticeQuestions: vi.fn(() =>
+    Promise.resolve([
+      {
+        id: 1,
+        course_id: 7,
+        type: "single_choice",
+        question: "Question",
+        options: {},
+        answer: "A",
+      },
+    ]),
   ),
   route: {
     params: { courseId: "7" },
@@ -46,8 +34,16 @@ vi.mock("vue-router", () => ({
   useRouter: () => ({ replace }),
 }));
 
+vi.mock("../../api/courses", () => ({
+  getCourse,
+  getCoursePracticeQuestions,
+}));
+
+vi.mock("../../api/wrongbook", () => ({
+  getCourseWrongPracticeQuestions,
+}));
+
 vi.mock("../../api/request", () => ({
-  default: { get },
   getErrorMessage: () => "request failed",
 }));
 
@@ -92,7 +88,8 @@ describe("CoursePractice", () => {
     expect(practice.attributes("data-mode")).toBe("normal");
     expect(practice.attributes("data-total")).toBe("2");
     expect(practice.attributes("data-session-size")).toBe("2");
-    expect(get).toHaveBeenCalledWith("/courses/7/questions", { params: { order: "asc" } });
+    expect(getCourse).toHaveBeenCalledWith(7);
+    expect(getCoursePracticeQuestions).toHaveBeenCalledWith(7);
   });
 
   it("uses a complete shuffled session for random practice", async () => {

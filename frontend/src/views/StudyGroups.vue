@@ -4,23 +4,12 @@ import { useRouter } from "vue-router";
 import { BookOpen, ChevronRight, Copy } from "@lucide/vue";
 
 import { useAuthStore } from "../stores/auth";
-import request, { getErrorMessage } from "../api/request";
+import { createStudyGroup, getMyStudyGroups, getStudyGroupResources, joinStudyGroup } from "../api/studyGroups";
+import { getErrorMessage } from "../api/request";
+import type { GroupResources, StudyGroup } from "../types";
 
 const router = useRouter();
 const auth = useAuthStore();
-
-type StudyGroup = {
-  id: number;
-  name: string;
-  invite_code: string;
-  member_count: number;
-  owner_id: number;
-};
-
-type GroupResources = {
-  courses: Array<{ id: number; name: string; question_count: number }>;
-  exams: Array<{ id: number; title: string; share_code?: string }>;
-};
 
 const groups = ref<StudyGroup[]>([]);
 const groupName = ref("");
@@ -45,8 +34,7 @@ function clearMessages() {
 async function loadGroups() {
   loading.value = true;
   try {
-    const { data } = await request.get<StudyGroup[]>("/study-groups/mine");
-    groups.value = data;
+    groups.value = await getMyStudyGroups();
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "加载小组失败");
   } finally {
@@ -64,7 +52,7 @@ async function createGroup() {
   clearMessages();
   saving.value = true;
   try {
-    await request.post("/study-groups/", { name });
+    await createStudyGroup(name);
     groupName.value = "";
     successMessage.value = "小组已创建。";
     await loadGroups();
@@ -85,7 +73,7 @@ async function joinGroup() {
   clearMessages();
   saving.value = true;
   try {
-    await request.post(`/study-groups/join/${encodeURIComponent(code)}`);
+    await joinStudyGroup(code);
     inviteCode.value = "";
     successMessage.value = "已加入小组。";
     await loadGroups();
@@ -103,7 +91,7 @@ async function loadGroupResources(groupId: number) {
   resourcesLoading.value = true;
   clearMessages();
   try {
-    const { data } = await request.get<GroupResources>(`/study-groups/${groupId}/resources`);
+    const data = await getStudyGroupResources(groupId);
     if (generation === resourceGeneration) groupResources.value = data;
   } catch (error) {
     if (generation === resourceGeneration) errorMessage.value = getErrorMessage(error, "加载小组资源失败");

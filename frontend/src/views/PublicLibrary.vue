@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
-import request, { getErrorMessage } from "../api/request";
+import { copyPublicCourse, favoritePublicCourse, getPublicCourses, reportPublicCourse } from "../api/library";
+import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
+import type { PublicCourse } from "../types";
 import { Globe, ChevronRight, Layers, BookOpen, Search, Copy, Flag, Heart } from "@lucide/vue";
 
 const { replaceWithSource } = useAppNavigation();
-const libraries = ref<any[]>([]);
+const libraries = ref<PublicCourse[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
 const searchKeyword = ref("");
@@ -17,9 +19,9 @@ async function fetchPublicCourses() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const params: Record<string, any> = {};
+    const params: Record<string, string> = {};
     if (searchKeyword.value.trim()) params.keyword = searchKeyword.value.trim();
-    const { data } = await request.get("/library/public", { params });
+    const data = await getPublicCourses(params);
     libraries.value = Array.isArray(data) ? data : data.items || [];
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "获取公共题库失败");
@@ -28,7 +30,7 @@ async function fetchPublicCourses() {
   }
 }
 
-function viewCourse(course: any) {
+function viewCourse(course: PublicCourse) {
   replaceWithSource(
     {
       name: "course-detail",
@@ -39,10 +41,10 @@ function viewCourse(course: any) {
   );
 }
 
-async function copyCourse(course: any) {
+async function copyCourse(course: PublicCourse) {
   actionMessage.value = "";
   try {
-    const { data } = await request.post(`/library/public/${course.id}/copy`);
+    const data = await copyPublicCourse(course.id);
     actionMessage.value = "题库已复制到我的题库。";
     replaceWithSource({ name: "course-detail", params: { courseId: data.copied_course_id } }, "public-library");
   } catch (error) {
@@ -50,10 +52,10 @@ async function copyCourse(course: any) {
   }
 }
 
-async function favoriteCourse(course: any) {
+async function favoriteCourse(course: PublicCourse) {
   actionMessage.value = "";
   try {
-    const { data } = await request.post(`/library/public/${course.id}/favorite`);
+    const data = await favoritePublicCourse(course.id);
     course.favorited = data.favorited;
     actionMessage.value = data.favorited ? "已收藏题库。" : "已取消收藏。";
   } catch (error) {
@@ -61,12 +63,12 @@ async function favoriteCourse(course: any) {
   }
 }
 
-async function reportCourse(course: any) {
+async function reportCourse(course: PublicCourse) {
   const detail = window.prompt("请简要说明举报原因（可留空）：") ?? null;
   if (detail === null) return;
   actionMessage.value = "";
   try {
-    await request.post(`/library/public/${course.id}/report`, { reason: "user_report", detail });
+    await reportPublicCourse(course.id, "user_report", detail);
     actionMessage.value = "举报已提交，管理员会处理。";
   } catch (error) {
     actionMessage.value = getErrorMessage(error, "提交举报失败");

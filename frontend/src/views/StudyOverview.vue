@@ -9,7 +9,9 @@ import TypeAccuracyChart from "../components/charts/TypeAccuracyChart.vue";
 import { useStudyOverview } from "../composables/useStudyOverview";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { typeLabel } from "../utils/question";
-import request, { getErrorMessage } from "../api/request";
+import { getCurrentStudyPlan, updateCurrentStudyPlan } from "../api/studyPlans";
+import { getErrorMessage } from "../api/request";
+import type { StudyPlan } from "../types";
 
 const { replaceTo } = useAppNavigation();
 const {
@@ -44,13 +46,6 @@ const recommendedText = computed(() => {
   return modes.slice(0, 2).join(" / ");
 });
 
-interface StudyPlan {
-  daily_target: number;
-  deadline: string | null;
-  today_completed: number;
-  today_remaining: number;
-  current_streak: number;
-}
 const plan = ref<StudyPlan | null>(null);
 const planSaving = ref(false);
 const planLoading = ref(false);
@@ -61,7 +56,7 @@ const planError = ref("");
 async function loadPlan() {
   planLoading.value = true;
   try {
-    const { data } = await request.get<StudyPlan | null>("/study-plans/current");
+    const data = await getCurrentStudyPlan();
     plan.value = data;
     if (data) {
       planTarget.value = data.daily_target;
@@ -83,7 +78,7 @@ async function savePlan() {
   }
   planSaving.value = true;
   try {
-    const { data } = await request.put<StudyPlan>("/study-plans/current", {
+    const data = await updateCurrentStudyPlan({
       title: "每日学习计划",
       daily_target: planTarget.value,
       deadline: planDeadline.value ? new Date(`${planDeadline.value}T23:59:59`).toISOString() : null,

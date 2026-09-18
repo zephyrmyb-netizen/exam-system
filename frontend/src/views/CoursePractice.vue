@@ -3,8 +3,8 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ChevronLeft, LoaderCircle } from "@lucide/vue";
 
-import { getCoursePracticeQuestions } from "../api/courses";
-import request, { getErrorMessage } from "../api/request";
+import { getCourse, getCoursePracticeQuestions } from "../api/courses";
+import { getErrorMessage } from "../api/request";
 import { getCourseWrongPracticeQuestions } from "../api/wrongbook";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import type { Question } from "../types";
@@ -84,7 +84,7 @@ async function fetchCourse() {
   selectedMode.value = resolveMode();
 
   try {
-    const { data } = await request.get(`/courses/${courseId.value}`);
+    const data = await getCourse(Number(courseId.value));
     course.value = data;
     if (route.query.autostart === "1" && isPracticeReadyCourse(data)) {
       await startPractice();

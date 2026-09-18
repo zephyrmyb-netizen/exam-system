@@ -81,6 +81,43 @@ export interface CourseUpdate {
   subject?: string;
 }
 
+export interface PublicCourse extends Course {
+  /** Present when the list is enriched with the current user's favorite state. */
+  favorited?: boolean;
+}
+
+export interface SharedCourse {
+  name: string;
+  description: string;
+  subject: string;
+  question_count: number;
+}
+
+// ── Study Group ──────────────────────────────────────────────────────────
+
+export interface StudyGroup {
+  id: number;
+  name: string;
+  invite_code: string;
+  member_count: number;
+  owner_id: number;
+}
+
+export interface GroupResources {
+  courses: Array<{ id: number; name: string; question_count: number }>;
+  exams: Array<{ id: number; title: string; share_code?: string }>;
+}
+
+// ── Study Plan ───────────────────────────────────────────────────────────
+
+export interface StudyPlan {
+  daily_target: number;
+  deadline: string | null;
+  today_completed: number;
+  today_remaining: number;
+  current_streak: number;
+}
+
 // ── Practice ─────────────────────────────────────────────────────────────
 
 export interface SubmitRequest {

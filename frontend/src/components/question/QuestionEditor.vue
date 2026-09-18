@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import request, { getErrorMessage } from "../../api/request";
+import type { QuestionCreate, QuestionUpdate } from "../../types";
+import { createQuestion, updateQuestion } from "../../api/questions";
+import { getErrorMessage } from "../../api/request";
 import { typeOptions } from "../../utils/question";
 import { X, Plus, Trash2 } from "@lucide/vue";
 
@@ -124,9 +126,9 @@ async function submit() {
 
   try {
     if (isEdit.value) {
-      await request.patch(`/questions/${props.question.id}`, payload);
+      await updateQuestion(props.question.id, payload as QuestionUpdate);
     } else {
-      await request.post("/questions/", payload);
+      await createQuestion(payload as QuestionCreate);
     }
     emit("saved");
     emit("close");

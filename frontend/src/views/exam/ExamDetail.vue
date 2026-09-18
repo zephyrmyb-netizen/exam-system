@@ -6,7 +6,8 @@ import { ArrowLeft, Clock, Copy, FileQuestion, Play, Trophy, Users } from "@luci
 import { useExamStore } from "@/stores/exam";
 import { useAuthStore } from "@/stores/auth";
 import { publishExam } from "@/api/exams";
-import request, { getErrorMessage } from "@/api/request";
+import { getErrorMessage } from "@/api/request";
+import { shareExamToGroup } from "@/api/studyGroups";
 
 const route = useRoute();
 const router = useRouter();
@@ -76,7 +77,7 @@ async function shareToGroup() {
   shareMessage.value = "";
   groupShareError.value = "";
   try {
-    await request.post(`/study-groups/${shareGroupId.value}/exams/${examId.value}`);
+    await shareExamToGroup(shareGroupId.value, examId.value);
     shareMessage.value = "考试已共享到当前学习小组。";
   } catch (error) {
     groupShareError.value = getErrorMessage(error, "共享考试失败");

@@ -1,6 +1,13 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import request, { getErrorMessage } from "../api/request";
+import {
+  deleteQuestion as deleteQuestionApi,
+  getQuestions,
+  getQuestionsMeta,
+  publishQuestion,
+  unpublishQuestion,
+} from "../api/questions";
+import { getErrorMessage } from "../api/request";
 import { typeLabel, typeOptions, formatOptions } from "../utils/question";
 import {
   Search,
@@ -78,7 +85,7 @@ async function fetchMeta() {
   metaLoading.value = true;
   metaError.value = "";
   try {
-    const { data } = await request.get("/questions/meta");
+    const data = await getQuestionsMeta();
     subjects.value = data.subjects || [];
     chapters.value = data.chapters || [];
   } catch (error) {
@@ -101,7 +108,7 @@ async function fetchQuestions() {
   if (chapterFilter.value) params.chapter = chapterFilter.value;
   if (props.courseId) params.course_id = props.courseId;
   try {
-    const { data } = await request.get("/questions/", { params });
+    const data = await getQuestions(params);
     if (Array.isArray(data)) {
       questions.value = data;
       total.value = data.length;
@@ -143,7 +150,7 @@ async function loadMore() {
   if (chapterFilter.value) params.chapter = chapterFilter.value;
   if (props.courseId) params.course_id = props.courseId;
   try {
-    const { data } = await request.get("/questions/", { params });
+    const data = await getQuestions(params);
     const newItems = Array.isArray(data) ? data : data.items || [];
     questions.value = [...questions.value, ...newItems];
     total.value = Array.isArray(data) ? questions.value.length : data.total || 0;
@@ -166,7 +173,7 @@ async function deleteQuestion(q) {
   actionMessage.value = "";
   errorMessage.value = "";
   try {
-    await request.delete(`/questions/${q.id}`);
+    await deleteQuestionApi(q.id);
     actionMessage.value = "题目已删除。";
     await fetchQuestions();
   } catch (error) {
@@ -179,11 +186,11 @@ async function toggleQuestionVisibility(q) {
   errorMessage.value = "";
   try {
     if (q.visibility === "public") {
-      await request.post(`/questions/${q.id}/unpublish`);
+      await unpublishQuestion(q.id);
       q.visibility = "private";
       actionMessage.value = "题目已设为私有。";
     } else {
-      await request.post(`/questions/${q.id}/publish`);
+      await publishQuestion(q.id);
       q.visibility = "public";
       actionMessage.value = "题目已发布。";
     }

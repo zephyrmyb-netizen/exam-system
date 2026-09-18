@@ -20,7 +20,15 @@ import {
   X,
 } from "@lucide/vue";
 
-import request, { getErrorMessage } from "../api/request";
+import {
+  createCourse,
+  createCourseShareLink,
+  deleteCourse as deleteCourseApi,
+  publishCourse,
+  unpublishCourse,
+  updateCourse,
+} from "../api/courses";
+import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useMyCourses } from "../composables/useMyCourses";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
@@ -131,11 +139,11 @@ async function handleSave() {
     };
 
     if (editingCourse.value) {
-      const { data } = await request.patch<Course>(`/courses/${editingCourse.value.id}`, payload);
+      const data = await updateCourse(editingCourse.value.id, payload);
       Object.assign(editingCourse.value, data);
       flashSuccess("题库已更新");
     } else {
-      const { data } = await request.post<Course>("/courses/", { ...payload, visibility: "private" });
+      const data = await createCourse({ ...payload, visibility: "private" });
       courses.value.unshift(data);
       flashSuccess("题库已创建");
     }
@@ -164,7 +172,7 @@ async function deleteCourse(course: Course) {
   errorMessage.value = "";
 
   try {
-    await request.delete(`/courses/${course.id}`);
+    await deleteCourseApi(course.id);
     courses.value = courses.value.filter((item) => item.id !== course.id);
     flashSuccess("题库已删除");
   } catch (error) {
@@ -181,11 +189,11 @@ async function togglePublish(course: Course) {
 
   try {
     if (course.visibility === "public") {
-      const { data } = await request.post<Course>(`/courses/${course.id}/unpublish`);
+      const data = await unpublishCourse(course.id);
       course.visibility = data.visibility || "private";
       flashSuccess("已取消发布");
     } else {
-      const { data } = await request.post<Course>(`/courses/${course.id}/publish`);
+      const data = await publishCourse(course.id);
       course.visibility = data.visibility || "public";
       flashSuccess("已发布到公共题库");
     }
@@ -204,8 +212,8 @@ async function copyShareLink(course: Course) {
     if (course.visibility === "private") {
       let token = course.share_token;
       if (!token) {
-        const { data } = await request.post<{ token: string }>(`/courses/${course.id}/share-link`);
-        token = data.token;
+        const { token: newToken } = await createCourseShareLink(course.id);
+        token = newToken;
         course.share_token = token;
       }
       link = `${window.location.origin}/shared-courses/${token}`;

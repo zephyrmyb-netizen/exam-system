@@ -9,10 +9,13 @@ import { resetMyCoursesCache } from "../../composables/useMyCourses";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
-  requestGet: vi.fn(),
-  requestPost: vi.fn(),
-  requestPatch: vi.fn(),
-  requestDelete: vi.fn(),
+  getMyCourses: vi.fn(),
+  createCourse: vi.fn(),
+  updateCourse: vi.fn(),
+  deleteCourse: vi.fn(),
+  publishCourse: vi.fn(),
+  unpublishCourse: vi.fn(),
+  createCourseShareLink: vi.fn(),
   confirm: vi.fn(),
 }));
 
@@ -21,8 +24,17 @@ vi.mock("vue-router", () => ({
   useRoute: () => ({ query: {} }),
 }));
 
+vi.mock("../../api/courses", () => ({
+  getMyCourses: mocks.getMyCourses,
+  createCourse: mocks.createCourse,
+  updateCourse: mocks.updateCourse,
+  deleteCourse: mocks.deleteCourse,
+  publishCourse: mocks.publishCourse,
+  unpublishCourse: mocks.unpublishCourse,
+  createCourseShareLink: mocks.createCourseShareLink,
+}));
+
 vi.mock("../../api/request", () => ({
-  default: { get: mocks.requestGet, post: mocks.requestPost, patch: mocks.requestPatch, delete: mocks.requestDelete },
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
   getToken: () => "course-list-test-token",
 }));
@@ -49,21 +61,23 @@ describe("CourseList UX polish", () => {
   beforeEach(() => {
     resetMyCoursesCache();
     mocks.replace.mockClear();
-    mocks.requestPost.mockReset();
-    mocks.requestPatch.mockReset();
-    mocks.requestDelete.mockReset();
+    mocks.createCourse.mockReset();
+    mocks.updateCourse.mockReset();
+    mocks.deleteCourse.mockReset();
+    mocks.publishCourse.mockReset();
+    mocks.unpublishCourse.mockReset();
+    mocks.createCourseShareLink.mockReset();
     mocks.confirm.mockReset();
     mocks.confirm.mockResolvedValue(false);
-    mocks.requestGet.mockResolvedValue({
-      data: [
-        course({ id: 1, name: "Course one", question_count: 8 }),
-        course({ id: 2, name: "Empty course", question_count: 0 }),
-      ],
-    });
+    mocks.getMyCourses.mockReset();
+    mocks.getMyCourses.mockResolvedValue([
+      course({ id: 1, name: "Course one", question_count: 8 }),
+      course({ id: 2, name: "Empty course", question_count: 0 }),
+    ]);
   });
 
   it("uses a neutral placeholder instead of a loading sentence while courses are pending", async () => {
-    mocks.requestGet.mockReturnValue(new Promise(() => undefined));
+    mocks.getMyCourses.mockReturnValue(new Promise(() => undefined));
 
     const wrapper = mount(CourseList);
     await nextTick();
@@ -111,7 +125,7 @@ describe("CourseList UX polish", () => {
   it("shows a share action in the list menu and creates a tokenized private link", async () => {
     const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
     vi.stubGlobal("navigator", { clipboard });
-    mocks.requestPost.mockResolvedValue({ data: { token: "course-share-token" } });
+    mocks.createCourseShareLink.mockResolvedValue({ token: "course-share-token" });
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -119,7 +133,7 @@ describe("CourseList UX polish", () => {
     await wrapper.get('[data-testid="course-share"]').trigger("click");
     await flushPromises();
 
-    expect(mocks.requestPost).toHaveBeenCalledWith("/courses/1/share-link");
+    expect(mocks.createCourseShareLink).toHaveBeenCalledWith(1);
     expect(clipboard.writeText).toHaveBeenCalledWith(expect.stringMatching(/\/shared-courses\/course-share-token$/));
     vi.unstubAllGlobals();
   });
@@ -132,9 +146,10 @@ describe("CourseList UX polish", () => {
   });
 
   it("filters private and public courses without changing the API shape", async () => {
-    mocks.requestGet.mockResolvedValue({
-      data: [course({ id: 1, name: "Private course" }), course({ id: 2, name: "Public course", visibility: "public" })],
-    });
+    mocks.getMyCourses.mockResolvedValue([
+      course({ id: 1, name: "Private course" }),
+      course({ id: 2, name: "Public course", visibility: "public" }),
+    ]);
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -146,12 +161,10 @@ describe("CourseList UX polish", () => {
   });
 
   it("searches course content and filters the recently practised subset", async () => {
-    mocks.requestGet.mockResolvedValue({
-      data: [
-        course({ id: 1, name: "线性代数", subject: "数学", last_practiced_at: "2026-07-13" }),
-        course({ id: 2, name: "英语阅读", subject: "英语", last_practiced_at: undefined }),
-      ],
-    });
+    mocks.getMyCourses.mockResolvedValue([
+      course({ id: 1, name: "线性代数", subject: "数学", last_practiced_at: "2026-07-13" }),
+      course({ id: 2, name: "英语阅读", subject: "英语", last_practiced_at: undefined }),
+    ]);
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -167,7 +180,7 @@ describe("CourseList UX polish", () => {
 
   it("truncates long course names inside the card", async () => {
     const longName = "A course name that must truncate on small screens";
-    mocks.requestGet.mockResolvedValue({ data: [course({ name: longName })] });
+    mocks.getMyCourses.mockResolvedValue([course({ name: longName })]);
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -199,9 +212,10 @@ describe("CourseList UX polish", () => {
   });
 
   it("keeps create, edit, publish and delete management requests intact", async () => {
-    mocks.requestPost.mockResolvedValue({ data: course({ id: 3, name: "新题库" }) });
-    mocks.requestPatch.mockResolvedValue({ data: course({ id: 1, name: "改名题库" }) });
-    mocks.requestDelete.mockResolvedValue({ data: null });
+    mocks.createCourse.mockResolvedValue(course({ id: 3, name: "新题库" }));
+    mocks.updateCourse.mockResolvedValue(course({ id: 1, name: "改名题库" }));
+    mocks.publishCourse.mockResolvedValue(course({ id: 1, visibility: "public" }));
+    mocks.deleteCourse.mockResolvedValue(undefined);
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -209,10 +223,7 @@ describe("CourseList UX polish", () => {
     await wrapper.get('.modal-card input[placeholder="如：Java 期末复习"]').setValue("新题库");
     await wrapper.findAll(".modal-actions button").at(-1)?.trigger("click");
     await flushPromises();
-    expect(mocks.requestPost).toHaveBeenCalledWith(
-      "/courses/",
-      expect.objectContaining({ name: "新题库", visibility: "private" }),
-    );
+    expect(mocks.createCourse).toHaveBeenCalledWith(expect.objectContaining({ name: "新题库", visibility: "private" }));
 
     const originalRow = wrapper
       .findAll(".course-row")
@@ -222,7 +233,7 @@ describe("CourseList UX polish", () => {
     await wrapper.get('.modal-card input[placeholder="如：Java 期末复习"]').setValue("改名题库");
     await wrapper.findAll(".modal-actions button").at(-1)?.trigger("click");
     await flushPromises();
-    expect(mocks.requestPatch).toHaveBeenCalledWith("/courses/1", expect.objectContaining({ name: "改名题库" }));
+    expect(mocks.updateCourse).toHaveBeenCalledWith(1, expect.objectContaining({ name: "改名题库" }));
 
     const editedRow = wrapper
       .findAll(".course-row")
@@ -230,14 +241,14 @@ describe("CourseList UX polish", () => {
     await editedRow?.get(".more-btn").trigger("click");
     await editedRow?.findAll(".course-menu .menu-option")[4].trigger("click");
     await flushPromises();
-    expect(mocks.requestPost).toHaveBeenCalledWith("/courses/1/publish");
+    expect(mocks.publishCourse).toHaveBeenCalledWith(1);
 
     mocks.confirm.mockResolvedValue(true);
     await editedRow?.get(".more-btn").trigger("click");
     await editedRow?.findAll(".course-menu .menu-option")[5].trigger("click");
     await flushPromises();
     expect(mocks.confirm).toHaveBeenCalled();
-    expect(mocks.requestDelete).toHaveBeenCalledWith("/courses/1");
+    expect(mocks.deleteCourse).toHaveBeenCalledWith(1);
   });
 
   it("keeps the reference compact title bar with an icon-only create action", async () => {
@@ -271,9 +282,9 @@ describe("CourseList UX polish", () => {
   });
 
   it("matches the homepage course-card information hierarchy", async () => {
-    mocks.requestGet.mockResolvedValue({
-      data: [course({ id: 1, question_count: 46, practice_count: 19, last_practiced_at: "2026-07-14" })],
-    });
+    mocks.getMyCourses.mockResolvedValue([
+      course({ id: 1, question_count: 46, practice_count: 19, last_practiced_at: "2026-07-14" }),
+    ]);
     const wrapper = mount(CourseList);
     await flushPromises();
 
@@ -287,7 +298,7 @@ describe("CourseList UX polish", () => {
   });
 
   it("keeps an API error separate from the empty-library state", async () => {
-    mocks.requestGet.mockRejectedValue(new Error("network"));
+    mocks.getMyCourses.mockRejectedValue(new Error("network"));
     const wrapper = mount(CourseList);
     await flushPromises();
 

@@ -3,10 +3,13 @@ import { computed, onMounted, ref, watch } from "vue";
 import { BookOpen, Copy, Layers, Play, Users } from "@lucide/vue";
 import { useRoute } from "vue-router";
 
-import request, { getErrorMessage } from "../api/request";
+import { createCourseShareLink, getCourse } from "../api/courses";
+import { getErrorMessage } from "../api/request";
+import { shareCourseToGroup } from "../api/studyGroups";
 import PracticeModeSheet from "../components/practice/PracticeModeSheet.vue";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useAuthStore } from "../stores/auth";
+import type { Course } from "../types";
 import { isPracticeReadyCourse } from "../utils/course";
 
 const route = useRoute();
@@ -14,7 +17,7 @@ const { replaceWithSource } = useAppNavigation();
 const auth = useAuthStore();
 
 const courseId = computed(() => route.params.courseId);
-const course = ref<any>(null);
+const course = ref<Course | null>(null);
 const loading = ref(false);
 const errorMessage = ref("");
 const showPracticeModes = ref(false);
@@ -49,8 +52,7 @@ async function fetchCourse() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const { data } = await request.get(`/courses/${courseId.value}`);
-    course.value = data;
+    course.value = await getCourse(Number(courseId.value));
   } catch (error) {
     course.value = null;
     errorMessage.value = getErrorMessage(error, "获取题库信息失败");
@@ -70,8 +72,8 @@ async function copyShareLink() {
   try {
     let link = `${window.location.origin}/courses/${courseId.value}`;
     if (course.value?.visibility === "private") {
-      const { data } = await request.post<{ token: string }>(`/courses/${courseId.value}/share-link`);
-      link = `${window.location.origin}/shared-courses/${data.token}`;
+      const { token } = await createCourseShareLink(Number(courseId.value));
+      link = `${window.location.origin}/shared-courses/${token}`;
     }
     await navigator.clipboard.writeText(link);
     shareMessage.value = "题库链接已复制，登录后的用户可查看并复制到自己的题库。";
@@ -88,8 +90,8 @@ async function copyShareLinkSafe() {
     if (course.value?.visibility === "private") {
       let token = course.value.share_token;
       if (!token) {
-        const { data } = await request.post<{ token: string }>(`/courses/${courseId.value}/share-link`);
-        token = data.token;
+        const { token: newToken } = await createCourseShareLink(Number(courseId.value));
+        token = newToken;
         course.value.share_token = token;
       }
       link = `${window.location.origin}/shared-courses/${token}`;
@@ -107,7 +109,7 @@ async function shareToGroup() {
   shareMessage.value = "";
   groupShareError.value = "";
   try {
-    await request.post(`/study-groups/${shareGroupId.value}/courses/${courseId.value}`);
+    await shareCourseToGroup(shareGroupId.value, Number(courseId.value));
     shareMessage.value = "题库已共享到当前学习小组。";
   } catch (error) {
     groupShareError.value = getErrorMessage(error, "共享题库失败");

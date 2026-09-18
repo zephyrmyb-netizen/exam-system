@@ -21,7 +21,8 @@ import {
   TrendingUp,
 } from "@lucide/vue";
 
-import request, { getErrorMessage } from "../api/request";
+import { createCourseShareLink, deleteCourse, publishCourse, unpublishCourse } from "../api/courses";
+import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useMyCourses } from "../composables/useMyCourses";
 import { useConfirmDialog } from "../stores/confirmDialog";
@@ -125,9 +126,13 @@ async function toggleRecentCoursePublish(course: Course) {
   publishLoading.value = course.id;
   coursesError.value = "";
   try {
-    const endpoint = course.visibility === "public" ? "unpublish" : "publish";
-    const { data } = await request.post<Course>(`/courses/${course.id}/${endpoint}`);
-    course.visibility = data.visibility || (endpoint === "publish" ? "public" : "private");
+    if (course.visibility === "public") {
+      const data = await unpublishCourse(course.id);
+      course.visibility = data.visibility || "private";
+    } else {
+      const data = await publishCourse(course.id);
+      course.visibility = data.visibility || "public";
+    }
   } catch (error) {
     coursesError.value = getErrorMessage(error, "操作失败，请稍后重试。");
   } finally {
@@ -143,8 +148,8 @@ async function copyRecentCourseShareLink(course: Course) {
     if (course.visibility === "private") {
       let token = course.share_token;
       if (!token) {
-        const { data } = await request.post<{ token: string }>(`/courses/${course.id}/share-link`);
-        token = data.token;
+        const { token: newToken } = await createCourseShareLink(course.id);
+        token = newToken;
         course.share_token = token;
       }
       link = `${window.location.origin}/shared-courses/${token}`;
@@ -169,7 +174,7 @@ async function deleteRecentCourse(course: Course) {
   deleteLoading.value = course.id;
   coursesError.value = "";
   try {
-    await request.delete(`/courses/${course.id}`);
+    await deleteCourse(course.id);
     courses.value = courses.value.filter((item) => item.id !== course.id);
   } catch (error) {
     coursesError.value = getErrorMessage(error, "删除失败，请稍后重试。");

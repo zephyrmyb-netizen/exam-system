@@ -11,12 +11,14 @@ const searchMocks = vi.hoisted(() => ({
   openGlobalSearch: vi.fn(),
 }));
 const courseActionMocks = vi.hoisted(() => ({
-  requestPost: vi.fn(),
-  requestDelete: vi.fn(),
   confirm: vi.fn(),
 }));
 const courseApiMocks = vi.hoisted(() => ({
   getMyCourses: vi.fn(),
+  publishCourse: vi.fn(),
+  unpublishCourse: vi.fn(),
+  createCourseShareLink: vi.fn(),
+  deleteCourse: vi.fn(),
 }));
 const courses = ref<Course[]>([]);
 const loading = ref(false);
@@ -49,12 +51,9 @@ vi.mock("../../composables/useStudyOverview", () => ({
   }),
 }));
 
-vi.mock("../../api/courses", () => ({
-  getMyCourses: courseApiMocks.getMyCourses,
-}));
+vi.mock("../../api/courses", () => courseApiMocks);
 
 vi.mock("../../api/request", () => ({
-  default: { post: courseActionMocks.requestPost, delete: courseActionMocks.requestDelete },
   getErrorMessage: (_error: unknown, fallback: string) => fallback,
   getToken: () => "home-test-token",
 }));
@@ -85,10 +84,12 @@ describe("Home UX polish", () => {
   beforeEach(() => {
     replace.mockClear();
     searchMocks.openGlobalSearch.mockClear();
-    courseActionMocks.requestPost.mockReset();
-    courseActionMocks.requestDelete.mockReset();
     courseActionMocks.confirm.mockReset();
     courseActionMocks.confirm.mockResolvedValue(false);
+    courseApiMocks.publishCourse.mockReset();
+    courseApiMocks.unpublishCourse.mockReset();
+    courseApiMocks.createCourseShareLink.mockReset();
+    courseApiMocks.deleteCourse.mockReset();
     resetMyCoursesCache();
     courses.value = [];
     courseApiMocks.getMyCourses.mockReset().mockImplementation(() => Promise.resolve(courses.value));

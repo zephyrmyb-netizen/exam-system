@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import request, { getErrorMessage } from "../api/request";
+import { getWrongBook, getWrongBookMeta, removeWrongItem as removeWrongItemApi } from "../api/wrongbook";
+import { getErrorMessage } from "../api/request";
 import { typeLabel, typeOptions, formatOptions } from "../utils/question";
 import { Search, RefreshCw, Trash2, ChevronLeft, ChevronRight } from "@lucide/vue";
 import { useConfirmDialog } from "../stores/confirmDialog";
@@ -46,7 +47,7 @@ async function fetchMeta() {
   metaLoading.value = true;
   metaError.value = "";
   try {
-    const { data } = await request.get("/wrongbook/meta");
+    const data = await getWrongBookMeta();
     subjects.value = data.subjects || [];
     chapters.value = data.chapters || [];
   } catch (error) {
@@ -70,7 +71,7 @@ async function fetchWrongBook() {
   if (chapterFilter.value) params.chapter = chapterFilter.value;
 
   try {
-    const { data } = await request.get("/wrongbook/", { params });
+    const data = await getWrongBook(params);
     if (Array.isArray(data)) {
       wrongItems.value = data;
       total.value = data.length;
@@ -114,7 +115,7 @@ async function loadMore() {
   if (chapterFilter.value) params.chapter = chapterFilter.value;
 
   try {
-    const { data } = await request.get("/wrongbook/", { params });
+    const data = await getWrongBook(params);
     const newItems = Array.isArray(data) ? data : data.items || [];
     wrongItems.value = [...wrongItems.value, ...newItems];
     total.value = Array.isArray(data) ? wrongItems.value.length : data.total || 0;
@@ -138,7 +139,7 @@ async function removeWrongItem(item) {
   errorMessage.value = "";
   actionMessage.value = "";
   try {
-    await request.delete(`/wrongbook/${item.question_id}`);
+    await removeWrongItemApi(item.question_id);
     actionMessage.value = "已从错题本移除。";
     await fetchWrongBook();
   } catch (error) {

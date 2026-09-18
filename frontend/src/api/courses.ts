@@ -1,4 +1,4 @@
-import type { Course, CourseUpdate, Question } from "@/types";
+import type { Course, CourseCreate, CourseUpdate, Question, SharedCourse } from "@/types";
 import request from "./request.ts";
 
 export function getMyCourses(): Promise<Course[]> {
@@ -21,8 +21,8 @@ export function getCoursePracticeQuestions(id: number): Promise<Question[]> {
   });
 }
 
-export function createCourse(name: string, description?: string): Promise<Course> {
-  return request.post("/courses/", { name, description }).then(({ data }) => data as Course);
+export function createCourse(payload: CourseCreate): Promise<Course> {
+  return request.post("/courses/", payload).then(({ data }) => data as Course);
 }
 
 export function updateCourse(id: number, payload: CourseUpdate): Promise<Course> {
@@ -39,4 +39,16 @@ export function unpublishCourse(id: number): Promise<Course> {
 
 export function deleteCourse(id: number): Promise<void> {
   return request.delete(`/courses/${id}`);
+}
+
+export function createCourseShareLink(id: number): Promise<{ token: string }> {
+  return request.post(`/courses/${id}/share-link`).then(({ data }) => data as { token: string });
+}
+
+export function getSharedCourse(token: string): Promise<SharedCourse> {
+  return request.get(`/courses/share/${token}`).then(({ data }) => data as SharedCourse);
+}
+
+export function copySharedCourse(token: string): Promise<{ id: number }> {
+  return request.post(`/courses/share/${token}/copy`).then(({ data }) => data as { id: number });
 }

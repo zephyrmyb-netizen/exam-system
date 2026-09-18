@@ -29,7 +29,8 @@ vi.mock("vue-router", () => ({ useRoute: () => route, useRouter: () => router })
 vi.mock("@/stores/exam", () => ({ useExamStore: () => store }));
 vi.mock("@/stores/auth", () => ({ useAuthStore: () => ({ user: { id: 3 } }) }));
 vi.mock("@/api/exams", () => api);
-vi.mock("@/api/request", () => ({ default: { post: vi.fn() }, getErrorMessage: () => "发布失败" }));
+vi.mock("@/api/studyGroups", () => ({ shareExamToGroup: vi.fn() }));
+vi.mock("@/api/request", () => ({ getErrorMessage: () => "发布失败" }));
 
 describe("ExamDetail", () => {
   beforeEach(() => {

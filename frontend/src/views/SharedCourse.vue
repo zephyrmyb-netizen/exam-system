@@ -3,14 +3,9 @@ import { BookCopy, CheckCircle2, Layers } from "@lucide/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import request, { getErrorMessage } from "../api/request";
-
-type SharedCourse = {
-  name: string;
-  description: string;
-  subject: string;
-  question_count: number;
-};
+import { copySharedCourse, getSharedCourse } from "../api/courses";
+import { getErrorMessage } from "../api/request";
+import type { SharedCourse } from "../types";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,8 +20,7 @@ async function loadSharedCourse() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const { data } = await request.get<SharedCourse>(`/courses/share/${token.value}`);
-    course.value = data;
+    course.value = await getSharedCourse(token.value);
   } catch (error) {
     course.value = null;
     errorMessage.value = getErrorMessage(error, "分享链接无效或已失效");
@@ -40,8 +34,8 @@ async function copyCourse() {
   copying.value = true;
   errorMessage.value = "";
   try {
-    const { data } = await request.post<{ id: number }>(`/courses/share/${token.value}/copy`);
-    await router.replace({ name: "course-detail", params: { courseId: data.id }, query: { from: "courses" } });
+    const { id } = await copySharedCourse(token.value);
+    await router.replace({ name: "course-detail", params: { courseId: id }, query: { from: "courses" } });
   } catch (error) {
     errorMessage.value = getErrorMessage(error, "复制题库失败，请稍后重试");
   } finally {

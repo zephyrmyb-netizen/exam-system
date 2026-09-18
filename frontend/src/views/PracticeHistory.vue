@@ -2,9 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 import { getPracticeHistory } from "../api/practice";
 import { getErrorMessage } from "../api/request";
+import type { PracticeRecord } from "../types";
 import { Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight, History, Play } from "@lucide/vue";
 
-const records = ref<any[]>([]);
+const records = ref<PracticeRecord[]>([]);
 const loading = ref(false);
 const errorMessage = ref("");
 const page = ref(1);
