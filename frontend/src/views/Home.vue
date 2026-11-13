@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Copy,
   Eye,
-  FileText,
   FileUp,
   Globe,
   Lock,
@@ -22,12 +21,19 @@ import {
 } from "@lucide/vue";
 
 import { createCourseShareLink, deleteCourse, publishCourse, unpublishCourse } from "../api/courses";
+import { getStreak } from "../api/analytics";
+import { getPracticeStats, getTodayReview } from "../api/practice";
 import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useMyCourses } from "../composables/useMyCourses";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
+import { getCourseIdentity } from "../utils/courseIdentity";
+import CountUp from "../components/bits/CountUp.vue";
+import GlassIcons from "../components/bits/GlassIcons.vue";
+import SpecularButton from "../components/bits/SpecularButton.vue";
+import SpotlightCard from "../components/bits/SpotlightCard.vue";
 import { openGlobalSearch } from "../utils/globalSearch";
 
 const { replaceTo } = useAppNavigation();
@@ -183,8 +189,49 @@ async function deleteRecentCourse(course: Course) {
   }
 }
 
+const GLASS_ACTION_COLORS = ["indigo", "blue", "orange", "green"];
+const glassActionItems = coreActions.map((action, index) => ({
+  icon: action.icon,
+  label: action.label,
+  color: GLASS_ACTION_COLORS[index % GLASS_ACTION_COLORS.length],
+}));
+
+function onGlassActionSelect(item: { label: string }) {
+  const action = coreActions.find((entry) => entry.label === item.label);
+  if (action) goTo(action.to);
+}
+
+const reviewSummary = ref<{
+  dueCount: number;
+  wrongCount: number;
+  streak: number;
+  todayCount: number;
+} | null>(null);
+
+const reviewSubline = computed(() => {
+  const summary = reviewSummary.value;
+  if (!summary) return "";
+  const parts: string[] = [];
+  if (summary.wrongCount > 0) parts.push(`错题 ${summary.wrongCount} 道待巩固`);
+  if (summary.streak > 0) parts.push(`已连续学习 ${summary.streak} 天`);
+  if (summary.todayCount > 0) parts.push(`今日已练 ${summary.todayCount} 题`);
+  return parts.join(" · ");
+});
+
+async function fetchReviewSummary() {
+  const [review, streak, stats] = await Promise.allSettled([getTodayReview(), getStreak(), getPracticeStats()]);
+  if (review.status !== "fulfilled" && streak.status !== "fulfilled" && stats.status !== "fulfilled") return;
+  reviewSummary.value = {
+    dueCount: review.status === "fulfilled" ? review.value.due_count : 0,
+    wrongCount: review.status === "fulfilled" ? review.value.wrong_count : 0,
+    streak: streak.status === "fulfilled" ? streak.value.current_streak : 0,
+    todayCount: stats.status === "fulfilled" ? stats.value.today_count : 0,
+  };
+}
+
 onMounted(() => {
   void fetchRecentCourses();
+  void fetchReviewSummary();
 });
 </script>
 
@@ -213,15 +260,42 @@ onMounted(() => {
       </button>
     </header>
 
-    <nav class="quick-grid fade-up d1" data-testid="home-shortcuts" aria-label="快捷操作">
-      <button v-for="item in coreActions" :key="item.label" class="quick" type="button" @click="goTo(item.to)">
-        <span class="quick-ico">
-          <component :is="item.icon" :size="18" :stroke-width="2.3" />
-        </span>
-        <span class="quick-label">{{ item.label }}</span>
-        <span class="quick-desc">{{ item.desc }}</span>
-      </button>
+    <nav class="quick-panel fade-up d1" data-testid="home-shortcuts" aria-label="快捷操作">
+      <GlassIcons :items="glassActionItems" @select="onGlassActionSelect" />
     </nav>
+
+    <SpotlightCard
+      v-if="reviewSummary"
+      class-name="review-hero fade-up d2"
+      spotlight-color="rgba(255, 255, 255, 0.28)"
+      aria-label="今日复习概览"
+    >
+      <div class="review-hero__body">
+        <p class="review-hero__kicker">今日待复习</p>
+        <p v-if="reviewSummary.dueCount > 0" class="review-hero__headline">
+          <strong><CountUp :to="reviewSummary.dueCount" :duration="1.2" /></strong>
+          <span>道题已到期</span>
+        </p>
+        <p v-else class="review-hero__headline">
+          <strong class="review-hero__clear">全部清空</strong>
+        </p>
+        <p v-if="reviewSubline" class="review-hero__sub">{{ reviewSubline }}</p>
+        <p v-else-if="reviewSummary.dueCount === 0" class="review-hero__sub">保持节奏，明天继续。</p>
+      </div>
+      <SpecularButton
+        v-if="reviewSummary.dueCount > 0"
+        class="review-hero__cta"
+        size="sm"
+        :radius="999"
+        tint="#ffffff"
+        :tint-opacity="1"
+        text-color="#0062cc"
+        auto-animate
+        @click="goTo({ name: 'practice-due' })"
+      >
+        开始复习
+      </SpecularButton>
+    </SpotlightCard>
 
     <div class="section-head fade-up d3" data-testid="home-recent">
       <h3 class="section-title">最近题库</h3>
@@ -267,8 +341,8 @@ onMounted(() => {
           :aria-label="`查看题库：${getCourseDisplayName(course)}`"
           @click="viewRecentCourse(course)"
         >
-          <span class="course-icon" data-home-course-icon aria-hidden="true">
-            <FileText :size="20" :stroke-width="2.25" />
+          <span class="course-icon" data-home-course-icon aria-hidden="true" :style="getCourseIdentity(course).style">
+            <component :is="getCourseIdentity(course).icon" :size="20" :stroke-width="2.25" />
           </span>
           <div class="course-info">
             <strong>{{ getCourseDisplayName(course) }}</strong>
@@ -382,6 +456,74 @@ onMounted(() => {
   background: transparent;
   box-shadow: none;
 }
+.review-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 14px 0 4px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  color: #ffffff;
+  overflow: hidden;
+  border: 0;
+}
+.review-hero::after {
+  content: "";
+  position: absolute;
+  top: -52px;
+  right: -52px;
+  width: 156px;
+  height: 156px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+.review-hero__body {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.review-hero__kicker {
+  margin: 0 0 4px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+.review-hero__headline {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.review-hero__headline strong {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.review-hero__headline strong.review-hero__clear {
+  font-size: 26px;
+}
+.review-hero__headline span {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  opacity: 0.92;
+}
+.review-hero__sub {
+  margin: 7px 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  opacity: 0.88;
+}
+.review-hero__cta {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
 .home-search-entry {
   display: flex;
   align-items: center;
@@ -400,64 +542,14 @@ onMounted(() => {
   place-items: center;
   color: var(--primary);
 }
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+.quick-panel {
   margin: 16px 0 12px;
-  padding: 12px 4px;
+  padding: 16px 10px 12px;
   border-radius: var(--radius-lg);
   background: var(--surface);
   border: 1px solid var(--line-soft);
-}
-.quick {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 68px;
-  padding: 4px 2px;
-  gap: 7px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  box-shadow: none;
   color: var(--text-main);
-}
-.quick:hover {
-  transform: none;
-  background: var(--surface-soft);
-  box-shadow: none;
-}
-.quick-ico {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  color: var(--primary);
-  background: var(--primary-soft);
-}
-.quick:nth-child(2) .quick-ico {
-  color: var(--violet);
-  background: var(--violet-soft);
-}
-.quick:nth-child(3) .quick-ico {
-  color: var(--amber-strong);
-  background: var(--amber-soft);
-}
-.quick:nth-child(4) .quick-ico {
-  color: var(--teal);
-  background: var(--teal-soft);
-}
-.quick-label {
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.quick-desc {
-  display: none;
+  font-size: 15px;
 }
 .section-head {
   display: flex;
@@ -643,15 +735,5 @@ onMounted(() => {
   min-height: 84px;
   border-radius: var(--radius-md);
   background: var(--surface);
-}
-@media (min-width: 600px) {
-  .quick-label {
-    font-size: var(--text-sm);
-  }
-  .quick-desc {
-    display: block;
-    font-size: 11px;
-    color: var(--text-muted);
-  }
 }
 </style>

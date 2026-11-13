@@ -6,7 +6,6 @@ import { useRoute } from "vue-router";
 import {
   Copy,
   Eye,
-  FileText,
   Globe,
   GraduationCap,
   Lock,
@@ -32,6 +31,7 @@ import { getErrorMessage } from "../api/request";
 import { useAppNavigation } from "../composables/useAppNavigation";
 import { useMyCourses } from "../composables/useMyCourses";
 import { getCourseDisplayName, isPracticeReadyCourse } from "../utils/course";
+import { getCourseIdentity } from "../utils/courseIdentity";
 import { useConfirmDialog } from "../stores/confirmDialog";
 import type { Course } from "../types";
 import Button from "../components/ui/button/Button.vue";
@@ -355,8 +355,8 @@ onMounted(() => {
           @click="activateCourse(course)"
           @keydown.enter="activateCourse(course)"
         >
-          <span class="course-icon" data-course-icon aria-hidden="true">
-            <FileText :size="22" :stroke-width="2.25" />
+          <span class="course-icon" data-course-icon aria-hidden="true" :style="getCourseIdentity(course).style">
+            <component :is="getCourseIdentity(course).icon" :size="22" :stroke-width="2.25" />
           </span>
           <div class="course-info">
             <strong class="truncate" data-course-title :title="getCourseDisplayName(course)">{{

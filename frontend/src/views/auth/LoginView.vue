@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Eye, EyeOff } from "@lucide/vue";
+import { Eye, EyeOff, GraduationCap } from "@lucide/vue";
 
 import { useAuth } from "../../stores/auth";
+import GlassSurface from "../../components/bits/GlassSurface.vue";
+import SpecularButton from "../../components/bits/SpecularButton.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -42,8 +44,20 @@ async function handleGuestLogin() {
 </script>
 
 <template>
-  <div class="auth-card fade-up d1">
+  <div class="auth-shell fade-up d1">
+    <GlassSurface
+      width="100%"
+      height="auto"
+      :border-radius="24"
+      :background-opacity="0.1"
+      :saturation="1.5"
+      class-name="auth-glass"
+    >
+      <div class="auth-card">
     <header class="auth-hero">
+      <div class="auth-brandmark" aria-hidden="true">
+        <GraduationCap :size="28" :stroke-width="2.2" />
+      </div>
       <p class="auth-brand">学习宝</p>
       <h1>{{ isBetaBuild ? "欢迎使用学习宝" : "欢迎回来" }}</h1>
       <p>轻松整理和练习题目</p>
@@ -98,23 +112,40 @@ async function handleGuestLogin() {
         </div>
       </div>
 
-      <button class="auth-btn" type="submit" :disabled="loading">
+      <SpecularButton
+        class="w-full"
+        type="submit"
+        size="lg"
+        :radius="12"
+        tint="#007aff"
+        :tint-opacity="1"
+        text-color="#ffffff"
+        auto-animate
+        :disabled="loading"
+      >
         {{ loading ? "正在登录…" : "登录" }}
-      </button>
+      </SpecularButton>
     </form>
 
     <p class="auth-link-row">没有账号？<router-link replace to="/register">使用邀请码注册</router-link></p>
+      </div>
+    </GlassSurface>
   </div>
 </template>
 
 <style scoped>
+.auth-shell {
+  width: min(100%, 420px);
+}
+
+/* 卡片本体只负责内容排版：边框/背景/阴影由外层 GlassSurface 的玻璃面提供。 */
 .auth-card {
   box-sizing: border-box;
-  width: min(100%, 420px);
-  max-width: 420px;
+  width: 100%;
   padding: 28px 24px;
-  border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .auth-hero {
@@ -122,12 +153,24 @@ async function handleGuestLogin() {
   text-align: center;
 }
 
+.auth-brandmark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 98, 204, 0.28);
+}
+
 .auth-brand {
   margin: 0 0 8px;
-  color: var(--primary-strong);
-  font-size: 15px;
+  color: var(--text-main);
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .auth-hero h1 {
