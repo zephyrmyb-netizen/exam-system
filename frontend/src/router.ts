@@ -230,7 +230,10 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  // Demo build (VITE_DEMO=1) is served from the GitHub Pages project path
+  // of this repo, so the router needs that base there; normal builds keep
+  // the default root base.
+  history: createWebHistory(import.meta.env.VITE_DEMO === "1" ? "/exam-system/" : undefined),
   routes,
   scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) return savedPosition;

@@ -8,6 +8,14 @@ import "./styles/transitions.css";
 import "./styles/utilities.css";
 import "./style.css";
 
+// Demo build (VITE_DEMO=1): install the in-app mock API before the app can
+// fire any request, so the static demo works without a backend. Normal
+// dev/production builds skip this entirely.
+if (import.meta.env.VITE_DEMO === "1") {
+  const { installDemoApi } = await import("./demo/demoApi");
+  installDemoApi();
+}
+
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
